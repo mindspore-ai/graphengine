@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,6 +169,6 @@ GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, int
 GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, uint32_t *value, const AttrDefMap &attr);
 GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, float *value, const AttrDefMap &attr);
 GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, double *value, const AttrDefMap &attr);
-}
+}  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@
 #include <memory>
 #include <vector>
 
-#include "common/op/attr_value_util.h"
+#include "framework/common/op/attr_value_util.h"
 #include "register/register_types.h"
 #include "register/register_error_codes.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "graph/attr_value.h"
 #include "graph/ge_tensor.h"
 #include "graph/node.h"
@@ -95,7 +95,7 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @param [out] aipp_params aipp parameters
   /// @return enum of tagCCAippInputFormat
   ///
-  static Status ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params);
+  static Status ConvertAippParams(const NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params);
   static Status TransferDim(const std::vector<int64_t> &dim, std::vector<int64_t> &dim_vector);
   template <typename T>
   static void SliceData(const std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output,
@@ -134,12 +134,12 @@ class GE_FUNC_VISIBILITY OpUtils {
   ///
   static void TransDataKCHW2HWCK(const void *input, int64_t K, int64_t C, int64_t H, int64_t W, void *output);
 
-  static vector<ConstGeTensorPtr> GetWeights(const ge::Node &node);
-  static vector<ConstGeTensorPtr> GetWeights(ge::ConstNodePtr node);
-  static vector<GeTensorPtr> MutableWeights(const ge::Node &node);
-  static vector<GeTensorPtr> MutableWeights(const ge::NodePtr node);
-  static Status SetWeights(ge::Node &node, const vector<ge::GeTensorPtr> &weights);
-  static Status SetWeights(ge::NodePtr node, const vector<ge::GeTensorPtr> &weights);
+  static std::vector<ConstGeTensorPtr> GetWeights(const ge::Node &node);
+  static std::vector<ConstGeTensorPtr> GetWeights(ge::ConstNodePtr node);
+  static std::vector<GeTensorPtr> MutableWeights(const ge::Node &node);
+  static std::vector<GeTensorPtr> MutableWeights(const ge::NodePtr node);
+  static Status SetWeights(ge::Node &node, const std::vector<ge::GeTensorPtr> &weights);
+  static Status SetWeights(ge::NodePtr node, const std::vector<ge::GeTensorPtr> &weights);
   static Status GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims);
 
  private:

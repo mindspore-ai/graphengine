@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 #ifndef INC_FRAMEWORK_COMMON_GE_TYPES_H_
 #define INC_FRAMEWORK_COMMON_GE_TYPES_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <string>
 #include <vector>
 
 #include "framework/common/fmk_error_codes.h"
-#include "ge/ge_api_error_codes.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "external/graph/types.h"
 #include "external/ge/ge_api_types.h"
 
@@ -60,6 +60,7 @@ const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
+const std::string kTaskTypeFftsPlus = "FFTS_PLUS";
 
 // dynamic execute mode
 const char *const kLazyRecompile = "lazy_recompile";
@@ -70,11 +71,11 @@ struct DataBuffer {
   void *data;       // Data address
   uint64_t length;  // Data length
   bool isDataSupportMemShare = false;
-  uint32_t placement = 0;
-  DataBuffer(void *dataIn, uint64_t len, bool isSupportMemShare, uint32_t placement = 0)
-      : data(dataIn), length(len), isDataSupportMemShare(isSupportMemShare), placement(placement) {}
+  uint32_t placement = 0U;
+  DataBuffer(void *data_in, uint64_t data_len, bool is_support_mem_share, uint32_t placement = 0U)
+      : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(placement) {}
 
-  DataBuffer() : data(nullptr), length(0), isDataSupportMemShare(false) {}
+  DataBuffer() : data(nullptr), length(0U), isDataSupportMemShare(false) {}
 };
 
 ///
@@ -86,7 +87,7 @@ struct InputData {
   uint32_t timestamp;                        // Data creation time
   uint32_t timeout;                          // Processing timeout
   uint32_t model_id;                         // Model ID required for data processing
-  uint64_t request_id = 0;                   // Request ID
+  uint64_t request_id = 0U;                  // Request ID
   std::vector<DataBuffer> blobs;             // Actual input data, currently only supports one input
   bool is_dynamic_batch = false;             // Whether is dynamic batch size scene, default:false
   std::string batch_label;                   // Gear used for current inference in dynamic batch scene
@@ -202,7 +203,7 @@ struct AippConfigInfo {
 // The structure of offline Modeldata
 struct ModelData {
   void *model_data = nullptr;  // Model binary data start addr
-  uint32_t model_len = 0;      // Model binary data length
+  uint32_t model_len = 0U;     // Model binary data length
   int32_t priority = 0;        // Model priority
   std::string key;             // Key path for encrypt model, Empty for unencrypt
   std::string om_name;         // om file name, used for data dump
@@ -210,12 +211,12 @@ struct ModelData {
 
 // The definition of Model information
 struct ModelInfo {
-  uint32_t version = 0;
+  uint32_t version = 0U;
   std::string name;
-  bool is_encrypt = 0;  //  0:unencrypt, 1:encrypt
+  bool is_encrypt = false;  //  0:unencrypt, 1:encrypt
   std::vector<ShapeDescription> input_desc;
   std::vector<ShapeDescription> output_desc;
-  uint8_t reserved[3] = {0};  // 3-byte reserved field
+  uint8_t reserved[3] = {0U};  // 3-byte reserved field
 };
 
 // Asynchronous callback interface, implemented by the caller
@@ -231,8 +232,10 @@ class GE_FUNC_VISIBILITY ModelListener {
   virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
                                std::vector<ge::Tensor> &outputs) = 0;
 
+  virtual void SetCallback(const RunAsyncCallback &callback){};
+
   virtual uint32_t GetResultCode() {
-    return 0;
+    return 0U;
   };
 
   virtual Status ResetResult() {
@@ -276,13 +279,23 @@ struct TaskDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
+  uint32_t context_id;
 };
 
 struct OpDescInfo {
   std::string op_name;
   std::string op_type;
-  uint32_t task_id;
-  uint32_t stream_id;
+  uint32_t task_id = 0U;
+  uint32_t stream_id = 0U;
+  uint32_t imply_type = 0U;
+  uint32_t block_dim = 0U;
+  std::string op_file_path;
+  std::string dev_func;
+  std::string tvm_magic;
+  uint32_t tiling_key = 0U;
+  std::string tiling_data;
+  std::string node_info;
+  std::vector<int64_t> workspace_bytes;
   std::vector<Format> input_format;
   std::vector<std::vector<int64_t>> input_shape;
   std::vector<DataType> input_data_type;

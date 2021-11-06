@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,14 +120,13 @@ struct OmgContext {
   std::string dynamic_image_size;
   std::string dynamic_dims;
   std::string dynamic_node_type;
-  std::vector<std::vector<int64_t>> user_real_input_dims;
-  std::vector<int64_t> cur_dynamic_dims;
   bool need_multi_batch = false;
   std::vector<NodePtr> data_nodes;
   std::vector<NodePtr> getnext_nosink_nodes;
   bool fuzz_compile_flag = false;
   std::string atc_cmdline;
   bool user_attr_index_valid = false;
+  bool is_online_model = false;
 };
 }  // namespace ge
 

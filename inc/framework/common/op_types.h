@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
   }
   ~OpTypeContainer() = default;
 
-  void Register(const std::string &op_type) { op_type_list_.insert(op_type); }
+  void Register(const std::string &op_type) {
+    op_type_list_.insert(op_type);
+  }
 
   bool IsExisting(const std::string &op_type) {
     auto iter_find = op_type_list_.find(op_type);
@@ -45,7 +47,9 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
 
 class GE_FUNC_VISIBILITY OpTypeRegistrar {
  public:
-  explicit OpTypeRegistrar(const std::string &op_type) { OpTypeContainer::Instance()->Register(op_type); }
+  explicit OpTypeRegistrar(const std::string &op_type) {
+    OpTypeContainer::Instance()->Register(op_type);
+  }
   ~OpTypeRegistrar() {}
 };
 

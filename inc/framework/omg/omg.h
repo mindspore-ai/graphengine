@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ namespace ge {
  * @brief init omg context
  * @return void
  */
-GE_FUNC_VISIBILITY Status InitDomiOmgContext(const string &input_shape, const string &input_format,
-                                             const string &net_format, bool is_dynamic_input);
+GE_FUNC_VISIBILITY Status InitDomiOmgContext(const std::string &input_shape, const std::string &input_format,
+                                             const std::string &net_format, bool is_dynamic_input);
 
 /**
  * @ingroup domi_omg
@@ -61,7 +61,7 @@ GE_FUNC_VISIBILITY Status InitDomiOmgContext(const string &input_shape, const st
  * @param [in] atc_params multiply atc params
  * @return Status result code
  */
-GE_FUNC_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<string, string> &atc_params,
+GE_FUNC_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<std::string, std::string> &atc_params,
                                      const char *model_file, const char *weights_file, domi::FrameworkType type,
                                      const char *op_conf = nullptr, const char *target = nullptr,
                                      RunMode run_mode = GEN_OM_MODEL, bool is_dynamic_input = false);
@@ -91,7 +91,8 @@ GE_FUNC_VISIBILITY Status ConvertFwkModelToJson(domi::FrameworkType framework, c
 
 GE_FUNC_VISIBILITY void GetGroupName(ge::proto::ModelDef &model);
 
-GE_FUNC_VISIBILITY void FindParserSo(const string &path, vector<string> &fileList, string &caffe_parser_path);
+GE_FUNC_VISIBILITY void FindParserSo(const std::string &path, std::vector<std::string> &fileList,
+                                     std::string &caffe_parser_path);
 
 GE_FUNC_VISIBILITY Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
 

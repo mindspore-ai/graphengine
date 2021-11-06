@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 #ifndef INC_FRAMEWORK_COMMON_TYPES_H_
 #define INC_FRAMEWORK_COMMON_TYPES_H_
 
-#include <limits.h>
-#include <stdint.h>
+#include <climits>
+#include <cstdint>
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -30,14 +30,6 @@
 #include "framework/common/fmk_types.h"
 #include "framework/common/op_types.h"
 #include "register/register_types.h"
-
-#if !defined(__ANDROID__) && !defined(ANDROID)
-#define DOMI_DYNAMIC_CAST static_cast
-#define DOMI_DYNAMIC_POINTER_CAST std::static_pointer_cast
-#else
-#define DOMI_DYNAMIC_CAST static_cast
-#define DOMI_DYNAMIC_POINTER_CAST std::static_pointer_cast
-#endif
 
 namespace ge {
 // dump
@@ -51,24 +43,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_DEB
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_DEBUG_ATOMIC;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_DEBUG_ALL;
 
-// Supported public properties name
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_START_TIME;  // Start time
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_DUMP_PATH;   // Dump path
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_LOG_PATH;    // Log path
-
 // Profile-related constants
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CCE_PROFILE_ON;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CCE_PROFILE_OFF;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OME_PROFILE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string CCE_PROFILE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string RTS_PROFILE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILER_JOBCTX;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILER_TARGET_PATH;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string RTS_PROFILE_PATH;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_STOP_KEY;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_STOP_VALUE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::map<std::string, std::string> PROFILE_COMPONENT_MAP;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_CONFIG;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_MODEL_ID;
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASKS;
@@ -76,14 +54,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_FUSION_MODEL_DEF;
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int MODEL_MAX_SIZE;  // Max size of 2 GB minus 1 byte.
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t FILE_HEADER_MAX_SIZE;  // Max size of 3 GB.
-
-#if !defined(__ANDROID__) && !defined(ANDROID)
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t ALLOC_MEMORY_MAX_SIZE;  // Max size of 8 GB.
-#else
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t ALLOC_MEMORY_MAX_SIZE;  // Max size of 512M.
-#endif
 
 template <typename K, typename V>
 static std::pair<V, K> flip_pair(const std::pair<K, V> &p) {
@@ -167,6 +138,8 @@ REGISTER_OPTYPE_DECLARE(SLICED, "SliceD");
 REGISTER_OPTYPE_DECLARE(FLOORDIV, "FloorDiv");
 REGISTER_OPTYPE_DECLARE(SQUEEZE, "Squeeze");
 REGISTER_OPTYPE_DECLARE(UNSQUEEZE, "Unsqueeze");
+REGISTER_OPTYPE_DECLARE(SQUEEZEV2, "SqueezeV2");
+REGISTER_OPTYPE_DECLARE(UNSQUEEZEV2, "UnsqueezeV2");
 REGISTER_OPTYPE_DECLARE(STRIDEDSLICE, "StridedSlice");
 REGISTER_OPTYPE_DECLARE(RANGE, "Range");
 REGISTER_OPTYPE_DECLARE(RPNPROPOSALS, "GenerateRpnProposals");
@@ -339,6 +312,8 @@ REGISTER_OPTYPE_DECLARE(PLACEHOLDER, "PlaceHolder");
 REGISTER_OPTYPE_DECLARE(END, "End");
 REGISTER_OPTYPE_DECLARE(BASICLSTMCELL, "BasicLSTMCell");
 REGISTER_OPTYPE_DECLARE(GETNEXT, "GetNext");
+REGISTER_OPTYPE_DECLARE(ITERATOR, "Iterator");
+REGISTER_OPTYPE_DECLARE(ITERATORV2, "IteratorV2");
 REGISTER_OPTYPE_DECLARE(INITDATA, "InitData");
 REGISTER_OPTYPE_DECLARE(TRANSSHAPE, "TransShape")
 REGISTER_OPTYPE_DECLARE(REFIDENTITY, "RefIdentity");
@@ -616,34 +591,6 @@ static constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64;
 ///
 static constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75;
 
-///
-/// @ingroup domi_omg
-/// @brief INPUT node type
-///
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string INPUT_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMMY_DATA;
-
-///
-/// @ingroup domi_omg
-/// @brief AIPP flag, indicating the aipp conv operator
-///
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_CONV_FLAG;
-
-///
-/// @ingroup domi_omg
-/// @brief AIPP flag, indicating the aipp data operator
-///
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_DATA_FLAG;
-
-// flag of the Data operator, indicating that the input will be input to the dynamic AIPP operator
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string INPUT_TO_DYNAMIC_AIPP;
-
-// records the W dimension of the model input corresponding to the dynamic AIPP
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_RELATED_DATA_DIM_W;
-
-// H dimension of the model input corresponding to the dynamic AIPP
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_RELATED_DATA_DIM_H;
-
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DATA_TYPE;
 
@@ -655,10 +602,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string FRAMEW
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_DATA_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_NETOUTPUT_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_DEPTHCONV_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_CONV_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_FC_TYPE;
 // convolution node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_NET_OUTPUT;
 
@@ -667,78 +610,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_N
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_OP_DEBUG;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_TYPE_OP_DEBUG;
 
-// convolution node type
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_TYPE_CONVOLUTION;
-// adds a convolutional node name for the hard AIPP
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_CONV_OP_NAME;
 // delimiter of operator configuration items
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_CONF_DELIMITER;
-
-// op attr name
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ATTR_NAME_VALUE1;
-
-// op attr name, used to 6d_2_4d C channel
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ATTR_NAME_INPUT_CVALUE;
-
-// op attr name
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ATTR_NAME_VALUE1;
-
-// alpha default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float ALPHA_DEFAULT_VALUE;
-
-// beta default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float BETA_DEFAULT_VALUE;
-
-// coef default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float COEF_DEFAULT_VALUE;
-
-// coef value of Relu6
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float RELU6_COEF;
-
-// stride default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STRIDE_DEFAULT_VALUE;
-
-// pad default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_DEFAULT_VALUE;
-
-// dilation default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int DILATION_DEFAULT_VALUE;
-
-// kernel default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KERNEL_DEFAULT_VALUE;
-
-// default conv Group Size
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DEFAULT_CONV_GROUP;
-
-// default deconv adj
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DEFAULT_DECONV_ADJ;
-
-// indicate num 1
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NUM_ONE;
 
 // dim default size value
 static const int32_t DIM_DEFAULT_SIZE = 4;
 
-// the shape of c must be the mutiply of 16 for depthwise
-static const uint32_t DEPTHWISE_DIM_C_BASE_NUM = 16;
-
-// C1HWNCoC0 dim size
-static const int32_t DIM_C1HWNCoC0_SIZE = 6;
-// C1HWNCoC0 C0 value
-static const int C1HWCOC_C0_VALUE = 16;
-// spatial default dim size
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t SPATIAL_DIM_DEFAULT_SIZE;
-
 // dim extension default value
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t DIM_DEFAULT_VALUE;
-
-// the first item in the weight list of opdef is filter
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t WEIGHT_FILTER_INDEX;
-
-// the second item in the weight list of opdef is bias.
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t WEIGHT_BIAS_INDEX;
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t TENSOR_ND_SUPPORT_SIZE;
 
 // default NCHW index
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_N;
@@ -746,82 +625,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_H;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_W;
 
-// default C1HWNCoC0 index
-static const uint32_t C1HWNCoC0_DIM_C1 = 0;
-static const uint32_t C1HWNCoC0_DIM_H = 1;
-static const uint32_t C1HWNCoC0_DIM_W = 2;
-static const uint32_t C1HWNCoC0_DIM_N = 3;
-static const uint32_t C1HWNCoC0_DIM_Co = 4;
-static const uint32_t C1HWNCoC0_DIM_C0 = 5;
-
-// default KCHW index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_K;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_W;
-
-// default HWCK index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_W;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_K;
-
 // default NHWC index
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_N;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_H;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_W;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_C;
 
-// default CHWN index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_N;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_W;
-
-// default CHW index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHW_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHW_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHW_DIM_W;
-
-// default HWC index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWC_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWC_DIM_W;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWC_DIM_C;
-// default Pad index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_H_HEAD;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_H_TAIL;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_W_HEAD;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_W_TAIL;
-
-// default window index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t WINDOW_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t WINDOW_W;
-
-// default stride index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STRIDE_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STRIDE_W;
-
-// default dilation index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DILATION_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DILATION_W;
-
-// the num of XRBG channel
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t XRGB_CHN_NUM;
-
-// default tensor format
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int DEFAULT_FORMAT;
-
-// default global pooling
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const bool DEFAULT_GLOBAL_POOLING;
-
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t MODEL_VERSION;  // model version 1.0
-
-// Number of inputs of the Eltwise operator
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int ELTWISE_MIN_INPUT_SIZE;
 
 // flowctrl
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_STREAM_SWITCH;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_STREAM_ACTIVE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_PER_ITER;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_COND;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_INCREMENT;
@@ -833,9 +646,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t TRUE_STRE
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STREAM_SWITCH_INPUT_NUM;
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_GLOBAL_STEP;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_GLOBAL_STEP_ASSIGNADD;
 
-static const int PLATFORM_VERSION_LEN = 20;
+static const uint32_t PLATFORM_VERSION_LEN = 20;
 
 // Definition of the file header of the model file
 struct ModelFileHeader {
@@ -860,11 +672,6 @@ struct ModelFileHeader {
 
 static constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0;
 static constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1;
-static constexpr uint8_t TARGET_TYPE_TINY_8BIT = 2;
-
-static constexpr int32_t PARTITION_TYPE_MODEL_DEF = 0;
-static constexpr int32_t PARTITION_TYPE_WEIGHTS = 1;
-static constexpr int32_t PARTITION_TYPE_TASK_INFO = 2;
 
 // number of partitions in the current model
 static constexpr uint32_t PARTITION_SIZE = 5;
@@ -883,8 +690,6 @@ struct ModelPartitionTable {
 };
 
 #define SIZE_OF_MODEL_PARTITION_TABLE(table) (sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * (table).num)
-
-static constexpr int32_t PTHREAD_CREAT_SUCCESS = 0;  // pthread_creat success
 
 // Filter format
 typedef enum tagDomiFilterFormat {

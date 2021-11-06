@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,26 +21,29 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "ge/ge_ir_build.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
+#include "external/ge/ge_ir_build.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/op_desc.h"
 #include "graph/detail/attributes_holder.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 class GeRootModel;
 class GE_FUNC_VISIBILITY GeGenerator {
  public:
+  using InOutTensorRef = std::pair<const std::vector<ge::GeTensor> &, const std::vector<ge::GeTensor> &>;
   static GeGenerator &GetInstance() {
     static GeGenerator Instance;
     return Instance;
   }
   GeGenerator() = default;
 
-  ~GeGenerator() { (void)Finalize(); }
+  ~GeGenerator() {
+    (void)Finalize();
+  }
 
   GeGenerator(const GeGenerator &) = delete;
 
@@ -54,7 +57,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
   Status GenerateOfflineModel(const Graph &graph, const std::string &file_name_prefix,
                               const std::vector<GeTensor> &inputs = std::vector<GeTensor>());
 
-  Status GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ge::ModelBufferData &model);
+  Status GenerateOnlineModel(const Graph &graph, const std::vector<GeTensor> &inputs, ge::ModelBufferData &model);
 
   Status GenerateInfershapeGraph(const Graph &graph);
 
@@ -81,10 +84,12 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] compile_flag: op build flag, accurate build is 0, fuzz build is 1
   /// @param [out] model_buff: model buff of op.
   /// @return SUCCESS or FAILED
-  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                            OpEngineType engine_type, ModelBufferData &model_buff);
-  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                            OpEngineType engine_type, int32_t compile_flag, ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                            const std::vector<GeTensor> &outputs, OpEngineType engine_type,
+                            ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                            const std::vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
+                            ModelBufferData &model_buff);
   ///
   /// @ingroup ge
   /// @brief: Build single Op into model buff.
@@ -94,22 +99,27 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] graph_name: graph name.
   /// @param [out] graph: graph of single op.
   /// @return SUCCESS or FAILED
-  Status BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                            std::string graph_name, Graph &graph);
+  Status BuildSingleOpGraph(OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs, std::string graph_name,
+                            Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type);
 
  private:
-  Status GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
+  Status GenerateModel(const Graph &graph, const std::string &file_name_prefix, const std::vector<GeTensor> &inputs,
                        ge::ModelBufferData &model, bool is_offline = true);
-  Status BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                       const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
+  Status BuildSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs,
+                       const std::string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                        bool is_offline = true, int32_t compile_flag = 0);
   bool CheckNoAicore(const ComputeGraphPtr &graph);
-  void RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
-  Status CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
+  void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
+  Status CheckForSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                          const std::vector<GeTensor> &outputs);
   Status InferFormatForSingleOp(OpDescPtr &op_desc, Graph &graph);
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
+  Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model, const std::vector<GeTensor> &inputs,
+                                     const std::vector<GeTensor> &outputs,
+                                     const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
+                                     std::vector<ge::NamedAttrs> &generalized_build_attrs);
 
   class Impl;
 

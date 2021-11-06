@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class GE_FUNC_VISIBILITY StringUtils {
   // lint -esym(551,*)
   static std::string &Rtrim(std::string &s) { /*lint !e618*/
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return std::isspace(c) == 0; }));
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(), [](int c) { return std::isspace(c) == 0; }).base(), s.end());
 #else
     (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
 #endif
@@ -78,8 +78,8 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] delim  separator
   ///  @return string array after segmentation
   ///
-  static std::vector<std::string> Split(const std::string &str, char delim) {
-    std::vector<std::string> elems;
+  static std::vector<std::string, std::allocator<std::string>> Split(const std::string &str, char delim) {
+    std::vector<std::string, std::allocator<std::string>> elems;
 
     if (str.empty()) {
       elems.emplace_back("");

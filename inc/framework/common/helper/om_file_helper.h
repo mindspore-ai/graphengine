@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
 
   OmFileContext context_;
 
-  vector<OmFileContext> model_contexts_;
+  std::vector<OmFileContext> model_contexts_;
 
  private:
   Status CheckModelValid(const ge::ModelData &model) const;
@@ -79,9 +79,13 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
 
 class GE_FUNC_VISIBILITY OmFileSaveHelper {
  public:
-  ModelFileHeader &GetModelFileHeader() { return model_header_; }
+  ModelFileHeader &GetModelFileHeader() {
+    return model_header_;
+  }
 
-  uint32_t GetModelDataSize() const { return context_.model_data_len_; }
+  uint32_t GetModelDataSize() const {
+    return context_.model_data_len_;
+  }
 
   ModelPartitionTable *GetPartitionTable();
 
@@ -96,7 +100,7 @@ class GE_FUNC_VISIBILITY OmFileSaveHelper {
 
   Status SaveModelToFile(const char *output_file, ge::ModelBufferData &model, bool is_offline = true);
 
-  vector<OmFileContext> model_contexts_;
+  std::vector<OmFileContext> model_contexts_;
 
   ModelFileHeader model_header_;
   OmFileContext context_;

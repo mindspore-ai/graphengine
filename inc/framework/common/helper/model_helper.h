@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@
 #include <memory>
 #include <string>
 
-#include "common/fmk_types.h"
-#include "common/helper/om_file_helper.h"
+#include "framework/common/fmk_types.h"
+#include "framework/common/helper/om_file_helper.h"
 #include "common/model/ge_model.h"
 #include "common/model/ge_root_model.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "graph/model.h"
 
 namespace ge {
@@ -35,8 +35,8 @@ class GE_FUNC_VISIBILITY ModelHelper {
 
   Status SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param, const std::string &output_file,
                        ge::ModelBufferData &model);
-  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param, const string &output_file,
-                           ModelBufferData &model, bool is_unknown_shape);
+  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
+                           const std::string &output_file, ModelBufferData &model, bool is_unknown_shape);
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file);
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);

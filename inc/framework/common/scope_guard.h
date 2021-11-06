@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,9 @@
 /// MAKE_GUARD([&] { Release Resource 1 })
 /// Acquire Resource 2
 // MAKE_GUARD([&] { Release Resource 2 })
-#define GE_MAKE_GUARD(var, callback) ScopeGuard make_guard_##var(callback)
+#define GE_MAKE_GUARD(var, callback) const ScopeGuard const_guard_##var(callback)
+
+#define GE_DISMISSABLE_GUARD(var, callback) ScopeGuard make_guard_##var(callback)
 #define GE_DISMISS_GUARD(var) make_guard_##var.Dismiss()
 
 namespace ge {
@@ -42,13 +44,16 @@ class GE_FUNC_VISIBILITY ScopeGuard {
       if (on_exit_scope_ != nullptr) {
         try {
           on_exit_scope_();
-        } catch (std::bad_function_call &e) { }
-          catch (...) { }
+        } catch (std::bad_function_call &e) {
+        } catch (...) {
+        }
       }
     }
   }
 
-  void Dismiss() { dismissed_ = true; }
+  void Dismiss() {
+    dismissed_ = true;
+  }
 
  private:
   std::function<void()> on_exit_scope_;

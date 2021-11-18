@@ -133,8 +133,11 @@ typedef struct tagRtArgsWithTiling {
     uint16_t tilingDataOffset;      // tiling data offset
     uint16_t hostInputAddrOffset;   // index of host_memory input in inputs_addrs list
     uint16_t hostInputDataOffset;   // host_mem input data offset
-    bool hasHostMemInput;           // has host_memory input data in args or not: ture or false
-    uint8_t reserved[7];
+    uint8_t hasHostMemInput;        // has host_memory input data in args or not: 0 means no host_memory input data,
+                                    // others means has host_memory input data.
+    uint8_t isNoNeedH2DCopy;        // is no need host to device copy: 0 means need H2D copy,
+                                    // others means doesn't need H2D copy.
+    uint8_t reserved[6];
 } rtArgsWithTiling_t;
 
 /**
@@ -299,8 +302,8 @@ RTS_API rtError_t rtDependencyRegister(void *mHandle, void *sHandle);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName, const void *devFunc,
-                                     uint32_t funcMode);
+RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName,
+                                     const void *devFunc, uint32_t funcMode);
 
 /**
  * @ingroup rt_kernel
@@ -371,8 +374,9 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim, void *args, uint32_t argsSize,
-                                            rtSmDesc_t *smDesc, rtStream_t stream_, const void *kernelInfo);
+RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim,
+                                           void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream_,
+                                           const void *kernelInfo);
 
 /**
  * @ingroup rt_kernel

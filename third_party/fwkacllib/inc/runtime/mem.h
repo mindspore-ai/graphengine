@@ -576,7 +576,7 @@ RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqeIndex, rtStream_t strea
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtSetIpcMemPid(const char_t *name, int32_t pid[], int num);
+RTS_API rtError_t rtSetIpcMemPid(const char_t *name, int32_t pid[], int32_t num);
 
 /**
  * @ingroup dvrt_mem

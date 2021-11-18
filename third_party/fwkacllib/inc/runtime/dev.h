@@ -25,7 +25,7 @@ extern "C" {
 
 #define RT_CAPABILITY_SUPPORT     (0x1U)
 #define RT_CAPABILITY_NOT_SUPPORT (0x0U)
-#define MEMORY_INFO_TS_4G_LIMITED (0x0) // for compatibility
+#define MEMORY_INFO_TS_4G_LIMITED (0x0U) // for compatibility
 
 typedef struct tagRTDeviceInfo {
     uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
@@ -170,6 +170,15 @@ RTS_API rtError_t rtSetDevice(int32_t device);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtSetDeviceV2(int32_t device, rtDeviceMode deviceMode);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get deviceMode
+ * @param [out] deviceMode   the device mode
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetDeviceMode(rtDeviceMode *deviceMode);
 
 /**
  * @ingroup dvrt_dev

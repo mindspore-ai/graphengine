@@ -1305,6 +1305,27 @@ REG_OP(ReduceStdWithMean)
     .ATTR(invert, Bool, false)
     .ATTR(epsilon, Float, 0.001)
     .OP_END_FACTORY_REG(ReduceStdWithMean)
+
+/**
+*@brief Performs reduced batch normalization . \n
+
+*@par Inputs:
+*x: A 5D Tensor of type float16 or float32, with format NC1HWC0 . \n
+
+*@par Outputs:
+*@li mean: A Tensor of type float32 for SUM reduced "x".
+*@li variance: A Tensor of type float32 for square sum reduced "x" . \n
+
+*@par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(ReduceMeanVariance)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(mean, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(variance, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(axes, ListInt, {})
+    .ATTR(keep_dims, Bool, true)
+    .OP_END_FACTORY_REG(ReduceMeanVariance)
 } //namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_REDUCE_OPS_H_

@@ -128,7 +128,7 @@ REG_OP(OCRIdentifyPreHandle)
     .INPUT(imgs_offset, TensorType({DT_INT32}))
     .INPUT(imgs_size, TensorType({DT_INT32}))
     .OUTPUT(resized_imgs, TensorType({DT_UINT8}))
-    .ATTR(size, ListInt, {})
+    .REQUIRED_ATTR(size, ListInt)
     .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(OCRIdentifyPreHandle)
 
@@ -247,6 +247,7 @@ REG_OP(OCRDetectionPostHandle)
 *@li clipped_polys_data: A Tensor of type int32. point data of every clipped poly. \n
 *@li clipped_polys_offset: A Tensor of type int32. Offset of every clipped poly . \n
 *@li clipped_polys_size: A Tensor of type int32. Size of every clipped poly. \n
+*@li clipped_polys_num: A Tensor of type int32. Number of clipped polys. \n
 */
 REG_OP(ResizeAndClipPolys)
     .INPUT(polys_data, TensorType({DT_INT32}))
@@ -259,6 +260,7 @@ REG_OP(ResizeAndClipPolys)
     .OUTPUT(clipped_polys_data, TensorType({DT_INT32}))
     .OUTPUT(clipped_polys_offset, TensorType({DT_INT32}))
     .OUTPUT(clipped_polys_size, TensorType({DT_INT32}))
+    .OUTPUT(clipped_polys_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(ResizeAndClipPolys);
 
 

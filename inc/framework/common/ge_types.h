@@ -293,6 +293,7 @@ struct OpDescInfo {
   std::string dev_func;
   std::string tvm_magic;
   uint32_t tiling_key = 0U;
+  uintptr_t args = 0U;
   std::string tiling_data;
   std::string node_info;
   std::vector<int64_t> workspace_bytes;

@@ -239,6 +239,16 @@ RTS_API rtError_t rtSetOpWaitTimeOut(uint32_t timeout);
  */
 RTS_API rtError_t rtSetOpExecuteTimeOut(uint32_t timeout);
 
+/**
+ * @ingroup
+ * @brief get is Heterogenous.
+ * @param [out] heterogenous=1 Heterogenous Mode: read isHeterogenous=1 in ini file.
+ * @param [out] heterogenous=0 NOT Heterogenous Mode:
+ *      1:not found ini file, 2:error when reading ini, 3:Heterogenous value is not 1
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetIsHeterogenous(int32_t *heterogenous);
+
 #if defined(__cplusplus)
 }
 #endif

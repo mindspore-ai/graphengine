@@ -23,6 +23,8 @@
 #define PROF_AICORE_METRICS         0x00000004
 #define PROF_AICPU_TRACE            0x00000008
 #define PROF_L2CACHE                0x00000010
+#define PROF_HCCL_TRACE             0x00000020
+#define PROF_TRAINING_TRACE         0x00000040
 
 // system profilinig switch
 #define PROF_CPU                    0x00010000
@@ -41,10 +43,7 @@
 #define PROF_AIVECTORCORE_METRICS   0x0000020000000
 #define PROF_SUBTASK_TIME           0x0000040000000
 
-#define PROF_TRAINING_TRACE         0x0000080000000
-#define PROF_HCCL_TRACE             0x0000100000000
-
-#define PROF_TASK_TRACE             0x0000185000002
+#define PROF_TASK_TRACE             0x0000005000062
 
 #define PROF_MODEL_LOAD             0x8000000000000000
 
@@ -54,6 +53,8 @@
 #define PROF_AICORE_METRICS_MASK         0x00000004
 #define PROF_AICPU_TRACE_MASK            0x00000008
 #define PROF_L2CACHE_MASK                0x00000010
+#define PROF_HCCL_TRACE_MASK             0x00000020
+#define PROF_TRAINING_TRACE_MASK         0x00000040
 
 // system profilinig mask
 #define PROF_CPU_MASK                    0x00010000
@@ -71,9 +72,6 @@
 #define PROF_SCHEDULE_TRACE_MASK         0x0000010000000
 #define PROF_AIVECTORCORE_METRICS_MASK   0x0000020000000
 #define PROF_SUBTASK_TIME_MASK           0x0000040000000
-
-#define PROF_TRAINING_TRACE_MASK         0x0000080000000
-#define PROF_HCCL_TRACE_MASK             0x0000100000000
 
 #define PROF_MODEL_LOAD_MASK             0x8000000000000000
 

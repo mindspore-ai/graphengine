@@ -60,6 +60,7 @@ static const int32_t ACL_ERROR_RT_NO_CDQ_RESOURCE = 207011;      // no cdq resou
 static const int32_t ACL_ERROR_RT_OVER_LIMIT = 207012;           // over limit
 static const int32_t ACL_ERROR_RT_QUEUE_EMPTY = 207013;          // queue is empty
 static const int32_t ACL_ERROR_RT_QUEUE_FULL = 207014;           // queue is full
+static const int32_t ACL_ERROR_RT_REPEATED_INIT = 207015;        // repeated init
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR = 507000;              // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR = 507001;                    // ts internel error

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __CCE_RUNTIME_BASE_H__
-#define __CCE_RUNTIME_BASE_H__
+#ifndef CCE_RUNTIME_BASE_H
+#define CCE_RUNTIME_BASE_H
 
 #include <stdint.h>
 #include "toolchain/prof_callback.h"
@@ -443,4 +443,4 @@ RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId);
 }
 #endif
 
-#endif  // __CCE_RUNTIME_BASE_H__
+#endif  // CCE_RUNTIME_BASE_H

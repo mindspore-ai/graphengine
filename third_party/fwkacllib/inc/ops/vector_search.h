@@ -78,8 +78,8 @@ REG_OP(TopKPQDistance)
     .OUTPUT(topk_ivf, TensorType({DT_INT32}))
     .OUTPUT(topk_index, TensorType({DT_INT32}))
     .ATTR(order, String, "ASC")
-    .ATTR(k, Int, 0)
-    .ATTR(group_size, Int, 0)
+    .REQUIRED_ATTR(k, Int)
+    .REQUIRED_ATTR(group_size, Int)
     .OP_END_FACTORY_REG(TopKPQDistance)
 
 /**
@@ -129,6 +129,68 @@ REG_OP(ScanPQCodes)
     .ATTR(split_count, Int, 1)
     .ATTR(split_index, Int, 0)
     .OP_END_FACTORY_REG(ScanPQCodes)
+
+/**
+* @brief Calculate buckets limit and offset. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li bucket_list: A 1-D tensor of type int32 with the value of ivf_counts and ivf_offset index. \n
+* @li ivf_counts: A 1-D tensor of type int32 with the value of ivf counts. \n
+* @li ivf_offset: A 1-D tensor of type int32 or int64 with the value of ivf offset. \n
+
+* @par Attributes:
+* total_limit: A int64 type maximum value of the sum of ivf_counts corresponding to bucket_list. \n
+
+* @par Outputs:
+* @li buckets_limit: A 1-D tensor of type int32 with the sum <= total_limit. \n
+* @li buckets_offset: A 1-D tensor of type int32 or int64 with the value of ivf_offset corresponding to bucket_list. \n
+*/
+REG_OP(CalcBucketsLimitAndOffset)
+    .INPUT(bucket_list, TensorType({DT_INT32}))
+    .INPUT(ivf_counts, TensorType({DT_INT32}))
+    .INPUT(ivf_offset, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(buckets_limit, TensorType({DT_INT32}))
+    .OUTPUT(buckets_offset, TensorType({DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(total_limit, Int)
+    .OP_END_FACTORY_REG(CalcBucketsLimitAndOffset)
+
+/**
+* @brief Calculate ProdVirialSeA. \n
+*
+* @par Inputs:
+* Five inputs, including:
+* @li net_deriv: A Tensor. Must be one of the following types: float16, float32, float64.
+* @li in_deriv: A Tensor. Must be one of the following types: float16, float32, float64.
+* @li rij: A Tensor. Must be one of the following types: float16, float32, float64.
+* @li nlist: A Tensor. dtype is int32.
+* @li natoms: A Tensor. dtype is int32. \n
+*
+* @par Outputs:
+* Two outputs, including:
+* @li virial: A Tensor. Must be one of the following types: float16, float32, float64.
+* @li atom_virial: A Tensor. Must be one of the following types: float16, float32, float64. \n
+*
+* @par Attributes:
+* Two attributes, including:
+* @li n_a_sel: A Scalar.
+* @li n_r_sel: A Scalar. \n
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(ProdVirialSeA)
+    .INPUT(net_deriv, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(in_deriv, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(rij, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(nlist, TensorType({DT_INT32}))
+    .INPUT(natoms, TensorType({DT_INT32}))
+    .OUTPUT(virial, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(atom_virial, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(n_a_sel, Int)
+    .REQUIRED_ATTR(n_r_sel, Int)
+    .ATTR(nall, Int, 28328)
+    .OP_END_FACTORY_REG(ProdVirialSeA)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_VECTOR_SEARCH_H_

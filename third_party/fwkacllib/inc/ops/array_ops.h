@@ -498,6 +498,25 @@ REG_OP(Constant)
     .OP_END_FACTORY_REG(Constant)
 
 /**
+*@brief Creates a file constant tensor, The operator is used to process the very large weight which is store in file. \n
+
+*@par Attributes:
+*file_id: A string, used to record file id. \n
+*shape: data shape. \n
+*dtype: data type. \n
+
+*@par Outputs:
+*y: The FileConstant tensor. \n
+*/
+REG_OP(FileConstant)
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
+        DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .REQUIRED_ATTR(file_id, String)
+    .REQUIRED_ATTR(shape, ListInt)
+    .REQUIRED_ATTR(dtype, Type)
+    .OP_END_FACTORY_REG(FileConstant)
+
+/**
 *@brief Returns a copy of the input tensor. \n
 
 *@par Inputs:
@@ -1330,31 +1349,6 @@ REG_OP(ExpandD)
     .OP_END_FACTORY_REG(ExpandD)
 
 /**
-* @brief Calculate buckets limit and offset. \n
-
-* @par Inputs:
-* Three inputs, including:
-* @li bucket_list: A 1-D tensor of type int32 with the value of ivf_counts and ivf_offset index. \n
-* @li ivf_counts: A 1-D tensor of type int32 with the value of ivf counts. \n
-* @li ivf_offset: A 1-D tensor of type int32 or int64 with the value of ivf offset. \n
-
-* @par Attributes:
-* total_limit: A int64 type maximum value of the sum of ivf_counts corresponding to bucket_list. \n
-
-* @par Outputs:
-* @li buckets_limit: A 1-D tensor of type int32 with the sum <= total_limit. \n
-* @li buckets_offset: A 1-D tensor of type int32 or int64 with the value of ivf_offset corresponding to bucket_list. \n
-*/
-REG_OP(CalcBucketsLimitAndOffset)
-    .INPUT(bucket_list, TensorType({DT_INT32}))
-    .INPUT(ivf_counts, TensorType({DT_INT32}))
-    .INPUT(ivf_offset, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(buckets_limit, TensorType({DT_INT32}))
-    .OUTPUT(buckets_offset, TensorType({DT_INT32, DT_INT64}))
-    .REQUIRED_ATTR(total_limit, Int)
-    .OP_END_FACTORY_REG(CalcBucketsLimitAndOffset)
-
-/**
 *@brief Get dim number in tensordesc. \n
 
 *@par Inputs:
@@ -1362,6 +1356,9 @@ REG_OP(CalcBucketsLimitAndOffset)
 
 *@par Outputs:
 *y: A 1D tensor. The data type must be int32. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GetShape)
     .DYNAMIC_INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
@@ -1377,8 +1374,13 @@ REG_OP(GetShape)
 
 *@par outputs:
 * y: a tensor_desc, type is int.\n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(UpdateTensorDesc)
+    .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+                          DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
                            DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE}))
     .REQUIRED_ATTR(shape, ListInt)

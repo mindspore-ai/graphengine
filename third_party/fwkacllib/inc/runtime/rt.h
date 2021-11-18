@@ -31,5 +31,6 @@
 #include "rt_ffts.h"
 #include "rt_ffts_plus.h"
 #include "rt_dfx.h"
+#include "rt_mem_queue.h"
 
 #endif  // CCE_RUNTIME_RT_H

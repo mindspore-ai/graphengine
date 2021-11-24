@@ -32,4 +32,4 @@ namespace Adx {
     void AdxUnRegDumpProcessCallBack();
 }
 
-#endif ADX_DATADUMP_CALLBACK_H
+#endif  // ADX_DATADUMP_CALLBACK_H

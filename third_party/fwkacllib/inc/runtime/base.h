@@ -1,17 +1,7 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
+ * Description: base.h
+ * Create: 2020-01-01
  */
 
 #ifndef CCE_RUNTIME_BASE_H
@@ -95,7 +85,7 @@ typedef enum tagRtSwitchDataType {
 
 typedef enum tagRtStreamFlagType {
     RT_HEAD_STREAM = 0,  // first stream
-    RT_INVALID_FLAG = 0xFFFFFFFF,
+    RT_INVALID_FLAG = 0x7FFFFFFF,
 } rtStreamFlagType_t;
 
 typedef enum tagRtLimitType {
@@ -196,13 +186,13 @@ RTS_API rtError_t rtProfilerConfig(uint16_t profConfig);
  * @ingroup profiling_base
  * @brief ts send keypoint profiler log.
  */
-RTS_API rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtStream_t stream);
+RTS_API rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtStream_t stm);
 
 /**
  * @ingroup profiling_base
  * @brief ts send keypoint profiler log.
  */
-RTS_API rtError_t rtProfilerTraceEx(uint64_t id, uint64_t modelId, uint16_t tagId, rtStream_t stream);
+RTS_API rtError_t rtProfilerTraceEx(uint64_t id, uint64_t modelId, uint16_t tagId, rtStream_t stm);
 
 /**
  * @ingroup profiling_base
@@ -306,134 +296,134 @@ typedef void *rtNotify_t;
 /**
  * @ingroup dvrt_base
  * @brief create label instance
- * @param [out]    label   created label
+ * @param [out]    lbl   created label
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelCreate(rtLabel_t *label);
+RTS_API rtError_t rtLabelCreate(rtLabel_t *lbl);
 
 /**
  * @ingroup dvrt_base
  * @brief create label instance
- * @param [out] label  created label
- * @param [in] model  label set model
+ * @param [out] lbl  created label
+ * @param [in] mdl  label set model
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelCreateV2(rtLabel_t *label, rtModel_t model);
+RTS_API rtError_t rtLabelCreateV2(rtLabel_t *lbl, rtModel_t mdl);
 
 /**
  * @ingroup dvrt_base
  * @brief set label and stream instance
- * @param [in] label   set label
- * @param [in] stream  set stream
+ * @param [in] lbl   set label
+ * @param [in] stm  set stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelSet(rtLabel_t label, rtStream_t stream);
+RTS_API rtError_t rtLabelSet(rtLabel_t lbl, rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief destroy label instance
- * @param [in] label   label to destroy
+ * @param [in] lbl   label to destroy
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelDestroy(rtLabel_t label);
+RTS_API rtError_t rtLabelDestroy(rtLabel_t lbl);
 
 /**
  * @ingroup dvrt_base
  * @brief label switch instance
  * @param [in] ptr  address to get value compared
  * @param [in] condition
- * @param [in] value  to compare
+ * @param [in] val  to compare
  * @param [in] true_label   goto label
- * @param [in] stream  to submit label_switch task
+ * @param [in] stm  to submit label_switch task
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelSwitch(void *ptr, rtCondition_t condition, uint32_t value, rtLabel_t trueLabel,
-                                rtStream_t stream);
+RTS_API rtError_t rtLabelSwitch(void *ptr, rtCondition_t condition, uint32_t val, rtLabel_t trueLabel,
+                                rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief goto label instance
- * @param [in] label   goto label
- * @param [in] stream  to submit label_goto task
+ * @param [in] lbl   goto label
+ * @param [in] stm  to submit label_goto task
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelGoto(rtLabel_t label, rtStream_t stream);
+RTS_API rtError_t rtLabelGoto(rtLabel_t lbl, rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief name label instance
- * @param [in] label  instance
+ * @param [in] lbl  instance
  * @param [in] name  label name
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNameLabel(rtLabel_t label, const char_t *name);
+RTS_API rtError_t rtNameLabel(rtLabel_t lbl, const char_t *name);
 
 /**
  * @ingroup dvrt_base
  * @brief label switch by index
  * @param [in] ptr  index value ptr
- * @param [in] max  index max value
+ * @param [in] maxValue  index max value
  * @param [in] labelInfoPtr  label content info ptr
- * @param [in] stream  set stream
+ * @param [in] stm  set stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelSwitchByIndex(void *ptr, uint32_t max, void *labelInfoPtr, rtStream_t stream);
+RTS_API rtError_t rtLabelSwitchByIndex(void *ptr, uint32_t maxValue, void *labelInfoPtr, rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief stream goto label
- * @param [in] label  goto label
- * @param [in] stream  stream  to submit label_goto task
+ * @param [in] lbl  goto label
+ * @param [in] stm  stream  to submit label_goto task
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelGotoEx(rtLabel_t label, rtStream_t stream);
+RTS_API rtError_t rtLabelGotoEx(rtLabel_t lbl, rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief labels to dev info
- * @param [in] label  model label list
+ * @param [in] lbl  model label list
  * @param [in] labelNumber  label number
  * @param [in] dst  device ptr
  * @param [in] dstMax  dst size
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *dst, uint32_t dstMax);
+RTS_API rtError_t rtLabelListCpy(rtLabel_t *lbl, uint32_t labelNumber, void *dst, uint32_t dstMax);
 
 /**
  * @ingroup dvrt_base
  * @brief labels to dev info
- * @param [out] label  created label handle
- * @param [in] stream  label bind stream
+ * @param [out] lbl  created label handle
+ * @param [in] stm  label bind stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
+RTS_API rtError_t rtLabelCreateEx(rtLabel_t *lbl, rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief labels to dev info
- * @param [out] label  created label handle
- * @param [in] model  label bind model
- * @param [in] stream  label bind stream
+ * @param [out] lbl  created label handle
+ * @param [in] mdl  label bind model
+ * @param [in] stm  label bind stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream);
+RTS_API rtError_t rtLabelCreateExV2(rtLabel_t *lbl, rtModel_t mdl, rtStream_t stm);
 
 /**
  * @ingroup dvrt_base
  * @brief get current thread last stream id and task id
- * @param [out] stream id and task id
+ * @param [out] stm id and task id
  * @param [in] null
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for input null ptr

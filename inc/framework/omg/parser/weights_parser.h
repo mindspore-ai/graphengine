@@ -17,13 +17,12 @@
 #ifndef INC_FRAMEWORK_OMG_PARSER_WEIGHTS_PARSER_H_
 #define INC_FRAMEWORK_OMG_PARSER_WEIGHTS_PARSER_H_
 
+#include "external/register/register_error_codes.h"
 #include "graph/graph.h"
 #include "graph/attr_value.h"
 #include "graph/compute_graph.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
-#include "graph/operator.h"
-#include "graph/range_vistor.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"

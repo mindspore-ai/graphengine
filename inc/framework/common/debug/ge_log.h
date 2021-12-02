@@ -40,17 +40,17 @@ enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
 
 class GE_FUNC_VISIBILITY GeLog {
  public:
-  static uint64_t GetTid() {
+  static const uint64_t GetTid() {
 #ifdef __GNUC__
-    uint64_t tid = static_cast<uint64_t>(syscall(__NR_gettid));
+    const uint64_t tid = static_cast<uint64_t>(syscall(__NR_gettid));
 #else
-    uint64_t tid = static_cast<uint64_t>(GetCurrentThreadId());
+    const uint64_t tid = static_cast<uint64_t>(GetCurrentThreadId());
 #endif
     return tid;
   }
 };
 
-inline bool IsLogEnable(int module_name, int log_level) {
+inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
   const int32_t enable = CheckLogLevel(module_name, log_level);
   // 1:enable, 0:disable
   return (enable == 1);
@@ -92,10 +92,10 @@ inline bool IsLogEnable(int module_name, int log_level) {
 #define GELOGT(VALUE, fmt, ...)                                                                                      \
   do {                                                                                                               \
     TraceStatus stat = VALUE;                                                                                        \
-    const char *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                                       \
+    const char_t *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                                     \
     const int32_t idx = static_cast<int32_t>(stat);                                                                  \
-    char *k = const_cast<char *>("status");                                                                          \
-    char *v = const_cast<char *>(TraceStatStr[idx]);                                                                 \
+    char_t *k = const_cast<char_t *>("status");                                                                      \
+    char_t *v = const_cast<char_t *>(TraceStatStr[idx]);                                                             \
     KeyValue kv = {k, v};                                                                                            \
     DlogWithKV(GE_MODULE_NAME, DLOG_TRACE, &kv, 1, "%lu %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
   } while (false)
@@ -110,7 +110,7 @@ inline bool IsLogEnable(int module_name, int log_level) {
 // print memory when it is greater than 1KB.
 #define GE_PRINT_DYNAMIC_MEMORY(FUNC, PURPOSE, SIZE)                                                        \
   do {                                                                                                      \
-    if ((SIZE) > 1024) {                                                                                    \
+    if (static_cast<size_t>(SIZE) > 1024UL) {                                                               \
       GELOGI("MallocMemory, func=%s, size=%zu, purpose=%s", (#FUNC), static_cast<size_t>(SIZE), (PURPOSE)); \
     }                                                                                                       \
   } while (false)

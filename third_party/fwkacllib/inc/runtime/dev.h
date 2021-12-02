@@ -1,17 +1,7 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
+ * Description: dev.h
+ * Create: 2020-01-01
  */
 
 #ifndef CCE_RUNTIME_DEVICE_H
@@ -146,30 +136,30 @@ RTS_API rtError_t rtGetDeviceIDs(uint32_t *devices, uint32_t len);
                     INFO_TYPE_IP,
                     INFO_TYPE_ENDIAN,
                } DEV_INFO_TYPE;
- * @param [out] value   the device info
+ * @param [out] val   the device info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_DRV_ERR for error
  */
-RTS_API rtError_t rtGetDeviceInfo(uint32_t deviceId, int32_t moduleType, int32_t infoType, int64_t *value);
+RTS_API rtError_t rtGetDeviceInfo(uint32_t deviceId, int32_t moduleType, int32_t infoType, int64_t *val);
 
 /**
  * @ingroup dvrt_dev
  * @brief set target device for current thread
- * @param [int] device   the device id
+ * @param [int] devId   the device id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetDevice(int32_t device);
+RTS_API rtError_t rtSetDevice(int32_t devId);
 
 /**
  * @ingroup dvrt_dev
  * @brief set target device for current thread
- * @param [int] device   the device id
+ * @param [int] devId   the device id
  * @param [int] deviceMode   the device mode
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetDeviceV2(int32_t device, rtDeviceMode deviceMode);
+RTS_API rtError_t rtSetDeviceV2(int32_t devId, rtDeviceMode deviceMode);
 
 /**
  * @ingroup dvrt_dev
@@ -201,11 +191,11 @@ RTS_API rtError_t rtGetDie(int32_t *die);
 /**
  * @ingroup dvrt_dev
  * @brief set target device for current thread
- * @param [int] device   the device id
+ * @param [int] devId   the device id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetDeviceEx(int32_t device);
+RTS_API rtError_t rtSetDeviceEx(int32_t devId);
 
 /**
  * @ingroup dvrt_dev
@@ -250,13 +240,13 @@ RTS_API rtError_t rtDisableP2P(uint32_t devIdDes, uint32_t phyIdSrc);
 /**
  * @ingroup dvrt_dev
  * @brief get cability of P2P omemry copy betwen device and peeredevic.
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] peerDevice   the physical device id
  * @param [outv] *canAccessPeer   1:enable 0:disable
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDeviceCanAccessPeer(int32_t *canAccessPeer, uint32_t device, uint32_t peerDevice);
+RTS_API rtError_t rtDeviceCanAccessPeer(int32_t *canAccessPeer, uint32_t devId, uint32_t peerDevice);
 
 /**
  * @ingroup dvrt_dev
@@ -280,11 +270,11 @@ RTS_API rtError_t rtDeviceGetBareTgid(uint32_t *pid);
 /**
  * @ingroup dvrt_dev
  * @brief get target device of current thread
- * @param [in|out] device   the device id
+ * @param [in|out] devId   the device id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetDevice(int32_t *device);
+RTS_API rtError_t rtGetDevice(int32_t *devId);
 
 /**
  * @ingroup dvrt_dev
@@ -292,7 +282,7 @@ RTS_API rtError_t rtGetDevice(int32_t *device);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDeviceReset(int32_t device);
+RTS_API rtError_t rtDeviceReset(int32_t devId);
 
 /**
  * @ingroup dvrt_dev
@@ -300,19 +290,19 @@ RTS_API rtError_t rtDeviceReset(int32_t device);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDeviceResetEx(int32_t device);
+RTS_API rtError_t rtDeviceResetEx(int32_t devId);
 
 /**
  * @ingroup dvrt_dev
  * @brief get total device infomation.
- * @param [in] device   the device id
+ * @param [in] devId   the device id
  * @param [in] type     limit type RT_LIMIT_TYPE_LOW_POWER_TIMEOUT=0
- * @param [in] value    limit value
+ * @param [in] val    limit value
  * @param [out] info   the device info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDeviceSetLimit(int32_t device, rtLimitType_t type, uint32_t value);
+RTS_API rtError_t rtDeviceSetLimit(int32_t devId, rtLimitType_t type, uint32_t val);
 
 /**
  * @ingroup dvrt_dev
@@ -331,15 +321,6 @@ RTS_API rtError_t rtDeviceSynchronize(void);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDeviceGetStreamPriorityRange(int32_t *leastPriority, int32_t *greatestPriority);
-
-/**
- * @ingroup dvrt_dev
- * @brief Set exception handling callback function
- * @param [in] callback   rtExceptiontype
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtSetExceptCallback(rtErrorCallback callback);
 
 /**
  * @ingroup dvrt_dev
@@ -373,14 +354,14 @@ RTS_API rtError_t rtGetAicpuDeploy(rtAicpuDeployType_t *deployType);
  * @brief set chipType
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtSetSocVersion(const char_t *version);
+RTS_API rtError_t rtSetSocVersion(const char_t *ver);
 
 /**
  * @ingroup dvrt_dev
  * @brief get chipType
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtGetSocVersion(char_t *version, const uint32_t maxLen);
+RTS_API rtError_t rtGetSocVersion(char_t *ver, const uint32_t maxLen);
 
 /**
  * @ingroup dvrt_dev
@@ -388,10 +369,10 @@ RTS_API rtError_t rtGetSocVersion(char_t *version, const uint32_t maxLen);
  * @param [in] devId   the logical device id
  * @param [in] otherDevId   the other logical device id
  * @param [in] infoType   info type
- * @param [in|out] value   pair info
+ * @param [in|out] val   pair info
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtGetPairDevicesInfo(uint32_t devId, uint32_t otherDevId, int32_t infoType, int64_t *value);
+RTS_API rtError_t rtGetPairDevicesInfo(uint32_t devId, uint32_t otherDevId, int32_t infoType, int64_t *val);
 
 /**
  * @ingroup dvrt_dev
@@ -406,19 +387,19 @@ RTS_API rtError_t rtGetPairDevicesInfo(uint32_t devId, uint32_t otherDevId, int3
                     MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
                     MEMCPY_INFO _RSV,
                } rtMemcpyInfo_t;
- * @param [out] value  the capability info RT_CAPABILITY_SUPPORT or RT_CAPABILITY_NOT_SUPPORT
+ * @param [out] val  the capability info RT_CAPABILITY_SUPPORT or RT_CAPABILITY_NOT_SUPPORT
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, int64_t *value);
+RTS_API rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, int64_t *val);
 
 /**
  * @ingroup dvrt_dev
  * @brief set target device for current thread
- * @param [int] device   the device id
+ * @param [int] devId   the device id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t device);
+RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t devId);
 
 /**
  * @ingroup dvrt_dev
@@ -426,7 +407,7 @@ RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t device);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t device);
+RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t devId);
 
 /**
  * @ingroup dvrt_dev

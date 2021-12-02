@@ -57,15 +57,15 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup client
-  /// @brief add a graph with a specific graphId
-  /// @param [in] graphId graph id
+  /// @brief add a graph with a specific graph id
+  /// @param [in] graph_id graph id
   /// @return Status result of function
   ///
-  Status AddGraph(uint32_t graphId, const Graph &graph);
+  Status AddGraph(uint32_t graph_id, const Graph &graph);
 
   ///
   /// @ingroup client
-  /// @brief add a graph with a specific graphId and graphOptions
+  /// @brief add a graph with a specific graph id and graphOptions
   /// @param [in] graphId graph id
   /// @param [in] graph the graph
   /// @param [in] options graph options
@@ -106,10 +106,10 @@ class GE_FUNC_VISIBILITY Session {
   ///
   /// @ingroup ge_graph
   /// @brief remove a graph of the session with specific session id
-  /// @param [in] graphId graph id
+  /// @param [in] graph_d graph id
   /// @return Status result of function
   ///
-  Status RemoveGraph(uint32_t graphId);
+  Status RemoveGraph(uint32_t graph_id);
 
   ///
   /// @ingroup ge_graph
@@ -142,7 +142,7 @@ class GE_FUNC_VISIBILITY Session {
   ///
   Status BuildGraph(uint32_t graphId, const std::vector<InputTensorInfo> &inputs);
 
-  Status BuildGraph(uint32_t graphId, const std::vector<ge::Tensor> &inputs);  /*lint !e148*/
+  Status BuildGraph(uint32_t graphId, const std::vector<ge::Tensor> &inputs); /*lint !e148*/
 
   ///
   /// @ingroup ge_graph
@@ -189,7 +189,7 @@ class GE_FUNC_VISIBILITY Session {
 
   Status RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback);
 
-  bool IsGraphNeedRebuild(uint32_t graphId);
+  bool IsGraphNeedRebuild(uint32_t graph_id);
 
  private:
   uint64_t sessionId_;

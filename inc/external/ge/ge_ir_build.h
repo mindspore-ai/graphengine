@@ -36,14 +36,10 @@
 #include <memory>
 #include "graph/graph.h"
 #include "graph/ge_error_codes.h"
-
-namespace {
-const int IR_MAJOR_VERSION = 1;
-const int IR_MINOR_VERSION = 0;
-const int IR_PATCH_VERSION = 0;
-}  // namespace
-
 namespace ge {
+const int32_t IR_MAJOR_VERSION = 1;
+const int32_t IR_MINOR_VERSION = 0;
+const int32_t IR_PATCH_VERSION = 0;
 
 struct ModelBufferData {
   std::shared_ptr<uint8_t> data = nullptr;
@@ -117,7 +113,8 @@ GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *output_file, const M
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version);
+GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int32_t *major_version, int32_t *minor_version,
+                                                   int32_t *patch_version);
 
 /**
  * @ingroup AscendCL

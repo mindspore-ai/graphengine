@@ -1,17 +1,7 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
+ * Description: kernel.h
+ * Create: 2020-01-01
  */
 
 #ifndef CCE_RUNTIME_KERNEL_H
@@ -154,7 +144,7 @@ typedef enum tagRtDumpKind {
  * @ingroup rt_kernel
  * @brief report callback
  */
-typedef rtError_t (*rtKernelReportCallback)(rtStream_t stream, rtKernelInfo_t kernelInfo);
+typedef rtError_t (*rtKernelReportCallback)(rtStream_t stm, rtKernelInfo_t kernelInfo);
 
 /**
  * @ingroup rt_kernel
@@ -237,49 +227,49 @@ typedef void (*rtCallback_t)(void *fnData);
  * @ingroup rt_kernel
  * @brief register device binary
  * @param [in] bin   device binary description
- * @param [out] handle   device binary handle
+ * @param [out] hdl   device binary handle
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **handle);
+RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **hdl);
 
 /**
  * @ingroup rt_kernel
  * @brief register device binary with all kernel
  * @param [in] bin   device binary description
- * @param [out] handle   device binary handle
+ * @param [out] hdl   device binary handle
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **handle);
+RTS_API rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **hdl);
 
 /**
  * @ingroup rt_kernel
  * @brief register fast memeory device binary
- * @param [in] handle   device binary handle
+ * @param [in] hdl   device binary handle
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtBinaryRegisterToFastMemory(void *handle);
+RTS_API rtError_t rtBinaryRegisterToFastMemory(void *hdl);
 
 /**
  * @ingroup rt_kernel
  * @brief unregister device binary
- * @param [in] handle   device binary handle
+ * @param [in] hdl   device binary handle
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDevBinaryUnRegister(void *handle);
+RTS_API rtError_t rtDevBinaryUnRegister(void *hdl);
 
 /**
  * @ingroup rt_kernel
  * @brief register device binary metadata
- * @param [in] handle    device binary description
+ * @param [in] hdl    device binary description
  * @param [in] metadata  device binary metadata
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMetadataRegister(void *handle, const char_t *metadata);
+RTS_API rtError_t rtMetadataRegister(void *hdl, const char_t *metadata);
 
 /**
  * @ingroup rt_kernel
@@ -343,7 +333,7 @@ RTS_API rtError_t rtQueryFunctionRegistered(const char_t *stubName);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelConfigDump(uint32_t kind, uint32_t dumpSizePerBlock, uint32_t blockDim, void **dumpBaseAddr,
-                                     rtStream_t stream);
+                                     rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
@@ -353,28 +343,28 @@ RTS_API rtError_t rtKernelConfigDump(uint32_t kind, uint32_t dumpSizePerBlock, u
  * @param [in] args   argments address for kernel function
  * @param [in] argsSize   argements size
  * @param [in] smDesc   shared memory description
- * @param [in] stream   associated stream
+ * @param [in] stm   associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *args, uint32_t argsSize,
-                                 rtSmDesc_t *smDesc, rtStream_t stream);
+                                 rtSmDesc_t *smDesc, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
  * @brief launch kernel with handle to device
- * @param [in] handle   program
+ * @param [in] hdl   program
  * @param [in] devFunc   device function description.
  * @param [in] blockDim   block dimentions
  * @param [in] args   argments address for kernel function
  * @param [in] argsSize   argements size
  * @param [in] smDesc   shared memory description
- * @param [in] stream   associated stream
+ * @param [in] stm   associated stream
  * @param [in] kernelInfo   kernel info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim,
+RTS_API rtError_t rtKernelLaunchWithHandle(void *hdl, const void *devFunc, uint32_t blockDim,
                                            void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream_,
                                            const void *kernelInfo);
 
@@ -386,13 +376,13 @@ RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, ui
  * @param [in] args   argments address for kernel function
  * @param [in] argsSize   argements size
  * @param [in] smDesc   shared memory description
- * @param [in] stream   associated stream
+ * @param [in] stm   associated stream
  * @param [in] flag   dump flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim, void *args, uint32_t argsSize,
-                                         rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
+                                         rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags);
 
 /**
  * @ingroup rt_kernel(abandoned)
@@ -400,11 +390,11 @@ RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim
  * @param [in] args       argments address for kernel function
  * @param [in] argsSize   argements size
  * @param [in] flags      launch flags
- * @param [in] stream     associated stream
+ * @param [in] stm     associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchEx(void *args, uint32_t argsSize, uint32_t flags, rtStream_t stream);
+RTS_API rtError_t rtKernelLaunchEx(void *args, uint32_t argsSize, uint32_t flags, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel(in use)
@@ -413,7 +403,7 @@ RTS_API rtError_t rtKernelLaunchEx(void *args, uint32_t argsSize, uint32_t flags
  * @param [in] args       argments address for kernel function
  * @param [in] argsSize   argements size
  * @param [in] flags      launch flags
- * @param [in] stream     associated stream
+ * @param [in] stm     associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -429,12 +419,12 @@ RTS_API rtError_t rtKernelLaunchFwk(const char_t *opName, void *args, uint32_t a
  * @param [in] args          argments address for kernel function
  * @param [in] argsSize      argments size
  * @param [in] smDesc        shared memory description
- * @param [in] stream        associated stream
+ * @param [in] stm        associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, uint32_t blockDim, const void *args,
-                                    uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream);
+                                    uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel(in use)
@@ -444,12 +434,12 @@ RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, 
  * @param [in] args          argments address for kernel function
  * @param [in] argsSize      argments size
  * @param [in] smDesc        shared memory description
- * @param [in] stream        associated stream
+ * @param [in] stm        associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames,
-    uint32_t blockDim, const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream);
+    uint32_t blockDim, const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel(abandoned)
@@ -460,13 +450,13 @@ RTS_API rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames,
  * @param [in] args          argments address for kernel function
  * @param [in] argsSize      argments size
  * @param [in] smDesc        shared memory description
- * @param [in] stream        associated stream
+ * @param [in] stm        associated stream
  * @param [in] flag          dump flag or others function flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kernelName, uint32_t blockDim,
-                                            const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream,
+                                            const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm,
                                             uint32_t flags);
 
 /**
@@ -477,25 +467,25 @@ RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kern
  * @param [in] args          argments address for kernel function
  * @param [in] argsSize      argments size
  * @param [in] smDesc        shared memory description
- * @param [in] stream        associated stream
+ * @param [in] stm        associated stream
  * @param [in] flag          dump flag or others function flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim,
-    const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
+    const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags);
 
 /**
  * @ingroup rt_kernel
  * @brief L1 fusion dump addr transfered to device
- * @param [in] model    handle info
+ * @param [in] mdl    handle info
  * @param [in] addr     ddr address of L1 Fusion Dump
  * @param [in] dumpSize memory size
  * @param [in] flag     memory flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDumpAddrSet(rtModel_t model, void *addr, uint32_t dumpSize, uint32_t flag);
+RTS_API rtError_t rtDumpAddrSet(rtModel_t mdl, void *addr, uint32_t dumpSize, uint32_t flag);
 
 /**
  * @ingroup rt_kernel
@@ -514,14 +504,14 @@ RTS_API rtError_t rtDatadumpInfoLoad(const void *dumpInfo, uint32_t length);
  * @brief configure call argment for next rtLaunch in current thread
  * @param [in] numBlocks   block dimentions
  * @param [in] smDesc   shared memory description
- * @param [in] stream   associated stream
+ * @param [in] stm   associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 #ifdef __cplusplus
-RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc = nullptr, rtStream_t stream = nullptr);
+RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc = nullptr, rtStream_t stm = nullptr);
 #else
-RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc, rtStream_t stream);
+RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc, rtStream_t stm);
 
 #endif
 #endif  // __CLANG_CCE_RUNTIME_H__
@@ -563,20 +553,20 @@ RTS_API rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_
 /**
  * @ingroup rt_kernel
  * @brief start fusion kernels.
- * @param [in] stream   stream for fusion kernels
+ * @param [in] stm   stream for fusion kernels
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelFusionStart(rtStream_t stream);
+RTS_API rtError_t rtKernelFusionStart(rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
  * @brief end fusion kernels.
- * @param [in] stream   stream for fusion kernels
+ * @param [in] stm   stream for fusion kernels
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelFusionEnd(rtStream_t stream);
+RTS_API rtError_t rtKernelFusionEnd(rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
@@ -591,22 +581,22 @@ RTS_API rtError_t rtSetKernelReportCallback(rtKernelReportCallback callBack);
  * @ingroup rt_kernel
  * @brief subscribe stream callback report.
  * @param [in] threadId   thread id for stream
- * @param [in] stream   stream for subscribe
+ * @param [in] stm   stream for subscribe
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stream);
+RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
  * @brief add callback launch task in stream.
  * @param [in] callBackFunc   app callback function
  * @param [in] fnData   user data
- * @param [in] stream   subscribed stream
+ * @param [in] stm   subscribed stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtStream_t stream, bool isBlock);
+RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtStream_t stm, bool isBlock);
 
 /**
  * @ingroup rt_kernel
@@ -621,11 +611,11 @@ RTS_API rtError_t rtProcessReport(int32_t timeout);
  * @ingroup rt_kernel
  * @brief unsubscribe callback report.
  * @param [in] threadId   thread id for stream
- * @param [in] stream   stream for subscribe
+ * @param [in] stm   stream for subscribe
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stream);
+RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stm);
 
 /**
  * @ingroup profiling_base
@@ -633,7 +623,7 @@ RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stream);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtStartOnlineProf(rtStream_t stream, uint32_t sampleNum);
+RTS_API rtError_t rtStartOnlineProf(rtStream_t stm, uint32_t sampleNum);
 
 /**
  * @ingroup profiling_base
@@ -641,7 +631,7 @@ RTS_API rtError_t rtStartOnlineProf(rtStream_t stream, uint32_t sampleNum);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtStopOnlineProf(rtStream_t stream);
+RTS_API rtError_t rtStopOnlineProf(rtStream_t stm);
 
 /**
  * @ingroup profiling_base
@@ -649,7 +639,7 @@ RTS_API rtError_t rtStopOnlineProf(rtStream_t stream);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetOnlineProfData(rtStream_t stream, rtProfDataInfo_t *pProfData, uint32_t profDataNum);
+RTS_API rtError_t rtGetOnlineProfData(rtStream_t stm, rtProfDataInfo_t *pProfData, uint32_t profDataNum);
 
 /**
  * @ingroup profiling_base
@@ -674,28 +664,28 @@ RTS_API rtError_t rtStopMDCProfiler(void *addr);
  * @param [in] blockDim   block dimentions
  * @param [in] argsInfo   argments info address for kernel function
  * @param [in] smDesc   shared memory description
- * @param [in] stream   associated stream
+ * @param [in] stm   associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithTiling(const void *stubFunc, uint32_t blockDim,
-    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stream);
+    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
  * @brief launch kernel with handle and tiling data to device
- * @param [in] handle   program
+ * @param [in] hdl   program
  * @param [in] devFunc   device function description.
  * @param [in] blockDim   block dimentions
  * @param [in] argsInfo   argments info address for kernel function
  * @param [in] smDesc   shared memory description
- * @param [in] stream   associated stream
+ * @param [in] stm   associated stream
  * @param [in] kernelInfo   kernel info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchWithHandleAndTiling(void *handle, const void *devFunc, uint32_t blockDim,
-    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stream, const void* kernelInfo);
+RTS_API rtError_t rtKernelLaunchWithHandleAndTiling(void *hdl, const void *devFunc, uint32_t blockDim,
+    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm, const void* kernelInfo);
 
 #if defined(__cplusplus)
 }

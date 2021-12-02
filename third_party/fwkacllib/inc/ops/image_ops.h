@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -586,6 +586,40 @@ REG_OP(ResizeNearestNeighborV2GradD)
 channels], The image tensor that was resized . \n
 
 *@par Attributes:
+*@li align_corners: An optional bool. Defaults to False. If true, the centers of
+the 4 corner pixels of the input and grad tensors are aligned. Defaults to
+false .
+*@li half_pixel_centers: indicates if the offset coordinates are normalized. Defaults
+to false . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as original_image . \n
+
+*@attention Constraints:
+*Input grads must be a 4-D tensor . \n
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeBilinearV2Grad operator.
+*/
+
+REG_OP(ResizeBilinearV2Grad)
+    .INPUT(grads, TensorType({DT_FLOAT}))
+    .INPUT(original_image, TensorType::FloatingDataType())
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .ATTR(align_corners, Bool, false)
+    .ATTR(half_pixel_centers, Bool, false)
+    .OP_END_FACTORY_REG(ResizeBilinearV2Grad)
+
+/**
+*@brief Computes the gradient of bilinear interpolation . \n
+
+*@par Inputs:
+*Input grads must be a 4-D tensor. Inputs include:
+*@li grads: A Tensor of type float32. Must set the format, supported format list ["NCHW, NHWC"]
+*@li original_image: A Tensor. 4-D shape. Must set the format, supported format list ["NCHW, NHWC"]
+channels], The image tensor that was resized . \n
+
+*@par Attributes:
 *@li size: An optional listint. Defaults to {}.
 *@par Attributes:
 *@li ori_image_size: An optional listint. Defaults to {}.
@@ -607,10 +641,10 @@ to false . \n
 *Input grads must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
-*Compatible with tensorflow ResizeBilinearV2Grad operator.
+*Compatible with mindspore ResizeBilinearV2Grad operator.
 */
 
-REG_OP(ResizeBilinearV2Grad)
+REG_OP(SyncResizeBilinearV2Grad)
     .INPUT(grads, TensorType({DT_FLOAT}))
     .INPUT(original_image, TensorType::FloatingDataType())
     .OUTPUT(y, TensorType({DT_FLOAT}))
@@ -620,7 +654,40 @@ REG_OP(ResizeBilinearV2Grad)
     .ATTR(dst_start_w, Int, 0)
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
-    .OP_END_FACTORY_REG(ResizeBilinearV2Grad)
+    .OP_END_FACTORY_REG(SyncResizeBilinearV2Grad)
+
+/**
+*@brief Resize images to size using bilinear interpolation . \n
+
+*@par Inputs:
+*Input images must be a 4-D tensor. Inputs include:
+*@li x: 4-D tensor. Must set the format, supported format list ["NCHW, NHWC"]
+*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new
+size for the images . \n
+
+*@par Attributes:
+* @li align_corners: If true, the centers of the 4 corner pixels of the input and
+output tensors are aligned, preserving the values at the corner pixels.
+Defaults to false .
+* @li half_pixel_centers: An optional bool. Defaults to False . \n
+*@par Outputs:
+*y: 4-D with shape [batch, new_height, new_width, channels] . \n
+
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeBilinearV2 operator.
+*/
+
+REG_OP(ResizeBilinearV2)
+    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
+                               DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(size, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .ATTR(align_corners, Bool, false)
+    .ATTR(half_pixel_centers, Bool, false)
+    .OP_END_FACTORY_REG(ResizeBilinearV2)
 
 /**
 *@brief Resize images to size using bilinear interpolation . \n
@@ -647,12 +714,11 @@ Defaults to false .
 *Input images can be of different types but output images are always float . \n
 
 *@par Third-party framework compatibility
-*Compatible with tensorflow ResizeBilinearV2 operator.
+*Compatible with mindspore ResizeBilinearV2 operator.
 */
 
-REG_OP(ResizeBilinearV2)
-    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                               DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+REG_OP(SyncResizeBilinearV2)
+    .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(size, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .ATTR(ori_image_size, ListInt, {})
@@ -661,7 +727,7 @@ REG_OP(ResizeBilinearV2)
     .ATTR(dst_start_w, Int, 0)
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
-    .OP_END_FACTORY_REG(ResizeBilinearV2)
+    .OP_END_FACTORY_REG(SyncResizeBilinearV2)
 
 /**
 *@brief Converts one or more images from RGB to HSV . \n

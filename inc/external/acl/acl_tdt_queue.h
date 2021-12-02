@@ -86,7 +86,7 @@ ACL_FUNC_VISIBILITY aclError acltdtDestroyQueue(uint32_t qid);
  *
  * @param qid [IN] qid
  * @param buf [IN] acltdtBuf
- * @param timeout [IN] timeout
+ * @param timeout [IN] timeout, -1 means blocking
  *
  * @retval ACL_SUCCESS  The function is successfully executed.
  * @retval OtherValues Failure
@@ -101,7 +101,7 @@ ACL_FUNC_VISIBILITY aclError acltdtEnqueue(uint32_t qid, acltdtBuf buf, int32_t 
  *
  * @param qid [IN] qid
  * @param buf [OUT] pointer to the acltdtBuf
- * @param timeout [IN] timeout
+ * @param timeout [IN] timeout, -1 means blocking
  *
  * @retval ACL_SUCCESS  The function is successfully executed.
  * @retval OtherValues Failure
@@ -112,12 +112,50 @@ ACL_FUNC_VISIBILITY aclError acltdtDequeue(uint32_t qid, acltdtBuf *buf, int32_t
 
 /**
  * @ingroup AscendCL
+ * @brief enqueue function
+ *
+ * @param qid [IN] qid
+ * @param data [IN] the pointer to data buf
+ * @param dataSize [IN] the size of data buf
+ * @param userData [IN] the pointer to user data buf
+ * @param userDataSize [IN] the size of user data buf
+ * @param timeout [IN] timeout, -1 means blocking
+ * @param rsv [IN] reserved param
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtDequeueData
+ */
+ACL_FUNC_VISIBILITY aclError acltdtEnqueueData(uint32_t qid, const void *data, size_t dataSize, const void *userData,
+                                               size_t userDataSize, int32_t timeout, uint32_t rsv);
+
+/**
+ * @ingroup AscendCL
+ * @brief dequeue function
+ *
+ * @param qid [IN] qid
+ * @param data [IN|OUT] the pointer to data buf
+ * @param dataSize [IN] the size of data buf
+ * @param retDataSize [OUT] the return size of data buf
+ * @param userData [IN|OUT] the pointer to user data buf
+ * @param userDataSize [IN] the size of user data buf
+ * @param timeout [IN] timeout, -1 means blocking
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtEnqueueData
+ */
+ACL_FUNC_VISIBILITY aclError acltdtDequeueData(uint32_t qid, void *data, size_t dataSize, size_t *retDataSize,
+                                               void *userData, size_t userDataSize, int32_t timeout);
+
+/**
+ * @ingroup AscendCL
  * @brief grant queue to other process
  *
  * @param qid [IN] qid
  * @param pid [IN] pid of dst process
  * @param permission [IN] permission of queue
- * @param timeout [IN] timeout
+ * @param timeout [IN] timeout, -1 means blocking
  *
  * @retval ACL_SUCCESS  The function is successfully executed.
  * @retval OtherValues Failure
@@ -131,7 +169,7 @@ ACL_FUNC_VISIBILITY aclError acltdtGrantQueue(uint32_t qid, int32_t pid, uint32_
  * @brief attach queue in current process
  *
  * @param qid [IN] qid
- * @param timeout [IN] timeout
+ * @param timeout [IN] timeout, -1 means blocking
  * @param permission [OUT] permission of queue
  *
  * @retval ACL_SUCCESS  The function is successfully executed.

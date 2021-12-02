@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -691,7 +691,7 @@ REG_OP(Conj)
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(target, TensorType({DT_INT32}))
-    .INPUT(weight, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")

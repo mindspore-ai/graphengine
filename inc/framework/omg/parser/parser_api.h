@@ -17,7 +17,6 @@
 #ifndef INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
 #define INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
 
-#include <iostream>
 #include <map>
 #include <string>
 #include "external/ge/ge_api_error_codes.h"

@@ -113,6 +113,7 @@ static const int ACL_ERROR_PROF_API_CONFLICT = 148047;
 static const int ACL_ERROR_INVALID_MAX_OPQUEUE_NUM_CONFIG = 148048;
 static const int ACL_ERROR_INVALID_OPP_PATH = 148049;
 static const int ACL_ERROR_OP_UNSUPPORTED_DYNAMIC = 148050;
+static const int ACL_ERROR_RELATIVE_RESOURCE_NOT_CLEARED = 148051;
 
 static const int ACL_ERROR_BAD_ALLOC = 200000;
 static const int ACL_ERROR_API_NOT_SUPPORT = 200001;
@@ -176,10 +177,7 @@ typedef enum {
   ACL_ERROR = 3,
 } aclLogLevel;
 
-typedef enum {
-  ACL_MEMTYPE_DEVICE = 0,
-  ACL_MEMTYPE_HOST = 1,
-} aclMemType;
+typedef enum { ACL_MEMTYPE_DEVICE = 0, ACL_MEMTYPE_HOST = 1, ACL_MEMTYPE_HOST_COMPILE_INDEPENDENT = 2 } aclMemType;
 
 /**
  * @ingroup AscendCL
@@ -601,7 +599,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorConst(aclTensorDesc *desc, void *dataBu
  * @brief Set tensor memory type specified by the tensor description
  *
  * @param  desc [OUT]      pointer to the instance of aclTensorDesc
- * @param  memType [IN]       ACL_MEMTYPE_DEVICE means device, ACL_MEMTYPE_HOST means host
+ * @param  memType [IN]       ACL_MEMTYPE_DEVICE means device, ACL_MEMTYPE_HOST or
+ * ACL_MEMTYPE_HOST_COMPILE_INDEPENDENT means host
  *
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure

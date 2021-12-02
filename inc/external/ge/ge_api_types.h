@@ -24,6 +24,7 @@
 #include <functional>
 #include <memory>
 #include "graph/tensor.h"
+#include "graph/types.h"
 
 namespace ge {
 // Option key: graph run mode
@@ -337,6 +338,8 @@ const std::string MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 
 const std::string OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 
+const char *const FILE_CONSTANT_PATH = "ge.exec.value_bins";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -353,7 +356,7 @@ struct OutputTensorInfo {
   std::vector<int64_t> dims;        // shape description
   std::unique_ptr<uint8_t[]> data;  // tensor data
   int64_t length;                   // tensor length
-  OutputTensorInfo() : data_type(0), dims({}), data(nullptr), length(0) {}
+  OutputTensorInfo() : data_type(0U), dims({}), data(nullptr), length(0) {}
   OutputTensorInfo(OutputTensorInfo &&out)
       : data_type(out.data_type), dims(out.dims), data(std::move(out.data)), length(out.length) {}
 

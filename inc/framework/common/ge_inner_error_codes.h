@@ -313,7 +313,10 @@ GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, 3, "Graph ma
 GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED, 4, "Graph manager finalize failed.");
 GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_SAVE_MODEL_FAILED, 5, "Graph manager save model failed.");
 
-#define RT_ERROR_TO_GE_STATUS(RT_ERROR) static_cast<const Status>(RT_ERROR)
+static inline Status TransRtErrorCode(const int32_t error_code) {
+  return static_cast<Status>(error_code);
+}
+#define RT_ERROR_TO_GE_STATUS(RT_ERROR) TransRtErrorCode(RT_ERROR)
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_

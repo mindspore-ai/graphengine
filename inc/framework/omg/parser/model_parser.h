@@ -25,8 +25,6 @@
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/op_desc.h"
-#include "graph/operator.h"
-#include "graph/range_vistor.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
@@ -54,7 +52,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status Parse(const char *file, ge::Graph &graph) = 0;
+  virtual domi::Status Parse(const char *file, ge::Graph &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -66,7 +64,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return FAILED
    * @author
    */
-  virtual Status ParseFromMemory(const char *data, uint32_t size, ge::ComputeGraphPtr &graph) = 0;
+  virtual domi::Status ParseFromMemory(const char *data, uint32_t size, ge::ComputeGraphPtr &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -78,7 +76,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return FAILED
    * @author
    */
-  virtual Status ParseFromMemory(const char *data, uint32_t size, ge::Graph &graph) = 0;
+  virtual domi::Status ParseFromMemory(const char *data, uint32_t size, ge::Graph &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -88,7 +86,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ParseProto(const google::protobuf::Message *proto, ge::ComputeGraphPtr &graph) = 0;
+  virtual domi::Status ParseProto(const google::protobuf::Message *proto, ge::ComputeGraphPtr &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -99,8 +97,8 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ParseProtoWithSubgraph(const google::protobuf::Message *proto, GetGraphCallback callback,
-                                        ge::ComputeGraphPtr &graph) = 0;
+  virtual domi::Status ParseProtoWithSubgraph(const google::protobuf::Message *proto, GetGraphCallback callback,
+                                              ge::ComputeGraphPtr &graph) = 0;
   /**
    * @ingroup domi_omg
    * @brief Convert model files to JSON format
@@ -109,7 +107,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ToJson(const char *model_file, const char *json_file) {
+  virtual domi::Status ToJson(const char *model_file, const char *json_file) {
     return domi::SUCCESS;
   }
 
@@ -121,7 +119,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    */
   virtual ge::DataType ConvertToGeDataType(const uint32_t type) = 0;
 
-  virtual Status ParseAllGraph(const google::protobuf::Message *root_proto, ge::ComputeGraphPtr &root_graph) = 0;
+  virtual domi::Status ParseAllGraph(const google::protobuf::Message *root_proto, ge::ComputeGraphPtr &root_graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -131,7 +129,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) {
+  virtual domi::Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) {
     return UNSUPPORTED;
   }
 
@@ -144,8 +142,8 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
-                                        ge::ComputeGraphPtr &graph) {
+  virtual domi::Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
+                                              ge::ComputeGraphPtr &graph) {
     return UNSUPPORTED;
   }
 };

@@ -1,17 +1,7 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
+ * Description: mem.h
+ * Create: 2020-01-01
  */
 
 #ifndef CCE_RUNTIME_MEM_H
@@ -59,12 +49,13 @@ extern "C" {
  * @brief memory Policy
  */
 #define RT_MEMORY_POLICY_NONE (0x0U)                     // Malloc mem prior huge page, then default page
-#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST (0x1U << 10U)    // Malloc mem prior huge page, then default page
-#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY (0x1U << 11U)     // Malloc mem only use huge page
-#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY (0x1U << 12U)  // Malloc mem only use default page
-#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST_P2P (0x1U << 13U) // Malloc mem prior huge page, then default page, for p2p
-#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY_P2P (0x1U << 14U)     // Malloc mem only use huge page, use for p2p
-#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY_P2P (0x1U << 15U)  // Malloc mem only use default page, use for p2p
+#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST (0x400U)    // Malloc mem prior huge page, then default page, 0x1U << 10U
+#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY (0x800U)     // Malloc mem only use huge page, 0x1U << 11U
+#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY (0x1000U)  // Malloc mem only use default page, 0x1U << 12U
+// Malloc mem prior huge page, then default page, for p2p, 0x1U << 13U
+#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST_P2P (0x2000U)
+#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY_P2P (0x4000U)     // Malloc mem only use huge page, use for p2p, 0x1U << 14U
+#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY_P2P (0x8000U)  // Malloc mem only use default page, use for p2p, 0x1U << 15U
 
 #define MEM_ALLOC_TYPE_BIT (0x3FFU)  // mem type bit in <0, 9>
 
@@ -130,8 +121,8 @@ typedef enum tagRtDataType {
     RT_DATA_TYPE_BFP16 = 6, // bfp16
     RT_DATA_TYPE_BFP32 = 7, // bfp32
     RT_DATA_TYPE_UINT8 = 8, // uint8
-    RT_DATA_TYPE_UINT16= 9, // uint16
-    RT_DATA_TYPE_UINT32= 10,// uint32
+    RT_DATA_TYPE_UINT16 = 9, // uint16
+    RT_DATA_TYPE_UINT32 = 10, // uint32
     RT_DATA_TYPE_END = 11,
 } rtDataType_t;
 
@@ -188,19 +179,19 @@ typedef struct tagRtPointerAttributes {
 } rtPointerAttributes_t;
 
 
-typedef struct rtMallocHostSharedMemoryIn {
+typedef struct {
     const char_t *name;
     const uint64_t size;
     uint32_t flag;
 } rtMallocHostSharedMemoryIn;
 
-typedef struct rtMallocHostSharedMemoryOut {
+typedef struct {
     int32_t fd;
     void *ptr;
     void *devPtr;
 } rtMallocHostSharedMemoryOut;
 
-typedef struct rtFreeHostSharedMemoryIn {
+typedef struct {
     const char_t *name;
     const uint64_t size;
     int32_t fd;
@@ -311,17 +302,6 @@ RTS_API rtError_t rtMemFreeManaged(void *ptr);
 
 /**
  * @ingroup dvrt_mem
- * @brief Specifies how memory is use
- * @param [in] devPtr   memory pointer
- * @param [in] size     memory size
- * @param [in] advise   reserved, set to 1
- * @return RT_ERROR_NONE for ok
- * @return others for error
- */
-RTS_API rtError_t rtMemAdvise(void *devPtr, uint64_t size, uint32_t advise);
-
-/**
- * @ingroup dvrt_mem
  * @brief alloc cached device memory
  * @param [in| devPtr   memory pointer
  * @param [in] size     memory size
@@ -354,12 +334,12 @@ RTS_API rtError_t rtInvalidCache(void *base, size_t len);
  * @param [in] dst   destination address pointer
  * @param [in] Max length of destination address memory
  * @param [in] src   source address pointer
- * @param [in] count   the number of byte to copy
+ * @param [in] cnt   the number of byte to copy
  * @param [in] kind   memcpy type
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_t count, rtMemcpyKind_t kind);
+RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtMemcpyKind_t kind);
 
 /**
  * @ingroup dvrt_mem
@@ -367,14 +347,14 @@ RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_
  * @param [in] dst   destination address pointer
  * @param [in] Max length of destination address memory
  * @param [in] src   source address pointer
- * @param [in] count   the number of byte to copy
+ * @param [in] cnt   the number of byte to copy
  * @param [in] kind   memcpy type
- * @param [in] stream   asynchronized task stream
+ * @param [in] stm   asynchronized task stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, uint64_t count, rtMemcpyKind_t kind,
-                                rtStream_t stream);
+RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtMemcpyKind_t kind,
+                                rtStream_t stm);
 
 /**
  * @ingroup dvrt_mem
@@ -382,15 +362,15 @@ RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, ui
  * @param [in] dst   destination address pointer
  * @param [in] Max length of destination address memory
  * @param [in] src   source address pointer
- * @param [in] count   the number of byte to copy
+ * @param [in] cnt   the number of byte to copy
  * @param [in] kind   memcpy type
  * @param [in] type   data type
- * @param [in] stream   asynchronized task stream
+ * @param [in] stm   asynchronized task stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtReduceAsync(void *dst, uint64_t destMax, const void *src, uint64_t count, rtRecudeKind_t kind,
-                                rtDataType_t type, rtStream_t stream);
+RTS_API rtError_t rtReduceAsync(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtRecudeKind_t kind,
+                                rtDataType_t type, rtStream_t stm);
 
 /**
  * @ingroup dvrt_mem
@@ -418,12 +398,12 @@ RTS_API rtError_t rtMemcpy2d(void *dst, uint64_t dstPitch, const void *src, uint
  * @param [in] width    width of matrix transfer
  * @param [in] height   height of matrix transfer
  * @param [in] kind     memcpy type
- * @param [in] stream   asynchronized task stream
+ * @param [in] stm      asynchronized task stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemcpy2dAsync(void *dst, uint64_t dstPitch, const void *src, uint64_t srcPitch, uint64_t width,
-                                  uint64_t height, rtMemcpyKind_t kind, rtStream_t stream);
+                                  uint64_t height, rtMemcpyKind_t kind, rtStream_t stm);
 
 /**
  * @ingroup dvrt_mem
@@ -449,25 +429,25 @@ RTS_API rtError_t rtSetAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize)
  * @brief set memory with uint32_t value
  * @param [in] devPtr
  * @param [in] Max length of destination address memory
- * @param [in] value
- * @param [in] count byte num
+ * @param [in] val
+ * @param [in] cnt byte num
  * @return RT_ERROR_NONE for ok, errno for failed
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemset(void *devPtr, uint64_t destMax, uint32_t value, uint64_t count);
+RTS_API rtError_t rtMemset(void *devPtr, uint64_t destMax, uint32_t val, uint64_t cnt);
 
 /**
  * @ingroup dvrt_mem
  * @brief set memory with uint32_t value async
  * @param [in] devPtr
  * @param [in] Max length of destination address memory
- * @param [in] value
- * @param [in] count byte num
- * @param [in] stream
+ * @param [in] val
+ * @param [in] cnt byte num
+ * @param [in] stm
  * @return RT_ERROR_NONE for ok, errno for failed
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemsetAsync(void *ptr, uint64_t destMax, uint32_t value, uint64_t count, rtStream_t stream);
+RTS_API rtError_t rtMemsetAsync(void *ptr, uint64_t destMax, uint32_t val, uint64_t cnt, rtStream_t stm);
 
 /**
  * @ingroup dvrt_mem
@@ -494,11 +474,11 @@ RTS_API rtError_t rtMemGetInfoEx(rtMemInfoType_t memInfoType, size_t *freeSize, 
  * @brief set memory with uint32_t value
  * @param [in] devPtr
  * @param [in] len
- * @param [in] device
+ * @param [in] devId
  * @return RT_ERROR_NONE for ok, errno for failed
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemPrefetchToDevice(void *devPtr, uint64_t len, int32_t device);
+RTS_API rtError_t rtMemPrefetchToDevice(void *devPtr, uint64_t len, int32_t devId);
 
 /**
  * @ingroup dvrt_mem
@@ -557,14 +537,14 @@ RTS_API rtError_t rtIpcCloseMemory(const void *ptr);
 /**
  * @ingroup dvrt_mem
  * @brief HCCL Async memory cpy
- * @param [in] index sq index
+ * @param [in] sqIndex sq index
  * @param [in] wqeIndex moudle index
- * @param [in] stream asynchronized task stream
+ * @param [in] stm asynchronized task stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqeIndex, rtStream_t stream);
+RTS_API rtError_t rtRDMASend(uint32_t sqIndex, uint32_t wqeIndex, rtStream_t stm);
 
 /**
  * @ingroup dvrt_mem
@@ -583,12 +563,12 @@ RTS_API rtError_t rtSetIpcMemPid(const char_t *name, int32_t pid[], int32_t num)
  * @brief HCCL Async memory cpy
  * @param [in] dbindex single device 0
  * @param [in] dbinfo doorbell info
- * @param [in] stream asynchronized task stream
+ * @param [in] stm asynchronized task stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stream);
+RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stm);
 
 #if defined(__cplusplus)
 }

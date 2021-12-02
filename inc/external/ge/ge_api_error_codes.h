@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 #include "ge_error_codes.h"
+#include "graph/types.h"
 
 namespace ge {
 #ifdef __GNUC__
@@ -35,7 +36,7 @@ class GE_FUNC_VISIBILITY StatusFactory {
     return &instance;
   }
 
-  void RegisterErrorNo(uint32_t err, const std::string &desc) {
+  void RegisterErrorNo(const uint32_t err, const std::string &desc) {
     // Avoid repeated addition
     if (err_desc_.find(err) != err_desc_.end()) {
       return;
@@ -43,19 +44,19 @@ class GE_FUNC_VISIBILITY StatusFactory {
     err_desc_[err] = desc;
   }
 
-  void RegisterErrorNo(uint32_t err, const char *desc) {
+  void RegisterErrorNo(const uint32_t err, const char *const desc) {
     if (desc == nullptr) {
       return;
     }
-    std::string error_desc = desc;
+    const std::string error_desc = desc;
     if (err_desc_.find(err) != err_desc_.end()) {
       return;
     }
     err_desc_[err] = error_desc;
   }
 
-  std::string GetErrDesc(uint32_t err) {
-    auto iter_find = err_desc_.find(err);
+  std::string GetErrDesc(const uint32_t err) {
+    const auto iter_find = err_desc_.find(err);
     if (iter_find == err_desc_.end()) {
       return "";
     }
@@ -72,23 +73,23 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
 class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
-  ErrorNoRegisterar(uint32_t err, const std::string &desc) {
+  ErrorNoRegisterar(const uint32_t err, const std::string &desc) noexcept {
     StatusFactory::Instance()->RegisterErrorNo(err, desc);
   }
-  ErrorNoRegisterar(uint32_t err, const char *desc) {
+  ErrorNoRegisterar(const uint32_t err, const char *const desc) noexcept {
     StatusFactory::Instance()->RegisterErrorNo(err, desc);
   }
   ~ErrorNoRegisterar() {}
 };
 
 // Code compose(4 byte), runtime: 2 bit,  type: 2 bit,   level: 3 bit,  sysid: 8 bit, modid: 5 bit, value: 12 bit
-#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                               \
-  constexpr ge::Status name = (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime))) << 30) | \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(type))) << 28) |    \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(level))) << 25) |   \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid))) << 17) |   \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid))) << 12) |   \
-                              (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));        \
+#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                                \
+  constexpr ge::Status name = (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime))) << 30U) | \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(type))) << 28U) |    \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(level))) << 25U) |   \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid))) << 17U) |   \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid))) << 12U) |   \
+                              (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));         \
   const ErrorNoRegisterar g_##name##_errorno(name, desc);
 
 #define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_##name##_errorno(name, desc);
@@ -97,7 +98,7 @@ using Status = uint32_t;
 
 // General error code
 GE_ERRORNO(0, 0, 0, 0, 0, SUCCESS, 0, "success");
-GE_ERRORNO(0b11, 0b11, 0b111, 0xFF, 0b11111, FAILED, 0xFFF, "failed"); /*lint !e401*/
+GE_ERRORNO(0b11, 0b11, 0b111, 0xFFU, 0b11111, FAILED, 0xFFFU, "failed"); /*lint !e401*/
 
 GE_ERRORNO_EXTERNAL(ACL_ERROR_GE_PARAM_INVALID, "Parameter invalid.");
 GE_ERRORNO_EXTERNAL(ACL_ERROR_GE_EXEC_NOT_INIT, "GE executor not initialized yet.");

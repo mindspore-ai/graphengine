@@ -21,7 +21,6 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 #include "external/register/register_fmk_types.h"
 #include "external/register/register_types.h"

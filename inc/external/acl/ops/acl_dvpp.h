@@ -158,9 +158,21 @@ enum acldvppJpegFormat {
   ACL_JPEG_CSS_UNKNOWN = 1000
 };
 
-enum acldvppChannelDescParamType { ACL_DVPP_CSC_MATRIX_UINT32 = 0 };
+enum acldvppChannelDescParamType { ACL_DVPP_CSC_MATRIX_UINT32 = 0, ACL_DVPP_MODE_UINT32, ACL_DVPP_CHANNEL_ID_UINT64 };
 
-enum aclvdecChannelDescParamType { ACL_VDEC_CSC_MATRIX_UINT32 = 0 };
+enum aclvdecChannelDescParamType {
+  ACL_VDEC_CSC_MATRIX_UINT32 = 0,
+  ACL_VDEC_OUT_MODE_UINT32,
+  ACL_VDEC_THREAD_ID_UINT64,
+  ACL_VDEC_CALLBACK_PTR,
+  ACL_VDEC_CHANNEL_ID_UINT32,
+  ACL_VDEC_ENCODE_TYPE_UINT32,
+  ACL_VDEC_OUT_PIC_FORMAT_UINT32,
+  ACL_VDEC_OUT_PIC_WIDTH_UINT32,
+  ACL_VDEC_OUT_PIC_HEIGHT_UINT32,
+  ACL_VDEC_REF_FRAME_NUM_UINT32,
+  ACL_VDEC_BIT_DEPTH_UINT32
+};
 
 // Csc Matrix can be used both for acldvppChannelDescParamType and aclvdecChannelDescParamType
 enum acldvppCscMatrix {

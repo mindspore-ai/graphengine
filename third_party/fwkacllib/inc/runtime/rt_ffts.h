@@ -1,17 +1,6 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
+ * Description: ffts interface
  */
 
 #ifndef CCE_RUNTIME_RT_FFTS_H
@@ -91,8 +80,11 @@ typedef struct tagAutoThreadPrefetch {
 typedef struct tagAutoThreadAicAivInfo {
     uint64_t taskParamAddr; // device mem
     uint16_t taskParamOffset;
-    // when satMode=1 and FP16 computation with none INF inputs overflows/underflows, results will be +/-INF of FP16
-    // when satMode=0 and FP16 computation with none INF inputs overflows/underflows, results will be saturated to +/-MAX of FP16
+    /*
+     * when satMode=1 and FP16 computation with none INF inputs overflows/underflows, results will be +/-INF of FP16
+     * when satMode=0 and FP16 computation with none INF inputs overflows/underflows, results will be saturated to
+     *     +/-MAX of FP16
+     */
     uint8_t satMode;
     uint8_t scheduleMode;   // 0:normal mode, 1:batch mode, 2:sync mode 3:reserved
     uint8_t iCachePrefetchCnt; // units is 2K
@@ -187,10 +179,10 @@ typedef struct tagFftsTaskInfo {
     rtTicketCache_t ticketCache[RT_FFTS_MAX_TICKET_CACHE_NUM];
 } rtFftsTaskInfo_t;
 
-RTS_API rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream);
+RTS_API rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stm);
 RTS_API rtError_t rtGetC2cCtrlAddr(uint64_t *addr, uint32_t *len);
 
-RTS_API rtError_t rtFftsTaskLaunchWithFlag(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream, uint32_t flag);
+RTS_API rtError_t rtFftsTaskLaunchWithFlag(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stm, uint32_t flag);
 
 #if defined(__cplusplus)
 }

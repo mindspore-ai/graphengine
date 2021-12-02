@@ -187,107 +187,107 @@ typedef enum rtGroupType {
 /**
  * @ingroup rt_mem_queue
  * @brief init queue schedule
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] grpName   the name of group, can be nullptr
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueInitQS(int32_t device, const char* grpName);
+RTS_API rtError_t rtMemQueueInitQS(int32_t devId, const char_t *grpName);
 
 /**
  * @ingroup rt_mem_queue
  * @brief create mbuf queue
- * @param [in] device   the logical device id
- * @param [in] rtMemQueueAttr   attribute of queue
+ * @param [in] devId   the logical device id
+ * @param [in] queAttr   attribute of queue
  * @param [out] qid  queue id
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueCreate(int32_t device, const rtMemQueueAttr_t *queueAttr, uint32_t *qid);
+RTS_API rtError_t rtMemQueueCreate(int32_t devId, const rtMemQueueAttr_t *queAttr, uint32_t *qid);
 
 /**
  * @ingroup rt_mem_queue
  * @brief destroy mbuf queue
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueDestroy(int32_t device, uint32_t qid);
+RTS_API rtError_t rtMemQueueDestroy(int32_t devId, uint32_t qid);
 
 /**
  * @ingroup rt_mem_queue
  * @brief destroy mbuf queue init
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueInit(int32_t device);
+RTS_API rtError_t rtMemQueueInit(int32_t devId);
 
 /**
  * @ingroup rt_mem_queue
  * @brief enqueu mbuf
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
  * @param [in] mbuf   enqueue mbuf
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueEnQueue(int32_t device, uint32_t qid, void *mbuf);
+RTS_API rtError_t rtMemQueueEnQueue(int32_t devId, uint32_t qid, void *mbuf);
 
 
 /**
  * @ingroup rt_mem_queue
  * @brief enqueu mbuf
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
  * @param [out] mbuf   dequeue mbuf
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueDeQueue(int32_t device, uint32_t qid, void **mbuf);
+RTS_API rtError_t rtMemQueueDeQueue(int32_t devId, uint32_t qid, void **mbuf);
 
 /**
  * @ingroup rt_mem_queue
  * @brief enqueu peek
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
  * @param [out] bufLen   length of mbuf in queue
  * @param [in] timeout  peek timeout  (ms), -1: wait all the time until peeking success
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueuePeek(int32_t device, uint32_t qid, size_t *bufLen, int32_t timeout);
+RTS_API rtError_t rtMemQueuePeek(int32_t devId, uint32_t qid, size_t *bufLen, int32_t timeout);
 
 /**
  * @ingroup rt_mem_queue
  * @brief enqueu  buff
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
  * @param [in] inBuf   enqueue buff
  * @param [in] timeout  enqueue timeout  (ms), -1: wait all the time until enqueue success
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueEnQueueBuff(int32_t device, uint32_t qid, rtMemQueueBuff_t *inBuf, int32_t timeout);
+RTS_API rtError_t rtMemQueueEnQueueBuff(int32_t devId, uint32_t qid, rtMemQueueBuff_t *inBuf, int32_t timeout);
 
 /**
  * @ingroup rt_mem_queue
  * @brief enqueu  buff
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
  * @param [out] outBuf   dequeue buff
  * @param [in] timeout  dequeue timeout  (ms), -1: wait all the time until dequeue success
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueDeQueueBuff(int32_t device, uint32_t qid, rtMemQueueBuff_t *outBuf, int32_t timeout);
+RTS_API rtError_t rtMemQueueDeQueueBuff(int32_t devId, uint32_t qid, rtMemQueueBuff_t *outBuf, int32_t timeout);
 
 /**
  * @ingroup rt_mem_queue
  * @brief query current queue info
- * @param [in] device   the logical device id
+ * @param [in] devId   the logical device id
  * @param [in] qid  queue id
- * @param [out] queueInfo   current queue info
+ * @param [out] queInfo   current queue info
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueQueryInfo(int32_t device, uint32_t qid, rtMemQueueInfo_t *queueInfo);
+RTS_API rtError_t rtMemQueueQueryInfo(int32_t devId, uint32_t qid, rtMemQueueInfo_t *queInfo);
 
 /**
 * @ingroup rt_mem_queue
 * @brief  query queue status
-* @param [in] device: the logical device id
+* @param [in] devId: the logical device id
 * @param [in] cmd: query cmd
 * @param [in] inBuff: input buff
 * @param [in] inLen: the length of input
@@ -295,39 +295,39 @@ RTS_API rtError_t rtMemQueueQueryInfo(int32_t device, uint32_t qid, rtMemQueueIn
 * @param [in|out] outLen: the length of output
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMemQueueQuery(int32_t device, rtMemQueueQueryCmd_t cmd, const void *inBuff, uint32_t inLen,
+RTS_API rtError_t rtMemQueueQuery(int32_t devId, rtMemQueueQueryCmd_t cmd, const void *inBuff, uint32_t inLen,
     void *outBuff, uint32_t *outLen);
 
 /**
 * @ingroup rt_mem_queue
 * @brief  grant queue
-* @param [in] device: logic devid
+* @param [in] devId: logic devid
 * @param [in] qid: queue id
 * @param [in] pid: pid
 * @param [in] attr: queue share attr
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMemQueueGrant(int32_t device, uint32_t qid, int32_t pid, rtMemQueueShareAttr_t *attr);
+RTS_API rtError_t rtMemQueueGrant(int32_t devId, uint32_t qid, int32_t pid, rtMemQueueShareAttr_t *attr);
 
 /**
 * @ingroup rt_mem_queue
 * @brief  attach queue
-* @param [in] device: logic devid
+* @param [in] devId: logic devid
 * @param [in] qid: queue id
 * @param [in] timeOut: timeOut
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMemQueueAttach(int32_t device, uint32_t qid, int32_t timeOut);
+RTS_API rtError_t rtMemQueueAttach(int32_t devId, uint32_t qid, int32_t timeOut);
 
 /**
 * @ingroup rt_mem_queue
 * @brief  Commit the event to a specific process
-* @param [in] device: logic devid
-* @param [in] event: event summary info
+* @param [in] devId: logic devid
+* @param [in] evt: event summary info
 * @param [out] ack: event reply info
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtEschedSubmitEventSync(int32_t device, rtEschedEventSummary_t *event,
+RTS_API rtError_t rtEschedSubmitEventSync(int32_t devId, rtEschedEventSummary_t *evt,
                                           rtEschedEventReply_t *ack);
 
 /**
@@ -411,8 +411,11 @@ typedef struct {
     int32_t pid;
 } rtMemGrpQueryByProc_t; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
 
-typedef union {
-    rtMemGrpQueryByProc_t grpQueryByProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+typedef struct {
+    int32_t cmd;
+    union {
+        rtMemGrpQueryByProc_t grpQueryByProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+    };
 } rtMemGrpQueryInput_t;
 
 #define RT_MEM_GRP_NAME_LEN 32  // it must be same as driver define BUFF_GRP_NAME_LEN
@@ -460,116 +463,115 @@ RTS_API rtError_t rtMemGrpAttach(const char_t *name, int32_t timeout);
 /**
 * @ingroup rt_mem_queue
 * @brief buff group query
-* @param [in] cmd, cmd type
 * @param [in] input, query input
 * @param [in|out] output, query output
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtMemGrpQuery(int32_t cmd, const rtMemGrpQueryInput_t *input, rtMemGrpQueryOutput_t *output);
+RTS_API rtError_t rtMemGrpQuery(const rtMemGrpQueryInput_t *input, rtMemGrpQueryOutput_t *output);
 
 /**
 * @ingroup rt_mem_queue
 * @brief buff group query
-* @param [in] device, cdevice id
+* @param [in] devId, cdevice id
 * @param [in] name, group name
 * @param [out] qid, queue id
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtMemQueueGetQidByName(int32_t device, const char *name, uint32_t *qId);
+RTS_API rtError_t rtMemQueueGetQidByName(int32_t devId, const char_t *name, uint32_t *qId);
 
 /**
 * @ingroup rt_mem_queue
 * @brief esched attach device
-* @param [in] device, device id
+* @param [in] devId, device id
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedAttachDevice(int32_t device);
+RTS_API rtError_t rtEschedAttachDevice(int32_t devId);
 
 /**
 * @ingroup rt_mem_queue
 * @brief esched dettach device
-* @param [in] device, device id
+* @param [in] devId, device id
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedDettachDevice(int32_t device);
+RTS_API rtError_t rtEschedDettachDevice(int32_t devId);
 
 /**
 * @ingroup rt_mem_queue
 * @brief esched wait event
-* @param [in] device, device id
+* @param [in] devId, device id
 * @param [in] grpId, group id
 * @param [in] threadId, thread id
 * @param [in] timeout
-* @param [in] event
+* @param [in] evt
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedWaitEvent(int32_t device, uint32_t grpId, uint32_t threadId,
-                                    int timeout, rtEschedEventSummary_t *event);
+RTS_API rtError_t rtEschedWaitEvent(int32_t devId, uint32_t grpId, uint32_t threadId,
+                                    int32_t timeout, rtEschedEventSummary_t *evt);
 
 /**
 * @ingroup rt_mem_queue
 * @brief esched create group
-* @param [in] device, device id
+* @param [in] devId, device id
 * @param [in] grpId, group id
 * @param [in] type, group type
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedCreateGrp(int32_t device, uint32_t grpId, rtGroupType_t type);
+RTS_API rtError_t rtEschedCreateGrp(int32_t devId, uint32_t grpId, rtGroupType_t type);
 
 /**
 * @ingroup rt_mem_queue
 * @brief esched submit event
-* @param [in] device, device id
-* @param [in] event
+* @param [in] devId, device id
+* @param [in] evt
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedSubmitEvent(int32_t device, rtEschedEventSummary_t *event);
+RTS_API rtError_t rtEschedSubmitEvent(int32_t devId, rtEschedEventSummary_t *evt);
 
 /**
 * @ingroup rt_mem_queue
 * @brief esched submit event
-* @param [in] device, device id
+* @param [in] devId, device id
 * @param [in] grpId, group id
 * @param [in] threadId, thread id
 * @param [in] eventBitmap
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedSubscribeEvent(int32_t device, uint32_t grpId, uint32_t threadId, uint64_t eventBitmap);
+RTS_API rtError_t rtEschedSubscribeEvent(int32_t devId, uint32_t grpId, uint32_t threadId, uint64_t eventBitmap);
 
 /**
 * @ingroup rtEschedAckEvent
 * @brief esched ack event
-* @param [in] device, device id
-* @param [in] eventId, event type
-* @param [in] subeventId, sub event type
+* @param [in] devId, device id
+* @param [in] evtId, event type
+* @param [in] subEvtId, sub event type
 * @param [in] msg, message info
 * @param [in] len, message length
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtEschedAckEvent(int32_t device, rtEventIdType_t eventId,
-                                   uint32_t subeventId, char *msg, uint32_t len);
+RTS_API rtError_t rtEschedAckEvent(int32_t devId, rtEventIdType_t evtId,
+                                   uint32_t subEvtId, char_t *msg, uint32_t len);
 
 /**
 * @ingroup rtQueueSubF2NFEvent
 * @brief full to not full event
-* @param [in] device, device id
+* @param [in] devId, device id
 * @param [in] qid, queue id
 * @param [in] groupId, group id
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtQueueSubF2NFEvent(int32_t device, uint32_t qId, uint32_t groupId);
+RTS_API rtError_t rtQueueSubF2NFEvent(int32_t devId, uint32_t qId, uint32_t groupId);
 
 /**
 * @ingroup rtQueueSubscribe
 * @brief queue subscribe
-* @param [in] device, device id
+* @param [in] devId, device id
 * @param [in] qid, queue id
 * @param [in] groupId, group id
 * @param [in] type
 
 * @return   0 for success, others for fail
 */
-RTS_API rtError_t rtQueueSubscribe(int32_t device, uint32_t qId, uint32_t groupId, int type);
+RTS_API rtError_t rtQueueSubscribe(int32_t devId, uint32_t qId, uint32_t groupId, int32_t type);
 
 #if defined(__cplusplus)
 }

@@ -33,7 +33,7 @@ class GE_FUNC_VISIBILITY GeFormatUtil {
   /// @param  [out] dst_shape     destination shape
   /// @return Status
   ///
-  static Status TransShape(const TensorDesc &src_desc, Format dst_format, std::vector<int64_t> &dst_shape);
+  static Status TransShape(const TensorDesc &src_desc, const Format dst_format, std::vector<int64_t> &dst_shape);
 };
 }  // namespace ge
 

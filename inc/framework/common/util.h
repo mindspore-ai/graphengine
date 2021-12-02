@@ -235,7 +235,7 @@ using google::protobuf::Message;
 /// @return true success
 /// @return false fail
 ///
-GE_FUNC_VISIBILITY bool ReadProtoFromArray(const void *data, int size, Message *proto);
+GE_FUNC_VISIBILITY bool ReadProtoFromArray(const void *data, int32_t size, Message *proto);
 
 ///
 /// @ingroup domi_proto
@@ -264,7 +264,7 @@ GE_FUNC_VISIBILITY extern long GetFileLength(const std::string &input_file);
 /// @return false fail
 /// @return true success
 ///
-GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name, char **buffer, int &length);
+GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char *const file_name, char **buffer, int32_t &length);
 
 GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name, std::vector<char> &buffer);
 
@@ -275,7 +275,7 @@ GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name, std::vect
 /// @return 0 success
 /// @return -1 fail
 ///
-GE_FUNC_VISIBILITY extern int CreateDirectory(const std::string &directory_path);
+GE_FUNC_VISIBILITY extern int32_t CreateDirectory(const std::string &directory_path);
 
 ///
 /// @ingroup domi_common
@@ -398,10 +398,10 @@ GE_FUNC_VISIBILITY bool CheckOutputPathValid(const std::string &file_path, const
 ///
 /// @ingroup domi_common
 /// @brief Check whether the file path meets the whitelist verification requirements.
-/// @param [in] filePath file path
+/// @param [in] str file path
 /// @param [out] result
 ///
-GE_FUNC_VISIBILITY bool ValidateStr(const std::string &filePath, const std::string &mode);
+GE_FUNC_VISIBILITY bool ValidateStr(const std::string &str, const std::string &mode);
 
 ///
 /// @ingroup domi_common

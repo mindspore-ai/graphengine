@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,9 +314,9 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 REG_OP(DepthwiseConv2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
     .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT}))
     .REQUIRED_ATTR(strides, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .REQUIRED_ATTR(pads, ListInt)

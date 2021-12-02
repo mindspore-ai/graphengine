@@ -30,7 +30,11 @@
 namespace ge {
 enum RuntimeType { HOST = 0, DEVICE = 1 };
 
-enum PerfLevel { GEN_TASK_WITH_FUSION = -1, GEN_TASK_WITHOUT_L2FUSION = 3, GEN_TASK_WITHOUT_FUSION = 4 };
+enum class PerfLevel : int32_t {
+  GEN_TASK_WITH_FUSION = -1,
+  GEN_TASK_WITHOUT_L2FUSION = 3,
+  GEN_TASK_WITHOUT_FUSION = 4
+};
 
 enum FrameworkType {
   CAFFE = 0,
@@ -39,6 +43,10 @@ enum FrameworkType {
   ANDROID_NN,
   ONNX,
 };
+
+enum class GraphStage : int64_t { GRAPH_STAGE_FUZZ = 0, GRAPH_STAGE_RESERVED };
+
+const char *const kGraphDumpStage = "DumpStage";
 
 const std::map<std::string, std::string> kFwkTypeToStr = {
     {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
@@ -53,17 +61,18 @@ enum OpEngineType {
 
 enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
 
-const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
-const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
+const char_t *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
+const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 
 // profiling data
+
 const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
 const std::string kTaskTypeFftsPlus = "FFTS_PLUS";
 
 // dynamic execute mode
-const char *const kLazyRecompile = "lazy_recompile";
+const char_t *const kLazyRecompile = "lazy_recompile";
 
 // Data cache, including data address and length
 struct DataBuffer {
@@ -75,7 +84,7 @@ struct DataBuffer {
   DataBuffer(void *data_in, uint64_t data_len, bool is_support_mem_share, uint32_t placement = 0U)
       : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(placement) {}
 
-  DataBuffer() : data(nullptr), length(0U), isDataSupportMemShare(false) {}
+  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false) {}
 };
 
 ///
@@ -87,7 +96,7 @@ struct InputData {
   uint32_t timestamp;                        // Data creation time
   uint32_t timeout;                          // Processing timeout
   uint32_t model_id;                         // Model ID required for data processing
-  uint64_t request_id = 0U;                  // Request ID
+  uint64_t request_id = 0UL;                 // Request ID
   std::vector<DataBuffer> blobs;             // Actual input data, currently only supports one input
   bool is_dynamic_batch = false;             // Whether is dynamic batch size scene, default:false
   std::string batch_label;                   // Gear used for current inference in dynamic batch scene
@@ -114,10 +123,10 @@ struct Command {
 
 // The definition of I/O shape description
 struct ShapeDescription {
-  int64_t num = 0;
-  int64_t channel = 0;
-  int64_t height = 0;
-  int64_t width = 0;
+  int64_t num = 0L;
+  int64_t channel = 0L;
+  int64_t height = 0L;
+  int64_t width = 0L;
   std::vector<int64_t> dims;
   std::vector<std::pair<int64_t, int64_t>> shape_ranges;
 };
@@ -187,14 +196,14 @@ struct AippConfigInfo {
   int32_t mean_chn_1;
   int32_t mean_chn_2;
   int32_t mean_chn_3;
-  float min_chn_0;
-  float min_chn_1;
-  float min_chn_2;
-  float min_chn_3;
-  float var_reci_chn_0;
-  float var_reci_chn_1;
-  float var_reci_chn_2;
-  float var_reci_chn_3;
+  float32_t min_chn_0;
+  float32_t min_chn_1;
+  float32_t min_chn_2;
+  float32_t min_chn_3;
+  float32_t var_reci_chn_0;
+  float32_t var_reci_chn_1;
+  float32_t var_reci_chn_2;
+  float32_t var_reci_chn_3;
   int8_t support_rotation;
   uint32_t related_input_rank;
   uint32_t max_src_image_size;

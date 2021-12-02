@@ -1,17 +1,7 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
+ * Description: config.h
+ * Create: 2020-01-01
  */
 
 #ifndef CCE_RUNTIME_CONFIG_H
@@ -193,10 +183,10 @@ RTS_API rtError_t rtGetMemoryConfig(rtMemoryConfig_t *memoryConfig);
 /**
  * @ingroup
  * @brief get l2 buffer Info,virtual baseaddr,Size
- * @param [in] stream
+ * @param [in] stm
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtMemGetL2Info(rtStream_t stream, void **ptr, uint32_t *size);
+RTS_API rtError_t rtMemGetL2Info(rtStream_t stm, void **ptr, uint32_t *size);
 
 /**
  * @ingroup
@@ -215,11 +205,11 @@ RTS_API rtError_t rtGetRuntimeVersion(uint32_t *runtimeVersion);
  * @param [in] deviceId
  * @param [in] moduleType
  * @param [in] featureType
- * @param [out] value
+ * @param [out] val
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetDeviceCapability(int32_t deviceId, int32_t moduleType, int32_t featureType, int32_t *value);
+RTS_API rtError_t rtGetDeviceCapability(int32_t deviceId, int32_t moduleType, int32_t featureType, int32_t *val);
 
 /**
  * @ingroup

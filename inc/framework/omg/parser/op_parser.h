@@ -50,7 +50,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status ParseParams(const Message *op_src, ge::OpDescPtr &op_desc) = 0;
+  virtual domi::Status ParseParams(const Message *op_src, ge::OpDescPtr &op_desc) = 0;
 
   /**
    * @ingroup domi_omg
@@ -60,7 +60,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status ParseParams(const Message *op_src, ge::Operator &op_dest) = 0;
+  virtual domi::Status ParseParams(const Message *op_src, ge::Operator &op_dest) = 0;
 
   /**
    * @ingroup domi_omg
@@ -70,7 +70,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status ParseWeights(const Message *op_src, ge::NodePtr &node) = 0;
+  virtual domi::Status ParseWeights(const Message *op_src, ge::NodePtr &node) = 0;
 
   /**
    * @ingroup domi_omg
@@ -80,7 +80,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status GetFormat(const Message *op_src, domi::domiTensorFormat_t &format) {
+  virtual domi::Status GetFormat(const Message *op_src, domi::domiTensorFormat_t &format) {
     (void)op_src;
     // Indicates that the op does not provide a value for format
     format = domi::DOMI_TENSOR_RESERVED;

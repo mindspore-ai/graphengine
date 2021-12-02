@@ -26,7 +26,7 @@
 #include "external/ge/ge_api_error_codes.h"
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
-#define DOMI_LOGE(fmt, ...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, fmt, ##__VA_ARGS__)
+#define DOMI_LOGE(fmt, ...) GE_LOG_ERROR(GE_MODULE_NAME, (ge::FAILED), fmt, ##__VA_ARGS__)
 #else
 #include <android/log.h>
 #if defined(BUILD_VERSION_PERF)
@@ -49,9 +49,9 @@
     GELOGW(__VA_ARGS__);           \
   }
 
-#define GE_LOGE_IF(condition, ...)   \
-  if ((condition)) {                 \
-    GELOGE(ge::FAILED, __VA_ARGS__); \
+#define GE_LOGE_IF(condition, ...)     \
+  if ((condition)) {                   \
+    GELOGE((ge::FAILED), __VA_ARGS__); \
   }
 
 // If expr is not SUCCESS, print the log and return the same value
@@ -59,7 +59,7 @@
   do {                                     \
     const ge::Status _chk_status = (expr); \
     if (_chk_status != ge::SUCCESS) {      \
-      GELOGE(ge::FAILED, __VA_ARGS__);     \
+      GELOGE((ge::FAILED), __VA_ARGS__);   \
       return _chk_status;                  \
     }                                      \
   } while (false)
@@ -69,7 +69,7 @@
   do {                                     \
     const ge::Status _chk_status = (expr); \
     if (_chk_status != ge::SUCCESS) {      \
-      GELOGE(ge::FAILED, __VA_ARGS__);     \
+      GELOGE((ge::FAILED), __VA_ARGS__);   \
     }                                      \
   } while (false)
 
@@ -88,7 +88,7 @@
     if ((expr) != ge::GRAPH_SUCCESS) {                      \
       REPORT_CALL_ERROR("E19999", "Operator graph failed"); \
       GELOGE(ge::FAILED, __VA_ARGS__);                      \
-      return FAILED;                                        \
+      return (FAILED);                                      \
     }                                                       \
   } while (false)
 
@@ -105,8 +105,8 @@
     const bool b = (expr);                         \
     if (!b) {                                      \
       REPORT_INNER_ERROR("E19999", __VA_ARGS__);   \
-      GELOGE(_status, __VA_ARGS__);                \
-      return _status;                              \
+      GELOGE((_status), __VA_ARGS__);              \
+      return (_status);                            \
     }                                              \
   } while (false)
 
@@ -115,7 +115,7 @@
   do {                                                   \
     const bool b = (expr);                               \
     if (!b) {                                            \
-      return _status;                                    \
+      return (_status);                                  \
     }                                                    \
   } while (false)
 
@@ -196,7 +196,7 @@
       REPORT_INNER_ERROR("E19999", __VA_ARGS__);                        \
       GELOGE(ge::FAILED, __VA_ARGS__);                                  \
       exec_expr;                                                        \
-      return _status;                                                   \
+      return (_status);                                                 \
     }                                                                   \
   }
 
@@ -211,22 +211,22 @@
 
 // -----------------runtime related macro definitions-------------------------------
 // If expr is not RT_ERROR_NONE, print the log
-#define GE_CHK_RT(expr)                                             \
-  do {                                                              \
-    const rtError_t _rt_ret = (expr);                               \
-    if (_rt_ret != RT_ERROR_NONE) {                                 \
-      GELOGE(ge::FAILED, "Call rt api failed, ret: 0x%X", _rt_ret); \
-    }                                                               \
+#define GE_CHK_RT(expr)                                                \
+  do {                                                                 \
+    const rtError_t _rt_ret = (expr);                                  \
+    if (_rt_ret != RT_ERROR_NONE) {                                    \
+      GELOGE(ge::RT_FAILED, "Call rt api failed, ret: 0x%X", _rt_ret); \
+    }                                                                  \
   } while (false)
 
 // If expr is not RT_ERROR_NONE, print the log and execute the exec_expr expression
-#define GE_CHK_RT_EXEC(expr, exec_expr)                             \
-  do {                                                              \
-    const rtError_t _rt_ret = (expr);                               \
-    if (_rt_ret != RT_ERROR_NONE) {                                 \
-      GELOGE(ge::FAILED, "Call rt api failed, ret: 0x%X", _rt_ret); \
-      exec_expr;                                                    \
-    }                                                               \
+#define GE_CHK_RT_EXEC(expr, exec_expr)                                \
+  do {                                                                 \
+    const rtError_t _rt_ret = (expr);                                  \
+    if (_rt_ret != RT_ERROR_NONE) {                                    \
+      GELOGE(ge::RT_FAILED, "Call rt api failed, ret: 0x%X", _rt_ret); \
+      exec_expr;                                                       \
+    }                                                                  \
   } while (false)
 
 // If expr is not RT_ERROR_NONE, print the log and return
@@ -235,7 +235,7 @@
     const rtError_t _rt_ret = (expr);                                         \
     if (_rt_ret != RT_ERROR_NONE) {                                           \
       REPORT_CALL_ERROR("E19999", "Call %s fail, ret: 0x%X", #expr, _rt_ret); \
-      GELOGE(ge::FAILED, "Call rt api failed, ret: 0x%X", _rt_ret);           \
+      GELOGE(ge::RT_FAILED, "Call rt api failed, ret: 0x%X", _rt_ret);        \
       return RT_ERROR_TO_GE_STATUS(_rt_ret);                                  \
     }                                                                         \
   } while (false)
@@ -257,26 +257,26 @@
     exec_expr1;                                \
   }
 
-#define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)    \
-  {                                                    \
-    GELOGE(_status, "[Check][InnerData]%s", errormsg); \
-    REPORT_INNER_ERROR("E19999", "%s", errormsg);      \
+#define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)        \
+  {                                                        \
+    GELOGE((_status), "[Check][InnerData]%s", (errormsg)); \
+    REPORT_INNER_ERROR("E19999", "%s", (errormsg));        \
   }
 
-#define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                           \
-  {                                                                                    \
-    GELOGW("%s", errormsg);                                                            \
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
+#define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                             \
+  {                                                                                      \
+    GELOGW("%s", (errormsg));                                                            \
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {(errormsg)}); \
   }
 
-#define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                 \
-  do {                                                                                   \
-    const bool b = (expr);                                                               \
-    if (!b) {                                                                            \
-      GELOGE(_status, "%s", errormsg);                                                   \
-      ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
-      return _status;                                                                    \
-    }                                                                                    \
+#define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                   \
+  do {                                                                                     \
+    const bool b = (expr);                                                                 \
+    if (!b) {                                                                              \
+      GELOGE((_status), "%s", (errormsg));                                                 \
+      ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {(errormsg)}); \
+      return (_status);                                                                    \
+    }                                                                                      \
   } while (false)
 
 template <typename T>

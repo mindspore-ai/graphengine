@@ -65,7 +65,7 @@ GE_FUNC_VISIBILITY extern const uint32_t FOR_LIMIT_INPUT;
 GE_FUNC_VISIBILITY extern const uint32_t FOR_DELTA_INPUT;
 GE_FUNC_VISIBILITY extern const uint32_t FOR_DATA_INPUT;
 
-GE_FUNC_VISIBILITY extern const int NORMAL_TENSOR_SIZE;
+GE_FUNC_VISIBILITY extern const int32_t NORMAL_TENSOR_SIZE;
 
 class GE_FUNC_VISIBILITY OpUtils {
  public:
@@ -107,9 +107,10 @@ class GE_FUNC_VISIBILITY OpUtils {
   static Status SetOutputSliceDataByDataType(void *data, int64_t data_size, const std::vector<int64_t> &input_dims,
                                              const std::vector<int64_t> &begin, const std::vector<int64_t> &output_dims,
                                              ge::GeTensor *output, const std::vector<int64_t> &stride);
-  static Status SetOutputSliceData(void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims,
-                                   std::vector<int64_t> &begin, std::vector<int64_t> &output_dims, ge::GeTensor *output,
-                                   std::vector<int64_t> &stride);
+  static Status SetOutputSliceData(void *data, int64_t data_size, int32_t data_type,
+                                   const std::vector<int64_t> &input_dims, const std::vector<int64_t> &begin,
+                                   const std::vector<int64_t> &output_dims, ge::GeTensor *const output,
+                                   const std::vector<int64_t> &stride);
 
   ///
   /// @ingroup domi_omg
@@ -121,7 +122,7 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @param [in] K value of K dimension
   /// @param [out] output Data pointer after conversion. The format is KCHW.
   ///
-  static void TransDataHWCK2KCHW(const void *input, int64_t H, int64_t W, int64_t C, int64_t K, void **output);
+  static void TransDataHWCK2KCHW(const void *input, int64_t h, int64_t w, int64_t c, int64_t k, void **output);
   ///
   /// @ingroup domi_omg
   /// @brief Converts the convolutional weight data from [k, c, h, w] to [h, w, c, k].
@@ -132,15 +133,16 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @param [in] W value of W dimension
   /// @param [out] output Data pointer after conversion. The format is HWCK
   ///
-  static void TransDataKCHW2HWCK(const void *input, int64_t K, int64_t C, int64_t H, int64_t W, void *output);
+  static void TransDataKCHW2HWCK(const void *input, int64_t k, int64_t c, int64_t h, int64_t w, void *output);
 
   static std::vector<ConstGeTensorPtr> GetWeights(const ge::Node &node);
   static std::vector<ConstGeTensorPtr> GetWeights(ge::ConstNodePtr node);
   static std::vector<GeTensorPtr> MutableWeights(const ge::Node &node);
   static std::vector<GeTensorPtr> MutableWeights(const ge::NodePtr node);
   static Status SetWeights(ge::Node &node, const std::vector<ge::GeTensorPtr> &weights);
-  static Status SetWeights(ge::NodePtr node, const std::vector<ge::GeTensorPtr> &weights);
-  static Status GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims);
+  static Status SetWeights(const ge::NodePtr node, const std::vector<ge::GeTensorPtr> &weights);
+  static Status GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, const DataType type,
+                                            std::vector<int64_t> &dims);
 
  private:
   static uint32_t GetRealDimCnt(const GeTensorDesc &tensor_desc);

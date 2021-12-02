@@ -45,18 +45,19 @@ class GE_FUNC_VISIBILITY StringUtils {
  public:
   static std::string &Ltrim(std::string &s) {
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return std::isspace(c) == 0; }));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int32_t c) { return std::isspace(c) == 0; }));
 #else
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))));
 #endif
     return s;
   }
   // lint -esym(551,*)
   static std::string &Rtrim(std::string &s) { /*lint !e618*/
 #if __cplusplus >= 201103L
-    (void)s.erase(std::find_if(s.rbegin(), s.rend(), [](int c) { return std::isspace(c) == 0; }).base(), s.end());
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(), [](int32_t c) { return std::isspace(c) == 0; }).base(), s.end());
 #else
-    (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))).base(),
+                  s.end());
 #endif
     return s;
   }

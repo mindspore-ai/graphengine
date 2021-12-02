@@ -43,7 +43,7 @@ enum MsprofErrorCode {
     MSPROF_ERROR,
 };
 
-#define MSPROF_ENGINE_MAX_TAG_LEN (31)
+#define MSPROF_ENGINE_MAX_TAG_LEN (63)
 
 /**
  * @name  ReporterData

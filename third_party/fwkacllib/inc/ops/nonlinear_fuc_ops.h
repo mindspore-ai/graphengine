@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1127,6 +1127,34 @@ REG_OP(Shrink)
     .ATTR(lambd, Float, 0.5)
     .ATTR(bias, Float, 0.0)
     .OP_END_FACTORY_REG(Shrink)
+
+/**
+* @brief Thresholds each element of the input Tensor: y = (x > threshold) ? x : value \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor.
+* Must be one of the following types on Ascend310: float16, int8, int32, uint8.
+* Must be one of the following types on Ascend710 or Ascend910: float16, float32, int8, int32, uint8. \n
+* @li threshold: A Tensor which should have the shape (1,), the value to threshold at.
+* Must be one of the following types on Ascend310: float16, int8, int32, uint8.
+* Must be one of the following types on Ascend710 or Ascend910: float16, float32, int8, int32, uint8. \n
+* @li value: A Tensor which should have the shape (1,), the value to replace with. default value is 0.
+* Must be one of the following types on Ascend310: float16, int8, int32, uint8.
+* Must be one of the following types on Ascend710 or Ascend910: float16, float32, int8, int32, uint8. \n
+
+* @par Outputs:
+* y: A Tensor which has the same shape and type as the input x. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Threshold.
+*/
+REG_OP(ThresholdV2)
+     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
+     .INPUT(threshold, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
+     .OPTIONAL_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
+     .OP_END_FACTORY_REG(ThresholdV2)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_

@@ -63,7 +63,7 @@ class GE_FUNC_VISIBILITY ModelParserFactory {
 
 class GE_FUNC_VISIBILITY ModelParserRegisterar {
  public:
-  ModelParserRegisterar(const domi::FrameworkType type, MODEL_PARSER_CREATOR_FUN fun) {
+  ModelParserRegisterar(const domi::FrameworkType type, MODEL_PARSER_CREATOR_FUN const fun) {
     ModelParserFactory::Instance()->RegisterCreator(type, fun);
   }
   ~ModelParserRegisterar() {}
@@ -115,7 +115,7 @@ class GE_FUNC_VISIBILITY WeightsParserFactory {
 
 class GE_FUNC_VISIBILITY WeightsParserRegisterar {
  public:
-  WeightsParserRegisterar(const domi::FrameworkType type, WEIGHTS_PARSER_CREATOR_FUN fun) {
+  WeightsParserRegisterar(const domi::FrameworkType type, WEIGHTS_PARSER_CREATOR_FUN const fun) {
     WeightsParserFactory::Instance()->RegisterCreator(type, fun);
   }
   ~WeightsParserRegisterar() {}

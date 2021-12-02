@@ -90,6 +90,10 @@ class GE_FUNC_VISIBILITY GeGenerator {
   Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                             const std::vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
                             ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                            const std::vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
+                            ModelBufferData &model_buff, GraphStage graph_stage, ComputeGraphPtr &compute_graph);
+
   ///
   /// @ingroup ge
   /// @brief: Build single Op into model buff.
@@ -101,13 +105,19 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @return SUCCESS or FAILED
   Status BuildSingleOpGraph(OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs, std::string graph_name,
                             Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type);
+  Status BuildOriginalGraphInfo(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                                const std::vector<GeTensor> &outputs, const std::string &model_file_name,
+                                bool is_offline, int32_t compile_flag, GraphStage graph_stage, Graph &graph,
+                                ComputeGraphPtr &compute_graph, bool &fuzz_compile_flag,
+                                std::vector<std::pair<std::string, std::string>> &inputs_name_type);
 
  private:
   Status GenerateModel(const Graph &graph, const std::string &file_name_prefix, const std::vector<GeTensor> &inputs,
                        ge::ModelBufferData &model, bool is_offline = true);
   Status BuildSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs,
                        const std::string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                       bool is_offline = true, int32_t compile_flag = 0);
+                       ComputeGraphPtr &compute_graph, bool is_offline = true, int32_t compile_flag = 0,
+                       GraphStage graph_stage = GraphStage::GRAPH_STAGE_RESERVED);
   bool CheckNoAicore(const ComputeGraphPtr &graph);
   void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
   Status CheckForSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,

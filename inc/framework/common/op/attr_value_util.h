@@ -165,10 +165,12 @@ GE_FUNC_VISIBILITY bool GetAttrDefValue(const std::string &key, AttrDef_ListValu
 GE_FUNC_VISIBILITY bool GetAttrDefValue(const std::string &key, NamedAttrs *&value, AttrDefMap *attr);
 GE_FUNC_VISIBILITY bool GetAttrDefValue(const std::string &key, const NamedAttrs *&value, const AttrDefMap &attr);
 
-GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, int32_t *value, const AttrDefMap &attr);
-GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, uint32_t *value, const AttrDefMap &attr);
-GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, float *value, const AttrDefMap &attr);
-GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int idx, double *value, const AttrDefMap &attr);
+GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int32_t idx, int32_t *value,
+                                            const AttrDefMap &attr);
+GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int32_t idx, uint32_t *value,
+                                            const AttrDefMap &attr);
+GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int32_t idx, float *value, const AttrDefMap &attr);
+GE_FUNC_VISIBILITY bool GetAttrDefListValue(const std::string &key, int32_t idx, double *value, const AttrDefMap &attr);
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_

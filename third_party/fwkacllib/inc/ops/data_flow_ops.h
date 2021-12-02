@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2415,6 +2415,23 @@ REG_OP(AdpGetNext)
   .ATTR(output_shapes, ListListInt, {{}, {}})
   .ATTR(queue_name, String, "")
   .OP_END_FACTORY_REG(AdpGetNext)
-}   // namespace ge
 
+/**
+*@brief GetNextV2
+*@par Outputs:
+*y: the data in iterator, all types are available
+*@par Attributes:
+*output_types: types of all outputs
+*output_shapes: shapes of all outputs
+*queue_name: cdqm queue name
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GetNextV2)
+  .DYNAMIC_OUTPUT(y, TensorType::ALL())
+  .ATTR(output_types, ListType, {})
+  .ATTR(output_shapes, ListListInt, {{}, {}})
+  .ATTR(channel_name, String, "")
+  .OP_END_FACTORY_REG(GetNextV2)
+} // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

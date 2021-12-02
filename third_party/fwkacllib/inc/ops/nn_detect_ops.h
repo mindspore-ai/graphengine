@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1667,6 +1667,8 @@ REG_OP(DecodeBboxV2)
 * @li y1: A Tensor. Must have the same type as x.
 * @li y2: A Tensor. Indices of y1 in x. Dtype must be int32.
 *
+*@attention Constraints:
+* The operator depends on the unstable sorting algorithm.
 */
 REG_OP(Sort)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT16, DT_INT8,
@@ -2058,6 +2060,33 @@ REG_OP(GIoUGrad)
     .ATTR(is_cross, Bool, true)
     .ATTR(mode, String, "iou")
     .OP_END_FACTORY_REG(GIoUGrad)
+
+/**
+*@brief RotatedOverlaps . \n
+
+*@par Inputs:
+*@li boxes : data of grad increment, a 3D Tensor of type float32 with
+* shape (B, 5, N). "N" indicates the number of boxes, and the value
+* "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
+*@li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
+* shape (B, 5, K). "K" indicates the number of boxes, and the value
+* "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
+
+*@par Attributes:
+* trans: An optional attr, true for 'xyxyt', false for 'xywht'.
+
+*@par Outputs:
+* overlaps: A 3D Tensor of type float16 or float32 with shape [B, N, K].
+
+*@attention Constraints:
+* In each batch, the invalid box cannot appear before the valid box.
+*/
+REG_OP(RotatedOverlaps)
+    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(query_boxes, TensorType({DT_FLOAT}))
+    .OUTPUT(overlaps, TensorType({DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .OP_END_FACTORY_REG(RotatedOverlaps)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

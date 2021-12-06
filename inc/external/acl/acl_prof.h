@@ -17,16 +17,26 @@
 #ifndef INC_EXTERNAL_ACL_PROF_H_
 #define INC_EXTERNAL_ACL_PROF_H_
 
+#if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
+#define MSVP_PROF_API __declspec(dllexport)
+#else
+#define MSVP_PROF_API __attribute__((visibility("default")))
+#endif
+
 #include "acl_base.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define ACL_PROF_ACL_API 0x0001
-#define ACL_PROF_TASK_TIME 0x0002
-#define ACL_PROF_AICORE_METRICS 0x0004
-#define ACL_PROF_AICPU 0x0008
+#define ACL_PROF_ACL_API 0x0001ULL
+#define ACL_PROF_TASK_TIME 0x0002ULL
+#define ACL_PROF_AICORE_METRICS 0x0004ULL
+#define ACL_PROF_AICPU 0x0008ULL
+#define ACL_PROF_L2CACHE 0x0010ULL
+#define ACL_PROF_HCCL_TRACE 0x0020ULL
+#define ACL_PROF_TRAINING_TRACE 0x0040ULL
+#define ACL_PROF_MSPROFTX 0x0080ULL
 
 /**
  * @deprecated please use aclprofGetOpTypeLen and aclprofGetOpTNameLen instead
@@ -40,13 +50,20 @@ typedef enum {
   ACL_AICORE_MEMORY_BANDWIDTH = 2,
   ACL_AICORE_L0B_AND_WIDTH = 3,
   ACL_AICORE_RESOURCE_CONFLICT_RATIO = 4,
+  ACL_AICORE_MEMORY_UB = 5,
   ACL_AICORE_NONE = 0xFF
 } aclprofAicoreMetrics;
+
+typedef enum {
+  ACL_STEP_START = 0,  // step  start
+  ACL_STEP_END = 1     // step  end
+} aclprofStepTag;
 
 typedef struct aclprofConfig aclprofConfig;
 typedef struct aclprofStopConfig aclprofStopConfig;
 typedef struct aclprofAicoreEvents aclprofAicoreEvents;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig;
+typedef struct aclprofStepInfo aclprofStepInfo;
 
 /**
  * @ingroup AscendCL
@@ -60,7 +77,7 @@ typedef struct aclprofSubscribeConfig aclprofSubscribeConfig;
  *
  * @see aclprofFinalize
  */
-ACL_FUNC_VISIBILITY aclError aclprofInit(const char *profilerResultPath, size_t length);
+MSVP_PROF_API aclError aclprofInit(const char *profilerResultPath, size_t length);
 
 /**
  * @ingroup AscendCL
@@ -71,7 +88,7 @@ ACL_FUNC_VISIBILITY aclError aclprofInit(const char *profilerResultPath, size_t 
  *
  * @see aclprofInit
  */
-ACL_FUNC_VISIBILITY aclError aclprofFinalize();
+MSVP_PROF_API aclError aclprofFinalize();
 
 /**
  * @ingroup AscendCL
@@ -84,7 +101,7 @@ ACL_FUNC_VISIBILITY aclError aclprofFinalize();
  *
  * @see aclprofStop
  */
-ACL_FUNC_VISIBILITY aclError aclprofStart(const aclprofConfig *profilerConfig);
+MSVP_PROF_API aclError aclprofStart(const aclprofConfig *profilerConfig);
 
 /**
  * @ingroup AscendCL
@@ -100,9 +117,9 @@ ACL_FUNC_VISIBILITY aclError aclprofStart(const aclprofConfig *profilerConfig);
  *
  * @see aclprofDestroyConfig
  */
-ACL_FUNC_VISIBILITY aclprofConfig *aclprofCreateConfig(uint32_t *deviceIdList, uint32_t deviceNums,
-                                                       aclprofAicoreMetrics aicoreMetrics,
-                                                       aclprofAicoreEvents *aicoreEvents, uint64_t dataTypeConfig);
+MSVP_PROF_API aclprofConfig *aclprofCreateConfig(uint32_t *deviceIdList, uint32_t deviceNums,
+                                                 aclprofAicoreMetrics aicoreMetrics, aclprofAicoreEvents *aicoreEvents,
+                                                 uint64_t dataTypeConfig);
 
 /**
  * @ingroup AscendCL
@@ -115,7 +132,7 @@ ACL_FUNC_VISIBILITY aclprofConfig *aclprofCreateConfig(uint32_t *deviceIdList, u
  *
  * @see aclprofCreateConfig
  */
-ACL_FUNC_VISIBILITY aclError aclprofDestroyConfig(const aclprofConfig *profilerConfig);
+MSVP_PROF_API aclError aclprofDestroyConfig(const aclprofConfig *profilerConfig);
 
 /**
  * @ingroup AscendCL
@@ -128,7 +145,7 @@ ACL_FUNC_VISIBILITY aclError aclprofDestroyConfig(const aclprofConfig *profilerC
  *
  * @see aclprofStart
  */
-ACL_FUNC_VISIBILITY aclError aclprofStop(const aclprofConfig *profilerConfig);
+MSVP_PROF_API aclError aclprofStop(const aclprofConfig *profilerConfig);
 
 /**
  * @ingroup AscendCL
@@ -142,7 +159,7 @@ ACL_FUNC_VISIBILITY aclError aclprofStop(const aclprofConfig *profilerConfig);
  *
  * @see aclprofModelUnSubscribe
  */
-ACL_FUNC_VISIBILITY aclError aclprofModelSubscribe(uint32_t modelId, const aclprofSubscribeConfig *profSubscribeConfig);
+MSVP_PROF_API aclError aclprofModelSubscribe(uint32_t modelId, const aclprofSubscribeConfig *profSubscribeConfig);
 
 /**
  * @ingroup AscendCL
@@ -155,7 +172,7 @@ ACL_FUNC_VISIBILITY aclError aclprofModelSubscribe(uint32_t modelId, const aclpr
  *
  * @see aclprofModelSubscribe
  */
-ACL_FUNC_VISIBILITY aclError aclprofModelUnSubscribe(uint32_t modelId);
+MSVP_PROF_API aclError aclprofModelUnSubscribe(uint32_t modelId);
 
 /**
  * @ingroup AscendCL
@@ -169,8 +186,8 @@ ACL_FUNC_VISIBILITY aclError aclprofModelUnSubscribe(uint32_t modelId);
  *
  * @see aclprofDestroySubscribeConfig
  */
-ACL_FUNC_VISIBILITY aclprofSubscribeConfig *aclprofCreateSubscribeConfig(int8_t timeInfoSwitch,
-                                                                         aclprofAicoreMetrics aicoreMetrics, void *fd);
+MSVP_PROF_API aclprofSubscribeConfig *aclprofCreateSubscribeConfig(int8_t timeInfoSwitch,
+                                                                   aclprofAicoreMetrics aicoreMetrics, void *fd);
 
 /**
  * @ingroup AscendCL
@@ -183,7 +200,7 @@ ACL_FUNC_VISIBILITY aclprofSubscribeConfig *aclprofCreateSubscribeConfig(int8_t 
  *
  * @see aclprofCreateSubscribeConfig
  */
-ACL_FUNC_VISIBILITY aclError aclprofDestroySubscribeConfig(const aclprofSubscribeConfig *profSubscribeConfig);
+MSVP_PROF_API aclError aclprofDestroySubscribeConfig(const aclprofSubscribeConfig *profSubscribeConfig);
 
 /**
  * @ingroup AscendCL
@@ -194,7 +211,7 @@ ACL_FUNC_VISIBILITY aclError aclprofDestroySubscribeConfig(const aclprofSubscrib
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclprofGetOpDescSize(size_t *opDescSize);
+MSVP_PROF_API aclError aclprofGetOpDescSize(size_t *opDescSize);
 
 /**
  * @ingroup AscendCL
@@ -207,7 +224,7 @@ ACL_FUNC_VISIBILITY aclError aclprofGetOpDescSize(size_t *opDescSize);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclprofGetOpNum(const void *opInfo, size_t opInfoLen, uint32_t *opNumber);
+MSVP_PROF_API aclError aclprofGetOpNum(const void *opInfo, size_t opInfoLen, uint32_t *opNumber);
 
 /**
  * @ingroup AscendCL
@@ -221,8 +238,7 @@ ACL_FUNC_VISIBILITY aclError aclprofGetOpNum(const void *opInfo, size_t opInfoLe
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclprofGetOpTypeLen(const void *opInfo, size_t opInfoLen, uint32_t index,
-                                                 size_t *opTypeLen);
+MSVP_PROF_API aclError aclprofGetOpTypeLen(const void *opInfo, size_t opInfoLen, uint32_t index, size_t *opTypeLen);
 
 /**
  * @ingroup AscendCL
@@ -237,8 +253,8 @@ ACL_FUNC_VISIBILITY aclError aclprofGetOpTypeLen(const void *opInfo, size_t opIn
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclprofGetOpType(const void *opInfo, size_t opInfoLen, uint32_t index, char *opType,
-                                              size_t opTypeLen);
+MSVP_PROF_API aclError aclprofGetOpType(const void *opInfo, size_t opInfoLen, uint32_t index, char *opType,
+                                        size_t opTypeLen);
 
 /**
  * @ingroup AscendCL
@@ -252,8 +268,7 @@ ACL_FUNC_VISIBILITY aclError aclprofGetOpType(const void *opInfo, size_t opInfoL
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclprofGetOpNameLen(const void *opInfo, size_t opInfoLen, uint32_t index,
-                                                 size_t *opNameLen);
+MSVP_PROF_API aclError aclprofGetOpNameLen(const void *opInfo, size_t opInfoLen, uint32_t index, size_t *opNameLen);
 
 /**
  * @ingroup AscendCL
@@ -268,8 +283,8 @@ ACL_FUNC_VISIBILITY aclError aclprofGetOpNameLen(const void *opInfo, size_t opIn
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclprofGetOpName(const void *opInfo, size_t opInfoLen, uint32_t index, char *opName,
-                                              size_t opNameLen);
+MSVP_PROF_API aclError aclprofGetOpName(const void *opInfo, size_t opInfoLen, uint32_t index, char *opName,
+                                        size_t opNameLen);
 
 /**
  * @ingroup AscendCL
@@ -282,7 +297,7 @@ ACL_FUNC_VISIBILITY aclError aclprofGetOpName(const void *opInfo, size_t opInfoL
  * @retval start time(us) of specified op with timestamp
  * @retval 0 for failed
  */
-ACL_FUNC_VISIBILITY uint64_t aclprofGetOpStart(const void *opInfo, size_t opInfoLen, uint32_t index);
+MSVP_PROF_API uint64_t aclprofGetOpStart(const void *opInfo, size_t opInfoLen, uint32_t index);
 
 /**
  * @ingroup AscendCL
@@ -295,7 +310,7 @@ ACL_FUNC_VISIBILITY uint64_t aclprofGetOpStart(const void *opInfo, size_t opInfo
  * @retval end time(us) of specified op with timestamp
  * @retval 0 for failed
  */
-ACL_FUNC_VISIBILITY uint64_t aclprofGetOpEnd(const void *opInfo, size_t opInfoLen, uint32_t index);
+MSVP_PROF_API uint64_t aclprofGetOpEnd(const void *opInfo, size_t opInfoLen, uint32_t index);
 
 /**
  * @ingroup AscendCL
@@ -308,7 +323,7 @@ ACL_FUNC_VISIBILITY uint64_t aclprofGetOpEnd(const void *opInfo, size_t opInfoLe
  * @retval execution time(us) of specified op with timestamp
  * @retval 0 for failed
  */
-ACL_FUNC_VISIBILITY uint64_t aclprofGetOpDuration(const void *opInfo, size_t opInfoLen, uint32_t index);
+MSVP_PROF_API uint64_t aclprofGetOpDuration(const void *opInfo, size_t opInfoLen, uint32_t index);
 
 /**
  * @ingroup AscendCL
@@ -320,7 +335,37 @@ ACL_FUNC_VISIBILITY uint64_t aclprofGetOpDuration(const void *opInfo, size_t opI
  * @retval model id of subscription data
  * @retval 0 for failed
  */
-ACL_FUNC_VISIBILITY size_t aclprofGetModelId(const void *opInfo, size_t opInfoLen, uint32_t index);
+MSVP_PROF_API size_t aclprofGetModelId(const void *opInfo, size_t opInfoLen, uint32_t index);
+
+/**
+ * @ingroup AscendCL
+ * @brief
+ *
+ * @param  stepInfo [IN]     pointer to stepInfo data
+ * @param  aclprofstepTag [IN] start or end flag
+ * @param  stream [IN] steam info
+ *
+ * @retval 0 for failed
+ */
+MSVP_PROF_API aclError aclprofGetStepTimestamp(aclprofStepInfo *stepInfo, aclprofStepTag tag, aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief create pointer to aclprofStepInfo data
+ *
+ *
+ * @retval aclprofStepInfo pointer
+ */
+MSVP_PROF_API aclprofStepInfo *aclprofCreateStepInfo();
+
+/**
+ * @ingroup AscendCL
+ * @brief destroy aclprofStepInfo pointer
+ *
+ *
+ * @retval void
+ */
+MSVP_PROF_API void aclprofDestroyStepInfo(aclprofStepInfo *stepinfo);
 
 #ifdef __cplusplus
 }

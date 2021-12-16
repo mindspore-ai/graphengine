@@ -40,6 +40,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file);
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
+  static void SetModelToGeModel(GeModelPtr &ge_model, Model &model);
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
@@ -67,7 +68,6 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status GenerateGeModel(OmFileLoadHelper &om_load_helper);
   Status GenerateGeRootModel(OmFileLoadHelper &om_load_helper);
   Status LoadModelData(OmFileLoadHelper &om_load_helper);
-  void SetModelToGeModel(GeModelPtr &ge_model, Model &model) const;
   Status LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
   Status LoadWeights(OmFileLoadHelper &om_load_helper);
   Status LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;

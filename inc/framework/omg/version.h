@@ -19,8 +19,6 @@
 
 #include <memory>
 #include <set>
-#include <string>
-#include <vector>
 
 #include "framework/common/debug/log.h"
 #include "framework/common/string_util.h"
@@ -34,7 +32,7 @@ class GE_FUNC_VISIBILITY PlatformVersionManager {
   static Status GetPlatformVersion(std::string &ver) {
     ver = "1.11.z";
     const std::vector<std::string> version_splits = StringUtils::Split(ver, '.');
-    GE_IF_BOOL_EXEC(version_splits.size() < 3, GELOGW("Read platform version error!"); return FAILED;);
+    GE_IF_BOOL_EXEC(version_splits.size() < 3U, GELOGW("Read platform version error!"); return FAILED;);
 
     GELOGI("Read current platform version: %s.", ver.c_str());
     return SUCCESS;

@@ -2076,7 +2076,7 @@ REG_OP(GIoUGrad)
 * trans: An optional attr, true for 'xyxyt', false for 'xywht'.
 
 *@par Outputs:
-* overlaps: A 3D Tensor of type float16 or float32 with shape [B, N, K].
+* overlaps: A 3D Tensor of type float32 with shape [B, N, K].
 
 *@attention Constraints:
 * In each batch, the invalid box cannot appear before the valid box.
@@ -2087,6 +2087,38 @@ REG_OP(RotatedOverlaps)
     .OUTPUT(overlaps, TensorType({DT_FLOAT}))
     .ATTR(trans, Bool, false)
     .OP_END_FACTORY_REG(RotatedOverlaps)
+
+/**
+*@brief RotatedIou . \n
+
+*@par Inputs:
+*@li boxes : data of grad increment, a 3D Tensor of type float32 with
+* shape (B, 5, N). "N" indicates the number of boxes, and the value
+* "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
+*@li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
+* shape (B, 5, K). "K" indicates the number of boxes, and the value
+* "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
+
+*@par Attributes:
+*@li trans: An optional attr, true for 'xyxyt', false for 'xywht'.
+*@li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
+* only support 'iou' now.
+*@li is_cross: Cross calculation when it is True, and one-to-one calculation when it is False.
+
+*@par Outputs:
+* iou: A 3D Tensor of float32 with shape [B, N, K].
+
+*@attention Constraints:
+* In each batch, the invalid box cannot appear before the valid box.
+*/
+REG_OP(RotatedIou)
+    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(query_boxes, TensorType({DT_FLOAT}))
+    .OUTPUT(iou, TensorType({DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(mode, String, "iou")
+    .ATTR(is_cross, Bool, true)
+    .OP_END_FACTORY_REG(RotatedIou)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

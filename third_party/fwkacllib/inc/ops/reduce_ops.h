@@ -1326,6 +1326,43 @@ REG_OP(ReduceMeanVariance)
     .ATTR(axes, ListInt, {})
     .ATTR(keep_dims, Bool, true)
     .OP_END_FACTORY_REG(ReduceMeanVariance)
+
+/**
+* @brief Calculates the standard deviation or the variance of Tensors with the average value.
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32. \n
+* @li mean: A Tensor. It's the mean of X. Has the same shape and type as "x" \n
+
+* @par Attributes:
+* Four Attributes, including:
+* @li dim: An listint. \n
+* @li if_std: An optional bool. Defaults to "False"
+*     If "True", Calculate the standard deviation
+*     If "False", Calculate the variance
+* @li unbiased: An optional bool. Defaults to "True".
+*     If "True", Use Bessel Correction.
+*     If "False", Do not use Bessel Correction. \n
+* @li keepdim: An optional bool. Defaults to "False".
+*     If "True", Keep the original tensor dimension.
+*     If "False", Do not keep the original tensor dimension. \n
+
+* @par Outputs:
+* @li output_var: A Tensor. It's the standard deviation or the variance of X. Has the same type as "x".
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Var_mean.
+*/
+REG_OP(ReduceStdV2Update)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(output_var, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .REQUIRED_ATTR(dim, ListInt)
+    .ATTR(if_std, Bool, false)
+    .ATTR(unbiased, Bool, true)
+    .ATTR(keepdim, Bool, false)
+    .OP_END_FACTORY_REG(ReduceStdV2Update)
 } //namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_REDUCE_OPS_H_

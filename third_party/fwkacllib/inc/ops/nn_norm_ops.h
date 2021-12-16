@@ -1644,6 +1644,36 @@ REG_OP(NormalizeBatch)
     .REQUIRED_ATTR(normalize_type, String)
     .ATTR(epsilon, Float, 0.00001)
     .OP_END_FACTORY_REG(NormalizeBatch)
+
+/**
+*@brief GroupNorm and Reul operator
+*  calculating: x, gamma, beta
+*  y = relu(gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta)
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li beta: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Attributes:
+* @li num_groups: A require attribute, the type is int32.
+* @li eps: A optional attribute, the type is float32. Defaults to 0.00001. \n
+
+*@par Outputs:
+*One outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use/
+*/
+REG_OP(GroupNormRelu)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(num_groups, Int)
+    .ATTR(eps, Float, 0.00001)
+    .OP_END_FACTORY_REG(GroupNormRelu)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

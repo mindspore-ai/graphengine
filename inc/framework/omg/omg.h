@@ -64,7 +64,7 @@ GE_FUNC_VISIBILITY Status InitDomiOmgContext(const std::string &input_shape, con
 GE_FUNC_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<std::string, std::string> &atc_params,
                                      const char *model_file, const char *weights_file, domi::FrameworkType type,
                                      const char *op_conf = nullptr, const char *target = nullptr,
-                                     RunMode run_mode = GEN_OM_MODEL, bool is_dynamic_input = false);
+                                     RunMode run_mode = RunMode::GEN_OM_MODEL, bool is_dynamic_input = false);
 
 /**
  * @ingroup domi_omg

@@ -32,6 +32,7 @@
 namespace ge {
 class SingleOp;
 class DynamicSingleOp;
+class GeRootModel;
 
 struct RunModelData {
   uint32_t index;  // Data index
@@ -224,6 +225,18 @@ class GE_FUNC_VISIBILITY GeExecutor {
   ///
   Status LoadModelWithQ(uint32_t &model_id, const ModelData &model_data, const std::vector<uint32_t> &input_queue_ids,
                         const std::vector<uint32_t> &output_queue_ids);
+
+  ///
+  /// @ingroup ge
+  /// @brief Load task list from ModelData with queue.
+  /// @param [out] model_id: model id allocate from manager.
+  /// @param [in] root_model: Instance of GeRootModel.
+  /// @param [in] input_queue_ids: input queue ids create from user.
+  /// @param [in] output_queue_ids: input queue ids create from user.
+  /// @return: 0 for success / others for fail
+  ///
+  Status LoadModelWithQ(uint32_t &model_id, const std::shared_ptr<GeRootModel> &root_model,
+                        const std::vector<uint32_t> &input_queue_ids, const std::vector<uint32_t> &output_queue_ids);
 
   ///
   /// @ingroup ge

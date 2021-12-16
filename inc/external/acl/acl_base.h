@@ -134,6 +134,7 @@ static const int ACL_ERROR_DRV_FAILURE = 500004;
 static const int ACL_ERROR_PROFILING_FAILURE = 500005;
 
 #define ACL_TENSOR_SHAPE_RANGE_NUM 2
+#define ACL_TENSOR_VALUE_RANGE_NUM 2
 #define ACL_UNKNOWN_RANK 0xFFFFFFFFFFFFFFFE
 
 typedef enum {
@@ -336,6 +337,19 @@ ACL_FUNC_VISIBILITY void aclDestroyTensorDesc(const aclTensorDesc *desc);
 ACL_FUNC_VISIBILITY aclError aclSetTensorShapeRange(aclTensorDesc *desc, size_t dimsCount,
                                                     int64_t dimsRange[][ACL_TENSOR_SHAPE_RANGE_NUM]);
 
+/**
+ * @ingroup AscendCL
+ * @brief set value range for aclTensorDesc
+ *
+ * @param  desc [OUT]     pointer to the data of aclTensorDesc
+ * @param  valueCount [IN]     the number of value
+ * @param  valueRange [IN]     the range of value
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclSetTensorValueRange(aclTensorDesc *desc, size_t valueCount,
+                                                    int64_t valueRange[][ACL_TENSOR_VALUE_RANGE_NUM]);
 /**
  * @ingroup AscendCL
  * @brief get data type specified by the tensor description

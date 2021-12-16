@@ -98,11 +98,11 @@ typedef struct rtExceptionInfo {
     uint32_t tid;
     uint32_t deviceid;
     uint32_t retcode;
-} rtExceptionInfo;
+} rtExceptionInfo_t;
 
 typedef void (*rtErrorCallback)(rtExceptionType);
 
-typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
+typedef void (*rtTaskFailCallback)(rtExceptionInfo_t *exceptionInfo);
 
 typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 

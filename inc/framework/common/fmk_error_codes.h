@@ -74,7 +74,7 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
 class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
-  ErrorNoRegisterar(uint32_t err, const std::string &desc) {
+  ErrorNoRegisterar(const uint32_t err, const std::string &desc) {
     StatusFactory::Instance()->RegisterErrorNo(err, desc);
   }
   ~ErrorNoRegisterar() {}

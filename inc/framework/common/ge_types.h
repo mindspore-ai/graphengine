@@ -40,8 +40,8 @@ enum FrameworkType {
   CAFFE = 0,
   MINDSPORE = 1,
   TENSORFLOW = 3,
-  ANDROID_NN,
-  ONNX,
+  ANDROID_NN = 4,
+  ONNX = 5,
 };
 
 enum class GraphStage : int64_t { GRAPH_STAGE_FUZZ = 0, GRAPH_STAGE_RESERVED };
@@ -81,7 +81,7 @@ struct DataBuffer {
   uint64_t length;  // Data length
   bool isDataSupportMemShare = false;
   uint32_t placement = 0U;
-  DataBuffer(void *data_in, uint64_t data_len, bool is_support_mem_share, uint32_t placement = 0U)
+  DataBuffer(void *data_in, const uint64_t data_len, const bool is_support_mem_share, const uint32_t placement = 0U)
       : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(placement) {}
 
   DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false) {}

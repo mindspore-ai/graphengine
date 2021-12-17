@@ -53,23 +53,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_FUSION_MODEL_DEF;
-
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t ALLOC_MEMORY_MAX_SIZE;  // Max size of 8 GB.
-
-template <typename K, typename V>
-static std::pair<V, K> flip_pair(const std::pair<K, V> &p) {
-  return std::pair<V, K>(p.second, p.first);
-}
-
-template <typename K, typename V>
-static std::map<V, K> flip_map(std::map<K, V> src) {
-  std::map<V, K> dst;
-  std::transform(src.begin(), src.end(), std::inserter(dst, dst.begin()), flip_pair<K, V>);
-  return dst;
-}
 
 REGISTER_OPTYPE_DECLARE(DATA, "Data");
 REGISTER_OPTYPE_DECLARE(AIPPDATA, "AippData");
+REGISTER_OPTYPE_DECLARE(QUEUE_DATA, "QueueData");
 REGISTER_OPTYPE_DECLARE(CONVOLUTION, "Convolution");
 REGISTER_OPTYPE_DECLARE(CORRELATION, "Correlation");
 REGISTER_OPTYPE_DECLARE(CORRELATIONV2, "Correlation_V2");
@@ -516,30 +504,6 @@ REGISTER_OPTYPE_DECLARE(GETDYNAMICDIMS, "GetDynamicDims");
 // profiling training trace node
 REGISTER_OPTYPE_DECLARE(PROFILINGTRAININGTRACE, "ProfilingTrainingTrace");
 
-enum InputMode { INPUT = 0, CONST_INPUT };
-
-// Definition of the processing status enum of the process module
-enum ModelProcessState {
-  INIT_STATE = 0,    // init status
-  WAIT_EVENT_STATE,  // Wait for the event status
-  IND_RSLT_STATE,    // The model execution result is being output to the high level
-  STOPPED_STATE,     // Model execution completed. The model enters this state after Model Manager::Stop
-  RESERVED_STATE,    // reserved
-};
-
-// Indicates the enun definition of the execution mode of the access module
-enum SysMode {
-  INFERENCE = 0,  // Normal, that is, Inference mode
-  DEBUG,          // Debug mode
-  TIME,           // Model execution time mode, including the execution time of each OP
-  STOP,           // STOP mode
-  RESET,          // RESET mode
-  PERFORMANCE,  // Impact of enabling the performance model: 1. The input data of the model is considered ready and does
-                // not need to be converted
-  ANDROID_DEBUG,  // Exports Android platform computing data
-  RESERVED,       // reserved
-};
-
 // @brief encryption type of the model file
 enum ModelEncryptType {
   UNENCRYPTED,  // not encrypted
@@ -577,22 +541,22 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t MODEL_FIL
 ///
 /// @brief model name length
 ///
-static constexpr uint32_t MODEL_NAME_LENGTH = 32;
+constexpr uint32_t MODEL_NAME_LENGTH = 32U;
 
 ///
 /// @brief length of user-defined information
 ///
-static constexpr uint32_t USER_DEFINE_INFO_LENGTH = 32;
+constexpr uint32_t USER_DEFINE_INFO_LENGTH = 32U;
 
 ///
 /// @brief length of the model file signature
 ///
-static constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64;
+constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64U;
 
 ///
 /// @brief length of the reserved field in the model file header
 ///
-static constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75;
+constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75U;
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DATA_TYPE;
@@ -617,7 +581,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_TYP
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_CONF_DELIMITER;
 
 // dim default size value
-static const int32_t DIM_DEFAULT_SIZE = 4;
+constexpr int32_t DIM_DEFAULT_SIZE = 4;
 
 // dim extension default value
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t DIM_DEFAULT_VALUE;
@@ -650,34 +614,35 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STREAM_SW
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_GLOBAL_STEP;
 
-static const uint32_t PLATFORM_VERSION_LEN = 20;
+constexpr uint32_t PLATFORM_VERSION_LEN = 20U;
 
 // Definition of the file header of the model file
 struct ModelFileHeader {
-  uint32_t magic = MODEL_FILE_MAGIC_NUM;               // magic number of DOMI
-  uint32_t headsize = MODEL_FILE_HEAD_LEN;             // length of the model header. The value is fixed at 256
-  uint32_t version = MODEL_VERSION;                    // version 1.0
-  uint8_t checksum[MODEL_FILE_CHECKSUM_LENGTH] = {0};  // signature
-  uint32_t length = 0;  // Ciphertext length. In the non-encryption model, the length is the plaintext length.
-  uint8_t is_encrypt = ModelEncryptType::UNENCRYPTED;     // whether encrypted 0:not encrypt, 1:encrypt
-  uint8_t is_checksum = ModelCheckType::CHECK;            // whether to check the checksum
-  uint8_t modeltype = 0;                                  // 0：IR model 1：standard model 2: OM Tiny model
-  uint8_t genmode = 0;                                    // 0：offline generate 1：online generate
-  uint8_t name[MODEL_NAME_LENGTH] = {0};                  // Model name, which contains 32 characters
-  uint32_t ops = 0;                                       // Computing power (Kops)
-  uint8_t userdefineinfo[USER_DEFINE_INFO_LENGTH] = {0};  // User-defined information. The value contains 32 characters
-  uint32_t om_ir_version = 0;
-  uint32_t model_num = 0;
-  uint8_t platform_version[PLATFORM_VERSION_LEN] = {0};
-  uint8_t platform_type = {0};
-  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0};  // Reserved field 75
+  uint32_t magic = MODEL_FILE_MAGIC_NUM;                // magic number of DOMI
+  uint32_t headsize = MODEL_FILE_HEAD_LEN;              // length of the model header. The value is fixed at 256
+  uint32_t version = MODEL_VERSION;                     // version 1.0
+  uint8_t checksum[MODEL_FILE_CHECKSUM_LENGTH] = {0U};  // signature
+  uint32_t length = 0U;  // Ciphertext length. In the non-encryption model, the length is the plaintext length.
+  uint8_t is_encrypt =
+      static_cast<uint8_t>(ModelEncryptType::UNENCRYPTED);            // whether encrypted 0:not encrypt, 1:encrypt
+  uint8_t is_checksum = static_cast<uint8_t>(ModelCheckType::CHECK);  // whether to check the checksum
+  uint8_t modeltype = 0U;                                  // 0：IR model 1：standard model 2: OM Tiny model
+  uint8_t genmode = 0U;                                    // 0：offline generate 1：online generate
+  uint8_t name[MODEL_NAME_LENGTH] = {0U};                  // Model name, which contains 32 characters
+  uint32_t ops = 0U;                                       // Computing power (Kops)
+  uint8_t userdefineinfo[USER_DEFINE_INFO_LENGTH] = {0U};  // User-defined information. The value contains 32 characters
+  uint32_t om_ir_version = 0U;
+  uint32_t model_num = 0U;
+  uint8_t platform_version[PLATFORM_VERSION_LEN] = {0U};
+  uint8_t platform_type = {0U};
+  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 75
 };
 
-static constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0;
-static constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1;
+constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0U;
+constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1U;
 
 // number of partitions in the current model
-static constexpr uint32_t PARTITION_SIZE = 5;
+constexpr uint32_t PARTITION_SIZE = 5U;
 
 enum ModelPartitionType { MODEL_DEF = 0, WEIGHTS_DATA, TASK_INFO, TBE_KERNELS, CUST_AICPU_KERNELS };
 
@@ -693,20 +658,6 @@ struct ModelPartitionTable {
 };
 
 #define SIZE_OF_MODEL_PARTITION_TABLE(table) (sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * (table).num)
-
-// Filter format
-typedef enum tagDomiFilterFormat {
-  DOMI_FILTER_KCHW,  // KCHW
-  DOMI_FILTER_HWCK,  // HWCK
-  DOMI_FILTER_RESERVED
-} domiFilterFormat_t;
-
-// Const data trans type
-typedef enum tagDomiConstDataTransType {
-  DOMI_CONST_DATA_NOT_CHANGE = 0,  // No action is required
-  DOMI_CONST_DATA_TRANS_MATMUL,    // The const input to MatMul and needs to be transposed
-  DOMI_CONST_DATA_RESERVED
-} domiConstDataTransType_t;
 
 // mode of activation
 typedef enum tagDomiActivationMode {
@@ -726,170 +677,6 @@ typedef enum tagDomiActivationMode {
   DOMI_ACTIVATION_LINEAR,          // linear
   DOMI_ACTIVATION_RESERVED
 } domiActivationMode_t;
-
-// mode of batchnorm
-typedef enum tagDomiBatchNormMode {
-  DOMI_BATCHNORM_PER_ACTIVATION = 0,  // bnScale, bnBias tensor dims are 1xCxHxW
-  DOMI_BATCHNORM_SPATIAL,             // bnScale, bnBias tensor dims are 1xCx1x1
-  DOMI_BATCHNORM_RESERVED
-} domiBatchNormMode_t;
-
-// eltwise mode
-typedef enum tagDomiEltwiseMode {
-  DOMI_ELTWISE_PROD = 0,  // prod
-  DOMI_ELTWISE_SUM,       // sum
-  DOMI_ELTWISE_MAX,       // max
-  DOMI_ELTWISE_RESERVED
-} domiEltwiseMode_t;
-
-// mode of padding
-typedef enum tagDomiPaddingMode {
-  DOMI_PADDING_CEIL = 0,      // Default padding mode
-  DOMI_PADDING_DIRECTASSIGN,  // Default padding mode: NOTSET
-  DOMI_PADDING_VALID,         // VALID padding mode
-  DOMI_PADDING_SAME,          // Padding values of 0 are always used
-  DOMI_PADDING_CEIL_NEW,      // Padding values of 0 are always used
-  DOMI_PADDING_VALID_NEW,     // Padding values of 0 are always used
-  DOMI_PADDING_SAME_NEW,      // Padding values of 0 are always used
-  DOMI_PADDING_RESERVED
-} domiPaddingMode_t;
-
-// algorithm of convolution forward
-typedef enum tagDomiConvolutionFwdAlgo {
-  DOMI_CONVOLUTION_FWD_ALGO_GEMM = 0,           // matrix gemm algo
-  DOMI_CONVOLUTION_FWD_ALGO_WINOGRAD,           // Winograd Transform algo
-  DOMI_CONVOLUTION_FWD_ALGO_GEMM_ACCU_FLOAT32,  // accumulate in L0c with FP32
-  DOMI_CONVOLUTION_FWD_ALGO_RESERVED
-} domiConvolutionFwdAlgo_t;
-
-typedef enum tagDomiFullConnectFwdAlgo {
-  DOMI_FULLCONNECT_FWD_ALGO_HALF = 0,  // accumulate in L0c with FP16
-  DOMI_FULLCONNECT_FWD_ALGO_FLOAT32    // accumulate in L0c with FP32
-} domiFullConnectFwdAlgo_t;
-
-typedef enum tagDomiPooingFwdAlgo {
-  DOMI_POOLING_FWD_ALGO_HALF = 0,  // accumulate in L0c with FP16
-  DOMI_POOLING_FWD_ALGO_FLOAT32    // accumulate in L0c with FP32
-} domiPooingFwdAlgo_t;
-
-// mode of convolution
-typedef enum tagDomiConvolutionMode {
-  DOMI_CONV_CONVOLUTION = 0,    // math convolution
-  DOMI_CONV_CROSS_CORRELATION,  // cross-correlation convolution
-  DOMI_CONV_DECONVOLUTION,      // deconvolution, also named transposed convolution
-  DOMI_CONV_MODE_DEPTHWISE,     // depthwise convolution
-  DOMI_CONV_MODE_RESERVED
-} domiConvolutionMode_t;
-
-// softmax mode
-typedef enum tagDomiSoftmaxMode {
-  DOMI_SOFTMAX_MODE_INSTANCE = 0,  // compute the softmax over all C, H, W for each N
-  DOMI_SOFTMAX_MODE_CHANNEL,       // compute the softmax over all C for each H, W, N
-  DOMI_SOFTMAX_MODE_HEIGHT,        // compute the softmax over all H for each N, C, W
-  DOMI_SOFTMAX_MODE_WIDTH,         // compute the softmax over all W for each N, C, H
-  DOMI_SOFTMAX_MODE_RESERVED
-} domiSoftmaxMode_t;
-
-// softmax algorithm
-typedef enum tagDomiSoftmaxAlgo {
-  DOMI_SOFTMAX_FAST = 0,  // straightforward implementation
-  DOMI_SOFTMAX_ACCURATE,  // subtract max from every point to avoid overflow
-  DOMI_SOFTMAX_LOG,       // perform the Log softmax operation to avoid overflow
-  DOMI_SOFTMAX_ACCURATE_FP32,
-  DOMI_SOFTMAX_RESERVED
-} domiSoftmaxAlgo_t;
-
-// algorithm of convolution backward
-typedef enum tagDomiConvolutionBwdAlgo {
-  DOMI_CONVOLUTION_BWD_ALGO_GEMM = 0,  // matrix gemm algo
-  DOMI_CONVOLUTION_BWD_ALGO_WINOGRAD,  // Winograd Transform algo
-  DOMI_CONVOLUTION_BWD_ALGO_RESERVED
-} domiConvolutionBwdAlgo_t;
-
-// mode of pooling
-typedef enum tagDomiPoolingMode {
-  DOMI_POOLING_MAX = 0,  // max pooling
-  DOMI_POOLING_AVG,      // average pooling
-  DOMI_POOLING_L2,       // L2 pooling
-  DOMI_POOLING_RESERVED
-} domiPoolingMode_t;
-
-// propagate Nan
-typedef enum tagDomiNanPropagation {
-  DOMI_NAN_NOT_PROPAGATE = 0,  // Nan numbers are not propagated
-  DOMI_NAN_PROPAGATE,          // Nan numbers are propagated
-  DOMI_NAN_PROPAGATE_RESERVED
-} domiNanPropagation_t;
-
-// mode of cropandresize
-typedef enum tagDomiCropAndResizeMode {
-  DOMI_RESIZE_METHOD_BILINEAR = 0,  // resize bilinear
-  DOMI_RESIZE_METHOD_NEAREST,       // resize nearest
-  DOMI_RESIZE_RESERVED
-} domiCropAndResizeMode_t;
-
-// yolo version
-typedef enum tagDomiYoloVersion { DOMI_YOLO_V2 = 1, DOMI_YOLO_V3, DOMI_YOLO_TRSERVED } domiYoloVersion_t;
-
-typedef enum tagDomiRNNScopePassType {
-  DOMI_STATIC_BIDIRECTIONAL_RNN_GENERAL_PASS = 0,
-  DOMI_DYNAMIC_BIDIRECTIONAL_RNN_GENERAL_PASS,
-  DOMI_DYNAMIC_BIDIRECTIONAL_RNN_BIDAF_PASS
-} domiRNNScopePassType;
-
-// RNNDataLayout
-typedef enum tagDomiRNNDataLayout {
-  DOMI_RNN_ND_TBX = 0,  // data[max_time,batch_size,Xt]
-  DOMI_RNN_ND_BTX,      // data[batch_size,max_time,Xt]
-  DOMI_RNN_5D_TX1BX,    // data[max_time,Xt,1,batch_size,Xt]
-  DOMI_RNN_5D_BX1TX,    // dataa[batch_size,Xt,1,max_time,Xt]
-  DOMI_RNN_4DTBX1,
-  DOMI_ENN_DL_RESERVED
-} domiRNNDataLayout_t;
-
-// RNNInputMode
-typedef enum tagDomiRNNInputMode { DOMI_RNN_LINEAR_INPUT = 0, DOMI_RNN_SKIP_INPUT } domiRNNInputMode_t;
-
-// RNNDirectionMode
-typedef enum tagDomiRNNDirectionMode { DOMI_RNN_UNIDIRECTIONAL = 0, DOMI_RNN_BIDIRECTIONAL } domiDirectionMode_t;
-
-typedef enum tagDomiPoolingCeilMode { DOMI_POOLING_FLOOR = 0, DOMI_POOLING_CEIL } domiPoolingCeilMode_t;
-
-// RNNMode
-typedef enum tagDomiRNNActivationMode {
-  DOMI_RNN_ACTIVATION_SIGMOID = 0,  // sigmoid
-  DOMI_RNN_ACTIVATION_TANH,         // tanh
-  DOMI_RNN_ACTIVATION_RELU,         // ReLU
-  DOMI_RNN_ACTIVATION_RELU1,        //  ReLU1
-  DOMI_RNN_ACTIVATION_RELU6,        //  ReLU6
-  DOMI_RNN_ACTIVATION_RESERVED
-} domiRNNActivationMode_t;
-
-typedef enum tagDomiRNNLSTMOutMode {
-  DOMI_RNN_LSTM_OUT_SEPARATE = 0,
-  DOMI_RNN_LSTM_OUT_CONCAT,
-  DOMI_RNN_LSTM_OUT_RESERVED
-} domiRNNLSTMOutPutMode_t;
-typedef enum tagDomiRNNLSTMStateOutMode {
-  DOMI_RNN_LSTM_STATE_OUT_SEPARATE = 0,
-  DOMI_RNN_LSTM_STATE_OUT_CONCAT_ALL,
-  DOMI_RNN_LSTM_STATE_OUT_RESERVED
-} domiRNNLSTMStateOutMode_t;
-
-typedef enum tagDomiRNNMode {
-  DOMI_RNN_RELU = 0,
-  DOMI_RNN_TANH,
-  DOMI_LSTM,
-  DOMI_GRU,
-  DOMI_RNN_MODE_RESERVED
-} domiRNNMode_t;
-
-typedef enum tagDomiResizeBilinearMode {
-  DOMI_RESIZE_OUTPUT_DIM_BY_ZOOM_FACTOR = 0,  // Output dimension specified by zoom factor
-  DOMI_RESIZE_OUTPUT_DIM_BY_SHRINK_FACTOR,    // specified by shrink factor
-  DOMI_RESIZE_OUTPUT_DIM_EXPLICIT,            // specified explicitly
-  DOMI_RESIZE_OUTPUT_DIM_RESERVED
-} domiResizeOutputDimMode_t;
 
 #pragma pack(1)  // single-byte alignment
 // DUMP file struct

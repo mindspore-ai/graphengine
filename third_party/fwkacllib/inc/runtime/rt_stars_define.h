@@ -32,6 +32,37 @@ typedef struct tagStarsSqeHeader {
     uint16_t taskId;
 } rtStarsSqeHeader_t;
 
+typedef struct tagStarsDsaSqe {
+    // 0-7 bytes
+    rtStarsSqeHeader_t sqeHeader;
+    // 8-11 bytes
+    uint32_t start : 1;
+    uint32_t functionType : 3;
+    uint32_t dataType : 3;
+    uint32_t algoType : 3;
+    uint32_t paramVldBitmap : 5;
+    uint32_t paramAddrValBitmap : 7;
+    uint32_t reserved0 : 10;
+    // 12-15 bytes
+    uint16_t sqeIndex;
+    uint8_t kernelCredit;
+    uint8_t reserved1;
+    // 16-31 bytes
+    uint32_t dsaCfgResultAddrLow;
+    uint32_t dsaCfgResultAddrHigh;
+    uint32_t dsaCfgStateAddrLow;
+    uint32_t dsaCfgStateAddrHigh;
+    // 32-47 bytes
+    uint32_t dsaCfgParamAddrLow;
+    uint32_t dsaCfgParamAddrHigh;
+    uint32_t dsaCfgSeedLow;
+    uint32_t dsaCfgSeedHigh;
+    // 48-63 bytes
+    uint32_t dsaCfgNumberLow;
+    uint32_t dsaCfgNumberHigh;
+    uint32_t reserved2[2];
+} rtStarsDsaSqe_t;
+
 // ffts+ type
 typedef enum tagFftsPlusType {
     RT_FFTS_PLUS_TYPE_RES1 = 2,   // Reserved

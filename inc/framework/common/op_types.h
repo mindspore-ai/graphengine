@@ -20,6 +20,8 @@
 #include <set>
 #include <string>
 
+#include "graph/types.h"
+
 namespace ge {
 class GE_FUNC_VISIBILITY OpTypeContainer {
  public:
@@ -47,17 +49,17 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
 
 class GE_FUNC_VISIBILITY OpTypeRegistrar {
  public:
-  explicit OpTypeRegistrar(const std::string &op_type) {
+  explicit OpTypeRegistrar(const std::string &op_type) noexcept {
     OpTypeContainer::Instance()->Register(op_type);
   }
   ~OpTypeRegistrar() {}
 };
 
 #define REGISTER_OPTYPE_DECLARE(var_name, str_name) \
-  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const char *var_name;
+  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const char_t *var_name;
 
 #define REGISTER_OPTYPE_DEFINE(var_name, str_name) \
-  const char *var_name = str_name;                 \
+  const char_t *var_name = str_name;               \
   const OpTypeRegistrar g_##var_name##_reg(str_name);
 
 #define IS_OPTYPE_EXISTING(str_name) (OpTypeContainer::Instance()->IsExisting(str_name))

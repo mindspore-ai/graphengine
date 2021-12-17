@@ -31,7 +31,6 @@
 #include "proto/insert_op.pb.h"
 
 namespace ge {
-using domi::Status;
 
 // Add Sub Mul
 GE_FUNC_VISIBILITY extern const uint32_t ADD_INPUT_NUM;
@@ -55,8 +54,8 @@ GE_FUNC_VISIBILITY extern const uint32_t SWITCH_DATA_INPUT;
 GE_FUNC_VISIBILITY extern const uint32_t SWITCH_PRED_INPUT;
 
 // Merge
-GE_FUNC_VISIBILITY extern const uint32_t MERGE_DATA_OUTPUT;
-GE_FUNC_VISIBILITY extern const uint32_t MERGE_INDEX_OUTPUT;
+GE_FUNC_VISIBILITY extern const int32_t MERGE_DATA_OUTPUT;
+GE_FUNC_VISIBILITY extern const int32_t MERGE_INDEX_OUTPUT;
 
 // FunctionOp
 GE_FUNC_VISIBILITY extern const uint32_t IF_COND_INPUT;
@@ -66,7 +65,7 @@ GE_FUNC_VISIBILITY extern const uint32_t FOR_DELTA_INPUT;
 GE_FUNC_VISIBILITY extern const uint32_t FOR_DATA_INPUT;
 
 GE_FUNC_VISIBILITY extern const int32_t NORMAL_TENSOR_SIZE;
-
+/*lint -e148*/
 class GE_FUNC_VISIBILITY OpUtils {
  public:
   ///
@@ -95,8 +94,8 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @param [out] aipp_params aipp parameters
   /// @return enum of tagCCAippInputFormat
   ///
-  static Status ConvertAippParams(const NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params);
-  static Status TransferDim(const std::vector<int64_t> &dim, std::vector<int64_t> &dim_vector);
+
+  static Status ConvertAippParams(const NamedAttrs &aipp_attr, domi::AippOpParams &aipp_params);
   template <typename T>
   static void SliceData(const std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output,
                         int64_t begin, int64_t out_dim, int64_t stride);
@@ -107,45 +106,13 @@ class GE_FUNC_VISIBILITY OpUtils {
   static Status SetOutputSliceDataByDataType(void *data, int64_t data_size, const std::vector<int64_t> &input_dims,
                                              const std::vector<int64_t> &begin, const std::vector<int64_t> &output_dims,
                                              ge::GeTensor *output, const std::vector<int64_t> &stride);
-  static Status SetOutputSliceData(void *data, int64_t data_size, int32_t data_type,
+  static Status SetOutputSliceData(void *const data, const int64_t data_size, const int32_t data_type,
                                    const std::vector<int64_t> &input_dims, const std::vector<int64_t> &begin,
-                                   const std::vector<int64_t> &output_dims, ge::GeTensor *const output,
+                                   const std::vector<int64_t> &output_dims, GeTensor *const output,
                                    const std::vector<int64_t> &stride);
-
-  ///
-  /// @ingroup domi_omg
-  /// @brief Convert the convolutional weight data from [h, w, c, k] to [k, c, h, w]
-  /// @param [in] input Weight data in HWCK format
-  /// @param [in] H value of H dimension
-  /// @param [in] W value of W dimension
-  /// @param [in] C value of C dimension
-  /// @param [in] K value of K dimension
-  /// @param [out] output Data pointer after conversion. The format is KCHW.
-  ///
-  static void TransDataHWCK2KCHW(const void *input, int64_t h, int64_t w, int64_t c, int64_t k, void **output);
-  ///
-  /// @ingroup domi_omg
-  /// @brief Converts the convolutional weight data from [k, c, h, w] to [h, w, c, k].
-  /// @param [in] input Weight data in HWCK format
-  /// @param [in] K value of K dimension
-  /// @param [in] C value of C dimension
-  /// @param [in] H value of H dimension
-  /// @param [in] W value of W dimension
-  /// @param [out] output Data pointer after conversion. The format is HWCK
-  ///
-  static void TransDataKCHW2HWCK(const void *input, int64_t k, int64_t c, int64_t h, int64_t w, void *output);
-
-  static std::vector<ConstGeTensorPtr> GetWeights(const ge::Node &node);
-  static std::vector<ConstGeTensorPtr> GetWeights(ge::ConstNodePtr node);
-  static std::vector<GeTensorPtr> MutableWeights(const ge::Node &node);
-  static std::vector<GeTensorPtr> MutableWeights(const ge::NodePtr node);
-  static Status SetWeights(ge::Node &node, const std::vector<ge::GeTensorPtr> &weights);
-  static Status SetWeights(const ge::NodePtr node, const std::vector<ge::GeTensorPtr> &weights);
   static Status GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, const DataType type,
                                             std::vector<int64_t> &dims);
-
- private:
-  static uint32_t GetRealDimCnt(const GeTensorDesc &tensor_desc);
 };
+/*lint +e148*/
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_OP_GE_OP_UTILS_H_

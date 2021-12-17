@@ -23,11 +23,11 @@ typedef enum dvfsProfileMode {
 /**
  * @ingroup dvrt_dvfsprofile
  * @brief Set the performance mode of the device
- * @param [in] mode   dvfsProfileMode
+ * @param [in] profMode   dvfsProfileMode
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetDvfsProfile(DvfsProfileMode mode);
+RTS_API rtError_t rtSetDvfsProfile(DvfsProfileMode profMode);
 
 /**
  * @ingroup dvrt_dvfsprofile

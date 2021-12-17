@@ -31,12 +31,7 @@
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_RESERVED;
 using domi::domiTensorFormat_t;
-using domi::FRAMEWORK_RESERVED;
-using domi::FrameworkType;
-using std::map;
-using std::string;
 using std::unordered_map;
-using std::vector;
 
 namespace ge {
 /**
@@ -51,36 +46,13 @@ enum RunMode {
   DISPLAY_OM_INFO = 6  // display model info
 };
 
-///
-/// @ingroup domi_omg
-/// @brief high-precision mode
-///
-enum HighPrecisionMode {
-  // the FP16 high-precision function is disabled in common mode
-  HIGH_PRECISION_DEFAULT = 0,
-
-  // high-precision mode, enabling FP16 high-precision mode (Convolution/FullConnect/AvgPooling are involved)
-  HIGH_PRECISION_FP16 = 1
-};
-
-///
-/// @ingroup domi_omg
-/// @brief description buffer data
-///
-struct OMGBufferData {
-  void *data;
-  uint32_t length;
-};
-
 struct OmgContext {
-  OmgContext() {
-    format = DOMI_TENSOR_ND;
-  }
-  domiTensorFormat_t format;
+  OmgContext() : format(domi::DOMI_TENSOR_ND) {}
+  domi::domiTensorFormat_t format;
 
   // format of the input specified by the command line
-  std::unordered_map<std::string, domiTensorFormat_t> input_nodes_format_map;
-  std::vector<domiTensorFormat_t> output_formats;
+  std::unordered_map<std::string, domi::domiTensorFormat_t> input_nodes_format_map;
+  std::vector<domi::domiTensorFormat_t> output_formats;
 
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
@@ -107,9 +79,9 @@ struct OmgContext {
   // net data nodes tensor names(caffe or onnx)
   std::vector<std::string> data_tensor_names;
   // preferential format used by the entire network
-  domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
+  domi::domiTensorFormat_t net_format = domi::DOMI_TENSOR_RESERVED;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
-  RunMode run_mode = ONLY_PRE_CHECK;
+  RunMode run_mode = RunMode::ONLY_PRE_CHECK;
   bool train_flag = false;
 
   std::string output_type;

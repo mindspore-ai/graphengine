@@ -519,13 +519,13 @@ RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc, rtStre
 /**
  * @ingroup rt_kernel
  * @brief setup argment for next rtLaunch in current thread
- * @param [in] arg   argment address for kernel function
+ * @param [in] args   argment address for kernel function
  * @param [in] size   argment size
  * @param [in] offset  argment table offset
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetupArgument(const void *arg, uint32_t size, uint32_t offset);
+RTS_API rtError_t rtSetupArgument(const void *args, uint32_t size, uint32_t offset);
 
 /**
  * @ingroup rt_kernel
@@ -544,11 +544,11 @@ RTS_API rtError_t rtLaunch(const void *stubFunc);
  * @param [in] ptr   host memory
  * @param [in] size   host memory size
  * @param [in] flag   reserved. set to 0
- * @param [out] arg   returned arg. used for next kernel's arg.
+ * @param [out] args   returned arg. used for next kernel's arg.
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_t flag, void **arg);
+RTS_API rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_t flag, void **args);
 
 /**
  * @ingroup rt_kernel

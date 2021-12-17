@@ -25,9 +25,9 @@
 /// MAKE_GUARD([&] { Release Resource 1 })
 /// Acquire Resource 2
 // MAKE_GUARD([&] { Release Resource 2 })
-#define GE_MAKE_GUARD(var, callback) const ScopeGuard const_guard_##var(callback)
+#define GE_MAKE_GUARD(var, callback) const ::ge::ScopeGuard const_guard_##var(callback)
 
-#define GE_DISMISSABLE_GUARD(var, callback) ScopeGuard make_guard_##var(callback)
+#define GE_DISMISSABLE_GUARD(var, callback) ::ge::ScopeGuard make_guard_##var(callback)
 #define GE_DISMISS_GUARD(var) make_guard_##var.Dismiss()
 
 namespace ge {

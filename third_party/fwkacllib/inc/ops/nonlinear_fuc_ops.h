@@ -159,7 +159,22 @@ REG_OP(FastGelu)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(FastGelu)
+/**
+*@brief Computes the for the fast_gelu_v2 of "x" . \n
 
+*@par Inputs:
+*One input, including:
+*x: A Tensor. Must be one of the following types: float16, float32
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FastGeluV2
+*/
+REG_OP(FastGeluV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(FastGeluV2)
 /**
 *@brief Computes the gradient for the fast_gelu of "x" . \n
 

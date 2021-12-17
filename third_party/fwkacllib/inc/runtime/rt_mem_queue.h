@@ -222,24 +222,24 @@ RTS_API rtError_t rtMemQueueInit(int32_t devId);
 
 /**
  * @ingroup rt_mem_queue
- * @brief enqueu mbuf
+ * @brief enqueue memBuf
  * @param [in] devId   the logical device id
  * @param [in] qid  queue id
- * @param [in] mbuf   enqueue mbuf
+ * @param [in] memBuf   enqueue memBuf
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueEnQueue(int32_t devId, uint32_t qid, void *mbuf);
+RTS_API rtError_t rtMemQueueEnQueue(int32_t devId, uint32_t qid, void *memBuf);
 
 
 /**
  * @ingroup rt_mem_queue
- * @brief enqueu mbuf
+ * @brief dequeue memBuf
  * @param [in] devId   the logical device id
  * @param [in] qid  queue id
- * @param [out] mbuf   dequeue mbuf
+ * @param [out] memBuf   dequeue memBuf
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMemQueueDeQueue(int32_t devId, uint32_t qid, void **mbuf);
+RTS_API rtError_t rtMemQueueDeQueue(int32_t devId, uint32_t qid, void **memBuf);
 
 /**
  * @ingroup rt_mem_queue
@@ -350,47 +350,47 @@ RTS_API rtError_t rtMbufInit(rtMemBuffCfg_t *cfg);
 /**
 * @ingroup rt_mem_queue
 * @brief alloc buff
-* @param [out] buff: buff addr alloced
+* @param [out] memBuf: buff addr alloced
 * @param [in]  size: The amount of memory space requested
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMbufAlloc(rtMbufPtr_t *mbuf, uint64_t size);
+RTS_API rtError_t rtMbufAlloc(rtMbufPtr_t *memBuf, uint64_t size);
 
 /**
 * @ingroup rt_mem_queue
 * @brief free buff
-* @param [in] buff: buff addr to be freed
+* @param [in] memBuf: buff addr to be freed
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMbufFree(rtMbufPtr_t mbuf);
+RTS_API rtError_t rtMbufFree(rtMbufPtr_t memBuf);
 
 /**
 * @ingroup rt_mem_queue
 * @brief get Data addr of Mbuf
-* @param [in] mbuf: Mbuf addr
+* @param [in] memBuf: Mbuf addr
 * @param [out] buf: Mbuf data addr
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMbufGetBuffAddr(rtMbufPtr_t mbuf, void **buf);
+RTS_API rtError_t rtMbufGetBuffAddr(rtMbufPtr_t memBuf, void **buf);
 
 /**
 * @ingroup rt_mem_queue
 * @brief get total Buffer size of Mbuf
-* @param [in] mbuf: Mbuf addr
+* @param [in] memBuf: Mbuf addr
 * @param [out] totalSize: total buffer size of Mbuf
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMbufGetBuffSize(rtMbufPtr_t mbuf, uint64_t *totalSize);
+RTS_API rtError_t rtMbufGetBuffSize(rtMbufPtr_t memBuf, uint64_t *totalSize);
 
 /**
 * @ingroup rt_mem_queue
 * @brief Get the address and length of its user_data from the specified Mbuf
-* @param [in] mbuf: Mbuf addr
+* @param [in] memBuf: Mbuf addr
 * @param [out] priv: address of its user_data
 * @param [out]  size: length of its user_data
 * @return RT_ERROR_NONE for ok
 */
-RTS_API rtError_t rtMbufGetPrivInfo (rtMbufPtr_t mbuf,  void **priv, uint64_t *size);
+RTS_API rtError_t rtMbufGetPrivInfo (rtMbufPtr_t memBuf,  void **priv, uint64_t *size);
 
 // mem group
 typedef struct {

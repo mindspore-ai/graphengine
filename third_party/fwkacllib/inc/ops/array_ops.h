@@ -201,6 +201,48 @@ REG_OP(Unique)
     .OP_END_FACTORY_REG(Unique)
 
 /**
+*@brief Finds unique elements in a N-D tensor. \n
+
+*@par Inputs:
+*Inputs "x" and "axis" are N-D vectors.
+* @li x: A N-D tensor. \n
+
+*@par Attributes:
+*sorted: An optional attr of type int, default to 1.
+*axis: An optional attr of type int, default to -1000.
+*return_idx: An optional attr of type bool, default to false.
+*return_inverse: An optional attr of type bool, default to false.
+*return_counts: An optional attr of type bool, default to false.\n
+
+*@par Outputs:
+*@li y: "x" in the unique output "y".
+*@li idx: A tensor the same size as "x". The index of each value of "x".
+*@li inverse_idx: A tensor the same size as "x". The index of each value of "y".
+*@li count: A tensor the same size as "x". The index of each value of "y". \n
+
+*@attention Constraints:
+*UniqueV2 runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator unique.
+*/
+
+REG_OP(UniqueV2)
+    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
+      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
+    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
+      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
+    .OUTPUT(idx, TensorType({ DT_INT64 }))
+    .OUTPUT(inverse_idx, TensorType({ DT_INT64 }))
+    .OUTPUT(count, TensorType({ DT_INT64 }))
+    .ATTR(sorted, Int, 1)
+    .ATTR(axis, Int, -1000)
+    .ATTR(return_idx, Bool, false)
+    .ATTR(return_inverse, Bool, false)
+    .ATTR(return_counts, Bool, false)
+    .OP_END_FACTORY_REG(UniqueV2)
+
+/**
 *@brief Finds unique elements in a 1D tensor. \n
 
 *@par Inputs:

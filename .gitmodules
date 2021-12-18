@@ -4,5 +4,5 @@
 	branch = master
 [submodule "metadef"]
 	path = metadef
-	url = https://gitee.com/ascend/metadef.git
+	url = https://gitee.com/nicholas_yhr/metadef.git
 	branch = master

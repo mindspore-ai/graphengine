@@ -22,6 +22,8 @@
 #include <mutex>
 #include <unordered_map>
 #include "graph/profiler.h"
+#include "external/ge/ge_api_types.h"
+#include "toolchain/prof_callback.h"
 namespace ge {
 namespace profiling {
 enum {
@@ -46,6 +48,7 @@ enum {
   kCopyH2D,
   kProfilingIndexEnd
 };
+constexpr uint64_t kInvalidHashId = 0ULL;
 
 class ProfilingContext {
  public:
@@ -100,9 +103,16 @@ class ProfilingContext {
   }
 
   int64_t RegisterString(const std::string &str);
+  int64_t RegisterStringHash(const uint64_t hash_id, const std::string &str);
+  void UpdateElementHashId(MsprofReporterCallback reporter_callback);
+  static Status QueryHashId(const MsprofReporterCallback reporter_callback, const std::string &src_str,
+                            uint64_t &hash_id);
+  size_t GetRegisterStringNum() const {
+    return strings_to_index_.size();
+  }
 
  private:
-  void RegisterString(int64_t index, const std::string &str);
+  void UpdateHashByStr(const std::string &str, const uint64_t hash);
   void Init();
 
  private:

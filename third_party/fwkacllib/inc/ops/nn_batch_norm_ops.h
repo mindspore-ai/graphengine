@@ -143,6 +143,74 @@ REG_OP(BatchNorm)
     .OP_END_FACTORY_REG(BatchNorm)
 
 /**
+* @brief After the mean and reciprocal of standard deviation(invert_std) are separately calculated on each device,
+* the mena and reciprocal of standard deviation(invert_std) data on each device are normlized,
+* a total mean and reciprocal of standard deviation(invert_std) are returned, and running_var are updated.
+
+* @par Inputs:
+* include:
+* @li mean_all: A Tensor. The mean of each device. Must be one of the following types: float16, float32.
+* @li invert_std_all: A Tensor. Reciprocal of the variances of each device. Must be one of the following types: float16, float32.
+* @li count_all: A Tensor. Number of data for each device. Must be one of the following types: float16, float32.
+* @li mean_broadcast: A Tensor. The overall average and broadcast. Must be one of the following types: float16, float32.
+* @li count_sum: A Tensor. General statistics. Must be one of the following types: float16, float32.
+* @li running_var: A Tensor. Runtime variance. Must be one of the following types: float16, float32. \n
+
+* @par Attributes:
+* Two Attributes, including:
+* @li momentum: A optional float. Defaults to 0.01. \n
+* @li epsilon: An optional float. Defaults to 0.00001. \n
+
+* @par Outputs:
+* include:
+* @li invert_std: A Tensor. It's inverse of total variance.
+* @li running_var_update: A Tensor. It's moving variance of each device after the update. \n
+
+* @par Third-party framework compatibility
+* ReduceMeanWithCount and SyncBatchNormGatherStatsWithCounts and SyncBNTrainingUpdate
+* compatible with the Pytorch operator BatchNormGatherStatsWithCounts.
+*/
+REG_OP(SyncBatchNormGatherStatsWithCounts)
+    .INPUT(mean_all, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(invert_std_all, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(count_all, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean_broadcast, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(count_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(running_var, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(invert_std, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(running_var_update, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(momentum, Float, 0.1)
+    .ATTR(epsilon, Float, 0.001)
+    .OP_END_FACTORY_REG(SyncBatchNormGatherStatsWithCounts)
+
+/**
+* @brief update running_mean.
+
+* @par Inputs:
+* include:
+* @li mean: A Tensor. The mean of each device. Must be one of the following types: float16, float32.
+* @li running_mean: A Tensor. Runtime Mean. Must be one of the following types: float16, float32. \n
+
+* @par Attributes:
+* One Attribute, including:
+* @li momentum: A optional float. Defaults to 0.01. \n
+
+* @par Outputs:
+* include:
+* @li running_mean_update: A Tensor. It's moving mean of each device after the update. \n
+
+* @par Third-party framework compatibility
+* ReduceMeanWithCount and SyncBatchNormGatherStatsWithCounts and SyncBNTrainingUpdate
+* compatible with the Pytorch operator BatchNormGatherStatsWithCounts.
+*/
+REG_OP(SyncBNTrainingUpdate)
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(running_mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(running_mean_update, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(momentum, Float, 0.1)
+    .OP_END_FACTORY_REG(SyncBNTrainingUpdate)
+
+/**
 *@brief part of SyncBatchNormBackward . \n
 
 *@par Inputs:

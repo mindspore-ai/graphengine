@@ -145,9 +145,9 @@ struct ResultSummary {
 
 #pragma pack(push, 1)
 struct AsyncWait {
-  uint8_t waitType;  // wait type, FWk_ADPT_WAIT_TPYE_EVENT: event wait
-  uint32_t waitId;  // wait id, GE refresh
-  uint32_t timeOut;  // reserved
+  uint8_t waitType; // wait type, FWK_ADPT_WAIT_TYPE_EVENT: event wait
+  uint32_t waitId; // wait id, GE refresh
+  uint32_t timeOut; // reserved
   uint64_t reserved;
 };
 #pragma pack(pop)

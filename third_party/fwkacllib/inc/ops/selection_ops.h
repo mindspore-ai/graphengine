@@ -701,6 +701,27 @@ REG_OP(SegmentMax)
     .OP_END_FACTORY_REG(SegmentMax)
 
 /**
+*@brief Computes the sum along segments of a tensor . \n
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A Tensor of type NumberType.
+* @li segment_ids: A Tensor of type IndexNumberType, whose shape is a prefix
+* of "x.shape".
+
+*@par Outputs:
+*y: A Tensor of type NumberType . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SegmentSum.
+*/
+REG_OP(SegmentSum)
+    .INPUT(x, TensorType::NumberType())
+    .INPUT(segment_ids, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::NumberType())
+    .OP_END_FACTORY_REG(SegmentSum)
+
+/**
 *@brief: Computes the maximum along segments of a tensor.
 *Computes a tensor such that output[i]=(data[i]) where max is over j
  * such that segment_ids[j] == i.

@@ -2119,6 +2119,64 @@ REG_OP(RotatedIou)
     .ATTR(mode, String, "iou")
     .ATTR(is_cross, Bool, true)
     .OP_END_FACTORY_REG(RotatedIou)
+
+/**
+*@brief RotatedBoxEncode. \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li anchor_box: A 3D Tensor of float32 (float16) with shape (B, 5, N).
+* "B" indicates the number of batch size
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle".
+*@li gt_box: A 3D Tensor of float32 (float16) with shape (B, 5, N). 
+* "B" indicates the number of batch size 
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle". \n
+
+*@par Attributes:
+*@li weight: A float list for "x0", "x1", "y0", "y1" and "angle",
+* defaults to [1.0, 1.0, 1.0, 1.0, 1.0].
+
+*@par Outputs:
+*@li y: A 3D Tensor of type float32 (float16) with shape (B, 5, N),
+* specifying the variations between all anchor boxes and ground truth boxes.
+*/
+REG_OP(RotatedBoxEncode)
+    .INPUT(anchor_box, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gt_box, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(weight, ListFloat, {1.0, 1.0, 1.0, 1.0, 1.0})
+    .OP_END_FACTORY_REG(RotatedBoxEncode)
+
+/**
+*@brief RotatedBoxDecode. \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li anchor_box: A 3D Tensor of float32 (float16) with shape (B, 5, N).
+* "B" indicates the number of batch size
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle".
+*@li deltas: A 3D Tensor of float32 (float16) with shape (B, 5, N). 
+* "B" indicates the number of batch size 
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle". \n
+
+*@par Attributes:
+*@li weight: A float list for "x0", "x1", "y0", "y1" and "angle",
+* defaults to [1.0, 1.0, 1.0, 1.0, 1.0].
+
+*@par Outputs:
+*@li y: A 3D Tensor of type float32 (float16) with shape (B, 5, N),
+* specifying the variations between all anchor boxes and ground truth boxes.
+*/
+REG_OP(RotatedBoxDecode)
+    .INPUT(anchor_box, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(deltas, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(weight, ListFloat, {1.0, 1.0, 1.0, 1.0, 1.0})
+    .OP_END_FACTORY_REG(RotatedBoxDecode)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

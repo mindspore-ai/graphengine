@@ -17,6 +17,7 @@
 #ifndef INC_FRAMEWORK_MEMORY_MEMORY_API_H_
 #define INC_FRAMEWORK_MEMORY_MEMORY_API_H_
 
+#include <vector>
 #include "external/ge/ge_api_error_codes.h"
 #include "runtime/mem.h"
 

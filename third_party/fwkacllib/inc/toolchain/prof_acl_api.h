@@ -140,6 +140,42 @@ MSVP_PROF_API size_t aclprofGetGraphId(const void *opInfo, size_t opInfoLen, uin
 * @retval void
 */
 MSVP_PROF_API int aclprofSetStampPayload(void *stamp, const int32_t type, void *value);
+
+/**
+* @ingroup AscendCL
+* @brief set category and name
+*
+*
+* @retval void
+*/
+MSVP_PROF_API int aclprofSetCategoryName(uint32_t category, const char *categoryName);
+
+/**
+* @ingroup AscendCL
+* @brief set category to stamp
+*
+*
+* @retval void
+*/
+MSVP_PROF_API int aclprofSetStampCategory(void *stamp, uint32_t category);
+
+/**
+* @ingroup AscendCL
+* @brief set message to stamp
+*
+*
+* @retval void
+*/
+MSVP_PROF_API int aclprofSetStampTraceMessage(void *stamp, const char *msg, uint32_t msgLen);
+
+/**
+* @ingroup AscendCL
+* @brief  Record mark timestamp
+*
+* @retval ACL_SUCCESS The function is successfully executed.
+* @retval OtherValues Failure
+*/
+MSVP_PROF_API int aclprofMark(void *stamp);
 #ifdef __cplusplus
 }
 #endif

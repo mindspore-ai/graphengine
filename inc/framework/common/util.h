@@ -28,6 +28,7 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/scope_guard.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "graph/detail/attributes_holder.h"
 
 #define GE_CHECK_POSITIVE_SIZE_RANGE(size)                             \
   do {                                                                 \
@@ -218,6 +219,13 @@
  */
 #define CEIL(N, n) (((N) + (n)-1) / (n))
 
+namespace ge {
+/**
+ * @ingroup domi_common
+ * @brief version of om.proto file
+ */
+constexpr int32_t OM_PROTO_VERSION = 2;
+
 ///
 /// @ingroup domi_common
 /// @brief onverts Vector of a number to a string.
@@ -276,13 +284,6 @@ GE_FUNC_VISIBILITY std::string ToString(const google::protobuf::RepeatedPtrField
   str_ret += "]";
   return str_ret;
 }
-
-namespace ge {
-/**
- * @ingroup domi_common
- * @brief version of om.proto file
- */
-constexpr int32_t OM_PROTO_VERSION = 2;
 
 ///
 /// @ingroup domi_common

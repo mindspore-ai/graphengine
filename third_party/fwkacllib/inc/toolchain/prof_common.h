@@ -51,7 +51,6 @@ struct MsprofMixData {
         char dataStr[MSPROF_MIX_DATA_STRING_LEN];
     } data;
 };
-using MixData = struct MsprofMixData;
 
 /**
  * @brief profiling command info
@@ -97,7 +96,7 @@ struct MsprofGeProfModelLoadData {
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_MODEL_LOAD;
     uint32_t modelId;
-    MixData  modelName;
+    MsprofMixData modelName;
     uint64_t startTime;
     uint64_t endTime;
     uint8_t  reserve[MSPROF_GE_MODELLOAD_DATA_RESERVE_BYTES];
@@ -109,7 +108,7 @@ struct MsprofGeProfFusionData {
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_FUSION;
     uint32_t modelId;
-    MixData  fusionName;
+    MsprofMixData fusionName;
     uint64_t inputMemSize;
     uint64_t outputMemSize;
     uint64_t weightMemSize;
@@ -125,7 +124,7 @@ struct MsprofGeProfInferData {
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_INFER;
     uint32_t modelId;
-    MixData  modelName;
+    MsprofMixData modelName;
     uint32_t requestId;
     uint32_t threadId;
     uint64_t inputDataStartTime;
@@ -160,7 +159,7 @@ struct MsprofGeProfTaskData {
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_TASK;
     uint32_t taskType;      // MsprofGeTaskType
-    MixData  opName;
+    MsprofMixData opName;
     MsprofGeOpType opType;
     uint64_t curIterNum;
     uint64_t timeStamp;

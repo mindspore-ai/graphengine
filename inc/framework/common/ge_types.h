@@ -76,15 +76,16 @@ const char_t *const kLazyRecompile = "lazy_recompile";
 
 // Data cache, including data address and length
 struct DataBuffer {
- public:
   void *data;       // Data address
   uint64_t length;  // Data length
   bool isDataSupportMemShare = false;
   uint32_t placement = 0U;
-  DataBuffer(void *data_in, const uint64_t data_len, const bool is_support_mem_share, const uint32_t placement = 0U)
+
+  DataBuffer(void *const data_in, const uint64_t data_len, const bool is_support_mem_share = false,
+             const uint32_t placement = 0U)
       : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(placement) {}
 
-  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false) {}
+  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false), placement(0U) {}
 };
 
 ///

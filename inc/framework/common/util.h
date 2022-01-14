@@ -48,15 +48,19 @@
 
 // new ge marco
 // Encapsulate common resource releases
-#define GE_MAKE_GUARD_RTMEM(var)         \
-  GE_MAKE_GUARD(var, [&] {               \
-    if (var) GE_CHK_RT(rtFreeHost(var)); \
-  });
+#define GE_MAKE_GUARD_RTMEM(var)  \
+  GE_MAKE_GUARD(var, [&] {        \
+    if ((var) != nullptr) {       \
+      GE_CHK_RT(rtFreeHost(var)); \
+    }                             \
+  })
 
-#define GE_MAKE_GUARD_RTSTREAM(var)           \
-  GE_MAKE_GUARD(var, [&] {                    \
-    if (var) GE_CHK_RT(rtStreamDestroy(var)); \
-  });
+#define GE_MAKE_GUARD_RTSTREAM(var)    \
+  GE_MAKE_GUARD(var, [&] {             \
+    if ((var) != nullptr) {            \
+      GE_CHK_RT(rtStreamDestroy(var)); \
+    }                                  \
+  })
 
 // For propagating errors when calling a function.
 #define GE_RETURN_IF_ERROR(expr)           \
@@ -403,16 +407,6 @@ GE_FUNC_VISIBILITY bool CheckOutputPathValid(const std::string &file_path, const
 /// @param [out] result
 ///
 GE_FUNC_VISIBILITY bool ValidateStr(const std::string &file_path, const std::string &mode);
-
-///
-/// @ingroup domi_common
-/// @brief Check path invalid
-/// @param [in] path, path to be checked
-/// @param [in] length, length of path
-/// @return 0 success
-/// @return -1 fail
-///
-GE_FUNC_VISIBILITY Status CheckPath(const char_t *path, size_t length);
 }  // namespace ge
 
 #endif  // AIR_INC_FRAMEWORK_COMMON_UTIL_H_

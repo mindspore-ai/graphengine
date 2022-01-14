@@ -70,7 +70,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
   ///
   static Status FinalizeEx();
 
-  Status UnloadModel(uint32_t modelId);
+  Status UnloadModel(uint32_t model_id);
 
   // Get input and output descriptor
   Status GetModelDescInfo(uint32_t model_id, std::vector<TensorDesc> &input_desc, std::vector<TensorDesc> &output_desc,
@@ -248,7 +248,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
   /// @param [out] domi::OutputData *output_data: Model output data
   /// @return SUCCESS handle successfully / others handle failed
   ///
-  Status ExecModel(uint32_t model_id, void *stream, const RunModelData &input_data, RunModelData &output_data,
+  Status ExecModel(uint32_t model_id, void *stream, const RunModelData &run_input_data, RunModelData &run_output_data,
                    bool async_mode = false);
 
   ///
@@ -288,19 +288,19 @@ class GE_FUNC_VISIBILITY GeExecutor {
   ///
   Status GetMemAndWeightSize(const void *model_data, size_t model_size, size_t &mem_size, size_t &weight_size);
 
-  static Status LoadSingleOp(const std::string &modelName, const ModelData &modelData, void *stream,
+  static Status LoadSingleOp(const std::string &model_name, const ModelData &model_data, void *stream,
                              SingleOp **single_op);
 
-  static Status LoadSingleOpV2(const std::string &modelName, const ModelData &modelData, void *stream,
+  static Status LoadSingleOpV2(const std::string &model_name, const ModelData &model_data, void *stream,
                                SingleOp **single_op, const uint64_t model_id);
 
   static Status ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,
                              std::vector<DataBuffer> &outputs);
 
-  static Status LoadDynamicSingleOp(const std::string &model_name, const ModelData &modelData, void *stream,
+  static Status LoadDynamicSingleOp(const std::string &model_name, const ModelData &model_data, void *stream,
                                     DynamicSingleOp **single_op);
 
-  static Status LoadDynamicSingleOpV2(const std::string &model_name, const ModelData &modelData, void *stream,
+  static Status LoadDynamicSingleOpV2(const std::string &model_name, const ModelData &model_data, void *stream,
                                       DynamicSingleOp **single_op, const uint64_t model_id);
 
   static Status ExecuteAsync(DynamicSingleOp *executor, const std::vector<GeTensorDesc> &input_desc,

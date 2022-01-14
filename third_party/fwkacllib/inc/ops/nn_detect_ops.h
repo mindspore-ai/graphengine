@@ -2104,6 +2104,8 @@ REG_OP(RotatedOverlaps)
 *@li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
 * only support 'iou' now.
 *@li is_cross: Cross calculation when it is True, and one-to-one calculation when it is False.
+*@li v_threshold: An optional attr, provide condition relaxation for intersection calculation.
+*@li e_threshold: An optional attr, provide condition relaxation for intersection calculation.
 
 *@par Outputs:
 * iou: A 3D Tensor of float32 with shape [B, N, K].
@@ -2118,6 +2120,8 @@ REG_OP(RotatedIou)
     .ATTR(trans, Bool, false)
     .ATTR(mode, String, "iou")
     .ATTR(is_cross, Bool, true)
+    .ATTR(v_threshold, Float, 0)
+    .ATTR(e_threshold, Float, 0)
     .OP_END_FACTORY_REG(RotatedIou)
 
 /**

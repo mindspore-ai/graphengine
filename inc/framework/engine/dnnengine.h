@@ -26,7 +26,7 @@
 #include "graph/types.h"
 
 namespace ge {
-enum PriorityEnum {
+enum class PriorityEnum {
   COST_0 = 0,
   COST_1,
   COST_2,
@@ -38,7 +38,7 @@ enum PriorityEnum {
 struct DNNEngineAttribute {
   std::string engine_name;
   std::vector<std::string> mem_type;
-  uint32_t compute_cost;
+  PriorityEnum compute_cost;
   enum RuntimeType runtime_type;  // HOST, DEVICE
   // If engine input format must be specific, set this attribute, else set FORMAT_RESERVED
   Format engine_input_format;
@@ -53,10 +53,10 @@ class GE_FUNC_VISIBILITY DNNEngine {
     engine_attribute_ = attrs;
   }
   virtual ~DNNEngine() = default;
-  Status Initialize(const std::map<std::string, std::string> &options) {
+  Status Initialize(const std::map<std::string, std::string> &options) const {
     return SUCCESS;
   }
-  Status Finalize() {
+  Status Finalize() const {
     return SUCCESS;
   }
   void GetAttributes(DNNEngineAttribute &attr) const {

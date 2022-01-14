@@ -122,7 +122,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
   void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
   Status CheckForSingleOp(const OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                           const std::vector<GeTensor> &outputs);
-  Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph);
+  Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph) const;
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);

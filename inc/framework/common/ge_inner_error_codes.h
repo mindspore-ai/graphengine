@@ -24,15 +24,15 @@
 
 namespace ge {
 // System ID
-enum SystemIdType { SYSID_GE = 8 };
+enum class SystemIdType { SYSID_GE = 8 };
 // Runtime location
-enum LogRuntime {
+enum class LogRuntime {
   RT_HOST = 0b01,
   RT_DEVICE = 0b10,
 };
 
 // Sub model
-enum SubModuleId {
+enum class SubModuleId {
   COMMON_MODULE = 0,
   CLIENT_MODULE = 1,
   INIT_MODULE = 2,
@@ -47,13 +47,13 @@ enum SubModuleId {
 };
 
 // Error code type
-enum ErrorCodeType {
+enum class ErrorCodeType {
   ERROR_CODE = 0b01,
   EXCEPTION_CODE = 0b10,
 };
 
 // Error level
-enum ErrorLevel {
+enum class ErrorLevel {
   COMMON_LEVEL = 0b000,
   SUGGESTION_LEVEL = 0b001,
   MINOR_LEVEL = 0b010,
@@ -62,28 +62,39 @@ enum ErrorLevel {
 };
 
 // Each module defines error codes using the following macros, name can not be modified to (name)
-#define GE_ERRORNO_COMMON(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, COMMON_MODULE, name, (value), (desc))
-#define GE_ERRORNO_CLIENT(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, CLIENT_MODULE, name, (value), (desc))
-#define GE_ERRORNO_INIT(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, INIT_MODULE, name, (value), (desc))
-#define GE_ERRORNO_SESSION(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, SESSION_MODULE, name, (value), (desc))
-#define GE_ERRORNO_GRAPH(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, GRAPH_MODULE, name, (value), (desc))
-#define GE_ERRORNO_ENGINE(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, ENGINE_MODULE, name, (value), (desc))
-#define GE_ERRORNO_OPS(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, OPS_MODULE, name, (value), (desc))
-#define GE_ERRORNO_PLUGIN(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, PLUGIN_MODULE, name, (value), (desc))
-#define GE_ERRORNO_RUNTIME(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, RUNTIME_MODULE, name, (value), (desc))
-#define GE_ERRORNO_EXECUTOR(name, value, desc) \
-  GE_ERRORNO(RT_DEVICE, ERROR_CODE, COMMON_LEVEL, SYSID_GE, EXECUTOR_MODULE, name, (value), (desc))
-#define GE_ERRORNO_GENERATOR(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, GENERATOR_MODULE, name, (value), (desc))
+#define GE_ERRORNO_COMMON(name, value, desc)                                                                   \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::COMMON_MODULE, name, (value), (desc))
+#define GE_ERRORNO_CLIENT(name, value, desc)                                                                   \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::CLIENT_MODULE, name, (value), (desc))
+#define GE_ERRORNO_INIT(name, value, desc)                                                                     \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::INIT_MODULE, name, (value), (desc))
+#define GE_ERRORNO_SESSION(name, value, desc)                                                                  \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::SESSION_MODULE, name, (value), (desc))
+#define GE_ERRORNO_GRAPH(name, value, desc)                                                                    \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::GRAPH_MODULE, name, (value), (desc))
+#define GE_ERRORNO_ENGINE(name, value, desc)                                                                   \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::ENGINE_MODULE, name, (value), (desc))
+#define GE_ERRORNO_OPS(name, value, desc)                                                                      \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::OPS_MODULE, name, (value), (desc))
+#define GE_ERRORNO_PLUGIN(name, value, desc)                                                                   \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::PLUGIN_MODULE, name, (value), (desc))
+#define GE_ERRORNO_RUNTIME(name, value, desc)                                                                  \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::RUNTIME_MODULE, name, (value), (desc))
+#define GE_ERRORNO_EXECUTOR(name, value, desc)                                                                   \
+  GE_ERRORNO(LogRuntime::RT_DEVICE, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::EXECUTOR_MODULE, name, (value), (desc))
+#define GE_ERRORNO_GENERATOR(name, value, desc)                                                                \
+  GE_ERRORNO(LogRuntime::RT_HOST, ErrorCodeType::ERROR_CODE, ErrorLevel::COMMON_LEVEL, SystemIdType::SYSID_GE, \
+             SubModuleId::GENERATOR_MODULE, name, (value), (desc))
 
 // Get error code description
 #define GE_GET_ERRORNO_STR(value) ge::StatusFactory::Instance()->GetErrDesc(value)

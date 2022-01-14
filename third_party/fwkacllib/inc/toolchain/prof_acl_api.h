@@ -17,6 +17,7 @@
 #define PROF_HCCL_TRACE             0x00000020ULL
 #define PROF_TRAINING_TRACE         0x00000040ULL
 #define PROF_MSPROFTX               0x00000080ULL
+#define PROF_RUNTIME_API            0x00000100ULL
 
 // system profilinig switch
 #define PROF_CPU                    0x00010000ULL
@@ -28,7 +29,6 @@
 #define PROF_AIVECTORCORE_SAMPLE    0x00400000ULL
 
 #define PROF_MODEL_EXECUTE          0x0000001000000ULL
-#define PROF_RUNTIME_API            0x0000002000000ULL
 #define PROF_RUNTIME_TRACE          0x0000004000000ULL
 #define PROF_SCHEDULE_TIMELINE      0x0000008000000ULL
 #define PROF_SCHEDULE_TRACE         0x0000010000000ULL
@@ -50,6 +50,7 @@
 #define PROF_HCCL_TRACE_MASK             0x00000020ULL
 #define PROF_TRAINING_TRACE_MASK         0x00000040ULL
 #define PROF_MSPROFTX_MASK               0x00000080ULL
+#define PROF_RUNTIME_API_MASK            0x00000100ULL
 
 // system profilinig mask
 #define PROF_CPU_MASK                    0x00010000ULL
@@ -61,7 +62,6 @@
 #define PROF_AIVECTORCORE_SAMPLE_MASK    0x00400000ULL
 
 #define PROF_MODEL_EXECUTE_MASK          0x0000001000000ULL
-#define PROF_RUNTIME_API_MASK            0x0000002000000ULL
 #define PROF_RUNTIME_TRACE_MASK          0x0000004000000ULL
 #define PROF_SCHEDULE_TIMELINE_MASK      0x0000008000000ULL
 #define PROF_SCHEDULE_TRACE_MASK         0x0000010000000ULL
@@ -158,24 +158,6 @@ MSVP_PROF_API int aclprofSetCategoryName(uint32_t category, const char *category
 * @retval void
 */
 MSVP_PROF_API int aclprofSetStampCategory(void *stamp, uint32_t category);
-
-/**
-* @ingroup AscendCL
-* @brief set message to stamp
-*
-*
-* @retval void
-*/
-MSVP_PROF_API int aclprofSetStampTraceMessage(void *stamp, const char *msg, uint32_t msgLen);
-
-/**
-* @ingroup AscendCL
-* @brief  Record mark timestamp
-*
-* @retval ACL_SUCCESS The function is successfully executed.
-* @retval OtherValues Failure
-*/
-MSVP_PROF_API int aclprofMark(void *stamp);
 #ifdef __cplusplus
 }
 #endif

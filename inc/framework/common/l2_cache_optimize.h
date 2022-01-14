@@ -28,8 +28,6 @@
 #include "framework/common/util.h"
 #include "graph/compute_graph.h"
 
-using std::vector;
-
 namespace ge {
 // Size of RC memory alignment, 2M
 constexpr size_t ALIGN_SIZE = 2097152;
@@ -38,7 +36,7 @@ constexpr uint32_t RC_VALUE_DEFAULT = 1;
 constexpr uint32_t RC_VALUE_MAX = 32;
 
 // RC data type classification
-enum RCType {
+enum class RCType {
   RC_DEFAULT,      // Such as temporary workspace memory of operator, variable (including global and local variable)
   RC_HCOM,         // Output of gradient aggregation, RC value should be set to 0
   RC_L2LOSS,       // Parameter of L2 loss operator, RC value should be set to 0
@@ -49,7 +47,7 @@ enum RCType {
   RC_ARGS          // Args of FlowTable, actual access numbers
 };
 
-enum MemType { INPUT_TENSOR, OUTPUT_TENSOR, WEIGHT, WORKSPACE };
+enum class MemType { INPUT_TENSOR, OUTPUT_TENSOR, WEIGHT, WORKSPACE };
 
 // Memory usage information < node, type, number >
 struct NodeInfo {
@@ -104,8 +102,10 @@ class GE_FUNC_VISIBILITY L2CacheOptimize {
   void HandOPoutput(ge::NodePtr node, std::vector<int64_t> &outputList, std::vector<RCMemoryBlock> &blocks);
 
   // maximum common divisor
-  uint32_t Measure(uint32_t x, uint32_t y) {
-    if ((x == 0) || (y == 0)) return RC_VALUE_DEFAULT;
+  uint32_t Measure(uint32_t x, uint32_t y) const {
+    if ((x == 0) || (y == 0)) {
+      return RC_VALUE_DEFAULT;
+    }
     uint32_t z = y;
     while (x % y != 0) {
       z = x % y;

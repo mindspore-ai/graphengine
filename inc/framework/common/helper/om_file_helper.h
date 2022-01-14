@@ -24,8 +24,6 @@
 #include "framework/common/types.h"
 #include "framework/common/ge_types.h"
 
-using std::vector;
-
 namespace ge {
 struct ModelPartition {
   ModelPartitionType type;

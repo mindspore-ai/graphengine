@@ -24,13 +24,11 @@
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/parser/parser_types.h"
 
-using Status = domi::Status;
-
 namespace domi {
 class WeightsParser;
 class ModelParser;
 
-typedef std::shared_ptr<ModelParser> (*MODEL_PARSER_CREATOR_FUN)(void);
+using MODEL_PARSER_CREATOR_FUN = std::shared_ptr<ModelParser> (*)(void);
 
 // Create modelparser for different frameworks
 class GE_FUNC_VISIBILITY ModelParserFactory {
@@ -82,7 +80,7 @@ class GE_FUNC_VISIBILITY ModelParserRegisterar {
   }                                                              \
   ModelParserRegisterar g_##type##_Model_Parser_Creator(type, Creator_##type##_Model_Parser)
 
-typedef std::shared_ptr<WeightsParser> (*WEIGHTS_PARSER_CREATOR_FUN)(void);
+using WEIGHTS_PARSER_CREATOR_FUN = std::shared_ptr<WeightsParser> (*)(void);
 
 // Create weightsparser for different frameworks
 class GE_FUNC_VISIBILITY WeightsParserFactory {

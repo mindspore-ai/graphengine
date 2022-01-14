@@ -213,9 +213,9 @@
 // If expr is not RT_ERROR_NONE, print the log
 #define GE_CHK_RT(expr)                                                \
   do {                                                                 \
-    const rtError_t _rt_ret = (expr);                                  \
-    if (_rt_ret != RT_ERROR_NONE) {                                    \
-      GELOGE(ge::RT_FAILED, "Call rt api failed, ret: 0x%X", _rt_ret); \
+    const rtError_t _rt_err = (expr);                                  \
+    if (_rt_err != RT_ERROR_NONE) {                                    \
+      GELOGE(ge::RT_FAILED, "Call rt api failed, ret: 0x%X", _rt_err); \
     }                                                                  \
   } while (false)
 
@@ -279,6 +279,7 @@
     }                                                                                      \
   } while (false)
 
+namespace ge {
 template <typename T>
 GE_FUNC_VISIBILITY std::string FmtToStr(const T &t) {
   std::string fmt;
@@ -287,5 +288,5 @@ GE_FUNC_VISIBILITY std::string FmtToStr(const T &t) {
   fmt = st.str();
   return fmt;
 }
-
+}  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_LOG_H_

@@ -19,7 +19,6 @@
 
 #include <climits>
 #include <cstdint>
-#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>

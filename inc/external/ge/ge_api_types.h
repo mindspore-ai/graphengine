@@ -338,6 +338,9 @@ const std::string MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 
 const std::string OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 
+const std::string OP_WAIT_TIMEOUT = "ge.exec.opWaitTimeout";
+
+const std::string OP_EXECUTE_TIMEOUT = "ge.exec.opExecuteTimeout";
 const char *const FILE_CONSTANT_PATH = "ge.exec.value_bins";
 
 // Graph run mode

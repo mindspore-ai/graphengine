@@ -104,7 +104,7 @@ class ProfilingContext {
 
   int64_t RegisterString(const std::string &str);
   int64_t RegisterStringHash(const uint64_t hash_id, const std::string &str);
-  void UpdateElementHashId(MsprofReporterCallback reporter_callback);
+  void UpdateElementHashId(const MsprofReporterCallback reporter_callback);
   static Status QueryHashId(const MsprofReporterCallback reporter_callback, const std::string &src_str,
                             uint64_t &hash_id);
   size_t GetRegisterStringNum() const {
@@ -126,10 +126,10 @@ class ProfilingContext {
 class ScopeProfiler {
  public:
   ScopeProfiler(int64_t element, int64_t event) : element_(element), event_(event) {
-    ProfilingContext::GetInstance().RecordCurrentThread(element_, event, kEventStart);
+    ProfilingContext::GetInstance().RecordCurrentThread(element_, event, EventType::kEventStart);
   }
   ~ScopeProfiler() {
-    ProfilingContext::GetInstance().RecordCurrentThread(element_, event_, kEventEnd);
+    ProfilingContext::GetInstance().RecordCurrentThread(element_, event_, EventType::kEventEnd);
   }
 
  private:
@@ -139,8 +139,8 @@ class ScopeProfiler {
 }  // namespace profiling
 }  // namespace ge
 #define PROFILING_START(element, event) \
-  profiling::ProfilingContext::GetInstance().RecordCurrentThread(element, event, profiling::kEventStart)
+  profiling::ProfilingContext::GetInstance().RecordCurrentThread(element, event, profiling::EventType::kEventStart)
 #define PROFILING_END(element, event) \
-  profiling::ProfilingContext::GetInstance().RecordCurrentThread(element, event, profiling::kEventEnd)
+  profiling::ProfilingContext::GetInstance().RecordCurrentThread(element, event, profiling::EventType::kEventEnd)
 #define PROFILING_SCOPE(element, event) profiling::ScopeProfiler profiler(element, event)
 #endif  // AIR_CXX_PROFILING_DEFINITIONS_H

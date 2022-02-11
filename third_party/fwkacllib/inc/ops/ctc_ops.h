@@ -146,7 +146,7 @@ REG_OP(CTCBeamSearchDecoder)
 *@li log_probs: Tensor of size (T, N, C), where T =input length, N =batch size,
                 and C = number of classes (including blank).
                 It represent the logarithmized probabilities of the outputs.
-*@li targets: Tensor of size (N, S), where S= max target length.
+*@li targets: Tensor of size (N, S) or sum(target_lengths), where S = max target length.
              It represent the target sequences.
 *@li input_lengths: Tuple or tensor of size (N). It represent the lengths of the inputs.
 *@li target_lengths: Tuple or tensor of size (N). It represent lengths of the targets.
@@ -159,11 +159,12 @@ REG_OP(CTCBeamSearchDecoder)
 *@li blank : Blank label. Default 0.
 *@li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
 *@li zero_infinity : Whether to zero infinite losses and the associated gradients.
+*@li label_max : The max length of targets.
 
 *@par Third-party framework compatibility
 * Compatible with Pytorch CTCLoss operator.
 
-*@par Restrictions:
+*@attention Constraints:
 *The limit of Label’s length is 1K.
 */
 REG_OP(CTCLossV2)
@@ -176,6 +177,7 @@ REG_OP(CTCLossV2)
     .ATTR(blank, Int, 0)
     .ATTR(reduction, String, "mean")
     .ATTR(zero_infinity, Bool, false)
+    .ATTR(label_max, Int, 0)
     .OP_END_FACTORY_REG(CTCLossV2)
 
 /**
@@ -186,7 +188,7 @@ REG_OP(CTCLossV2)
 *@li log_probs: Tensor of size (T, N, C), where T =input length, N =batch size,
                 and C = number of classes (including blank).
                 It represent the logarithmized probabilities of the outputs.
-*@li targets: Tensor of size (N, S), where S= max target length.
+*@li targets: Tensor of size (N, S) or sum(target_lengths), where S = max target length.
              It represent the target sequences.
 *@li input_lengths: Tuple or tensor of size (N). It represent the lengths of the inputs.
 *@li target_lengths: Tuple or tensor of size (N). It represent lengths of the targets.
@@ -200,11 +202,12 @@ REG_OP(CTCLossV2)
 *@li blank : Blank label. Default 0.
 *@li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
 *@li zero_infinity : Whether to zero infinite losses and the associated gradients.
+*@li label_max : The max length of targets.
 
 *@par Third-party framework compatibility
 * Compatible with Pytorch CTCLoss operator.
 
-*@par Restrictions:
+*@attention Constraints:
 *The limit of Label’s length is 1K.
 */
 REG_OP(CTCLossV2Grad)
@@ -219,6 +222,7 @@ REG_OP(CTCLossV2Grad)
     .ATTR(blank, Int, 0)
     .ATTR(reduction, String, "mean")
     .ATTR(zero_infinity, Bool, false)
+    .ATTR(label_max, Int, 0)
     .OP_END_FACTORY_REG(CTCLossV2Grad)
 }  // namespace ge
 

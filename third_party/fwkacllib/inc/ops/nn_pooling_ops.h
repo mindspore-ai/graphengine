@@ -1747,7 +1747,8 @@ included in the sample.\n
 
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator SubSample.
-*@par Restrictions:
+
+*@attention Constraints:
 *Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
 */
 REG_OP(SubSample)
@@ -1776,7 +1777,8 @@ included in the sample.\n
 
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator SubSampleLabels.
-*@par Restrictions:
+
+*@attention Constraints:
 *Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
 */
 REG_OP(SubSampleLabels)

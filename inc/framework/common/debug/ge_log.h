@@ -40,7 +40,7 @@ enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
 
 class GE_FUNC_VISIBILITY GeLog {
  public:
-  static const uint64_t GetTid() {
+  static uint64_t GetTid() {
 #ifdef __GNUC__
     const uint64_t tid = static_cast<uint64_t>(syscall(__NR_gettid));
 #else
@@ -56,11 +56,11 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
   return (enable == 1);
 }
 
-#define GELOGE(ERROR_CODE, fmt, ...)                                                                            \
-  do {                                                                                                          \
-    dlog_error(GE_MODULE_NAME, "%lu %s: ErrorNo: %u(%s) %s" fmt, GeLog::GetTid(), &__FUNCTION__[0], ERROR_CODE, \
-               ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(),  \
-               ##__VA_ARGS__);                                                                                  \
+#define GELOGE(ERROR_CODE, fmt, ...)                                                                              \
+  do {                                                                                                            \
+    dlog_error(GE_MODULE_NAME, "%lu %s: ErrorNo: %u(%s) %s" fmt, GeLog::GetTid(), &__FUNCTION__[0], (ERROR_CODE), \
+               ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(),    \
+               ##__VA_ARGS__);                                                                                    \
   } while (false)
 
 #define GELOGW(fmt, ...)                                                                          \
@@ -91,7 +91,7 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
 
 #define GELOGT(VALUE, fmt, ...)                                                                                      \
   do {                                                                                                               \
-    TraceStatus stat = VALUE;                                                                                        \
+    TraceStatus stat = (VALUE);                                                                                      \
     const char_t *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                                     \
     const int32_t idx = static_cast<int32_t>(stat);                                                                  \
     char_t *k = const_cast<char_t *>("status");                                                                      \
@@ -102,7 +102,7 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
 
 #define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                                           \
   do {                                                                                                         \
-    dlog_error(MOD_NAME, "%lu %s: ErrorNo: %u(%s) %s" fmt, GeLog::GetTid(), &__FUNCTION__[0], ERROR_CODE,      \
+    dlog_error((MOD_NAME), "%lu %s: ErrorNo: %u(%s) %s" fmt, GeLog::GetTid(), &__FUNCTION__[0], (ERROR_CODE),  \
                ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(), \
                ##__VA_ARGS__);                                                                                 \
   } while (false)

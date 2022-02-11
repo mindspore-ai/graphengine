@@ -745,6 +745,28 @@ REG_OP(UnsqueezeV2)
     .ATTR(axis, ListInt, {})
     .OP_END_FACTORY_REG(UnsqueezeV2)
 
+
+/**
+*@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape
+is changed, but the data is not changed. \n
+
+*@par Inputs:
+*x: A tensor.
+*axes: A list of int64, which indicates the dimensions to be inserted. \n
+
+*@par Outputs:
+*y: Reshape tensor with same data as input. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Onnx operator Unsqueeze in V13. \n
+*/
+
+REG_OP(UnsqueezeV3)
+    .INPUT(x, TensorType::ALL())
+    .INPUT(axes, ListInt)
+    .OUTPUT(y, TensorType::ALL())
+    .OP_END_FACTORY_REG(UnsqueezeV3)
+
 /**
 *@brief Reshapes a tensor. Only the tensor shape is changed, without changing the data. \n
 
@@ -820,6 +842,28 @@ REG_OP(SqueezeV2)
     .OUTPUT(y, TensorType::ALL())
     .ATTR(axis, ListInt, {})
     .OP_END_FACTORY_REG(SqueezeV2)
+
+/**
+*@brief Removes dimensions of size 1 from the shape of a tensor according to axes. \n
+
+*@par Inputs:
+*x: A tensor.
+*axes: An optional list of int64. If not specified, squeezes all dimensions of
+size 1. If specified, only squeezes the dimensions listed. It is an error to
+squeeze a dimension that is not 1. \n 
+
+*@par Outputs:
+*y: Reshape tensor with same data as input. \n
+
+*@par Third-party framework compatibility
+*Compatible with the onnx operator Squeeze in V13. \n
+*/
+
+REG_OP(SqueezeV3)
+    .INPUT(x, TensorType::ALL())
+    .OPTIONAL_INPUT(axes, ListInt)
+    .OUTPUT(y, TensorType::ALL())
+    .OP_END_FACTORY_REG(SqueezeV3)
 
 /**
 *@brief Returns an integer representing the rank of input tensor. The rank of a tensor is the number of indices required to uniquely select each element of the tensor, that is, the dimension size of the tensor. \n
@@ -1273,7 +1317,7 @@ REG_OP(SortV2)
 * @par Inputs:
 * One inputs, including:
 * @li x: A Tensor. Must be one of the following types:
-*     float16, float32, int32, int8 ,uint8. \n
+*     float16, float32, int32, int8, uint8, bool. \n
 * @li shape: A Tensor to specify the shape that the input tensor expanded to. \n
 
 * @par Outputs:
@@ -1284,9 +1328,9 @@ REG_OP(SortV2)
 */
 
 REG_OP(Expand)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32,DT_INT64, DT_INT8, DT_UINT8, DT_BOOL}))
     .INPUT(shape, TensorType({DT_INT16, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32,DT_INT64, DT_INT8, DT_UINT8, DT_BOOL}))
     .OP_END_FACTORY_REG(Expand)
 
 /**
@@ -1342,13 +1386,37 @@ REG_OP(NonZeroWithValue)
     .ATTR(dtype, Type, DT_INT32)
     .OP_END_FACTORY_REG(NonZeroWithValue)
 
+
+
+/**
+*@Returns a tensor with updated shape from NonZeroWithValue. \n
+
+*@par Inputs:
+*value: A Tensor. The output of NonZeroWithValue. \n
+*index: A Tensor. The output of NonZeroWithValue. \n
+*count: A Tensor. The type is INT32, means count for non_zero ele in input. \n
+
+* out_value: A Tensor. Has the same type as "value" . \n
+* out_index: A Tensor. Has the same type as "index". \n
+*/
+REG_OP(NonZeroWithValueShape)
+    .INPUT(value, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16,
+                            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .INPUT(index, TensorType({DT_INT32}))
+    .INPUT(count, TensorType({DT_INT32}))
+    .OUTPUT(out_value, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16,
+                            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(out_index, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(NonZeroWithValueShape)
+
+
 /**
 * @brief Expand the input tensor to a compatible shape. \n
 
 * @par Inputs:
 * One inputs, including:
 * x: A Tensor. Must be one of the following types:
-*     float16, float32, int32, int8 ,uint8. \n
+*     float16, float32, int32, int8, uint8, bool. \n
 
 * @par Attributes:
 * shape: A required listInt to specify the shape that the input tensor expanded to. \n
@@ -1362,8 +1430,8 @@ REG_OP(NonZeroWithValue)
 */
 
 REG_OP(ExpandD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(ExpandD)
 
@@ -1404,6 +1472,43 @@ REG_OP(UpdateTensorDesc)
                            DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(UpdateTensorDesc)
+
+/**
+*@brief Queue data for other operators. \n
+*@par Attributes:
+*index: Index of the input tensor.The data type must be int32 or int64.
+Assume that net has three data nodes, one should be set 0, another should
+be set 1, and the left should be set 2. \n
+*queue_name: queue name
+*output_types: types of outputs data
+*output_shapes: shapes of outputs data
+*@par Outputs:
+*y: A DT_UINT8 tensor. \n
+*/
+REG_OP(QueueData)
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .ATTR(index, Int, 0)
+    .ATTR(queue_name, String, "")
+    .ATTR(output_types, ListType, {})
+    .ATTR(output_shapes, ListListInt, {{}, {}})
+    .OP_END_FACTORY_REG(QueueData)
+
+/**
+* @brief Ensures that the tensor's shape matches the expected shape. \n
+* @par Inputs:
+* x: A Tensor. \n
+* @par Attributes:
+* shape:  The shape that needs to be checked \n
+* @par Outputs:
+* y: A tensor. \n
+*/
+REG_OP(EnsureShape)
+    .INPUT(input, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,DT_INT64,DT_FLOAT16, \
+                            DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,DT_INT64,DT_FLOAT16, \
+                            DT_FLOAT,DT_DOUBLE}))
+    .REQUIRED_ATTR(shape, ListInt)
+    .OP_END_FACTORY_REG(EnsureShape)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

@@ -98,10 +98,10 @@ GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph,
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *, const ModelBufferData &))
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char_t *, const ModelBufferData &))
 GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const std::string &output_file, const ModelBufferData &model);
 
-GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model);
+GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char_t *output_file, const ModelBufferData &model);
 
 /**
  * @ingroup AscendCL
@@ -126,7 +126,7 @@ GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int32_t *major_version, int32
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-GE_FUNC_VISIBILITY graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
+GE_FUNC_VISIBILITY graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char_t *file, const size_t len);
 
 /**
  * @ingroup AscendCL
@@ -150,7 +150,7 @@ GE_FUNC_VISIBILITY graphStatus aclgrphGenerateForOp(const AscendString &op_type,
  * @param cfg_path   [IN] the config file path
  * @return graphStatus
  */
-GE_FUNC_VISIBILITY graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char *cfg_path);
+GE_FUNC_VISIBILITY graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char_t *cfg_path);
 
 };      // namespace ge
 #endif  // INC_EXTERNAL_GE_IR_BUILD_H_

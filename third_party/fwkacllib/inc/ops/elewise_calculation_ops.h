@@ -331,7 +331,7 @@ REG_OP(Sub)
 
 *@par Inputs:
 *One input, including: \n
-*x: A Tensor. Must be one of the following types: float16, float32, double, int32, int64. \n
+*x: A Tensor. Must be one of the following types: float16, float32, double, int8, int16, int32, int64. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -340,8 +340,10 @@ REG_OP(Sub)
 *Compatible with the TensorFlow operator Abs.
 */
 REG_OP(Abs)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16,
+                          DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16,
+                           DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(Abs)
 
 /**
@@ -3821,6 +3823,10 @@ REG_OP(CosineSimilarity)
 * @li max_grad_norm: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li global_grad_norm: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li weight_decay: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li step_size: A Optional Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+
+* @par Attributes:
+* @li adam_mode: An optional bool. Defaults to "adam". \n
 
 *@par Outputs:
 *three inputs, including:
@@ -3840,9 +3846,11 @@ REG_OP(ApplyAdamV2)
     .INPUT(max_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .INPUT(global_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .INPUT(weight_decay, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OPTIONAL_INPUT(step_size, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .OUTPUT(var, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .OUTPUT(m, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .OUTPUT(v, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .ATTR(adam_mode, String, "adam")
     .OP_END_FACTORY_REG(ApplyAdamV2)
 }  // namespace ge
 

@@ -44,6 +44,11 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_PROFILER_TRACE_EX,
     RT_MODEL_TASK_FFTS_TASK,
     RT_MODEL_TASK_FFTS_PLUS_TASK,
+    RT_MODEL_TASK_DSA_TASK,
+    RT_MODEL_TASK_CMO,
+    RT_MODEL_TASK_BARRIER,
+    RT_MODEL_TASK_NPU_GET_FLOAT_STATUS,
+    RT_MODEL_TASK_NPU_CLEAR_FLOAT_STATUS,
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {
@@ -115,9 +120,9 @@ typedef struct tagKernelTaskInfo {
     uint16_t argsCount;
     uint16_t argsSize;
     uint16_t reserved;
-    char_t *stubFunc;
+    const char_t *stubFunc;
     uint8_t *smDesc;
-    uint8_t *args;
+    const uint8_t *args;
     uint16_t *argsOffset;
 } rtKernelTaskInfo_t;
 
@@ -126,17 +131,17 @@ typedef struct tagAllKernelTaskInfo {
     uint16_t argsCount;
     uint16_t argsSize;
     uint16_t reserved;
-    void *devfunc;
+    const void *kernelInfoExt;
     void *handle;
     uint8_t *smDesc;
-    uint8_t *args;
+    const uint8_t *args;
     uint16_t *argsOffset;
 } rtAllKernelTaskInfo_t;
 
 typedef struct tagKernelTaskInfoEx {
     uint32_t flags;
     uint32_t argsSize;
-    void *args;
+    const void *args;
     uint32_t reserved[6];
 } rtKernelTaskInfoEx_t;
 
@@ -198,9 +203,9 @@ typedef struct tagProfilerTraceExTaskInfo {
 } rtProfilerTraceEx_t;
 
 typedef struct tagrtMemcpyAsyncTaskInfo {
-    void *dst;
+    const void *dst;
     uint64_t destMax;
-    void *src;
+    const void *src;
     uint64_t count;
     uint32_t kind;
     uint32_t reserved;
@@ -212,9 +217,9 @@ typedef struct tagrtNotifyTaskInfo {
 } rtNotifyTaskInfo_t;
 
 typedef struct tagrtReduceAsyncTaskInfo {
-    void *dst;
+    const void *dst;
     uint64_t destMax;
-    void *src;
+    const void *src;
     uint64_t count;
     uint32_t kind;
     uint32_t type;
@@ -480,6 +485,16 @@ RTS_API rtError_t rtDebugRegister(rtModel_t mdl, uint32_t flag, const void *addr
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDebugUnRegister(rtModel_t mdl);
+
+/**
+ * @ingroup rt_model
+ * @brief set model group id
+ * @param [in]    mdl     model
+ * @param [in]     schGrpId    groupId  (0,4) 0:default invalid value   1-4 valid value Maximum support 4 groups
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtModelSetSchGroupId(rtModel_t mdl, const int16_t schGrpId);
 
 #if defined(__cplusplus)
 }

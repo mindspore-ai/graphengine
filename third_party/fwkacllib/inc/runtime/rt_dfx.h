@@ -28,6 +28,16 @@ extern "C" {
  */
 RTS_API rtError_t rtSetTaskTag(const char_t *taskTag);
 
+/**
+ * @brief set aicpu device attribute.
+ * it is used for aicpu device to be aware of enviroment config
+ * @param [in] key  attrubute key.
+ * @param [in] val  attrubute value.
+ * @return RT_ERROR_NONE for ok
+ * @return other failed
+ */
+RTS_API rtError_t rtSetAicpuAttr(const char_t *key, const char_t *val);
+
 #if defined(__cplusplus)
 }
 #endif

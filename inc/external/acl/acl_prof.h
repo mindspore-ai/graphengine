@@ -37,6 +37,7 @@ extern "C" {
 #define ACL_PROF_HCCL_TRACE 0x0020ULL
 #define ACL_PROF_TRAINING_TRACE 0x0040ULL
 #define ACL_PROF_MSPROFTX 0x0080ULL
+#define ACL_PROF_RUNTIME_API 0x0100ULL
 
 /**
  * @deprecated please use aclprofGetOpTypeLen and aclprofGetOpTNameLen instead
@@ -366,6 +367,79 @@ MSVP_PROF_API aclprofStepInfo *aclprofCreateStepInfo();
  * @retval void
  */
 MSVP_PROF_API void aclprofDestroyStepInfo(aclprofStepInfo *stepinfo);
+
+/**
+ * @ingroup AscendCL
+ * @brief create pointer to aclprofstamp
+ *
+ *
+ * @retval aclprofStamp pointer
+ */
+MSVP_PROF_API void *aclprofCreateStamp();
+
+/**
+ * @ingroup AscendCL
+ * @brief destory stamp pointer
+ *
+ *
+ * @retval void
+ */
+MSVP_PROF_API void aclprofDestroyStamp(void *stamp);
+
+/**
+ * @ingroup AscendCL
+ * @brief Record push timestamp
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+MSVP_PROF_API aclError aclprofPush(void *stamp);
+
+/**
+ * @ingroup AscendCL
+ * @brief Record pop timestamp
+ *
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+MSVP_PROF_API aclError aclprofPop();
+
+/**
+ * @ingroup AscendCL
+ * @brief Record range start timestamp
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+MSVP_PROF_API aclError aclprofRangeStart(void *stamp, uint32_t *rangeId);
+
+/**
+ * @ingroup AscendCL
+ * @brief Record range end timestamp
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+MSVP_PROF_API aclError aclprofRangeStop(uint32_t rangeId);
+
+/**
+ * @ingroup AscendCL
+ * @brief set message to stamp
+ *
+ *
+ * @retval void
+ */
+MSVP_PROF_API aclError aclprofSetStampTraceMessage(void *stamp, const char *msg, uint32_t msgLen);
+
+/**
+ * @ingroup AscendCL
+ * @brief Record mark timestamp
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+MSVP_PROF_API aclError aclprofMark(void *stamp);
 
 #ifdef __cplusplus
 }

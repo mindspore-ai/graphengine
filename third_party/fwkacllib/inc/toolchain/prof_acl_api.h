@@ -1,17 +1,8 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2021. All rights reserved.
+ * Description: handle perf data
+ * Author: xp
+ * Create: 2019-10-13
  */
 
 #ifndef MSPROFILER_API_PROF_ACL_API_H_
@@ -25,6 +16,8 @@
 #define PROF_L2CACHE                0x00000010ULL
 #define PROF_HCCL_TRACE             0x00000020ULL
 #define PROF_TRAINING_TRACE         0x00000040ULL
+#define PROF_MSPROFTX               0x00000080ULL
+#define PROF_RUNTIME_API            0x00000100ULL
 
 // system profilinig switch
 #define PROF_CPU                    0x00010000ULL
@@ -36,16 +29,17 @@
 #define PROF_AIVECTORCORE_SAMPLE    0x00400000ULL
 
 #define PROF_MODEL_EXECUTE          0x0000001000000ULL
-#define PROF_RUNTIME_API            0x0000002000000ULL
 #define PROF_RUNTIME_TRACE          0x0000004000000ULL
 #define PROF_SCHEDULE_TIMELINE      0x0000008000000ULL
 #define PROF_SCHEDULE_TRACE         0x0000010000000ULL
 #define PROF_AIVECTORCORE_METRICS   0x0000020000000ULL
 #define PROF_SUBTASK_TIME           0x0000040000000ULL
-
-#define PROF_TASK_TRACE             0x0000005000062ULL
+#define PROF_OP_DETAIL              0x0000080000000ULL
 
 #define PROF_MODEL_LOAD             0x8000000000000000ULL
+
+#define PROF_TASK_TRACE             (PROF_MODEL_EXECUTE | PROF_RUNTIME_TRACE | PROF_TRAINING_TRACE | \
+                                     PROF_HCCL_TRACE | PROF_TASK_TIME)
 
 // DataTypeConfig MASK
 #define PROF_ACL_API_MASK                0x00000001ULL
@@ -55,6 +49,8 @@
 #define PROF_L2CACHE_MASK                0x00000010ULL
 #define PROF_HCCL_TRACE_MASK             0x00000020ULL
 #define PROF_TRAINING_TRACE_MASK         0x00000040ULL
+#define PROF_MSPROFTX_MASK               0x00000080ULL
+#define PROF_RUNTIME_API_MASK            0x00000100ULL
 
 // system profilinig mask
 #define PROF_CPU_MASK                    0x00010000ULL
@@ -66,12 +62,12 @@
 #define PROF_AIVECTORCORE_SAMPLE_MASK    0x00400000ULL
 
 #define PROF_MODEL_EXECUTE_MASK          0x0000001000000ULL
-#define PROF_RUNTIME_API_MASK            0x0000002000000ULL
 #define PROF_RUNTIME_TRACE_MASK          0x0000004000000ULL
 #define PROF_SCHEDULE_TIMELINE_MASK      0x0000008000000ULL
 #define PROF_SCHEDULE_TRACE_MASK         0x0000010000000ULL
 #define PROF_AIVECTORCORE_METRICS_MASK   0x0000020000000ULL
 #define PROF_SUBTASK_TIME_MASK           0x0000040000000ULL
+#define PROF_OP_DETAIL_MASK              0x0000080000000ULL
 
 #define PROF_MODEL_LOAD_MASK             0x8000000000000000ULL
 
@@ -104,7 +100,7 @@ extern "C" {
 
 MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
 
-typedef int32_t Status;
+typedef in32_t Status;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig1;
 ///
 /// @ingroup AscendCL
@@ -135,6 +131,33 @@ MSVP_PROF_API Status aclgrphProfGraphUnSubscribe(const uint32_t graphId);
  * @retval 0 for failed
  */
 MSVP_PROF_API size_t aclprofGetGraphId(const void *opInfo, size_t opInfoLen, uint32_t index);
+
+/**
+* @ingroup AscendCL
+* @brief set stamp pay load
+*
+*
+* @retval void
+*/
+MSVP_PROF_API int aclprofSetStampPayload(void *stamp, const int32_t type, void *value);
+
+/**
+* @ingroup AscendCL
+* @brief set category and name
+*
+*
+* @retval void
+*/
+MSVP_PROF_API int aclprofSetCategoryName(uint32_t category, const char *categoryName);
+
+/**
+* @ingroup AscendCL
+* @brief set category to stamp
+*
+*
+* @retval void
+*/
+MSVP_PROF_API int aclprofSetStampCategory(void *stamp, uint32_t category);
 #ifdef __cplusplus
 }
 #endif

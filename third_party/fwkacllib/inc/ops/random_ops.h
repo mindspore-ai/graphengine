@@ -60,6 +60,65 @@ REG_OP(Multinomial)
     .OP_END_FACTORY_REG(Multinomial)
 
 /**
+*@brief Creates a multinomial distribution. \n
+
+*@par Inputs:
+*Inputs include:
+* @li q: A Tensor. Must be one of the following types: float, double.
+1-D Tensor with shape [num_classes].
+* @li j: A Tensor. Must be one of the following types: int64.
+1-D Tensor with shape [num_classes].
+* @li num_samples: A Tensor of type int32. 0-D. Number of independent samples to draw for each row slice . \n
+
+*@par Attributes:
+*@li output_dtype: An optional type from: int32, int64. Defaults to int64.
+*@li seed: An optional int. Defaults to 0.
+*@li seed2: An optional int. Defaults to 0. \n
+
+*@par Outputs:
+*y: A Tensor of type int32 or int64. \n
+
+*@attention Constraints:
+*The implementation for MultinomialAliasDraw on Ascend uses AICPU, with bad performance.
+
+*@par Third-party framework compatibility
+*@li compatible with torch _multinomial_alias_draw operator.
+*/
+REG_OP(MultinomialAliasDraw)
+    .INPUT(q, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(j, TensorType({DT_INT64}))
+    .OUTPUT(y, TensorType({DT_INT64}))
+    .REQUIRED_ATTR(num_samples, Int)
+    .ATTR(seed, Int, 0)
+    .OP_END_FACTORY_REG(MultinomialAliasDraw)
+
+/**
+*@brief Prepares for MultinomialAliasDraw to create a multinomial distribution. \n
+
+*@par Inputs:
+*Inputs include:
+* @li probs: A Tensor. Must be one of the following types: float, double.
+1-D Tensor with shape [num_classes]. \n
+
+*@par Outputs:
+*j: A Tensor. Must be one of the following types: int64.
+1-D Tensor with shape [num_classes].
+*q: A Tensor. Must be one of the following types: float, double.
+1-D Tensor with shape [num_classes]. \n
+
+*@attention Constraints:
+*The implementation for MultinomialAliasSetup on Ascend uses AICPU, with bad performance.
+
+*@par Third-party framework compatibility
+*@li compatible with torch _multinomial_alias_setup operator.
+*/
+REG_OP(MultinomialAliasSetup)
+    .INPUT(probs, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(j, TensorType({DT_INT64}))
+    .OUTPUT(q, TensorType({DT_FLOAT, DT_DOUBLE})) 
+    .OP_END_FACTORY_REG(MultinomialAliasSetup)
+
+/**
 *@brief Outputs random values from a normal distribution . \n
 
 *@par Inputs:
@@ -173,6 +232,27 @@ REG_OP(Randperm)
     .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(Randperm)
 
+/**
+*@brief Fills a tensor with elements drawn from the poisson distribution. \n
+
+*@par Inputs:
+*x:  A Tensor. Must be one of the following types: float16, float. \n
+
+*@par Attributes:
+*@li seed: An optional int. Defaults to 0. \n
+
+*@par Outputs:
+*y: A Tensor list with same type as "x" . \n
+
+*@par Third-party framework compatibility
+*@ Compatible with the Pytorch operator Poisson.
+*/
+REG_OP(Poisson)
+    .INPUT(x, TensorType({ DT_FLOAT16,DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_FLOAT16,DT_FLOAT }))
+    .ATTR(seed, Int, 0)
+    .OP_END_FACTORY_REG(Poisson)   
+ 
 /**
 *@brief Outputs random values from the Poisson distribution(s) described by rate . \n
 
@@ -446,6 +526,34 @@ REG_OP(DropOutGenMaskV3)
     .ATTR(seed2, Int, 0)
     .OP_END_FACTORY_REG(DropOutGenMaskV3)
 
+    
+/**
+*@brief Generate stateless random bit mask for dropout . \n
+
+*@par Inputs:
+include:
+*@li shape:The shape of the output tensor.
+*@li prob:0-D. Number of bit 1 . \n
+*@li seed:If either seed or seed2 are set to be non-zero, the random number
+*generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2:A second seed to avoid seed collision . \n
+
+*@par Outputs:
+*y:Output (1-D) random number using uint data format . \n
+
+*@attention Constraints:
+*The output is aligned with 128 bits
+
+*@see StatelessDropOutGenMask()
+*/
+REG_OP(StatelessDropOutGenMask)
+    .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .INPUT(seed, TensorType({ DT_INT32, DT_INT64 }))
+    .INPUT(seed1, TensorType({ DT_INT32, DT_INT64 }))
+    .OUTPUT(y, TensorType({ DT_UINT8 }))
+    .OP_END_FACTORY_REG(StatelessDropOutGenMask)
+
 /**
 *@brief Generates values in an interval . \n
 
@@ -698,11 +806,62 @@ REG_OP(Uniform)
 *@attention Constraints:
 * Compatible with the Caffe operator ContinuationIndicator.
 */
-
 REG_OP(ContinuationIndicator)
     .REQUIRED_ATTR(time_step, Int)
     .REQUIRED_ATTR(batch_size, Int)
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ContinuationIndicator)
+
+/**
+*@brief Outputs random values from the Exponential distribution(s) described by rate . \n
+
+*@par Inputs:
+*Inputs include:
+* @li x: A Tensor. Must be one of the following types: half, float32, float64. \n
+
+*@par Attributes:
+*@li lambda: An optional float. Defaults to 1.
+*@li seed: An optional int. Defaults to 0.The random number generator is seeded by the given seed.
+ Otherwise, it is seeded by a random seed. \n
+
+*@par Outputs:
+*y: A Tensor of type dtype float16, float, double. \n
+
+*@attention Constraints:
+*The implementation for Exponential on Ascend uses AICPU, with bad performance.
+
+*@par Third-party framework compatibility
+*@li compatible with tensorflow Exponential operator.
+*/
+REG_OP(Exponential)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(lambda, Float, 1)
+    .ATTR(seed, Int, 0)
+    .OP_END_FACTORY_REG(Exponential)
+
+/**
+*@brief Fills a tensor with elements drawn from the geometric distribution. \n
+
+*@par Inputs:
+*x:  A Tensor. Must be one of the following types: float16, float. \n
+
+*@par Attributes:
+*@li p: The probability of experimental success in Bernoulli's experiment.
+*@li seed: An optional int. Defaults to 0. \n
+
+*@par Outputs:
+*y: A Tensor list with same type as "x" . \n
+
+*@par Third-party framework compatibility
+*@ Compatible with the Pytorch operator Geometric.
+*/
+REG_OP(Geometric)
+    .INPUT(x, TensorType({ DT_FLOAT16,DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_FLOAT16,DT_FLOAT }))
+    .REQUIRED_ATTR(p, Float)
+    .ATTR(seed, Int, 0)
+    .OP_END_FACTORY_REG(Geometric)
+
 }   // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

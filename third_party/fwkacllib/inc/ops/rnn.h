@@ -1280,6 +1280,44 @@ REG_OP(EmbeddingBag)
     .ATTR(sparse, Bool, false)
     .ATTR(include_last_offset, Bool, false)
     .OP_END_FACTORY_REG(EmbeddingBag)
+/**
+ * @brief:LSTMP calculation
+ * @par Inputs:
+ * eight inputs:
+ * @li x:A required Tensor(seq, batch, dim). Must be one of the following types: float16, float32.
+ * @li real_mask:A optional Tensor(seq, batch). Must be one of the following types: float16, float32.
+ * @li init_h:A optional Tensor(batch, state). Must be one of the following types: float16, float32.
+ * @li init_c:A optional Tensor(batch, hidden). Must be one of the following types: float16, float32.
+ * @li wx:A required Tensor(4*hidden, dim). Must be one of the following types: float16, float32.
+ * @li wr:A required Tensor(4*hidden, state). Must be one of the following types: float16, float32.
+ * @li bias:A optional Tensor(hidden). Must be one of the following types: float16, float32. The format must be ND.
+ * @li project: A optional Tensor. Must be one of the following types: float16, float32.
+ *
+ * @par Outputs:
+ *three outputs:
+ *@li y:A Tensor. Must be one of the following types: float16, float32.
+ *@li output_h:A Tensor. Must be one of the following types: float16, float32.
+ *@li output_c:A Tensor. Must be one of the following types: float16, float32.
+ *
+ *@par Attributes:
+ *time_major:An bool identifying the time major in the op. Default to false.
+ * @par Restrictions:
+ * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(LSTMP)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(wx, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(wr, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(project, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(real_mask, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(init_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(time_major, Bool, false)
+    .OP_END_FACTORY_REG(LSTMP)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RNN_H_

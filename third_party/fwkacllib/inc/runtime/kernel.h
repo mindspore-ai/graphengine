@@ -287,13 +287,13 @@ RTS_API rtError_t rtDependencyRegister(void *mHandle, void *sHandle);
  * @param [in] binHandle   device binary handle
  * @param [in] stubFunc   stub function
  * @param [in] stubName   stub function name
- * @param [in] devFunc   device function description. symbol name or address
- *                       offset, depending binary type.
+ * @param [in] kernelInfoExt   kernel Info extension. device function description or tiling key,
+ *                             depending static shape or dynmaic shape.
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName,
-                                     const void *devFunc, uint32_t funcMode);
+                                     const void *kernelInfoExt, uint32_t funcMode);
 
 /**
  * @ingroup rt_kernel
@@ -354,7 +354,8 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @ingroup rt_kernel
  * @brief launch kernel with handle to device
  * @param [in] hdl   program
- * @param [in] devFunc   device function description.
+ * @param [in] kernelInfoExt   kernel Info extension. device function description or tiling key,
+ *                             depending static shape or dynmaic shape.
  * @param [in] blockDim   block dimentions
  * @param [in] args   argments address for kernel function
  * @param [in] argsSize   argements size
@@ -364,7 +365,7 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchWithHandle(void *hdl, const void *devFunc, uint32_t blockDim,
+RTS_API rtError_t rtKernelLaunchWithHandle(void *hdl, const void *kernelInfoExt, uint32_t blockDim,
                                            void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream_,
                                            const void *kernelInfo);
 
@@ -497,6 +498,28 @@ RTS_API rtError_t rtDumpAddrSet(rtModel_t mdl, void *addr, uint32_t dumpSize, ui
  */
 RTS_API rtError_t rtDatadumpInfoLoad(const void *dumpInfo, uint32_t length);
 
+/**
+ * @ingroup rt_kernel
+ * @brief launch npu get float status task
+ * @param [in] outputAddr   pointer to op output addr
+ * @param [in] outputSize   op output size
+ * @param [in] checkMode   check mode
+ * @param [in] stm   associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNpuGetFloatStatus(void *outputAddr, uint64_t outputSize, uint32_t checkMode, rtStream_t stm);
+
+/**
+ * @ingroup rt_kernel
+ * @brief launch npu clear float status task
+ * @param [in] checkMode   check mode
+ * @param [in] stm   associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNpuClearFloatStatus(uint32_t checkMode, rtStream_t stm);
+
 #ifndef __CLANG_CCE_RUNTIME_H__
 #define __CLANG_CCE_RUNTIME_H__
 /**
@@ -519,13 +542,13 @@ RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc, rtStre
 /**
  * @ingroup rt_kernel
  * @brief setup argment for next rtLaunch in current thread
- * @param [in] arg   argment address for kernel function
+ * @param [in] args   argment address for kernel function
  * @param [in] size   argment size
  * @param [in] offset  argment table offset
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtSetupArgument(const void *arg, uint32_t size, uint32_t offset);
+RTS_API rtError_t rtSetupArgument(const void *args, uint32_t size, uint32_t offset);
 
 /**
  * @ingroup rt_kernel
@@ -544,11 +567,11 @@ RTS_API rtError_t rtLaunch(const void *stubFunc);
  * @param [in] ptr   host memory
  * @param [in] size   host memory size
  * @param [in] flag   reserved. set to 0
- * @param [out] arg   returned arg. used for next kernel's arg.
+ * @param [out] args   returned arg. used for next kernel's arg.
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_t flag, void **arg);
+RTS_API rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_t flag, void **args);
 
 /**
  * @ingroup rt_kernel
@@ -675,7 +698,8 @@ RTS_API rtError_t rtKernelLaunchWithTiling(const void *stubFunc, uint32_t blockD
  * @ingroup rt_kernel
  * @brief launch kernel with handle and tiling data to device
  * @param [in] hdl   program
- * @param [in] devFunc   device function description.
+ * @param [in] kernelInfoExt   kernel Info extension. device function description or tiling key,
+ *                             depending static shape or dynmaic shape.
  * @param [in] blockDim   block dimentions
  * @param [in] argsInfo   argments info address for kernel function
  * @param [in] smDesc   shared memory description
@@ -684,7 +708,7 @@ RTS_API rtError_t rtKernelLaunchWithTiling(const void *stubFunc, uint32_t blockD
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchWithHandleAndTiling(void *hdl, const void *devFunc, uint32_t blockDim,
+RTS_API rtError_t rtKernelLaunchWithHandleAndTiling(void *hdl, const void *kernelInfoExt, uint32_t blockDim,
     rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm, const void* kernelInfo);
 
 #if defined(__cplusplus)

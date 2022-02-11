@@ -25,7 +25,8 @@ typedef struct tagFftsPlusTaskInfo {
 
 #pragma pack(pop)
 
-RTS_API rtError_t rtGetAddrAndPrefCntWithHandle(void *hdl, const void *devFunc, void **addr, uint32_t *prefetchCnt);
+RTS_API rtError_t rtGetAddrAndPrefCntWithHandle(void *hdl, const void *kernelInfoExt, void **addr,
+    uint32_t *prefetchCnt);
 
 RTS_API rtError_t rtFftsPlusTaskLaunch(rtFftsPlusTaskInfo_t *fftsPlusTaskInfo, rtStream_t stm);
 

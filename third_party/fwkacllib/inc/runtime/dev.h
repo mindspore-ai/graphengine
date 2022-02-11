@@ -94,11 +94,11 @@ typedef enum tagGetDevMsgType {
 /**
  * @ingroup dvrt_dev
  * @brief get total device number.
- * @param [in|out] count the device number
+ * @param [in|out] cnt the device number
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetDeviceCount(int32_t *count);
+RTS_API rtError_t rtGetDeviceCount(int32_t *cnt);
 /**
  * @ingroup dvrt_dev
  * @brief get device ids
@@ -338,7 +338,7 @@ RTS_API rtError_t rtSetTSDevice(uint32_t tsId);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_DRV_ERR for can not get run mode
  */
-RTS_API rtError_t rtGetRunMode(rtRunMode *mode);
+RTS_API rtError_t rtGetRunMode(rtRunMode *runMode);
 
 /**
  * @ingroup dvrt_dev

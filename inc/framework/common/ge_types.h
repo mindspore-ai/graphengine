@@ -40,13 +40,13 @@ enum FrameworkType {
   CAFFE = 0,
   MINDSPORE = 1,
   TENSORFLOW = 3,
-  ANDROID_NN,
-  ONNX,
+  ANDROID_NN = 4,
+  ONNX = 5,
 };
 
 enum class GraphStage : int64_t { GRAPH_STAGE_FUZZ = 0, GRAPH_STAGE_RESERVED };
 
-const char *const kGraphDumpStage = "DumpStage";
+const char_t *const kGraphDumpStage = "DumpStage";
 
 const std::map<std::string, std::string> kFwkTypeToStr = {
     {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
@@ -70,21 +70,42 @@ const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
 const std::string kTaskTypeFftsPlus = "FFTS_PLUS";
+const std::string kEngineNameVectorCore = "VectorEngine";
+
+const std::string kEngineNameHccl = "ops_kernel_info_hccl";
+const std::string kEngineNameRts = "DNN_VM_RTS_OP_STORE";
+const std::string kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
+const std::string kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
+const std::string kEngineNameAiCpu = "aicpu_ascend_kernel";
+const std::string kEngineNameAiCpuTf = "aicpu_tf_kernel";
+const std::string kEngineNameAiCore = "AIcoreEngine";
+const std::string kAtomicOpType = "DynamicAtomicAddrClean";
+
+const std::string kShapeTypeStatic = "static";
+const std::string kShapeTypeDynamic = "dynamic";
+
+constexpr uint64_t kInferSessionId = 0U;
+constexpr uint64_t kReleaseFlag = 1U;
+constexpr uint32_t kInvalidModelId = 0xFFFFFFFFU;
+constexpr size_t kNumTaskWithAtomicAddrCleanTask = 2U;
 
 // dynamic execute mode
 const char_t *const kLazyRecompile = "lazy_recompile";
 
+constexpr size_t kMaxHostMemInputLen = 64U;
+
 // Data cache, including data address and length
 struct DataBuffer {
- public:
   void *data;       // Data address
   uint64_t length;  // Data length
   bool isDataSupportMemShare = false;
   uint32_t placement = 0U;
-  DataBuffer(void *data_in, uint64_t data_len, bool is_support_mem_share, uint32_t placement = 0U)
-      : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(placement) {}
 
-  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false) {}
+  DataBuffer(void *const data_in, const uint64_t data_len, const bool is_support_mem_share = false,
+             const uint32_t data_placement = 0U)
+      : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(data_placement) {}
+
+  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false), placement(0U) {}
 };
 
 ///
@@ -232,6 +253,9 @@ struct ModelInfo {
 class GE_FUNC_VISIBILITY ModelListener {
  public:
   virtual ~ModelListener() {}
+  ModelListener() = default;
+  ModelListener(const ModelListener &) = delete;
+  ModelListener &operator=(const ModelListener &) = delete;
   ///
   /// @brief Asynchronous callback interface
   /// @param [in] model_id   Model ID of the callback
@@ -241,7 +265,9 @@ class GE_FUNC_VISIBILITY ModelListener {
   virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
                                std::vector<ge::Tensor> &outputs) = 0;
 
-  virtual void SetCallback(const RunAsyncCallback &callback){};
+  virtual void SetCallback(const RunAsyncCallback &callback) {
+    (void)callback;
+  }
 
   virtual uint32_t GetResultCode() {
     return 0U;

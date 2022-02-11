@@ -2399,6 +2399,32 @@ REG_OP(DynamicGetNext)
   .OP_END_FACTORY_REG(DynamicGetNext)
 
 /**
+@brief DynamicGetNextV2, dynamic get next data
+* @par Inputs:
+*x: the iterator, all types are available
+* @par Outputs:
+* y: the date in iterator, all types are available
+* @par Attributes:
+* output_types: types of all outputs
+* output_shapes: shapes of all outputs
+*_dynamic_graph_execute_mode: dynamic graph execution mode,
+value is one of lazy_recompile and dynamic_execute
+*_getnext_inputs_shape_range: shape ranges of outputs,
+it works where _dynamic_graph_execute_mode is dynamic_execute
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(DynamicGetNextV2)
+  .DYNAMIC_OUTPUT(y, TensorType::ALL())
+  .ATTR(output_types, ListType, {})
+  .ATTR(channel_name, String, "")
+  .ATTR(output_shapes, ListListInt, {{}, {}})
+  .ATTR(_dynamic_graph_execute_mode, String, "lazy_recompile")
+  .ATTR(_getnext_inputs_shape_range, String, "")
+  .OP_END_FACTORY_REG(DynamicGetNextV2)
+
+/**
 *@brief AdpGetNext
 *@par Outputs:
 *y: the data in iterator, all types are available
@@ -2433,5 +2459,24 @@ REG_OP(GetNextV2)
   .ATTR(output_shapes, ListListInt, {{}, {}})
   .ATTR(channel_name, String, "")
   .OP_END_FACTORY_REG(GetNextV2)
+
+/**
+*@brief GetNextFromQueue
+*@par Inputs:
+*x: the data, only support uint8
+*@par Outputs:
+*y: the data in iterator, all types are available
+*@par Attributes:
+*output_types: types of all outputs
+*output_shapes: shapes of all outputs
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GetNextFromQueue)
+  .INPUT(x, TensorType({DT_UINT8}))
+  .DYNAMIC_OUTPUT(y, TensorType::ALL())
+  .ATTR(output_types, ListType, {})
+  .ATTR(output_shapes, ListListInt, {{}, {}})
+  .OP_END_FACTORY_REG(GetNextFromQueue)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

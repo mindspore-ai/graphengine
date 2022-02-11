@@ -44,7 +44,7 @@
 // Each module uses the following four macros to define error codes:
 #define DECLARE_ERRORNO_OMG(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OMG, (name), (value))
 #define DECLARE_ERRORNO_OME(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OME, (name), (value))
-#define DECLARE_ERRORNO_CALIBRATION(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_CALIBRATION, name, value)
+#define DECLARE_ERRORNO_CALIBRATION(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_CALIBRATION, (name), (value))
 
 #define DEF_ERRORNO(name, desc) const ErrorNoRegisterar g_##name##_errorno((name), (desc));
 
@@ -74,7 +74,7 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
 class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
-  ErrorNoRegisterar(uint32_t err, const std::string &desc) {
+  ErrorNoRegisterar(const uint32_t err, const std::string &desc) {
     StatusFactory::Instance()->RegisterErrorNo(err, desc);
   }
   ~ErrorNoRegisterar() {}

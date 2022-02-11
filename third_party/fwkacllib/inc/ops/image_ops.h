@@ -132,7 +132,7 @@ nearest neighbor sampling to a common output size specified by crop_size . \n
 *@li x:A Tensor. Must be one of the following types:uint8, uint16, int8,
 int16, int32, int64, float16, float, double. A 4-D tensor of shape
 [batch, image_height, image_width, depth]. The format must be NHWC.
-*@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
+*@li boxes: A Tensor. Must be one of the following types: float16, float. A 2-D tensor of shape [num_boxes, 4].
 *@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with
 int32 values in [0, batch).
 *@li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements, crop_size
@@ -146,7 +146,7 @@ extrapolation, when applicable.
 NearestNeighbor . \n
 
 *@par Outputs:
-*y:A Tensor of type float. The format must be NHWC. \n
+*y: A Tensor. Must be one of the following types: float16, float. The format must be NHWC. \n
 
 *@attention Constraints:
 *Input images must be a 4-D tensor . \n
@@ -158,10 +158,10 @@ NearestNeighbor . \n
 REG_OP(CropAndResize)
     .INPUT(x, TensorType({DT_UINT8, DT_UINT16, DT_INT8, \
         DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(box_index, TensorType({DT_INT32}))
     .INPUT(crop_size, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(extrapolation_value, Float, 0)
     .ATTR(method, String, "bilinear")
     .OP_END_FACTORY_REG(CropAndResize)
@@ -175,7 +175,7 @@ REG_OP(CropAndResize)
 *Input images must be a 5HD tensor. Inputs include:
 *@li x:A Tensor. Must be one of the following types:float16, float. A 5HD tensor of shape
 * [batch, C1, image_height, image_width, C0].
-*@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
+*@li boxes: A Tensor. Must be one of the following types: float16, float. A 2-D tensor of shape [num_boxes, 4].
 *@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch) . \n
 
 *@par Attributes:
@@ -184,7 +184,7 @@ REG_OP(CropAndResize)
 *@li method: An optional string from: '"bilinear"'. Defaults to "bilinear" . \n
 
 *@par Outputs:
-*y:A Tensor of type float . \n
+*y: A Tensor. Must be one of the following types: float16, float. \n
 
 *@attention Constraints:
 *Input images must be a 5HD tensor . \n
@@ -197,9 +197,9 @@ REG_OP(CropAndResize)
 */
 REG_OP(CropAndResizeD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(box_index, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(crop_size, ListInt)
     .ATTR(extrapolation_value, Float, 0)
     .ATTR(method, String, "bilinear")
@@ -888,10 +888,10 @@ Defaults to false . \n
 *@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels] . \n
+*y: A Tensor with the same type and format as input "images" . \n
 
 *@par Third-party framework compatibility
-*Compatible with tensorflow ResizeNearestNeighborV2 operator.
+*Compatible with tensorflow ResizeNearestNeighbor operator.
 */
 
 REG_OP(ResizeNearestNeighborV2)

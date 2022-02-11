@@ -134,9 +134,9 @@ REG_OP(DepthwiseConv2DBackpropFilter)
 * instead.
 */
 REG_OP(DepthwiseConv2DBackpropFilterD)
-    .INPUT(input, TensorType({float16}))
-    .INPUT(out_backprop, TensorType({float16}))
-    .OUTPUT(filter_grad, TensorType({float32}))
+    .INPUT(input, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(filter_grad, TensorType({DT_FLOAT32}))
     .REQUIRED_ATTR(filter_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -764,7 +764,7 @@ REG_OP(Conv2DBackpropFilterD)
 |           | float32 | float32 | float32 | float32 |\n
 |           | int8    | int8    | int32   | int32   |\n
 | Format    | NCHW    | NCHW    | ND      | NCHW    |\n
-|           | NHWC    | HWCN    |         | NHWC    |\n
+|           | NHWC    | HWCN    | ND      | NHWC    |\n
 *\n
 * For float32 type, the actual calculation on the chip is based on
 * float16.
@@ -1649,6 +1649,44 @@ REG_OP(Dilation)
     .ATTR(pads, ListInt, {})
     .ATTR(padding_value, Float, 0.0)
     .OP_END_FACTORY_REG(Dilation)
+
+/**
+*@brief Computes the post-cube processing output with the expected input
+*@par Inputs:
+ * Ten inputs:
+ * x1: A Tensor of type float16, bfloat16, float32, int32
+ * x2: A Tensor of type float16, int8, int4
+ * quant_scale_0: A Tensor of type uint64
+ * relu_weight_0: A Tensor of type float32
+ * clip_value_0: A Tensor of type float16, int8, int4
+ * quant_scale_1: A Tensor of type uint64
+ * relu_weight_1: A Tensor of type float32
+ * clip_value_1: A Tensor of type float16
+ * anti_quant_scale: A Tensor of type float16
+ * anti_quant_offset: A Tensor of type int8, int4
+*@par Attributes:
+ * @li fusion_op_list: A list of String.
+ * @li unit_list: A list of String
+ * @li eltwise_mode: An optional string from "ADD", "SUB" and "".
+*@par Outputs:
+ * output: A Tensor. A Tensor of type float16, bfloat16, float32, int32, int8, int4.
+*/
+REG_OP(FixPipe)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32}))
+    .OPTIONAL_INPUT(x2, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
+    .OPTIONAL_INPUT(quant_scale_0, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(relu_weight_0, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(clip_value_0, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
+    .OPTIONAL_INPUT(quant_scale_1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(relu_weight_1, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(clip_value_1, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(anti_quant_scale, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(anti_quant_offset, TensorType({DT_INT8, DT_INT4}))
+    .OUTPUT(output, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT4}))
+    .REQUIRED_ATTR(fusion_op_list, ListString)
+    .REQUIRED_ATTR(unit_list, ListString)
+    .ATTR(eltwise_mode, String, "")
+    .OP_END_FACTORY_REG(FixPipe)
 
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_CALCULATION_OPS_H_

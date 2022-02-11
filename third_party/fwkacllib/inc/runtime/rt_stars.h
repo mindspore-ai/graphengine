@@ -7,7 +7,7 @@
 #define CCE_RUNTIME_RT_STARS_H
 
 #include "base.h"
-
+#include "rt_stars_define.h"
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -80,6 +80,25 @@ RTS_API rtError_t rtCdqEnQueue(const char_t *queName, uint32_t cdqeIndex, void *
 RTS_API rtError_t rtCdqEnQueuePtrMode(const char_t *queName, uint32_t cdqeIndex, const void *ptrAddr,
     rtStream_t stm);
 
+/**
+ * @ingroup rt_stars
+ * @brief launch common cmo task on the stream.
+ * @param [in] taskInfo     cmo task info
+ * @param [in] stm          launch task on the stream
+ * @param [in] flag         flag
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtCmoTaskLaunch(rtCmoTaskInfo_t *taskInfo, rtStream_t stm, uint32_t flag);
+
+/**
+ * @ingroup rt_stars
+ * @brief launch barrier cmo task on the stream.
+ * @param [in] taskInfo     barrier task info
+ * @param [in] stm          launch task on the stream
+ * @param [in] flag         flag
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtBarrierTaskLaunch(rtBarrierTaskInfo_t *taskInfo, rtStream_t stm, uint32_t flag);
 #if defined(__cplusplus)
 
 }

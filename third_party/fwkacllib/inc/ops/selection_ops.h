@@ -259,13 +259,39 @@ REG_OP(GatherV2D)
 *@par Third-party framework compatibility
 *Compatible with the PyTorch operator Gather.
 */
-
 REG_OP(GatherElements)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
+    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    .INPUT(index, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
+    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    .ATTR(dim, Int, 0)
+    .OP_END_FACTORY_REG(GatherElements)
+
+/**
+*@Gathers values along an axis specified by dim . \n
+
+*@par Inputs:
+*@li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
+*     int64, uint16, float16, uint32, uint64, bool.
+*@li dim: A Tensor. Must be one of the following types: int32, int64.
+*@li index: A Tensor. Must be one of the following types: int32, int64 . \n
+
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
+
+*@par Third-party framework compatibility
+*Compatible with the PyTorch operator Gather.
+*/
+REG_OP(GatherD)
+    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32
+                          DT_INT64, DT_UINT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(dim, TensorType({DT_INT32, DT_INT64}))
     .INPUT(index, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .ATTR(dim, Int, 0)
-    .OP_END_FACTORY_REG(GatherElements)
+    .OP_END_FACTORY_REG(GatherD)
 
 /**
 *@brief Extracts a strided slice of a tensor. Roughly speaking, this op
@@ -360,9 +386,9 @@ REG_OP(StridedSlice)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use StridedSlice instead.
 */
 REG_OP(StridedSliceD)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_UINT8, DT_INT8,
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT64, DT_UINT8, DT_INT8,
                           DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_UINT8, DT_INT8,
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT64, DT_UINT8, DT_INT8,
                           DT_BOOL}))
     .REQUIRED_ATTR(begin, ListInt)
     .REQUIRED_ATTR(end, ListInt)
@@ -701,6 +727,27 @@ REG_OP(SegmentMax)
     .OP_END_FACTORY_REG(SegmentMax)
 
 /**
+*@brief Computes the sum along segments of a tensor . \n
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A Tensor of type NumberType.
+* @li segment_ids: A Tensor of type IndexNumberType, whose shape is a prefix
+* of "x.shape".
+
+*@par Outputs:
+*y: A Tensor of type NumberType . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SegmentSum.
+*/
+REG_OP(SegmentSum)
+    .INPUT(x, TensorType::NumberType())
+    .INPUT(segment_ids, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::NumberType())
+    .OP_END_FACTORY_REG(SegmentSum)
+
+/**
 *@brief: Computes the maximum along segments of a tensor.
 *Computes a tensor such that output[i]=(data[i]) where max is over j
  * such that segment_ids[j] == i.
@@ -924,6 +971,49 @@ REG_OP(TopKD)
     .ATTR(dim, Int, -1)
     .ATTR(largest, Bool, true)
     .OP_END_FACTORY_REG(TopKD)
+
+/**
+* @brief Finds values and indices of the "k" largest elements for the last
+* dimension . \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A 1D or higher tensor of type BasicType, with the last dimension
+* at least "k".
+* @li k: A 0D Tensor of type int32.
+* Number of top elements to look for along the last dimension (along each row
+* for matrices) .
+* @li assist_seq: A 1D tensor of type float16.
+* with size of 2N, which "N" is the last dimension.
+* The first N numbers is indices, and the next N numbers is deviation of casting
+* int32 to float16. \n
+
+* @par Attributes:
+* @li sorted: An optional bool. Defaults to true.
+* If true, the resulting "k" elements will be sorted by the values in descending
+* order.
+* @li dim: An optional int. Defaults to -1. For reserved use.
+* @li largest: An optional bool. Defaults to true. For reserved use. \n
+
+* @par Outputs:
+* @li values: A Tensor, specifying the sorted data. Has the same type as
+* "input".
+* @li indices: A Tensor of type int32, specifying the indices of sorted data . \n
+
+* @see TopK()
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator TopKV2.
+*/
+REG_OP(TopKV2D)
+    .INPUT(x, TensorType::RealNumberType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .INPUT(assist_seq, TensorType({DT_FLOAT16}))
+    .OUTPUT(values, TensorType::RealNumberType())
+    .OUTPUT(indices, TensorType({DT_INT32}))
+    .ATTR(sorted, Bool, true)
+    .ATTR(dim, Int, -1)
+    .ATTR(largest, Bool, true)
+    .OP_END_FACTORY_REG(TopKV2D)
 
 /**
 * @brief Finds values and indices of the "k" largest elements for the last
@@ -2340,7 +2430,7 @@ REG_OP(AddRowRanges)
 *@par Outputs:
 *y: A ND Tensor of float32/float16/int32/int8 with shapes 1-D (D,), 2-D(N, D), 3-D(N, C, D)
 
-* @par Restrictions:
+*@attention Constraints:
 * Warning: input shape's length must not be bigger than 1024 * 1024 * 1024.
 */
 REG_OP(MaskedFillRange)
@@ -2442,6 +2532,34 @@ REG_OP(StridedSliceV3)
     .OPTIONAL_INPUT(strides, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(StridedSliceV3)
+
+/**
+*@brief MovingSumWithSigmoid.
+
+*@par Inputs:
+*Four inputs, including:
+* @li alpha: A Tensor. Must be one of the following types: float32, float16.
+* @li energy: A Tensor. Must be one of the following types: float32, float16.
+* @li beam_size: A Tensor of type int32.
+* @li frame_size: A Tensor of type int32. \n
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "alpha". \n
+*
+* @par Attributes:
+* window_size: A int.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(MovingSumWithSigmoid)
+    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(energy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(beam_size, TensorType({DT_INT32}))
+    .INPUT(frame_size, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(window_size, Int)
+    .OP_END_FACTORY_REG(MovingSumWithSigmoid)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

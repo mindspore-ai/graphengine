@@ -32,6 +32,37 @@ typedef struct tagStarsSqeHeader {
     uint16_t taskId;
 } rtStarsSqeHeader_t;
 
+typedef struct tagStarsDsaSqe {
+    // 0-7 bytes
+    rtStarsSqeHeader_t sqeHeader;
+    // 8-11 bytes
+    uint32_t start : 1;
+    uint32_t functionType : 3;
+    uint32_t dataType : 3;
+    uint32_t algoType : 3;
+    uint32_t paramVldBitmap : 5;
+    uint32_t paramAddrValBitmap : 7;
+    uint32_t reserved0 : 10;
+    // 12-15 bytes
+    uint16_t sqeIndex;
+    uint8_t kernelCredit;
+    uint8_t reserved1;
+    // 16-31 bytes
+    uint32_t dsaCfgResultAddrLow;
+    uint32_t dsaCfgResultAddrHigh;
+    uint32_t dsaCfgStateAddrLow;
+    uint32_t dsaCfgStateAddrHigh;
+    // 32-47 bytes
+    uint32_t dsaCfgParamAddrLow;
+    uint32_t dsaCfgParamAddrHigh;
+    uint32_t dsaCfgSeedLow;
+    uint32_t dsaCfgSeedHigh;
+    // 48-63 bytes
+    uint32_t dsaCfgNumberLow;
+    uint32_t dsaCfgNumberHigh;
+    uint32_t reserved2[2];
+} rtStarsDsaSqe_t;
+
 // ffts+ type
 typedef enum tagFftsPlusType {
     RT_FFTS_PLUS_TYPE_RES1 = 2,   // Reserved
@@ -82,6 +113,33 @@ typedef struct tagFftsPlusSqe {
     // 48-63 bytes
     uint32_t reserved16[4];
 } rtFftsPlusSqe_t;
+
+typedef struct tagCmoTaskInfo {
+    uint8_t  qos;
+    uint8_t  partId;
+    uint8_t  pmg;
+    uint8_t  reserved;
+    uint16_t cmoType;
+    uint16_t opCode;
+    uint16_t numInner;
+    uint16_t numOuter;
+    uint32_t logicId;
+    uint32_t lengthInner;
+    uint64_t sourceAddr;
+    uint32_t striderOuter;
+    uint32_t striderInner;
+} rtCmoTaskInfo_t;
+
+typedef struct tagBarrierCmoInfo {
+    uint16_t cmoType; // 0 is barrier, 1 is invalid, Prefetch is 2, Write_back is 3, FE/GE only use invalid type.
+    uint32_t logicId;
+} rtBarrierCmoInfo_t;
+
+#define RT_CMO_MAX_BARRIER_NUM 6U // 6U is max support
+typedef struct tagBarrierTaskInfo {
+    uint8_t logicIdNum;
+    rtBarrierCmoInfo_t cmoInfo[RT_CMO_MAX_BARRIER_NUM];
+} rtBarrierTaskInfo_t;
 
 #pragma pack(pop)
 

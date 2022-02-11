@@ -31,6 +31,8 @@
 #include "framework/omg/omg_inner_types.h"
 
 namespace ge {
+const std::string kAttrSupportDynamicShape = "support_dynamicshape";
+
 class GeRootModel;
 class GE_FUNC_VISIBILITY GeGenerator {
  public:
@@ -103,8 +105,8 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] graph_name: graph name.
   /// @param [out] graph: graph of single op.
   /// @return SUCCESS or FAILED
-  Status BuildSingleOpGraph(OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs, std::string graph_name,
-                            Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type);
+  Status BuildSingleOpGraph(const OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs, std::string graph_name,
+                            Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type) const;
   Status BuildOriginalGraphInfo(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                                 const std::vector<GeTensor> &outputs, const std::string &model_file_name,
                                 bool is_offline, int32_t compile_flag, GraphStage graph_stage, Graph &graph,
@@ -116,20 +118,20 @@ class GE_FUNC_VISIBILITY GeGenerator {
                        ge::ModelBufferData &model, bool is_offline = true);
   Status BuildSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs,
                        const std::string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                       ComputeGraphPtr &compute_graph, bool is_offline = true, int32_t compile_flag = 0,
+                       ComputeGraphPtr &comp_graph, bool is_offline = true, int32_t compile_flag = 0,
                        GraphStage graph_stage = GraphStage::GRAPH_STAGE_RESERVED);
   bool CheckNoAicore(const ComputeGraphPtr &graph);
-  void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
-  Status CheckForSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
-                          const std::vector<GeTensor> &outputs);
-  Status InferFormatForSingleOp(OpDescPtr &op_desc, Graph &graph);
+  void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) const;
+  Status CheckForSingleOp(const OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                          const std::vector<GeTensor> &outputs) const;
+  Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph) const;
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
   Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model, const std::vector<GeTensor> &inputs,
                                      const std::vector<GeTensor> &outputs,
                                      const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
-                                     std::vector<ge::NamedAttrs> &generalized_build_attrs);
+                                     std::vector<ge::NamedAttrs> &generalized_build_attrs) const;
 
   class Impl;
 

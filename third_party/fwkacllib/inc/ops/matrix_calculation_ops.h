@@ -213,9 +213,9 @@ REG_OP(GEMM)
 */
 
 REG_OP(BatchMatMul)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
     .ATTR(adj_x1, Bool, false)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(BatchMatMul)
@@ -246,11 +246,11 @@ REG_OP(BatchMatMul)
 */
 
 REG_OP(BatchMatMulV2)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
     .ATTR(adj_x1, Bool, false)
     .ATTR(adj_x2, Bool, false)
     .ATTR(offset_x, Int, 0)
@@ -505,17 +505,17 @@ REG_OP(ScatterElements)
 * Three inputs, including:
 *@li var: An ND Tensor .
 
-*Must be one of the following types: float16, float32, int32, int8, uint8
-*@li indices: An ND Tensor of type int32 or int64
+*Must be one of the following types: float16, float, int32, int8, uint8
+*@li indices: An ND Tensor . \n
 
+*Must be one of the following types: int32 or int64
+*@li updates: An ND Tensor .
 
-*@li updates: An Tensor. format:NCHW, NHWC .
-
-*Must be one of the following types: float16, float32, int32, int8, uint8
+*Must be one of the following types: float16, float, int32, int8, uint8
 
 *@par Attributes:
-* use_locking: An optional bool. Defaults to "False". If "True", the operation
-* will be protected by a lock . \n
+*use_locking: An optional bool. Defaults to "False". If "True",
+* the operation will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -792,13 +792,13 @@ REG_OP(DiagPart)
 * Four inputs, including:
 *@li x: A Tensor of type float16, int8.
 *@li w: A weight matrix of type float16, int8.
-*@li b: A Tensor of type float16, int32, float32.
-*@li offset_w: A Tensor of type int8 . \n
+*@li b: An optional Tensor of type float16, int32, float32.
+*@li offset_w: An optional Tensor of type int8. Reserved. Only None Supported. \n
 
 *@par Attributes:
-*@li num_output: Reserved.
+*@li num_output: Required. An int, output neuron number. Reserved.
 *@li transpose: A bool, specifying weight whether to transpose input w, either "true" or "false". Defaults to "false".
-*@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
+*@li axis: Optional. An int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
 * The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
 *@li offset_x: An optional integer for quantized FullyConnection.
 *The negative offset added to the input image for int8 type. Ensure offset_x within the
@@ -814,11 +814,11 @@ REG_OP(DiagPart)
 * Yes
 */
 REG_OP(FullyConnection)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
-    .INPUT(w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
-    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4, DT_FLOAT32, DT_BF16}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32, DT_BF16}))
     .REQUIRED_ATTR(num_output, Int)
     .ATTR(transpose, Bool, false)
     .ATTR(axis, Int, 1)
@@ -1359,6 +1359,45 @@ REG_OP(FillDiagonal)
     .REQUIRED_ATTR(fill_value, Float)
     .ATTR(wrap, Bool, false)
     .OP_END_FACTORY_REG(FillDiagonal)
+
+/**
+*@brief: Returns the sum of the elements of the diagonal of the input 2-D matrix. \n
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types:
+*    float16, float. \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator Trace.
+*/
+
+REG_OP(Trace)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(Trace)
+
+/**
+*@brief  Computes the generalized inverse of any matrix. \n
+
+*@par Inputs:
+* @li x: input matrix. Must be one of the following types:
+*     double, float. \n
+
+*@par Attributes:
+* @li rcond: An optional float >= 0 or inf. Defaults to 1e-15. \n
+
+*@par Outputs:
+* y: A Tensor with the same type and shape of x's transpose. \n
+
+*/
+REG_OP(Pinverse)
+    .INPUT(x, TensorType({ DT_FLOAT, DT_DOUBLE }))        
+    .OUTPUT(y, TensorType({ DT_FLOAT, DT_DOUBLE })) 
+    .ATTR(rcond, Float, 1e-15)
+    .OP_END_FACTORY_REG(Pinverse)
 
 }  // namespace ge
 

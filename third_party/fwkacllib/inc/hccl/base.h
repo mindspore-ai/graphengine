@@ -94,13 +94,13 @@ enum HcclEventType {
     HCCL_EVENT_RESERVED /**< reserved */
 };
 
-const u32 TAG_MAX_LEN = 127; // 脳卯麓贸碌脛tag 鲁陇露脠
+const u32 TAG_MAX_LEN = 127; // 最大的tag 长度
 using TagAttr = struct TagAttrDef {
-    char name[TAG_MAX_LEN + 1]; // tag卤锚脢露
-    // tag卤锚脢露碌脛陆脫脢脮脢媒戮脻拢卢碌梅脫脙脮脽脢脟路帽禄谩脰梅露炉碌梅脫脙陆脫脢脮陆脫驴脷拢卢0 = 路帽, 1 = 禄谩(脭陇脕么拢卢脭脻虏禄脰搂鲁脰)隆拢
-    // 露脭脫脷activeRecv = 0拢卢碌卤陆脫脢脮虏脿脢脮碌陆脢媒戮脻禄貌脮脽路垄脣脥脟毛脟贸脢卤拢卢脰梅露炉脥篓脰陋碌梅脫脙脮脽隆拢
+    char name[TAG_MAX_LEN + 1]; // tag标识
+    // tag标识的接收数据，调用者是否会主动调用接收接口，0 = 否, 1 = 会(预留，暂不支持)。
+    // 对于activeRecv = 0，当接收侧收到数据或者发送请求时，主动通知调用者。
     uint32_t activeRecv;
-    uint32_t sendCredit; // 脜盲脰脙赂脙tag脭脢脨铆inflight碌脛send赂枚脢媒
+    uint32_t sendCredit; // 配置该tag允许inflight的send个数
     uint32_t eventId;
 };
 
@@ -188,6 +188,15 @@ struct HcomGatherAllToAllVParams {
     const char *group;  // not used now
 };
 
+typedef enum workMode {
+HCCL_MODE_NORMAL = 0, // 不支持任何Probe any，仅支持精确的probe
+HCCL_MODE_ANY = 1     // 仅支持ANY_SOURCE + ANY_TAG的probe
+} WorkMode;
+
+typedef struct tagCommAttr {
+    WorkMode mode;  // 通信域内的probe工作模式
+    uint32_t deviceId = 0;
+} CommAttr;
 #ifdef __cplusplus
 }
 #endif // __cplusplus

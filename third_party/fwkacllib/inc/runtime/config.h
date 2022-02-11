@@ -22,7 +22,8 @@ typedef enum tagRtArchType {
     ARCH_BEGIN = 0,
     ARCH_V100 = ARCH_BEGIN,
     ARCH_V200 = 1,
-    ARCH_END = 2,
+    ARCH_V300 = 2,
+    ARCH_END = 3,
 } rtArchType_t;
 
 typedef enum tagRtChipType {
@@ -34,7 +35,8 @@ typedef enum tagRtChipType {
     CHIP_DC = 4,
     CHIP_CLOUD_V2 = 5,
     CHIP_NO_DEVICE = 6,
-    CHIP_END = 7,
+    CHIP_MINI_V3 = 7,
+    CHIP_END = 8,
 } rtChipType_t;
 
 typedef enum tagRtAicpuScheType {
@@ -74,7 +76,8 @@ typedef enum tagRtPlatformType {
     PLATFORM_DC = 5,
     PLATFORM_CLOUD_V2 = 6,
     PLATFORM_LHISI_SD3403 = 7,
-    PLATFORM_END = 8,
+    PLATFORM_MINI_V3 = 8,
+    PLATFORM_END = 9,
 } rtPlatformType_t;
 
 typedef enum tagRtCubeFracMKNFp16 {
@@ -140,6 +143,12 @@ typedef enum tagRTTaskTimeoutType {
     RT_TIMEOUT_TYPE_OP_EXECUTE,
 } rtTaskTimeoutType_t;
 
+typedef enum tagRtFloatOverflowMode {
+    RT_OVERFLOW_MODE_SATURATION = 0,
+    RT_OVERFLOW_MODE_INFNAN,
+    RT_OVERFLOW_MODE_UNDEF,
+} rtFloatOverflowMode_t;
+
 /**
  * @ingroup
  * @brief get AI core count
@@ -179,6 +188,15 @@ RTS_API rtError_t rtGetAiCoreMemoryRates(rtAiCoreMemoryRates_t *aiCoreMemoryRate
  * @return memoryConfig
  */
 RTS_API rtError_t rtGetMemoryConfig(rtMemoryConfig_t *memoryConfig);
+
+/**
+ * @ingroup
+ * @brief get float overflow mode
+ * @param [out] floatOverflowMode
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetFloatOverflowMode(rtFloatOverflowMode_t * const floatOverflowMode);
 
 /**
  * @ingroup

@@ -1487,25 +1487,51 @@ REG_OP(Roll)
     .OP_END_FACTORY_REG(Roll)
 
 /**
- *@brief Calculate the loss. Creates a criterion that optimizes a two-class classification
- logistic loss between input_x and input_y (containing 1 or -1). \n
+* @brief Roll the tensor along the given dimension(s).
 
- *@par Inputs:
- *Tow inputs, including:
+* @par Inputs:
+* One inputs, including:
+* x: A tensor
+
+* @par Attributes:
+* @li shift: The number of places by which the elements of the tensor are shifted. \n
+* @li axes: Axis along which to roll. \n
+
+* @par Outputs:
+* y: A Tensor with the same type and shape of x's. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Roll. \n
+*/
+REG_OP(RollV2)
+    .INPUT(input, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,DT_INT64,DT_FLOAT16, \
+                            DT_FLOAT,DT_DOUBLE}))
+    .INPUT(shift, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(axes, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(output, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,DT_INT64,DT_FLOAT16, \
+                            DT_FLOAT,DT_DOUBLE}))
+    .OP_END_FACTORY_REG(RollV2)
+
+/**
+ * @brief Calculate the loss. Creates a criterion that optimizes a two-class classification
+ * logistic loss between input_x and input_y (containing 1 or -1). \n
+
+ * @par Inputs:
+ * Tow inputs, including:
  * @li input_x: A tensor. Must be one of the following types:
  *     float16, float32. \n
  * @li input_y: A tensor. Must be one of the following types:
  *     float16, float32. \n
 
- *@par Attributes:
- *reduction: An optional string.Defaults to "mean". \n
+ * @par Attributes:
+ * reduction: An optional string.Defaults to "mean". \n
 
- *@par Outputs:
- *output_z: while reduction == "none", A Tensor with the same type and shape of input_x's. \n
+ * @par Outputs:
+ * output_z: while reduction == "none", A Tensor with the same type and shape of input_x's. \n
  *          while reduction == "sum" or "mean", A Tensor with the same type of input_x , shape of which is (1,)
 
- *@par Third-party framework compatibility
- *Compatible with the Pytorch operator SoftMarginLoss. \n
+ * @par Third-party framework compatibility
+ * Compatible with the Pytorch operator SoftMarginLoss. \n
  */
 REG_OP(SoftMarginLoss)
     .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1624,18 +1650,18 @@ REG_OP(MultilabelMarginLoss)
     .OP_END_FACTORY_REG(MultilabelMarginLoss)
 
 /**
-*@brief Performs batch normalization . \n
-*@par Inputs:
+* @brief Performs batch normalization . \n
+* @par Inputs:
 * Two inputs
-*@li input_x: A Tensor. Support float32. shape (n, c, d).
-*@li seq_len: A Tensor. Each batch normalize data num. Support Int32. Shape (n, ). \n
-*@par Attributes:
-*@li normalize_type: Str. Support "per_feature" or "all_features".
-*@li epsilon: An optional float32, specifying the small value added to
-variance to avoid dividing by zero. Defaults to "0.00001" . \n
-*@par Outputs:
+* @li input_x: A Tensor. Support float32. shape (n, c, d).
+* @li seq_len: A Tensor. Each batch normalize data num. Support Int32. Shape (n, ). \n
+* @par Attributes:
+* @li normalize_type: Str. Support "per_feature" or "all_features".
+* @li epsilon: An optional float32, specifying the small value added to
+* variance to avoid dividing by zero. Defaults to "0.00001" . \n
+* @par Outputs:
 * One outputs
-*@li output_y: A Tensor for the normalized "x".Support float32. shape (n, c, d).\n
+* @li output_y: A Tensor for the normalized "x".Support float32. shape (n, c, d).\n
 */
 REG_OP(NormalizeBatch)
     .INPUT(input_x, TensorType({ DT_FLOAT }))
@@ -1644,6 +1670,36 @@ REG_OP(NormalizeBatch)
     .REQUIRED_ATTR(normalize_type, String)
     .ATTR(epsilon, Float, 0.00001)
     .OP_END_FACTORY_REG(NormalizeBatch)
+
+/**
+*@brief GroupNorm and Reul operator
+*  calculating: x, gamma, beta
+*  y = relu(gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta)
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li beta: A Tensor. Must be one of the following types: float16, float32 . \n
+
+* @par Attributes:
+* @li num_groups: A require attribute, the type is int32.
+* @li eps: A optional attribute, the type is float32. Defaults to 0.00001. \n
+
+* @par Outputs:
+* One outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use/
+*/
+REG_OP(GroupNormRelu)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(num_groups, Int)
+    .ATTR(eps, Float, 0.00001)
+    .OP_END_FACTORY_REG(GroupNormRelu)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

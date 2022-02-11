@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Hisilicon Technologies Co., Ltd. 2018-2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef TDT_HOST_INNER_INC_TSD_CLIENT_H_
-#define TDT_HOST_INNER_INC_TSD_CLIENT_H_
+#ifndef TDT_HOST_INNER_INC_TSD_CLIENT_H
+#define TDT_HOST_INNER_INC_TSD_CLIENT_H
 
 #include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
-#include "tdt/status.h"
-#include "tdt/data_common.h"
+#include "tsd/status.h"
 #include "toolchain/prof_callback.h"
+
+#ifdef WIN_TSD
+#define TDT_LIB_EXPORT __declspec(dllexport)
+#else
+#define TDT_LIB_EXPORT __attribute__((visibility("default")))
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,7 +55,51 @@ extern "C" {
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT TDT_StatusT TsdOpen(const uint32_t logicDeviceId, const uint32_t rankSize);
+TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t logicDeviceId, const uint32_t rankSize);
+
+/**
+* @ingroup Open
+* @brief Used for the Framework process to communicate with the TSDDaemon process in 1981,
+* and notify TSD to complete the initialization of other processes
+*
+* @par Function
+* Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param rankSize [IN] type #unsigned int. The rankSize of the training.
+* The default value is 1. When rankSize is greater than 1,
+* HCCP will be pulled to perform set communication related operations.
+* @param deviceMode [IN] type unsigned int. The device running mode of aicpuSd,
+* it include chipMode and DieMode
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t logicDeviceId, const uint32_t rankSize, const uint32_t deviceMode);
+
+/**
+* @ingroup InitialQs
+* @brief Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of QS processes
+*
+* @par Function
+* Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param groupName [IN] type #char pointer. qs group name send by host process
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tsd_client.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_LIB_EXPORT uint32_t TsdInitQs(const uint32_t logicDeviceId, const char_t * const groupName = nullptr);
 
 /**
 * @ingroup Close
@@ -64,11 +113,12 @@ TDT_LIB_EXPORT TDT_StatusT TsdOpen(const uint32_t logicDeviceId, const uint32_t 
 * @retval OtherValues Failure
 *
 * @par Dependency
+
 * @li libtsdclient.so: Library to which the interface belongs.
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT TDT_StatusT TsdClose(const uint32_t logicDeviceId);
+TDT_LIB_EXPORT uint32_t TsdClose(const uint32_t logicDeviceId);
 
 /**
 * @ingroup UpdateProfilingMode
@@ -86,7 +136,7 @@ TDT_LIB_EXPORT TDT_StatusT TsdClose(const uint32_t logicDeviceId);
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT TDT_StatusT UpdateProfilingMode(const uint32_t logicDeviceId, const uint32_t flag);
+TDT_LIB_EXPORT uint32_t UpdateProfilingMode(const uint32_t logicDeviceId, const uint32_t flag);
 
 /**
 * @ingroup TsdSetMsprofReporterCallback
@@ -105,9 +155,22 @@ TDT_LIB_EXPORT TDT_StatusT UpdateProfilingMode(const uint32_t logicDeviceId, con
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 * @li prof_callback.h: Headerfile where 'MsprofReporterCallback' defined
 */
-TDT_LIB_EXPORT TDT_StatusT TsdSetMsprofReporterCallback(MsprofReporterCallback callback);
+TDT_LIB_EXPORT uint32_t TsdSetMsprofReporterCallback(const MsprofReporterCallback callback);
 
+/**
+* @ingroup TsdSetAttr
+* @brief used to set tsd attr
+*
+* @par key
+* key set for tsd attr,now only support RunMode
+*
+* @par value
+* value set to run correspond mode, PROCESS_MODE or THREAD_MODE
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdSetAttr(const char * const attrKey, const char * const attrValue);
 #ifdef __cplusplus
 }
 #endif  // __cplusplus
-#endif  // TDT_HOST_INNER_INC_TSD_CLIENT_H_
+#endif  // TDT_HOST_INNER_INC_TSD_CLIENT_H

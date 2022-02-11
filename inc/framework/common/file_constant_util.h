@@ -27,11 +27,6 @@
 #include "graph/ge_tensor.h"
 
 namespace ge {
-extern const int64_t kBlockSize;
-extern const std::string kBinFileValues;
-extern const std::string kBinIdValue;
-extern const std::string kBinFilePathValue;
-
 struct FileConstantInfo {
   std::string value_bin_file_id;
   std::string value_bin_file_path;
@@ -47,14 +42,11 @@ void from_json(const nlohmann::json &j, OptionInfo &option_info);
 
 Status GetFilePathFromOption(std::map<std::string, std::string> &file_id_and_path_map);
 
-Status CopyOneWeightFromFile(const void *curr_dev_ptr, const std::string &value, const size_t file_constant_size,
+Status CopyOneWeightFromFile(const void *const curr_dev_ptr, const std::string &value, const size_t file_constant_size,
                              size_t &left_size);
 
 Status GetFilePath(const OpDescPtr &op_desc, const std::map<std::string, std::string> &file_id_and_path_map,
                    std::string &file_path);
-
-Status GetFileConstantElementTotalSize(const GeShape &shape, const DataType data_type, int64_t &mem_size,
-                                       const Format format = FORMAT_ND);
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_FILE_CONSTANT_UTIL_H

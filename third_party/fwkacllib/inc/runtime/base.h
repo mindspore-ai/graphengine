@@ -98,11 +98,11 @@ typedef struct rtExceptionInfo {
     uint32_t tid;
     uint32_t deviceid;
     uint32_t retcode;
-} rtExceptionInfo;
+} rtExceptionInfo_t;
 
 typedef void (*rtErrorCallback)(rtExceptionType);
 
-typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
+typedef void (*rtTaskFailCallback)(rtExceptionInfo_t *exceptionInfo);
 
 typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 
@@ -429,6 +429,15 @@ RTS_API rtError_t rtLabelCreateExV2(rtLabel_t *lbl, rtModel_t mdl, rtStream_t st
  * @return RT_ERROR_INVALID_VALUE for input null ptr
  */
 RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId);
+
+/**
+ * @ingroup dvrt_base
+ * @brief get max model num
+ * @param [out] max model num
+ * @param [in] null
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetMaxModelNum(uint32_t *maxModelCount);
 #if defined(__cplusplus)
 }
 #endif

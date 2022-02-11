@@ -44,6 +44,11 @@ typedef enum aclrtEventStatus {
   ACL_EVENT_STATUS_RESERVED = 2,
 } aclrtEventStatus;
 
+typedef enum aclrtEventRecordedStatus {
+  ACL_EVENT_RECORDED_STATUS_NOT_READY = 0,
+  ACL_EVENT_RECORDED_STATUS_COMPLETE = 1,
+} aclrtEventRecordedStatus;
+
 typedef enum aclrtEventWaitStatus {
   ACL_EVENT_WAIT_STATUS_COMPLETE = 0,
   ACL_EVENT_WAIT_STATUS_NOT_READY = 1,
@@ -503,7 +508,20 @@ ACL_FUNC_VISIBILITY aclError aclrtResetEvent(aclrtEvent event, aclrtStream strea
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
+ACL_DEPRECATED_MESSAGE("aclrtQueryEvent is deprecated, use aclrtQueryEventStatus instead")
 ACL_FUNC_VISIBILITY aclError aclrtQueryEvent(aclrtEvent event, aclrtEventStatus *status);
+
+/**
+ * @ingroup AscendCL
+ * @brief Queries an event's status
+ *
+ * @param  event [IN]    event to query
+ * @param  status [OUT]  event recorded status
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtQueryEventStatus(aclrtEvent event, aclrtEventRecordedStatus *status);
 
 /**
  * @ingroup AscendCL

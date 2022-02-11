@@ -20,6 +20,8 @@
 #include <set>
 #include <string>
 
+#include "graph/types.h"
+
 namespace ge {
 class GE_FUNC_VISIBILITY OpTypeContainer {
  public:
@@ -30,12 +32,11 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
   ~OpTypeContainer() = default;
 
   void Register(const std::string &op_type) {
-    op_type_list_.insert(op_type);
+    static_cast<void>(op_type_list_.insert(op_type));
   }
 
   bool IsExisting(const std::string &op_type) {
-    auto iter_find = op_type_list_.find(op_type);
-    return iter_find != op_type_list_.end();
+    return op_type_list_.find(op_type) != op_type_list_.end();
   }
 
  protected:
@@ -47,20 +48,19 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
 
 class GE_FUNC_VISIBILITY OpTypeRegistrar {
  public:
-  explicit OpTypeRegistrar(const std::string &op_type) {
+  explicit OpTypeRegistrar(const std::string &op_type) noexcept {
     OpTypeContainer::Instance()->Register(op_type);
   }
   ~OpTypeRegistrar() {}
 };
-
-#define REGISTER_OPTYPE_DECLARE(var_name, str_name) \
-  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const char *var_name;
-
-#define REGISTER_OPTYPE_DEFINE(var_name, str_name) \
-  const char *var_name = str_name;                 \
-  const OpTypeRegistrar g_##var_name##_reg(str_name);
-
-#define IS_OPTYPE_EXISTING(str_name) (OpTypeContainer::Instance()->IsExisting(str_name))
 }  // namespace ge
 
+#define REGISTER_OPTYPE_DECLARE(var_name, str_name) \
+  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const char_t *var_name;
+
+#define REGISTER_OPTYPE_DEFINE(var_name, str_name) \
+  const char_t *var_name = str_name;               \
+  const ge::OpTypeRegistrar g_##var_name##_reg(str_name);
+
+#define IS_OPTYPE_EXISTING(str_name) (ge::OpTypeContainer::Instance()->IsExisting(str_name))
 #endif  // INC_FRAMEWORK_COMMON_OP_TYPES_H_

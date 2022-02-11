@@ -108,6 +108,8 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return Others failed
    */
   virtual domi::Status ToJson(const char *model_file, const char *json_file) {
+    (void)model_file;
+    (void)json_file;
     return domi::SUCCESS;
   }
 
@@ -130,6 +132,8 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return Others failed
    */
   virtual domi::Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) {
+    (void)serialized_proto;
+    (void)graph;
     return UNSUPPORTED;
   }
 
@@ -144,6 +148,9 @@ class GE_FUNC_VISIBILITY ModelParser {
    */
   virtual domi::Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
                                               ge::ComputeGraphPtr &graph) {
+    (void)serialized_proto;
+    (void)callback;
+    (void)graph;
     return UNSUPPORTED;
   }
 };

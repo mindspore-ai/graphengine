@@ -29,8 +29,8 @@
 namespace ge {
 struct ParserContext {
   // format of the input specified by the command line
-  std::unordered_map<std::string, domiTensorFormat_t> input_nodes_format_map;
-  std::vector<domiTensorFormat_t> output_formats;
+  std::unordered_map<std::string, domi::domiTensorFormat_t> input_nodes_format_map;
+  std::vector<domi::domiTensorFormat_t> output_formats;
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
   std::map<std::string, std::vector<int64_t>> input_dims;
@@ -58,7 +58,7 @@ struct ParserContext {
   bool train_flag = false;
   domi::domiTensorFormat_t format = domi::DOMI_TENSOR_ND;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
-  RunMode run_mode = GEN_OM_MODEL;
+  RunMode run_mode = RunMode::GEN_OM_MODEL;
   // save caffe custom proto path, used by caffe parse
   std::string custom_proto_path;
   // save caffe proto path, used by caffe parse

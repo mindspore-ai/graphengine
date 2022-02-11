@@ -343,6 +343,20 @@ RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_
 
 /**
  * @ingroup dvrt_mem
+ * @brief host task memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] destMax length of destination address memory
+ * @param [in] src   source address pointer
+ * @param [in] cnt   the number of byte to copy
+ * @param [in] kind  memcpy type
+ * @param [in] stm   task stream
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtMemcpyHostTask(void * const dst, const uint64_t destMax, const void * const src,
+    const uint64_t cnt, rtMemcpyKind_t kind, rtStream_t stm);
+
+/**
+ * @ingroup dvrt_mem
  * @brief asynchronized memcpy
  * @param [in] dst   destination address pointer
  * @param [in] Max length of destination address memory
@@ -424,6 +438,16 @@ RTS_API rtError_t rtAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize);
  */
 RTS_API rtError_t rtSetAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize);
 
+/**
+ * @ingroup dvrt_mem
+ * @brief Specifies how memory is use
+ * @param [in] devPtr   memory pointer
+ * @param [in] count    memory count
+ * @param [in] advise   reserved, set to 1
+ * @return RT_ERROR_NONE for ok
+ * @return others for error
+ */
+RTS_API rtError_t rtMemAdvise(void *devPtr, uint64_t count, uint32_t advise);
 /**
  * @ingroup dvrt_mem
  * @brief set memory with uint32_t value

@@ -516,6 +516,34 @@ REG_OP(ReduceSumD)
     .OP_END_FACTORY_REG(ReduceSumD)
 
 /**
+*@brief Calculate the total mean based on the mean of each device . \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li x: A Tensor. Must be one of the following types: float16, float32 .
+*@li count: A Tensor. Must be one of the following types: float16, float32 .
+*@li count_sum: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Attributes:
+*@li axes: A required 1D list or tuple of int32 or int64. Specifies the dimensions to reduce.
+*@li keepdims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+
+*@par Outputs:
+*y: The reduced tensor. Has the same type and format as input "x" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Sum.
+*/
+REG_OP(ReduceMeanWithCount)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(count, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(count_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(axes, ListInt)
+    .ATTR(keep_dims, Bool, false)
+    .OP_END_FACTORY_REG(ReduceMeanWithCount)
+
+/**
 *@brief Calculates the "logical sum" of elements of a tensor in a dimension . \n
 
 *@par Inputs:
@@ -1326,6 +1354,101 @@ REG_OP(ReduceMeanVariance)
     .ATTR(axes, ListInt, {})
     .ATTR(keep_dims, Bool, true)
     .OP_END_FACTORY_REG(ReduceMeanVariance)
+
+/**
+* @brief Calculates the standard deviation or the variance of Tensors with the average value.
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32. \n
+* @li mean: A Tensor. It's the mean of X. Has the same shape and type as "x" \n
+
+* @par Attributes:
+* Four Attributes, including:
+* @li dim: An listint. \n
+* @li if_std: An optional bool. Defaults to "False"
+*     If "True", Calculate the standard deviation
+*     If "False", Calculate the variance
+* @li unbiased: An optional bool. Defaults to "True".
+*     If "True", Use Bessel Correction.
+*     If "False", Do not use Bessel Correction. \n
+* @li keepdim: An optional bool. Defaults to "False".
+*     If "True", Keep the original tensor dimension.
+*     If "False", Do not keep the original tensor dimension. \n
+
+* @par Outputs:
+* @li output_var: A Tensor. It's the standard deviation or the variance of X. Has the same type as "x".
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Var_mean.
+*/
+REG_OP(ReduceStdV2Update)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(output_var, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .REQUIRED_ATTR(dim, ListInt)
+    .ATTR(if_std, Bool, false)
+    .ATTR(unbiased, Bool, true)
+    .ATTR(keepdim, Bool, false)
+    .OP_END_FACTORY_REG(ReduceStdV2Update)
+    
+/**
+*@brief Computes the log and sum and exp of elements across dimensions of a tensor.
+* Reduces "x" along the dimensions given in "axes".
+* Unless "keep_dims" is true, the rank of the tensor is reduced by 1 for each
+* entry in "axes". If "keep_dims" is true, the reduced dimensions
+* are retained with length 1.
+*
+*@par Inputs:
+* Two inputs, including:
+*@li x: A Tensor. Must be one of the following types:
+*     float32, float16, int32, int64, uint32, uint64, double
+*@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+*
+*@par Attributes:
+*keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+*
+*@par Outputs:
+*y: The reduced tensor. Has the same type and format as input "x" . \n
+*
+*@par Third-party framework compatibility
+* Compatible with the Onnx operator ReduceLogSumExp.
+*/
+REG_OP(ReduceLogSumExp)
+    .INPUT(x, TensorType::NumberType())
+    .INPUT(axes, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::NumberType())
+    .ATTR(keep_dims, Bool, false)
+    .OP_END_FACTORY_REG(ReduceLogSumExp)
+
+/**
+*@brief Computes the log and sum of elements across dimensions of a tensor.
+* Reduces "x" along the dimensions given in "axes".
+* Unless "keep_dims" is true, the rank of the tensor is reduced by 1 for each
+* entry in "axes". If "keep_dims" is true, the reduced dimensions
+* are retained with length 1.
+*
+*@par Inputs:
+* Two inputs, including:
+*@li x: A Tensor. Must be one of the following types:
+*     float32, float16, int32, int64, uint32, uint64, double
+*@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+*
+*@par Attributes:
+*keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+*
+*@par Outputs:
+*y: The reduced tensor. Has the same type and format as input "x" . \n
+*
+*@par Third-party framework compatibility
+* Compatible with the Onnx operator ReduceLogSum.
+*/
+REG_OP(ReduceLogSum)
+    .INPUT(x, TensorType::NumberType())
+    .INPUT(axes, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::NumberType())
+    .ATTR(keep_dims, Bool, false)
+    .OP_END_FACTORY_REG(ReduceLogSum)
 } //namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_REDUCE_OPS_H_

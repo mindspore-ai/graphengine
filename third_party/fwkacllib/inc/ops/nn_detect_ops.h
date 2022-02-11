@@ -1179,6 +1179,8 @@ REG_OP(SPP)
 * the index of the input feature map, "x1", "y1", "x2", or "y2" must be
 * greater than or equal to "0.0".
 * roi_max_num must be less than or equal to 6000 and must be divided by 16.
+* The input data of the rois cannot exceed the width and height range of the x,
+* otherwise, the accuracy of the output result may not be as expected.
 *@li roi_actual_num: A  optional tensor of type int32, with shape [batch, 8], specifying
 * the number of ROIs per batch . \n
 
@@ -2076,7 +2078,7 @@ REG_OP(GIoUGrad)
 * trans: An optional attr, true for 'xyxyt', false for 'xywht'.
 
 *@par Outputs:
-* overlaps: A 3D Tensor of type float16 or float32 with shape [B, N, K].
+* overlaps: A 3D Tensor of type float32 with shape [B, N, K].
 
 *@attention Constraints:
 * In each batch, the invalid box cannot appear before the valid box.
@@ -2087,6 +2089,100 @@ REG_OP(RotatedOverlaps)
     .OUTPUT(overlaps, TensorType({DT_FLOAT}))
     .ATTR(trans, Bool, false)
     .OP_END_FACTORY_REG(RotatedOverlaps)
+
+/**
+*@brief RotatedIou . \n
+
+*@par Inputs:
+*@li boxes : data of grad increment, a 3D Tensor of type float32 with
+* shape (B, 5, N). "N" indicates the number of boxes, and the value
+* "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
+*@li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
+* shape (B, 5, K). "K" indicates the number of boxes, and the value
+* "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
+
+*@par Attributes:
+*@li trans: An optional attr, true for 'xyxyt', false for 'xywht'.
+*@li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
+* only support 'iou' now.
+*@li is_cross: Cross calculation when it is True, and one-to-one calculation when it is False.
+*@li v_threshold: An optional attr, provide condition relaxation for intersection calculation.
+*@li e_threshold: An optional attr, provide condition relaxation for intersection calculation.
+
+*@par Outputs:
+* iou: A 3D Tensor of float32 with shape [B, N, K].
+
+*@attention Constraints:
+* In each batch, the invalid box cannot appear before the valid box.
+*/
+REG_OP(RotatedIou)
+    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(query_boxes, TensorType({DT_FLOAT}))
+    .OUTPUT(iou, TensorType({DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(mode, String, "iou")
+    .ATTR(is_cross, Bool, true)
+    .ATTR(v_threshold, Float, 0)
+    .ATTR(e_threshold, Float, 0)
+    .OP_END_FACTORY_REG(RotatedIou)
+
+/**
+*@brief RotatedBoxEncode. \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li anchor_box: A 3D Tensor of float32 (float16) with shape (B, 5, N).
+* "B" indicates the number of batch size
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle".
+*@li gt_box: A 3D Tensor of float32 (float16) with shape (B, 5, N). 
+* "B" indicates the number of batch size 
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle". \n
+
+*@par Attributes:
+*@li weight: A float list for "x0", "x1", "y0", "y1" and "angle",
+* defaults to [1.0, 1.0, 1.0, 1.0, 1.0].
+
+*@par Outputs:
+*@li y: A 3D Tensor of type float32 (float16) with shape (B, 5, N),
+* specifying the variations between all anchor boxes and ground truth boxes.
+*/
+REG_OP(RotatedBoxEncode)
+    .INPUT(anchor_box, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gt_box, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(weight, ListFloat, {1.0, 1.0, 1.0, 1.0, 1.0})
+    .OP_END_FACTORY_REG(RotatedBoxEncode)
+
+/**
+*@brief RotatedBoxDecode. \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li anchor_box: A 3D Tensor of float32 (float16) with shape (B, 5, N).
+* "B" indicates the number of batch size
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle".
+*@li deltas: A 3D Tensor of float32 (float16) with shape (B, 5, N). 
+* "B" indicates the number of batch size 
+* "N" indicates the number of bounding boxes, and the value "5" refers to
+* "x0", "x1", "y0", "y1" and "angle". \n
+
+*@par Attributes:
+*@li weight: A float list for "x0", "x1", "y0", "y1" and "angle",
+* defaults to [1.0, 1.0, 1.0, 1.0, 1.0].
+
+*@par Outputs:
+*@li y: A 3D Tensor of type float32 (float16) with shape (B, 5, N),
+* specifying the variations between all anchor boxes and ground truth boxes.
+*/
+REG_OP(RotatedBoxDecode)
+    .INPUT(anchor_box, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(deltas, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(weight, ListFloat, {1.0, 1.0, 1.0, 1.0, 1.0})
+    .OP_END_FACTORY_REG(RotatedBoxDecode)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

@@ -25,7 +25,8 @@
 
 namespace ge {
 /**
-*@brief Computes the for the gelu of "x" . \n
+*@brief The GELU activation function is x*Φ(x),
+*       where Φ(x) the standard Gaussian cumulative distribution function. \n
 
 *@par Inputs:
 *One input, including:
@@ -144,7 +145,7 @@ REG_OP(GeluGrad)
     .OP_END_FACTORY_REG(GeluGrad)
 
 /**
-*@brief Computes the for the fast_gelu of "x" . \n
+*@brief The FastGelu activation function is x*e^(0.851*x)*(x-|x|)/(1+e^(-1.702|x|)). \n
 
 *@par Inputs:
 *One input, including:
@@ -159,7 +160,23 @@ REG_OP(FastGelu)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(FastGelu)
+/**
+*@brief The FastGeluV2 activation function is x*(sgn(x)*[(a/2)*(clip(|x|,max=-b)+b)^2+0.5]+0.5),
+*       where sgn(x) function is (x+0.000000000001)/|(x+0.000000000001)|. \n
 
+*@par Inputs:
+*One input, including:
+*x: A Tensor. Must be one of the following types: float16, float32
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FastGeluV2
+*/
+REG_OP(FastGeluV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(FastGeluV2)
 /**
 *@brief Computes the gradient for the fast_gelu of "x" . \n
 
@@ -623,9 +640,7 @@ REG_OP(Elu)
 *x: A float16, float32, for the input data type . \n
 
 *@par Attributes:
-*@li alpha1: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
-*@li alpha2: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
-*@li alpha3: A float32. Defines at which positive value the ELU saturates. Defaults to "1.0" . \n
+*li alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
 
 *@par Outputs:
 *y: A float16, float32, for the normalized result . \n
@@ -641,9 +656,7 @@ REG_OP(Elu)
 REG_OP(Celu)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16}))
-    .ATTR(alpha1, Float, 1.0)
-    .ATTR(alpha2, Float, 1.0)
-    .ATTR(alpha3, Float, 1.0)
+    .ATTR(alpha, Float, 1.0)
     .OP_END_FACTORY_REG(Celu)
 
 /**

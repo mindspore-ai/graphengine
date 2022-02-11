@@ -19,6 +19,11 @@ typedef enum rtEventWaitStatus {
     EVENT_STATUS_MAX = 2,
 } rtEventWaitStatus_t;
 
+typedef enum rtEventStatus {
+    RT_EVENT_INIT = 0,
+    RT_EVENT_RECORDED = 1,
+} rtEventStatus_t;
+
 /**
  * @ingroup event_flags
  * @brief event op bit flags
@@ -114,6 +119,16 @@ RTS_API rtError_t rtEventQuery(rtEvent_t evt);
  * @return EVENT_STATUS_NOT_READY for not complete
  */
 RTS_API rtError_t rtEventQueryWaitStatus(rtEvent_t evt, rtEventWaitStatus_t *status);
+
+/**
+ * @ingroup dvrt_event
+ * @brief Queries an event's status
+ * @param [in] evt   event to query
+ * @param [in out] rtEventStatus_t status
+ * @return RT_EVENT_RECORDED  for recorded
+ * @return RT_EVENT_INIT for not recorded
+ */
+RTS_API rtError_t rtEventQueryStatus(rtEvent_t evt, rtEventStatus_t *status);
 
 /**
  * @ingroup dvrt_event

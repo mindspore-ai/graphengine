@@ -381,6 +381,30 @@ REG_OP(ConcatOffsetD)
     .REQUIRED_ATTR(concat_dim, Int)
     .REQUIRED_ATTR(N, Int)
     .OP_END_FACTORY_REG(ConcatOffsetD)
+
+/**
+*@brief Compute combinations of length of the given tensor. \n
+
+*@par Inputs:
+*x:  A list of 1D Tensor objects. \n
+
+*@par Attributes:
+*@li r: An optional int indicates number of elements to combine. Defaults to 2.
+*@li with_replacement: An optional bool indicates whether to allow duplication
+*in combination. Defaults to "False". \n
+
+*@par Outputs:
+*y: A Tensor list with same type as "x" . \n
+
+*@par Third-party framework compatibility
+*@ Compatible with the Pytorch operator Combinations.
+*/
+REG_OP(Combinations)
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
+    .ATTR(r, Int, 2)
+    .ATTR(with_replacement, Bool, false)
+    .OP_END_FACTORY_REG(Combinations)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_

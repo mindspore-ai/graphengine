@@ -100,7 +100,7 @@ extern "C" {
 
 MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
 
-typedef in32_t Status;
+typedef int32_t Status;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig1;
 ///
 /// @ingroup AscendCL

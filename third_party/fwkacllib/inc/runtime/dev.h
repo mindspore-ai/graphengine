@@ -82,6 +82,12 @@ typedef enum tagRtDeviceModuleType {
     RT_MODULE_TYPE_VECTOR_CORE, /**< VECTOR CORE info*/
 } rtDeviceModuleType_t;
 
+typedef enum tagRtMemRequestFeature {
+    MEM_REQUEST_FEATURE_DEFAULT = 0,
+    MEM_REQUEST_FEATURE_OPP,
+    MEM_REQUEST_FEATURE_RESERVED
+} rtMemRequestFeature_t;
+
 // used for rtGetDevMsg callback function
 typedef void (*rtGetMsgCallback)(const char_t *msg, uint32_t len);
 
@@ -418,6 +424,15 @@ RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t devId);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetDevMsg(rtGetDevMsgType_t getMsgType, rtGetMsgCallback callback);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get ts mem type
+ * @param [in] rtMemRequestFeature_t mem request feature type
+ * @param [in] mem request size
+ * @return RT_MEMORY_TS, RT_MEMORY_HBM, RT_MEMORY_TS | RT_MEMORY_POLICY_HUGE_PAGE_ONLY
+ */
+RTS_API uint32_t rtGetTsMemType(rtMemRequestFeature_t featureType, uint32_t memSize);
 #if defined(__cplusplus)
 }
 #endif

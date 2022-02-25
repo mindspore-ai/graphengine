@@ -1700,6 +1700,45 @@ REG_OP(GroupNormRelu)
     .REQUIRED_ATTR(num_groups, Int)
     .ATTR(eps, Float, 0.00001)
     .OP_END_FACTORY_REG(GroupNormRelu)
-}  // namespace ge
 
+/**
+* @brief Function dropout with softmaxgrad and muls
+
+* @par Inputs:
+* Two inputs, including:
+* @li y_grad: A mutable Tensor. The type only support float16.
+* @li mask: A mutable Tensor. Must met all of the following rules:
+*     shape of mask should be 1D.
+*     dtype of mask should be uint8.
+*     value of shape should met the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128
+* @li softmax_output: A mutable Tensor. Must met all of the following rules:
+*     shape of softmax_output should be NZ.
+*     dtype of softmax_output should be float16.
+*     it is the output of softmax
+
+* @par Attributes:
+* @li input_keep_prob:A attribute used to judge which units should be keep.
+*     Has the same type as "x" . \n
+* @li alpha: A attribute used to scale tensor.
+*     Has the same type as "x" . \n
+* @li axes: A list of int. The dimension softmax would be performed on. Defaults
+*     to "[-1]" . \n
+
+* @par Outputs:
+* x_grad: A mutable Tensor. Has the same type as "x". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DropoutWithMulsAndSoftmaxGrad)
+    .INPUT(y_grad, TensorType({ DT_FLOAT16 }))
+    .INPUT(mask, TensorType({ DT_UINT8 }))
+    .INPUT(softmax_output, TensorType({ DT_FLOAT16 }))
+    .OUTPUT(x_grad, TensorType({ DT_FLOAT16 }))
+    .REQUIRED_ATTR(input_keep_prob, Float)
+    .REQUIRED_ATTR(alpha, Float)
+    .ATTR(axes, ListInt, { -1 })
+    .OP_END_FACTORY_REG(DropoutWithMulsAndSoftmaxGrad)
+}  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

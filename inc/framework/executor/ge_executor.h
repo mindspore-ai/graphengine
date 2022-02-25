@@ -315,6 +315,10 @@ class GE_FUNC_VISIBILITY GeExecutor {
   static Status LoadDynamicSingleOpV2(const std::string &model_name, const ModelData &model_data, void *const stream,
                                       DynamicSingleOp **const single_op, const uint64_t model_id);
 
+  static Status UnloadSingleOp(const uint64_t op_id);
+
+  static Status UnloadDynamicSingleOp(const uint64_t op_id);
+
   static Status ExecuteAsync(DynamicSingleOp *const executor, const std::vector<GeTensorDesc> &input_desc,
                              const std::vector<DataBuffer> &inputs, std::vector<GeTensorDesc> &output_desc,
                              std::vector<DataBuffer> &outputs);

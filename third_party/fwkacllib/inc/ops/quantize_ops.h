@@ -241,6 +241,29 @@ REG_OP(AscendRequantS16)
   .ATTR(dual_output, Bool, false)
   .ATTR(relu_flag, Bool, false)
   .OP_END_FACTORY_REG(AscendRequantS16)
+
+/**
+* @brief Quantizes the input of int8 . \n
+
+* @par Inputs:
+* @li x: An FRACTAL_Z tensor of type int8, specifying the input.
+* @li offset: An FRACTAL_Z tensor of type int8.
+
+* @par Attributes:
+* @li dst_type: A optional int from: DT_INT8, DT_INT4. Defaults to DT_INT8.
+
+* @par Outputs:
+* @li y: output tensor of type int4 or int8 and with format FRACTAL_Z.
+
+* @par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe, Onnx, Tensorflow or Pythorch.
+*/
+REG_OP(AscendWeightQuant)
+  .INPUT(x, TensorType({DT_INT8}))
+  .INPUT(offset, TensorType({DT_INT8}))
+  .OUTPUT(y, TensorType({DT_INT8, DT_INT4}))
+  .ATTR(dst_type, Int, DT_INT8)
+  .OP_END_FACTORY_REG(AscendWeightQuant)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_QUANTIZE_OPS_H_

@@ -338,6 +338,16 @@ RTS_API rtError_t rtModelCreate(rtModel_t *mdl, uint32_t flag);
 
 /**
  * @ingroup rt_model
+ * @brief set ge model id to aicpu
+ * @param [in]     model   aicpu model
+ * @param [in]     extid   ge model id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtModelSetExtId(rtModel_t mdl, uint32_t extId);
+
+/**
+ * @ingroup rt_model
  * @brief destroy model instance
  * @param [in] mdl   model to destroy
  * @return RT_ERROR_NONE for ok

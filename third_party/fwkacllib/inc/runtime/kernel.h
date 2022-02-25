@@ -219,6 +219,13 @@ typedef void (*rtCallback_t)(void *fnData);
 
 /**
  * @ingroup rt_kernel
+ * @brief SHAPE kernel type
+**/
+#define RT_STATIC_SHAPE_KERNEL (0x00U)
+#define RT_DYNAMIC_SHAPE_KERNEL (0x01U)
+
+/**
+ * @ingroup rt_kernel
  * @brief kernel L1 Fusion Dump bit flags
  */
 #define RT_DDR_ADDR (0x0U)
@@ -334,6 +341,21 @@ RTS_API rtError_t rtQueryFunctionRegistered(const char_t *stubName);
  */
 RTS_API rtError_t rtKernelConfigDump(uint32_t kind, uint32_t dumpSizePerBlock, uint32_t blockDim, void **dumpBaseAddr,
                                      rtStream_t stm);
+
+/**
+* @ingroup rt_kernel
+* @brief get kernel address and prefetchCnt
+* @param [in] hdl           program for dynamic shape
+* @param [in] tilingKey     tilingKey for dynamic shape
+* @param [in] stubFunc      stubFunc for static shape
+* @param [in] flag          flag for distinguishing between dynamic shape and static shape
+* @param [out] addr         address of kernel function
+* @param [out] prefetchCnt  prefetchCnt of kernel function
+* @return RT_ERROR_NONE for ok
+* @return RT_ERROR_INVALID_VALUE for error input
+*/
+RTS_API rtError_t rtKernelGetAddrAndPrefCnt(void *hdl, const uint64_t tilingKey, const void * const stubFunc,
+                                            const uint32_t flag, void **addr, uint32_t *prefetchCnt);
 
 /**
  * @ingroup rt_kernel

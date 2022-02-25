@@ -17,11 +17,9 @@
 #ifndef AIR_INC_FRAMEWORK_COMMON_UTIL_H_
 #define AIR_INC_FRAMEWORK_COMMON_UTIL_H_
 
-#include <climits>
 #include <cmath>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include <google/protobuf/text_format.h>
 #include "external/graph/types.h"

@@ -18,7 +18,6 @@
 #define INC_FRAMEWORK_OMG_VERSION_H_
 
 #include <memory>
-#include <set>
 
 #include "framework/common/debug/log.h"
 #include "framework/common/string_util.h"

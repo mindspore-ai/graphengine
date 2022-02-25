@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MSPROF_ENGINE_PROF_REPORTER_H_
-#define MSPROF_ENGINE_PROF_REPORTER_H_
+#ifndef MSPROF_ENGINE_PROF_REPORTER_H
+#define MSPROF_ENGINE_PROF_REPORTER_H
 
 #if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)

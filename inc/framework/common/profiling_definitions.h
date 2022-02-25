@@ -52,6 +52,21 @@ enum {
   kOpExecute,
   kAllocMem,
   kCopyH2D,
+  kPrepareNode,
+  kWaitForPrepareDone,
+  kPropgateOutputs,
+  kOnNodeDoneCallback,
+  kValidateInputTensor,
+  kAfterExecuted,
+  kRtEventSychronize,
+  kInferShapeWaitDependShape,
+  kInferShapeWaitInputTensor,
+  kInferShapeCallInferFunc,
+  kInferShapePropgate,
+  // v2 control node
+  kSelectBranch,
+  kExecuteSubGraph,
+  kInitSubGraphExecutor,
 
   // Add new definitions here
   kProfilingIndexEnd

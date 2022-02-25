@@ -1496,17 +1496,23 @@ REG_OP(QueueData)
 /**
 * @brief Ensures that the tensor's shape matches the expected shape. \n
 * @par Inputs:
-* x: A Tensor. \n
+* input: A Tensor. that need to be checked with desired shape 
+*        Must be one of the following types:
+*        int8, uint8, int16, uint16, int32, int64, float16, float
+*        double, complex64 complex128 \n
 * @par Attributes:
-* shape:  The shape that needs to be checked \n
+* shape: required, a desired tensor shape. type: list int \n
 * @par Outputs:
-* y: A tensor. \n
+* output: A tensor. has the same type and contents as input 
+*        Must be one of the following types:
+*        int8, uint8, int16, uint16, int32, int64, float16, float
+*        double, complex64 complex128 \n
 */
 REG_OP(EnsureShape)
-    .INPUT(input, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,DT_INT64,DT_FLOAT16, \
-                            DT_FLOAT,DT_DOUBLE}))
-    .OUTPUT(output, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,DT_INT64,DT_FLOAT16, \
-                            DT_FLOAT,DT_DOUBLE}))
+    .INPUT(input, TensorType({DT_INT8,DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_INT64, DT_FLOAT16, \
+                            DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_INT64, DT_FLOAT16, \
+                            DT_FLOAT,DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(EnsureShape)
 }  // namespace ge

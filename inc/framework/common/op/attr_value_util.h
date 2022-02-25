@@ -34,7 +34,6 @@
 #include <google/protobuf/map.h>
 #include <unordered_map>
 #include <string>
-#include "external/graph/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "proto/om.pb.h"
 

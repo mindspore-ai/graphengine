@@ -23,7 +23,6 @@
 #include "ge/ge_api_error_codes.h"
 #include "nlohmann/json.hpp"
 #include "graph/op_desc.h"
-#include "graph/types.h"
 #include "graph/ge_tensor.h"
 
 namespace ge {

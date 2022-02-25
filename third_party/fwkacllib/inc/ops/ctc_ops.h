@@ -156,16 +156,15 @@ REG_OP(CTCBeamSearchDecoder)
 *@li log_alpha: The probability of possible trace of input to target.
 
 *@par Attributes:
-*@li blank : Blank label. Default 0.
+*@li blank: Blank label. Default 0.
 *@li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
-*@li zero_infinity : Whether to zero infinite losses and the associated gradients.
-*@li label_max : The max length of targets.
+*@li zero_infinity: Whether to zero infinite losses and the associated gradients.
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility:
 * Compatible with Pytorch CTCLoss operator.
 
 *@attention Constraints:
-*The limit of Label’s length is 1K.
+* The limit of Label’s length is 1K.
 */
 REG_OP(CTCLossV2)
     .INPUT(log_probs, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -177,38 +176,36 @@ REG_OP(CTCLossV2)
     .ATTR(blank, Int, 0)
     .ATTR(reduction, String, "mean")
     .ATTR(zero_infinity, Bool, false)
-    .ATTR(label_max, Int, 0)
     .OP_END_FACTORY_REG(CTCLossV2)
 
 /**
 *@brief The Connectionist Temporal Classification loss grad.
 
-*@par Inputs:
+* @par Inputs:
 *@li grad_out: Gradient renewal coefficient. Tensor of size (N), where N = batch size.
-*@li log_probs: Tensor of size (T, N, C), where T =input length, N =batch size,
+* @li log_probs: Tensor of size (T, N, C), where T =input length, N =batch size,
                 and C = number of classes (including blank).
                 It represent the logarithmized probabilities of the outputs.
 *@li targets: Tensor of size (N, S) or sum(target_lengths), where S = max target length.
              It represent the target sequences.
-*@li input_lengths: Tuple or tensor of size (N). It represent the lengths of the inputs.
+* @li input_lengths: Tuple or tensor of size (N). It represent the lengths of the inputs.
 *@li target_lengths: Tuple or tensor of size (N). It represent lengths of the targets.
-*@li neg_log_likelihood: A loss value which is differentiable with respect to each input node.
-*@li log_alpha: The probability of possible trace of input to target.
+* @li neg_log_likelihood: A loss value which is differentiable with respect to each input node.
+* @li log_alpha: The probability of possible trace of input to target.
 
-*@par Outputs:
+* @par Outputs:
 *@li grad: Tensor of size (T, N, C), The grad of Connectionist Temporal Classification loss.
 
-*@par Attributes:
-*@li blank : Blank label. Default 0.
-*@li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
-*@li zero_infinity : Whether to zero infinite losses and the associated gradients.
-*@li label_max : The max length of targets.
+* @par Attributes:
+*@li blank: Blank label. Default 0.
+* @li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
+* @li zero_infinity: Whether to zero infinite losses and the associated gradients.
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility:
 * Compatible with Pytorch CTCLoss operator.
 
-*@attention Constraints:
-*The limit of Label’s length is 1K.
+* @attention Constraints:
+* The limit of Label’s length is 1K.
 */
 REG_OP(CTCLossV2Grad)
     .INPUT(grad_out, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -222,7 +219,6 @@ REG_OP(CTCLossV2Grad)
     .ATTR(blank, Int, 0)
     .ATTR(reduction, String, "mean")
     .ATTR(zero_infinity, Bool, false)
-    .ATTR(label_max, Int, 0)
     .OP_END_FACTORY_REG(CTCLossV2Grad)
 }  // namespace ge
 

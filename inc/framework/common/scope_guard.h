@@ -18,7 +18,6 @@
 #define INC_FRAMEWORK_COMMON_SCOPE_GUARD_H_
 
 #include <functional>
-#include <iostream>
 
 /// Usage:
 /// Acquire Resource 1

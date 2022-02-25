@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "framework/common/fmk_types.h"
 #include "framework/common/helper/om_file_helper.h"
 #include "common/model/ge_model.h"
 #include "common/model/ge_root_model.h"

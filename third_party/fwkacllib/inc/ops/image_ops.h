@@ -349,6 +349,7 @@ REG_OP(ExtractGlimpse)
 *y:images converted to RGB . \n
 
 *@attention Constraints:
+*Input images currently supports DT_FLOAT, DT_DOUBLE .
 *Last dimension of input x must be size 3 . \n
 
 *@par Third-party framework compatibility
@@ -2307,5 +2308,52 @@ REG_OP(UpsampleNearest1dGrad)
     .REQUIRED_ATTR(output_size, ListInt)
     .ATTR(scales, ListFloat, {})
     .OP_END_FACTORY_REG(UpsampleNearest1dGrad)
+
+/**
+* @brief JPEG encode input image with provided compression quality. \n
+
+* @par Inputs:
+* @li images: image is a 3-D uint8 tensor of shape [height, width, channels]. 
+* @li quality: int32 jpeg compression quality value between 0 and 100, 0-D tensor.
+
+* @par Outputs: JPEG-encoded image
+* contents: an output string. \n
+
+* @par Third-party framework compatibility.
+* Compatible with tensorflow EncodeJpegVariableQuality operator.
+*/
+
+REG_OP(EncodeJpegVariableQuality)
+    .INPUT(images, TensorType({DT_UINT8}))
+    .INPUT(quality, TensorType({DT_INT32}))
+    .OUTPUT(contents, TensorType({DT_STRING}))
+    .OP_END_FACTORY_REG(EncodeJpegVariableQuality)
+
+/**
+* @brief image to transforms. \n
+
+* @par Inputs:
+* @li images: [batch, height, width, channels], 4-D tensor. 
+* @li transforms: [batch, 8] or [1, 8] matrix, 2-D tensor.
+* @li outout_shape: [new_height, new_width], 1-D tensor.
+
+* @par Attributes:
+* @li interpolation: Interpolation method, "NEAREST" or "BILINEAR", 0-D tensor.
+* @li fill_mode: Defaults to "CONSTANT". Fill mode, "REFLECT", "WRAP", or "CONSTANT", 0-D tensor.
+
+* @par Outputs
+* transformed_images: has the same type as iamges, 4-D tensor with shape[batch, new_height, new_width, channels]. \n
+
+* @par Third-party framework compatibility.
+* Compatible with tensorflow ImageProjectiveTransform operator.
+*/
+REG_OP(ImageProjectiveTransform)
+    .INPUT(images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(transforms, TensorType({DT_FLOAT}))
+    .INPUT(output_shape, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(interpolation, String)
+    .ATTR(fill_mode, String, "CONSTANT")
+    .OUTPUT(transformed_images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(ImageProjectiveTransform)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

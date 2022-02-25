@@ -34,6 +34,13 @@
 extern "C" {
 #endif  // __cplusplus
 
+struct InitFlowGwInfo {
+    const char_t *groupName;
+    uint64_t schedPolicy;
+    uint64_t reschedInterval;
+    char_t rsv[128];
+};
+
 /**
 * @ingroup Open
 * @brief Used for the Framework process to communicate with the TSDDaemon process,
@@ -100,6 +107,27 @@ TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t logicDeviceId, const uint32_t r
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
 TDT_LIB_EXPORT uint32_t TsdInitQs(const uint32_t logicDeviceId, const char_t * const groupName = nullptr);
+
+/**
+* @ingroup InitFlowGw
+* @brief Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of FlowGw processes
+*
+* @par Function
+* Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param initInfo [IN] type #InitFlowGwInfo pointer. Initialization parameters
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tsd_client.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_LIB_EXPORT uint32_t TsdInitFlowGw(const uint32_t logicDeviceId, const InitFlowGwInfo * const initInfo);
 
 /**
 * @ingroup Close

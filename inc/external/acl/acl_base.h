@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2022 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,6 +164,7 @@ typedef enum {
   ACL_FORMAT_NC1HWC0 = 3,
   ACL_FORMAT_FRACTAL_Z = 4,
   ACL_FORMAT_NC1HWC0_C04 = 12,
+  ACL_FORMAT_HWCN = 16,
   ACL_FORMAT_NDHWC = 27,
   ACL_FORMAT_FRACTAL_NZ = 29,
   ACL_FORMAT_NCDHW = 30,

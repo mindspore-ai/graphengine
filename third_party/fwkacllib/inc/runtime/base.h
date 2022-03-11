@@ -140,6 +140,16 @@ typedef void *rtModel_t;
 
 #define RT_PROF_MAX_DEV_NUM 64
 
+#define PATH_LEN_MAX 1023
+#define PARAM_LEN_MAX 4095
+typedef struct rtCommandHandleParams {
+    uint32_t pathLen;
+    uint32_t storageLimit;  // MB
+    uint32_t profDataLen;
+    char_t path[PATH_LEN_MAX + 1];
+    char_t profData[PARAM_LEN_MAX + 1];
+} rtCommandHandleParams_t;
+
 /**
  * @ingroup profiling_base
  * @brief profiling command info
@@ -151,6 +161,7 @@ typedef struct rtProfCommandHandle {
     uint32_t devIdList[RT_PROF_MAX_DEV_NUM];
     uint32_t modelId;
     uint32_t type;
+    rtCommandHandleParams_t commandHandleParams;
 } rtProfCommandHandle_t;
 
 /**

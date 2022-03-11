@@ -131,6 +131,32 @@ typedef struct tagRtArgsWithTiling {
 } rtArgsWithTiling_t;
 
 /**
+ * @ingroup rt_kernel
+ * @brief host memory input struct
+ */
+typedef struct rtHostInputInfo {
+    uint16_t addrOffset;
+    uint16_t dataOffset;
+} rtHostInputInfo_t;
+
+/**
+ * @ingroup rt_kernel
+ * @brief args struct
+ */
+typedef struct tagRtArgsEx {
+    void *args;                     // args host mem addr
+    rtHostInputInfo_t *hostInputInfoPtr;     // nullptr means no host mem input
+    uint32_t argsSize;              // input + output + tiling addr size + tiling data size + host mem
+    uint16_t tilingAddrOffset;      // tiling addr offset
+    uint16_t tilingDataOffset;      // tiling data offset
+    uint16_t hostInputInfoNum;      // hostInputInfo num
+    uint8_t hasTiling;              // if has tiling: 0 means no tiling
+    uint8_t isNoNeedH2DCopy;        // is no need host to device copy: 0 means need H2D copy,
+                                    // others means doesn't need H2D copy.
+    uint8_t reserved[4];
+} rtArgsEx_t;
+
+/**
  * @ingroup rt_KernelConfigDump
  * @brief device dump type
  */
@@ -375,37 +401,68 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
 /**
  * @ingroup rt_kernel
  * @brief launch kernel with handle to device
- * @param [in] hdl   program
+ * @param [in] hdl             program
  * @param [in] kernelInfoExt   kernel Info extension. device function description or tiling key,
  *                             depending static shape or dynmaic shape.
- * @param [in] blockDim   block dimentions
- * @param [in] args   argments address for kernel function
- * @param [in] argsSize   argements size
- * @param [in] smDesc   shared memory description
- * @param [in] stm   associated stream
- * @param [in] kernelInfo   kernel info
+ * @param [in] blockDim        block dimentions
+ * @param [in] argsInfo        argments address for kernel function
+ * @param [in] smDesc          shared memory description
+ * @param [in] stm             associated stream
+ * @param [in] kernelInfo      kernel info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithHandle(void *hdl, const void *kernelInfoExt, uint32_t blockDim,
-                                           void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream_,
+                                           rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
                                            const void *kernelInfo);
 
 /**
- * @ingroup rt_kernel
- * @brief launch kernel to device
- * @param [in] stubFunc   stub function
- * @param [in] blockDim   block dimentions
- * @param [in] args   argments address for kernel function
- * @param [in] argsSize   argements size
- * @param [in] smDesc   shared memory description
- * @param [in] stm   associated stream
- * @param [in] flag   dump flag
+ * @ingroup rtKernelLaunchWithHandleV2
+ * @brief launch kernel with handle to device
+ * @param [in] hdl   program
+ * @param [in] kernelInfoExt   kernel Info extension. device function description or tiling key,
+ *                             depending static shape or dynmaic shape.
+ * @param [in] blockDim        block dimentions
+ * @param [in] argsInfo        argments address for kernel function
+ * @param [in] smDesc          shared memory description
+ * @param [in] stm             associated stream
+ * @param [in] kernelInfo      kernel info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim, void *args, uint32_t argsSize,
+RTS_API rtError_t rtKernelLaunchWithHandleV2(void *hdl, const void *kernelInfoExt, uint32_t blockDim,
+                                             rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
+                                             const void *kernelInfo);
+
+/**
+ * @ingroup rtKernelLaunchWithFlag
+ * @brief launch kernel to device
+ * @param [in] stubFunc   stub function
+ * @param [in] blockDim   block dimentions
+ * @param [in] argsInfo   argments address for kernel function
+ * @param [in] smDesc     shared memory description
+ * @param [in] stm        associated stream
+ * @param [in] flags      dump flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim, rtArgsEx_t *argsInfo,
                                          rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags);
+
+/**
+ * @ingroup rtKernelLaunchWithFlagV2
+ * @brief launch kernel to device
+ * @param [in] stubFunc   stub function
+ * @param [in] blockDim   block dimentions
+ * @param [in] argsInfo   argments address for kernel function
+ * @param [in] smDesc     shared memory description
+ * @param [in] stm        associated stream
+ * @param [in] flags      dump flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchWithFlagV2(const void *stubFunc, uint32_t blockDim, rtArgsEx_t *argsInfo,
+                                           rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags);
 
 /**
  * @ingroup rt_kernel(abandoned)
@@ -465,38 +522,70 @@ RTS_API rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames,
     uint32_t blockDim, const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm);
 
 /**
- * @ingroup rt_kernel(abandoned)
+ * @ingroup rtCpuKernelLaunchWithFlag(abandoned)
  * @brief launch cpu kernel to device  with dump identifier
  * @param [in] soName        so name
  * @param [in] kernelName    kernel name
  * @param [in] blockDim      block dimentions
- * @param [in] args          argments address for kernel function
- * @param [in] argsSize      argments size
+ * @param [in] argsInfo      argments address for kernel function
  * @param [in] smDesc        shared memory description
- * @param [in] stm        associated stream
+ * @param [in] stm           associated stream
  * @param [in] flag          dump flag or others function flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kernelName, uint32_t blockDim,
-                                            const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm,
+                                            const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
                                             uint32_t flags);
 
 /**
- * @ingroup rt_kernel(in use)
+ * @ingroup rtCpuKernelLaunchWithFlagV2
+ * @brief launch cpu kernel to device  with dump identifier
+ * @param [in] soName        so name
+ * @param [in] kernelName    kernel name
+ * @param [in] blockDim      block dimentions
+ * @param [in] argsInfo      argments address for kernel function
+ * @param [in] smDesc        shared memory description
+ * @param [in] stm           associated stream
+ * @param [in] flags         dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtCpuKernelLaunchWithFlagV2(const void *soName, const void *kernelName, uint32_t blockDim,
+                                              const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
+                                              uint32_t flags);
+
+/**
+ * @ingroup rtAicpuKernelLaunchWithFlag(in use)
  * @brief launch cpu kernel to device  with dump identifier
  * @param [in] launchNames   names for kernel launch
  * @param [in] blockDim      block dimentions
  * @param [in] args          argments address for kernel function
- * @param [in] argsSize      argments size
  * @param [in] smDesc        shared memory description
- * @param [in] stm        associated stream
- * @param [in] flag          dump flag or others function flag
+ * @param [in] stm           associated stream
+ * @param [in] flags          dump flag or others function flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim,
-    const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags);
+                                              const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
+                                              uint32_t flags);
+
+/**
+ * @ingroup rtAicpuKernelLaunchWithFlagV2(in use)
+ * @brief launch cpu kernel to device  with dump identifier
+ * @param [in] launchNames   names for kernel launch
+ * @param [in] blockDim      block dimentions
+ * @param [in] argsInfo      argments address for kernel function
+ * @param [in] smDesc        shared memory description
+ * @param [in] stm           associated stream
+ * @param [in] flags         dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunchWithFlagV2(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim,
+                                                const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
+                                                uint32_t flags);
 
 /**
  * @ingroup rt_kernel

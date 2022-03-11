@@ -86,35 +86,37 @@ REG_OP(L2NormalizeGrad)
 *@brief Performs batch normalization . \n
 
 *@par Inputs:
-* Five inputs, including: (NHWC, NCHW, or NC1HWC0 supported)
-*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
-*@li scale: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. Must be 5D
-if input "x" is with format NC1HWC0. Specifies the scaling factor.
-*@li offset: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. Must be 5D
-if input "x" is with format NC1HWC0. Specifies the offset.
-*@li mean: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. Must be 5D
-if input "x" is with format NC1HWC0. Specifies the mean used for inference. Must be "None" if the
+* Five inputs, including: (NHWC, NCHW)
+*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
+*@li scale: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. 
+Specifies the scaling factor.
+*@li offset: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. Specifies the offset.
+*@li mean: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. 
+Specifies the mean used for inference. Must be "None" if the
 operation is used for training.
-*@li variance: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. Must be
-5D if input "x" is with format NC1HWC0. Specifies the variance used for inference. Must be "None"
+*@li variance: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. 
+Specifies the variance used for inference. Must be "None"
 if the operation is used for training . \n
 
 *@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.0001".
+*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. 
+Defaults to "0.0001".
 *@li data_format: An optional string, specifying the format of "x". Defaults to "NHWC".
-*@li is_training: An optional bool, specifying if the operation is used for training or inference. Defaults to "True" . \n
+*@li is_training: An optional bool, specifying if the operation is used for training or inference. 
+Defaults to "True" . \n
 
 *@par Outputs:
-* Five outputs, including: (NHWC, NCHW, or NC1HWC0 supported)
-*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x", with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
-*@li batch_mean: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. Must be 5D
-if input "x" is with format NC1HWC0. Specifies the mean of "x".
+* Five outputs, including: (NHWC, NCHW)
+*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x", with format NHWC or NCHW.
+*@li batch_mean: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW. 
+Specifies the mean of "x".
 *@li batch_variance: A Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW.
-Must be 5D if input "x" is with format NC1HWC0. Specifies the variance of "x".
+Specifies the variance of "x".
 *@li reserve_space_1: An optional Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW.
-Must be 5D if input "x" is with format NC1HWC0. Specifies the mean of "x" for gradient computation. Pass "None" to skip this output.
+Specifies the mean of "x" for gradient computation. Pass "None" to skip this output.
 *@li reserve_space_2: An optional Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW.
-*@li reserve_space_3: An optional Tensor of type float32. For compatibility with tensorflow, only has one useless emement. \n
+*@li reserve_space_3: An optional Tensor of type float32. For compatibility with tensorflow, 
+only has one useless emement. \n
 
 *@attention Constraints:
 *@li If the operation is used for inference and outputs "reserve_space_1" and "reserve_space_2" are available,
@@ -264,17 +266,17 @@ REG_OP(SyncBatchNormBackwardElemt)
 *@brief Performs batch normalization . \n
 
 *@par Inputs:
-* Five inputs, including: (NHWC, NCHW, or NC1HWC0 supported)
-*@li x: A 3D or 6D Tensor of type float16 or float32, with format NDHWC or NCDHW for 4D or NDC1HWC0 for 6D.
-*@li scale: A Tensor of type float32. Must be 1D if input "x" is with format NDHWC or NCDHW. Must be 6D
-if input "x" is with format NDC1HWC0. Specifies the scaling factor.
-*@li offset: A Tensor of type float32. Must be 3D if input "x" is with format NDHWC or NCDHW. Must be 6D
-if input "x" is with format NC1HWC0. Specifies the offset.
-*@li mean: A Tensor of type float32. Must be 3D if input "x" is with format NDHWC or NCDHW. Must be 6D
-if input "x" is with format NC1HWC0. Specifies the mean used for inference. Must be "None" if the
+* Five inputs, including: (NHWC, NCHW)
+*@li x: A 3D or 6D Tensor of type float16 or float32, with format NDHWC or NCDHW.
+*@li scale: A Tensor of type float32. Must be 1D if input "x" is with format NDHWC or NCDHW. 
+Specifies the scaling factor.
+*@li offset: A Tensor of type float32. Must be 3D if input "x" is with format NDHWC or NCDHW.
+Specifies the offset.
+*@li mean: A Tensor of type float32. Must be 3D if input "x" is with format NDHWC or NCDHW.
+Specifies the mean used for inference. Must be "None" if the
 operation is used for training.
-*@li variance: A Tensor of type float32. Must be 3D if input "x" is with format NHWC or NCHW. Must be
-5D if input "x" is with format NC1HWC0. Specifies the variance used for inference. Must be "None"
+*@li variance: A Tensor of type float32. Must be 3D if input "x" is with format NHWC or NCHW.
+Specifies the variance used for inference. Must be "None"
 if the operation is used for training . \n
 
 *@par Attributes:
@@ -283,16 +285,16 @@ if the operation is used for training . \n
 *@li is_training: An optional bool, specifying if the operation is used for training or inference. Defaults to "True" . \n
 
 *@par Outputs:
-* Five outputs, including: (NHWC, NCHW, or NC1HWC0 supported)
-*@li y: A 3D or 6D Tensor of type float16 or float32 for the normalized "x", with format NDHWC or NCDHW for 4D or NDC1HWC0 for 6D.
-*@li batch_mean: A Tensor of type float32. Must be 3D if input "x" is with format NDHWC or NCDHW. Must be 6D
-if input "x" is with format NDC1HWC0. Specifies the mean of "x".
+* Five outputs, including: (NHWC, NCHW)
+*@li y: A 3D or 6D Tensor of type float16 or float32 for the normalized "x", with format NDHWC or NCDHW.
+*@li batch_mean: A Tensor of type float32. Must be 3D if input "x" is with format NDHWC or NCDHW.
+Specifies the mean of "x".
 *@li batch_variance: A Tensor of type float32. Must be 1D if input "x" is with format NDHWC or NCDHW.
-Must be 6D if input "x" is with format NDC1HWC0. Specifies the variance of "x".
+Specifies the variance of "x".
 *@li reserve_space_1: An optional Tensor of type float32. Must be 1D if input "x" is with format NDHWC or NCDHW.
-Must be 6D if input "x" is with format NDC1HWC0. Specifies the mean of "x" for gradient computation. Pass "None" to skip this output.
+Specifies the mean of "x" for gradient computation. Pass "None" to skip this output.
 *@li reserve_space_2: An optional Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW.
-Must be 6D if input "x" is with format NDC1HWC0. Specifies the variance of "x" for gradient computation. Pass "None" to skip this output . \n
+Specifies the variance of "x" for gradient computation. Pass "None" to skip this output . \n
 
 *@attention Constraints:
 *@li If the operation is used for inference and outputs "reserve_space_1" and "reserve_space_2" are available,
@@ -375,11 +377,11 @@ REG_OP(BatchNormExt2)
 
 *@par Inputs:
 * Five inputs, including:
-*@li y_backprop: A 4D or 5D Tensor of type float16 or float32, with format NHWC, NCHW, or NC1HWC0, for the gradient.
-*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC, NCHW, or NC1HWC0.
-*@li scale: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0.
-*@li reserve_space_1: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0. It is an output of BatchNorm.
-*@li reserve_space_2: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0. It is an output of BatchNorm .
+*@li y_backprop: A 4D or 5D Tensor of type float16 or float32, with format NHWC, NCHW, for the gradient.
+*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC, NCHW.
+*@li scale: A 4D or 5D Tensor of type float32, with format NHWC, NCHW.
+*@li reserve_space_1: A 4D or 5D Tensor of type float32, with format NHWC, NCHW. It is an output of BatchNorm.
+*@li reserve_space_2: A 4D or 5D Tensor of type float32, with format NHWC, NCHW. It is an output of BatchNorm .
 *@li reserve_space_3: A 1D optional Tensor of type float32. It is an output of BatchNorm . \n
 
 *@par Attributes:
@@ -388,11 +390,11 @@ REG_OP(BatchNormExt2)
 *@li is_training: An optional bool. Defaults to "true". Specifies the operation is for training (default) or inference . \n
 
 *@par Outputs:
-*@li x_backprop: A Tensor of type float16 or float32, with format NHWC, NCHW, or NC1HWC0, for the offset of "x".
-*@li scale_backprop: A Tensor of type float32, with format NHWC, NCHW, or NC1HWC0, for the offset of "scale".
-*@li *offset_backprop: A Tensor of type float32, with format NHWC, NCHW, or NC1HWC0, for the offset of "offset".
-*@li *reserve_space_4: A Tensor of type float32, with shape NHWC, NCHW, or NC1HWC0. Pass "None" to skip this output.
-*@li *reserve_space_5: A Tensor of type float32, with shape NHWC, NCHW, or NC1HWC0. Pass "None" to skip this output . \n
+*@li x_backprop: A Tensor of type float16 or float32, with format NHWC, NCHW, for the offset of "x".
+*@li scale_backprop: A Tensor of type float32, with format NHWC, NCHW, for the offset of "scale".
+*@li *offset_backprop: A Tensor of type float32, with format NHWC, NCHW, for the offset of "offset".
+*@li *reserve_space_4: A Tensor of type float32, with shape NHWC, NCHW. Pass "None" to skip this output.
+*@li *reserve_space_5: A Tensor of type float32, with shape NHWC, NCHW. Pass "None" to skip this output . \n
 
 *@attention Constraints:
 * The preceding layer of this operator must be operator BatchNorm . \n
@@ -423,11 +425,11 @@ REG_OP(BatchNormGrad)
 
 *@par Inputs:
 * Five inputs, including:
-*@li y_backprop: A 3D or 6D Tensor of type float16 or float32, with format NDHWC, NCDHW, or NDC1HWC0, for the gradient.
-*@li x: A 3D or 6D Tensor of type float16 or float32, with format NDHWC, NCDHW, or NDC1HWC0.
-*@li scale: A 3D or 6D Tensor of type float32, with format NDHWC, NCDHW, or NDC1HWC0.
-*@li reserve_space_1: A 3D or 6D Tensor of type float32, with format NDHWC, NCDHW, or NC1HWC0. It is an output of BatchNorm.
-*@li reserve_space_2: A 3D or 6D Tensor of type float32, with format NDHWC, NCDHW, or NC1HWC0. It is an output of BatchNorm . \n
+*@li y_backprop: A 3D or 6D Tensor of type float16 or float32, with format NDHWC, NCDHW, for the gradient.
+*@li x: A 3D or 6D Tensor of type float16 or float32, with format NDHWC, NCDHW.
+*@li scale: A 3D or 6D Tensor of type float32, with format NDHWC, NCDHW.
+*@li reserve_space_1: A 3D or 6D Tensor of type float32, with format NDHWC, NCDHW. It is an output of BatchNorm.
+*@li reserve_space_2: A 3D or 6D Tensor of type float32, with format NDHWC, NCDHW. It is an output of BatchNorm . \n
 
 *@par Attributes:
 *@li epsilon: An optional float32. Defaults to "0.0001". A small float number added to the variance of "x".
@@ -435,11 +437,11 @@ REG_OP(BatchNormGrad)
 *@li is_training: An optional bool. Defaults to "true". Specifies the operation is for training (default) or inference . \n
 
 *@par Outputs:
-*@li x_backprop: A Tensor of type float16 or float32, with format NHWC, NCHW, or NC1HWC0, for the offset of "x".
-*@li scale_backprop: A Tensor of type float32, with format NDHWC, NCDHW, or NDC1HWC0, for the offset of "scale".
-*@li *offset_backprop: A Tensor of type float32, with format NDHWC, NCDHW, or NDC1HWC0, for the offset of "offset".
-*@li *reserve_space_4: A Tensor of type float32, with shape NDHWC, NCDHW, or NDC1HWC0. Pass "None" to skip this output.
-*@li *reserve_space_5: A Tensor of type float32, with shape NDHWC, NCDHW, or NDC1HWC0. Pass "None" to skip this output . \n
+*@li x_backprop: A Tensor of type float16 or float32, with format NHWC, NCHW, for the offset of "x".
+*@li scale_backprop: A Tensor of type float32, with format NDHWC, NCDHW, for the offset of "scale".
+*@li *offset_backprop: A Tensor of type float32, with format NDHWC, NCDHW, for the offset of "offset".
+*@li *reserve_space_4: A Tensor of type float32, with shape NDHWC, NCDHW. Pass "None" to skip this output.
+*@li *reserve_space_5: A Tensor of type float32, with shape NDHWC, NCDHW. Pass "None" to skip this output . \n
 
 *@attention Constraints:
 * The preceding layer of this operator must be operator BatchNorm . \n
@@ -515,7 +517,7 @@ REG_OP(BatchNormGradExt2)
 *@brief Performs batch normalization . \n
 
 *@par Inputs:
-*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
+*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
 *@li momentum: A Tensor,represents the mean and the variance's scale factor
@@ -545,7 +547,7 @@ REG_OP(BNInference)
 *@brief Performs batch normalization . \n
 
 *@par Inputs:
-*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
+*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x" Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x" Specifies the variance used for inference.
 *@li scale: An optional tensor of type float16 or float32, no use

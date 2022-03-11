@@ -423,8 +423,8 @@ REG_OP(Softplus)
 
 *@par Inputs:
 *Two inputs:
-* @li gradients: An NC1HWC0 or ND Tensor of type float16 or float32.
-* @li features: An NC1HWC0 or ND Tensor of type float16 or float32.
+* @li gradients: A ND Tensor of type float16 or float32.
+* @li features: A ND Tensor of type float16 or float32.
 
 
 *@par Outputs:
@@ -458,15 +458,34 @@ REG_OP(Softsign)
     .OP_END_FACTORY_REG(Softsign)
 
 /**
+ * @brief Computes softsignGrad: gradients / (1 + abs(features)) ** 2 .
+ *
+ * @par Inputs:
+ * Two inputs, including:
+ * @li gradients: A Tensor.Must be one of the following types:float16, float32,
+ * @li features: A Tensor of the same type and shape as "gradients".
+
+ * @par Outputs:
+ * output:A Tensor. Has the same type as "gradients".
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator SoftsignGrad.
+ */
+REG_OP(SoftsignGrad)
+    .INPUT(gradients, TensorType::FloatingDataType())
+    .INPUT(features, TensorType::FloatingDataType())
+    .OUTPUT(output, TensorType::FloatingDataType())
+    .OP_END_FACTORY_REG(SoftsignGrad)
+
+/**
 *@brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1) . \n
 
 *@par Inputs:
 * One input:
 *x: A Tensor. Must be one of the following types: float16, float, double
- * int32, int8. format:ND, NC1HWC0 . \n
+ * int32, int8. format:ND. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type and format as input "x". format:ND, NC1HWC0 . \n
+*y: A Tensor. Has the same type and format as input "x". format:ND. \n
 
 *@see Region()
 
@@ -479,6 +498,28 @@ REG_OP(Selu)
     .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,
                                      DT_INT8,DT_INT32}))
     .OP_END_FACTORY_REG(Selu)
+
+/**
+*@brief Computes SeluGrad backprops: gradients * (outputs + scale * alpha)
+*    if outputs < 0, scale * gradients otherwise .
+
+*@par Inputs:
+* Two inputs, including:
+*@li gradients: A Tensor. Must be one of the following types: float32, float16,
+* int32, int8, uint8
+*@li outputs: A Tensor. Must be one of the following types: float32, float16,
+* int32, int8, uint8
+*@par Outputs:
+*y: A Tensor. Must have the same type as "gradients" .
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SeluGrad.
+*/
+REG_OP(SeluGrad)
+    .INPUT(gradients, TensorType::RealNumberType())
+    .INPUT(outputs, TensorType::RealNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
+    .OP_END_FACTORY_REG(SeluGrad)
 
 /**
 *@brief Computes rectified linear gradients for a ReLU operation . \n

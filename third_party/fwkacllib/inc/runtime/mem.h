@@ -57,6 +57,14 @@ extern "C" {
 #define RT_MEMORY_POLICY_HUGE_PAGE_ONLY_P2P (0x4000U)     // Malloc mem only use huge page, use for p2p, 0x1U << 14U
 #define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY_P2P (0x8000U)  // Malloc mem only use default page, use for p2p, 0x1U << 15U
 
+/**
+ * @ingroup dvrt_mem
+ * @brief memory attribute
+ */
+#define RT_MEMORY_ATTRIBUTE_DEFAULT (0x0U)
+// memory read only attribute, now only dvpp memory support.
+#define RT_MEMORY_ATTRIBUTE_READONLY (0x100000U)    // Malloc readonly, 1<<20.
+
 #define MEM_ALLOC_TYPE_BIT (0x3FFU)  // mem type bit in <0, 9>
 
 /**
@@ -229,6 +237,18 @@ RTS_API rtError_t rtFree(void *devPtr);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief alloc device memory for dvpp, support set flag
+ * @param [in|out] devPtr   memory pointer
+ * @param [in] size   memory size
+ * @param [in] flag   mem flag, can use mem attribute set read only.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return others is error
+ */
+RTS_API rtError_t rtDvppMallocWithFlag(void **devPtr, uint64_t size, uint32_t flag);
 
 /**
  * @ingroup dvrt_mem

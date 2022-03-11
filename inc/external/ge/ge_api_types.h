@@ -268,6 +268,9 @@ const std::string ENABLE_SMALL_CHANNEL = "ge.enableSmallChannel";
 // Configure Compress Weight flag
 const std::string ENABLE_COMPRESS_WEIGHT = "ge.enableCompressWeight";
 
+// Configure Sparse Matrix Weight flag
+const std::string ENABLE_SPARSE_MATRIX_WEIGHT = "ge.enableSparseMatrixWeight";
+
 // Configure fusion switch file path
 const std::string FUSION_SWITCH_FILE = "ge.fusionSwitchFile";
 
@@ -288,6 +291,10 @@ const char_t *const ENABLE_PRINT_OP_PASS = "ge.enablePrintOpPass";
 // Configure operator compilation path
 // Its value should be file path, default value is "./"
 const char_t *const DEBUG_DIR = "ge.debugDir";
+
+// Configure switch for op status check such as overflow
+// Its value should be true of flase
+const char_t *const STATUS_CHECK = "ge.status_check";
 
 // Configure operator compiler cache path
 // Its value should be file path, default value is "./"
@@ -411,6 +418,7 @@ static const char_t *const OP_SELECT_IMPL_MODE = ge::OP_SELECT_IMPL_MODE.c_str()
 static const char_t *const OUTPUT_TYPE = ge::OUTPUT_DATATYPE.c_str();
 static const char_t *const BUFFER_OPTIMIZE = ge::BUFFER_OPTIMIZE.c_str();
 static const char_t *const ENABLE_COMPRESS_WEIGHT = ge::ENABLE_COMPRESS_WEIGHT.c_str();
+static const char_t *const SPARSITY = ge::ENABLE_SPARSE_MATRIX_WEIGHT.c_str();
 static const char_t *const COMPRESS_WEIGHT_CONF = "compress_weight_conf";
 static const char_t *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
 static const char_t *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
@@ -469,6 +477,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               BUFFER_OPTIMIZE,
                                               ENABLE_COMPRESS_WEIGHT,
                                               COMPRESS_WEIGHT_CONF,
+                                              SPARSITY,
                                               PRECISION_MODE,
                                               TUNE_DEVICE_IDS,
                                               EXEC_DISABLE_REUSED_MEMORY,

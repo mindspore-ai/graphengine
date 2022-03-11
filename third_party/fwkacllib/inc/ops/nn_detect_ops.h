@@ -268,7 +268,7 @@ REG_OP(ROIAlign)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li x: An NCHW feature map of type is float32 or float16.
 *@li img: source image. Has the same type and format as "x" . \n
 
 *@par Attributes:
@@ -316,12 +316,12 @@ REG_OP(PriorBox)
 
 *@par Inputs:
 * Six inputs, including:
-*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li x: An NCHW feature map of type is float32 or float16.
 *@li img: source image. Has the same type and format as "x".
-*@li data_h: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map height.
-*@li data_w: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map width.
-*@li box_height: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the height of each prior box.
-*@li box_width: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the width of each prior box . \n
+*@li data_h: An NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map height.
+*@li data_w: An NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map width.
+*@li box_height: An NCHW tensor of type float32 or float16, specifying the height of each prior box.
+*@li box_width: An NCHW tensor of type float32 or float16, specifying the width of each prior box . \n
 
 *@par Attributes:
 *@li min_size: A required float32, specifying the minimum edge length of a square prior box.
@@ -371,7 +371,7 @@ REG_OP(PriorBoxD)
 
 *@par Inputs:
 * Six inputs, including:
-*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li x: An NCHW feature map of type is float32 or float16.
 *@li img: source image. Has the same type and format as "x".
 *@li boxes: An ND tensor of type float32 or float16, specifying the prior box information. Same as output y
 
@@ -420,7 +420,7 @@ REG_OP(PriorBoxDV2)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*@li x: A tensor of type float16 or float32, describing the feature
 * map, dimension C1 must be equal to
 * (int(output_dim+15)/C0))*group_size*group_size.
 *@li rois: A tensor of type float16 or float32, with shape
@@ -438,7 +438,7 @@ REG_OP(PriorBoxDV2)
 * coordinates to the ROI coordinates . \n
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+*y: A tensor of type float16 or float32, describing the result
 * feature map . \n
 
 *@attention Constraints:
@@ -1171,7 +1171,7 @@ REG_OP(SPP)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*@li x: A tensor of type float16 or float32, describing the feature
 * map. The data of x must be greater than or equal to "0.0".
 *@li rois: A tensor of type float16 or float32, with 3D shape
 * [batch, 5, roi_max_num], describing the RIOs. Each ROI consists of five
@@ -1195,7 +1195,7 @@ REG_OP(SPP)
 * coordinates of width to the ROI coordinates . \n
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+*y: A tensor of type float16 or float32, describing the result
 * feature map . \n
 
 *@attention Constraints:
@@ -1860,7 +1860,7 @@ REG_OP(RoiExtractor)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*@li x: A tensor of type float16 or float32, describing the feature
 * map, dimension C1 must be equal to
 * (int(output_dim+15)/C0))*group_size*group_size.
 *@li rois: A tensor of type float16 or float32, with shape
@@ -1878,7 +1878,7 @@ REG_OP(RoiExtractor)
 * coordinates to the ROI coordinates . \n
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+*y: A tensor of type float16 or float32, describing the result
 * feature map . \n
 
 *@attention Constraints:
@@ -1898,7 +1898,7 @@ REG_OP(PSROIPoolingV2)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the result
+*@li x: A tensor of type float16 or float32, describing the result
 * feature map . \n
 *@li rois: A tensor of type float16 or float32, with shape
 * [batch, 5, rois_num], describing the ROIs, each ROI consists of five
@@ -1916,7 +1916,7 @@ REG_OP(PSROIPoolingV2)
 *@li input_size: A required listInt, mapping the gradinput size: (H, W)
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*y: A tensor of type float16 or float32, describing the feature
 * map, dimension C1 must be equal to
 * (int(output_dim+15)/C0))*group_size*group_size.
 

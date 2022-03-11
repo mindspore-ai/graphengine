@@ -1267,7 +1267,7 @@ REG_OP(DecodeAndCropJpeg)
 
 *@par Inputs:
 * One input:
-*x: An NC1HWC0 Tensor.
+*x: A Tensor.
 * Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
@@ -1304,7 +1304,7 @@ REG_OP(ResizeBilinearV2D)
 
 *@par Inputs:
 * One input:
-*images: An NC1HWC0 Tensor.
+*images: A Tensor.
 * Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
@@ -1338,7 +1338,7 @@ REG_OP(KeepRatioResizeBilinear)
 
 *@par Inputs:
 * One input:
-*x: An NC1HWC0 Tensor.
+*x: A Tensor.
 * Must be one of the following types: float16, float32, int32, int8, uint8
 
 *@par Attributes:
@@ -2308,6 +2308,32 @@ REG_OP(UpsampleNearest1dGrad)
     .REQUIRED_ATTR(output_size, ListInt)
     .ATTR(scales, ListFloat, {})
     .OP_END_FACTORY_REG(UpsampleNearest1dGrad)
+
+/**
+* @brief Function parse image from string to int. \n
+
+* @par Inputs:
+* contents: A Tensor of type string. 0-D. The JPEG, GIF, PNG, BMP-encoded image. \n
+
+* @par Attributes:
+* @li channels: An optional int. Defaults to 0. Number of color channels for the decoded image.
+* @li dtype: type of image
+* @li expand_animations: Controls the shape of the returned op's output. If 'true', the returned op will
+ produce a 4-D tensor for GIF files. If 'false', the returned op will produce a 3-D tensor for GIF files.
+
+* @par Outputs:
+* image: A Tensor dtype of uint8, uint16 or float.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DecodeImage)
+    .INPUT(contents, TensorType({DT_STRING}))
+    .OUTPUT(image, TensorType({DT_UINT8, DT_UINT16, DT_FLOAT}))
+    .ATTR(channels, Int, 0)
+    .ATTR(dtype, Type, DT_UINT8)
+    .ATTR(expand_animations, Bool, true)
+    .OP_END_FACTORY_REG(DecodeImage)
 
 /**
 * @brief JPEG encode input image with provided compression quality. \n

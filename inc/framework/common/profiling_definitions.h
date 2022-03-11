@@ -49,7 +49,12 @@ enum {
   kAtomic,
   kKernelLaunchPrepare,
   kRtKernelLaunch,
+  kRtEventCreateRecord,
+  kRtEventSync,
+  kRtEventDestroy,
+  kRtStreamSync,
   kOpExecute,
+  kModelExecute,
   kAllocMem,
   kCopyH2D,
   kPrepareNode,
@@ -88,7 +93,7 @@ class ProfilingContext {
    * 因此编译时注册字符串的动作并没有生效。在执行时，动态的打开了profiling，这种场景下，执行时无法拿到注册后字符串
    */
   bool IsEnabled() const noexcept {
-    return enabled_ && profiler_ != nullptr;
+    return enabled_ && (profiler_ != nullptr);
   }
   void SetEnable() noexcept {
     enabled_ = true;

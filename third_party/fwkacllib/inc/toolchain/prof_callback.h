@@ -114,6 +114,7 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_ACL_JSON,              // start pro with acl.json
     MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
     MSPROF_CTRL_FINALIZE,                   // stop profiling
+    MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
     MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 

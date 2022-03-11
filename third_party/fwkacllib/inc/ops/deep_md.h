@@ -105,6 +105,54 @@ REG_OP(ProdEnvMatA)
     .ATTR(split_count, Int, 1)
     .ATTR(split_index, Int, 0)
     .OP_END_FACTORY_REG(ProdEnvMatA)
+
+/**
+* @brief Calculate ProdEnvMatACalcDescrpt. \n
+*
+* @par Inputs:
+* @li distance: A Tensor. Must be one of the following types: float32, float64.
+* @li rij_x: A Tensor. Must be one of the following types: float32, float64.
+* @li rij_y: A Tensor. Must be one of the following types: float32, float64.
+* @li rij_z: A Tensor. Must be one of the following types: float32, float64.
+* @li type: A Tensor. Must be one of the following types: int32.
+* @li natoms: A Tensor. Must be one of the following types: int32.
+* @li mesh: A Tensor. Must be one of the following types: int32.
+* @li davg: A Tensor. Must be one of the following types: float32, float64.
+* @li dstd: A Tensor. Must be one of the following types: float32, float64. \n
+*
+* @par Outputs:
+* @li descrpt: A Tensor. Must be one of the following types: float32, float64.
+* @li descrpt_deriv: A Tensor. Must be one of the following types: float32, float64. \n
+*
+* @par Attributes:
+* @li rcut_a: A Float.
+* @li rcut_r: A Float.
+* @li rcut_r_smth: A Float.
+* @li sel_a: A ListInt.
+* @li sel_r: A ListInt. \n
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(ProdEnvMatACalcDescrpt)
+    .INPUT(distance, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(rij_x, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(rij_y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(rij_z, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(type, TensorType({DT_INT32}))
+    .INPUT(natoms, TensorType({DT_INT32}))
+    .INPUT(mesh, TensorType({DT_INT32}))
+    .INPUT(davg, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(dstd, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(descrpt, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(descrpt_deriv, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(rcut_a, Float, 1.0)
+    .ATTR(rcut_r, Float, 1.0)
+    .ATTR(rcut_r_smth, Float, 1.0)
+    .ATTR(sel_a, ListInt, {})
+    .ATTR(sel_r, ListInt, {})
+    .OP_END_FACTORY_REG(ProdEnvMatACalcDescrpt)
+
 /**
 * @brief Calculate ProdForceSeA. \n
 *
@@ -195,6 +243,9 @@ REG_OP(ProdVirialSeA)
 * Two attributes, including:
 * @li split_count: A Scalar. 
 * @li split_index: A Scalar. \n
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TabulateFusionGrad)
   .INPUT(table, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

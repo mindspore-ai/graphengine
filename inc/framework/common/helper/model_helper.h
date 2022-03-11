@@ -35,8 +35,8 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param, const std::string &output_file,
                        ge::ModelBufferData &model) const;
   Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
-                           const std::string &output_file, ModelBufferData &model, const bool is_unknown_shape);
-  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file);
+                           const std::string &output_file, ModelBufferData &model, const bool is_unknown_shape) const;
+  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
   static void SetModelToGeModel(GeModelPtr &ge_model, Model &model);
@@ -68,13 +68,13 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status GenerateGeRootModel(OmFileLoadHelper &om_load_helper);
   Status LoadModelData(OmFileLoadHelper &om_load_helper);
   Status LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadWeights(OmFileLoadHelper &om_load_helper);
+  Status LoadWeights(OmFileLoadHelper &om_load_helper) const;
   Status LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadTask(OmFileLoadHelper &om_load_helper);
+  Status LoadTask(OmFileLoadHelper &om_load_helper) const;
   Status LoadTask(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper);
+  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper) const;
   Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper);
+  Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper) const;
   Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
                                   const size_t mode_index) const;
 

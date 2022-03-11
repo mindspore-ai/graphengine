@@ -246,14 +246,14 @@ REG_OP(AscendRequantS16)
 * @brief Quantizes the input of int8 . \n
 
 * @par Inputs:
-* @li x: An FRACTAL_Z tensor of type int8, specifying the input.
-* @li offset: An FRACTAL_Z tensor of type int8.
+* @li x: A tensor of type int8, specifying the input.
+* @li offset: A tensor of type int8.
 
 * @par Attributes:
 * @li dst_type: A optional int from: DT_INT8, DT_INT4. Defaults to DT_INT8.
 
 * @par Outputs:
-* @li y: output tensor of type int4 or int8 and with format FRACTAL_Z.
+* @li y: output tensor of type int4 or int8.
 
 * @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe, Onnx, Tensorflow or Pythorch.

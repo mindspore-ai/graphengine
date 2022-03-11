@@ -138,9 +138,11 @@ REG_OP(Transpose)
 * For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64 . \n
 
 *@par Attributes:
-*@li src_format: A string source data format, can be "NHWC", "NCHW", "FRACTAL_Z" etc.
-*@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Z" etc.
-*@li group: A optional int32, default value is 1. \n
+*@li src_format: A string source data format, can be "NHWC", "NCHW" etc.
+*@li dst_format: A string target data format, can be "NCHW" etc.
+*@li src_subformat: A optional int32 for source sub-format, default value is 0.
+*@li dst_subformat: A optional int32 for target sub-format, default value is 0.
+*@li groups: A optional int32, default value is 1. \n
 
 *@par Outputs:
 *dst: A Tensor. Has the same type as "src".
@@ -150,6 +152,8 @@ REG_OP(TransData)
     .OUTPUT(dst, TensorType::BasicType())
     .REQUIRED_ATTR(src_format, String)
     .REQUIRED_ATTR(dst_format, String)
+    .ATTR(src_subformat, Int, 0)
+    .ATTR(dst_subformat, Int, 0)
     .ATTR(groups, Int, 1)
     .OP_END_FACTORY_REG(TransData)
 
@@ -236,13 +240,13 @@ REG_OP(Flatten)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: A 5D Tensor of type float16 or int8 or uint8, with format NC1HWC0.
+*@li x: A 5D Tensor of type float16 or int8 or uint8.
 *@li block_shape: A 1D list or tuple of int32 or int64.
 *@li crops: A 2D list or tuple of int32 or int64. Specifies the amount to
 *crop from start and end dimensions after permutation . \n
 
 *@par Outputs:
-*y: A Tensor with format NC1HWC0. Has the same type as input "x" . \n
+*y: A Tensor has the same type as input "x" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpaceND.
@@ -259,7 +263,7 @@ REG_OP(BatchToSpaceND)
 
 *@par Inputs:
 * One input:
-*x: A 5D Tensor of type float16 or int8 or uint8, with format NC1HWC0 . \n
+*x: A 5D Tensor of type float16 or int8 or uint8. \n
 
 *@par Attributes:
 *@li block_shape: A required 1D list or tuple of int32 or int64.
@@ -267,7 +271,7 @@ REG_OP(BatchToSpaceND)
 * from the start and end dimensions after permutation . \n
 
 *@par Outputs:
-*y: A Tensor with format NC1HWC0. Has the same type as input "x".
+*y: A Tensor has the same type as input "x".
 
 
 *@par Third-party framework compatibility
@@ -288,12 +292,12 @@ REG_OP(BatchToSpaceNDD)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+*@li x: A 5D Tensor of type float16 or float32.
 *@li block_shape: A 1D list or tuple of int32 or int64.
 *@li paddings: A 2D list or tuple of int32 or int64. Specifies the padding for the start and end dimensions after permutation . \n
 
 *@par Outputs:
-*y: A Tensor with format NC1HWC0. Has the same type as input "x" . \n
+*y: A Tensor has the same type as input "x" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatchND.
@@ -310,14 +314,14 @@ REG_OP(SpaceToBatchND)
 
 *@par Inputs:
 * One input:
-*x: A 5D Tensor of type float16 or float32, with format NC1HWC0 . \n
+*x: A 5D Tensor of type float16 or float32. \n
 
 *@par Attributes:
 *@li block_shape: A required 1D list or tuple of int32 or int64.
 *@li paddings: A required 2D list or tuple of int32 or int64. Specifies the padding for the start and end dimensions after permutation . \n
 
 *@par Outputs:
-*y: A Tensor with format NC1HWC0. Has the same type as input "x" . \n
+*y: A Tensor has the same type as input "x" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatchND.
@@ -516,7 +520,7 @@ REG_OP(SpaceToBatchD)
 * tensors . \n
 
 * @par Inputs:
-* x: A rank-R tensor (R > 0) of type BasicType, with format ND or NC1HWC0 . \n
+* x: A rank-R tensor (R > 0) of type BasicType. \n
 
 * @par Attributes:
 * @li num: A required int, specifying the number of tensors to be unpacked to.
@@ -529,8 +533,7 @@ REG_OP(SpaceToBatchD)
 
 * @attention Constraints:
 * @li If "num" is not specified, it is inferred from the shape of "x".
-* @li For the ND format, "axis" is in the range [-R, R); For the NC1HWC0 format,
-* "axis" must not be 2, 3, -2, or -3 . \n
+* @li For the ND format, "axis" is in the range [-R, R). \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Unpack.

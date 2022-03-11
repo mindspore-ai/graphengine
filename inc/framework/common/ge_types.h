@@ -92,7 +92,7 @@ constexpr size_t kNumTaskWithAtomicAddrCleanTask = 2U;
 // dynamic execute mode
 const char_t *const kLazyRecompile = "lazy_recompile";
 
-constexpr size_t kMaxHostMemInputLen = 64U;
+constexpr size_t kMaxHostMemInputLen = 128U;  // 64 aligned
 
 // Data cache, including data address and length
 struct DataBuffer {

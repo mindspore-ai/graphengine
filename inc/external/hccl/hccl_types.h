@@ -61,7 +61,8 @@ typedef enum {
  * @brief handle to HCCL communicator
  */
 typedef void *HcclComm;
-
+typedef void *HcclMessage;
+typedef void *HcclRequest;
 /**
  * @brief HCCL Reduction opperation
  */
@@ -87,8 +88,15 @@ typedef enum {
   HCCL_DATA_TYPE_RESERVED    /**< reserved */
 } HcclDataType;
 
-const uint32_t HCCL_ROOT_INFO_BYTES = 4108;  // 4108: root info length
+typedef struct {
+  int srcRank;  // 接收/探测到的msg/信封的发送端rank_id，MPI标准定义，调用者可以访问
+  int tag;      // 接收/探测到的msg/信封的tag，MPI标准定义，调用者可以访问
+  int error;  // 接收/探测的错误码0：no error，others：传输过程出错，MPI标准定义，调用者可以访问
+  int cancelled;  // 指定实现，不建议调用者访问
+  int count;      // 接收/探测到的payload大小，指定实现，不建议调用者访问
+} HcclStatus;
 
+const uint32_t HCCL_ROOT_INFO_BYTES = 4108;  // 4108: root info length
 /**
  * @brief HCCL root info
  */
@@ -96,6 +104,7 @@ typedef struct HcclRootInfoDef {
   char internal[HCCL_ROOT_INFO_BYTES];
 } HcclRootInfo;
 
+#define HCCL_REQUEST_NULL NULL
 #ifdef __cplusplus
 }
 #endif  // __cplusplus

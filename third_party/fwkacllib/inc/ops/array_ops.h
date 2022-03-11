@@ -501,6 +501,7 @@ REG_OP(Constant)
 *@brief Creates a file constant tensor, The operator is used to process the very large weight which is store in file. \n
 
 *@par Attributes:
+*file_path: A string, used to record file path. \n
 *file_id: A string, used to record file id. \n
 *shape: data shape. \n
 *dtype: data type. \n
@@ -511,7 +512,8 @@ REG_OP(Constant)
 REG_OP(FileConstant)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
-    .REQUIRED_ATTR(file_id, String)
+    .ATTR(file_path, String, "")
+    .ATTR(file_id, String, "")
     .REQUIRED_ATTR(shape, ListInt)
     .REQUIRED_ATTR(dtype, Type)
     .OP_END_FACTORY_REG(FileConstant)
@@ -1204,6 +1206,39 @@ REG_OP(Copy)
               DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
     .REQUIRED_ATTR(N, Int)
     .OP_END_FACTORY_REG(Copy);
+
+/**
+*@brief copy the src tensor to the dst tensor according the special parameter . \n
+
+*@par Inputs:
+*Eight inputs, including:
+*dst: A tensor. Must be one of the following types:
+* double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
+*dst_size: A tensor with type int32
+*dst_stride: A tensor with type int32
+*dst_storage_offset: A tensor with type int32
+*src: A tensor. Must be one of the following types:
+* double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
+*src_size: A tensor with type int32
+*src_stride: A tensor with type int32
+*src_storage_offset: the storage_offset of src tensor . \n
+
+*@par Outputs:
+*dst: An ref tensor.Must be one of the following types:
+* double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool . \n
+*/
+
+REG_OP(ViewCopy)
+    .INPUT(dst, TensorType::BasicType())
+    .INPUT(dst_size, TensorType::IndexNumberType())
+    .INPUT(dst_stride, TensorType::IndexNumberType())
+    .INPUT(dst_storage_offset, TensorType::IndexNumberType())
+    .INPUT(src, TensorType::BasicType())
+    .INPUT(src_size, TensorType::IndexNumberType())
+    .INPUT(src_stride, TensorType::IndexNumberType())
+    .INPUT(src_storage_offset, TensorType::IndexNumberType())
+    .OUTPUT(dst, TensorType::BasicType())
+    .OP_END_FACTORY_REG(ViewCopy)
 
 /**
 *@brief Generates fingerprint values. \n

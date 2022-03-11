@@ -2478,5 +2478,24 @@ REG_OP(GetNextFromQueue)
   .ATTR(output_types, ListType, {})
   .ATTR(output_shapes, ListListInt, {{}, {}})
   .OP_END_FACTORY_REG(GetNextFromQueue)
+
+/**
+* @brief OptionalGetValue
+* @par Inputs:
+* optional: A tensor of type variant
+* @par Outputs:
+* components: A list of Tensor objects of output_types
+* @par Attributes:
+* output_types: types of all outputs
+* output_shapes: shapes of all outputs
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(OptionalGetValue)
+  .INPUT(optional, TensorType({DT_VARIANT}))
+  .DYNAMIC_OUTPUT(components, TensorType::BasicType())
+  .REQUIRED_ATTR(output_types, ListType)
+  .REQUIRED_ATTR(output_shapes, ListListInt)
+  .OP_END_FACTORY_REG(OptionalGetValue)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

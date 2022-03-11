@@ -28,7 +28,7 @@ namespace ge {
 
 *@par Inputs:
 * @li x: A tensor. Must be one of the following types:uint8, int8,int16, int32,
- int64, float16, float, double.The format must be NHWC NCHW NC1HWC0.
+ int64, float16, float, double.The format must be NHWC/NCHW.
 
 *@par Attributes:
 *@li ksize: Kernel size. Input type is int.

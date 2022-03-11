@@ -42,6 +42,10 @@ enum class AicpuErrMsgType {
     ERR_MSG_TYPE_AICPU  = 2,
 };
 
+enum class AicpuExtInfoMsgType {
+    EXT_MODEL_ID_MSG_TYPE = 0,
+};
+
 typedef struct tagAicpuConfigMsg {
     uint8_t msgType;
     uint8_t reserved1;
@@ -51,6 +55,23 @@ typedef struct tagAicpuConfigMsg {
     uint32_t tsId;
     uint32_t reserved2;
 } AicpuConfigMsg;
+
+
+typedef struct tagAicpuModelIdInfo {
+    uint32_t modelId;
+    uint32_t extendModelId;
+    uint32_t extendInfo[13];
+} AicpuModelIdInfo;
+
+// 64 bytes
+typedef struct tagAicpuExtendInfo {
+    uint8_t msgType;
+    uint8_t version;
+    uint8_t reserved[2];
+    union {
+        AicpuModelIdInfo modelIdMap;
+    };
+} AicpuExtendInfo;
 
 typedef struct tagAicoreErrMsgInfo {
     uint8_t errType;

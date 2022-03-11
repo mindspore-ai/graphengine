@@ -231,7 +231,7 @@ constexpr int32_t OM_PROTO_VERSION = 2;
 /// @return string
 ///
 template <typename T>
-GE_FUNC_VISIBILITY std::string ToString(std::vector<T> &v) {
+GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
   std::stringstream ss;
   ss << "[";
   for (const T x : v) {

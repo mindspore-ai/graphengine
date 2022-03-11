@@ -104,9 +104,8 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
 *@par Inputs:
 * Two inputs, including:
 * @li softmax: Output of the softmax operator. Must be one of the following
-* types: float16, float31, int32, int8, uint8. The format is NC1HWC0 or DN.
-* @li grad_softmax: A Tensor. Has the same shape and type as "softmax".
-* The format is NC1HWC0 or DN . \n
+* types: float16, float31, int32, int8, uint8.
+* @li grad_softmax: A Tensor. Has the same shape and type as "softmax".\n
 
 *@par Attributes:
 * axes: An optional list of ints. Defaults to "{-1}" . \n
@@ -1101,8 +1100,8 @@ REG_OP(GroupNorm)
 *@brief Performs instance normalization . \n
 
 *@par Inputs:
-* Five inputs, including: (NC1HWC0, supported)
-*@li x: A 5D Tensor of type float16 or float32, NC1HWC0.
+* Five inputs, including:
+*@li x: A 5D Tensor of type float16 or float32.
 *@li gamma: A Tensor of type float32.
 A 5D Tensor for scaling factor, to scale the normalized x.
 *@li beta: A Tensor of type float32.
@@ -1121,7 +1120,7 @@ the value used for the running_mean and running_var computation. Default: "0.1".
 variance to avoid dividing by zero. Defaults to "0.00001" . \n
 
 *@par Outputs:
-* Three outputs, including: (NHWC, NCHW NC1HWC0 supported)
+* Three outputs, including: (NHWC, NCHW supported)
 *@li y: A 5D tensor of type float16 or float32 for the normalized "x",
 *@li batch_mean: A Tensor of type float32.
 Specifies the mean of "x".
@@ -1154,7 +1153,7 @@ REG_OP(InstanceNormV2)
 *@brief Performs instance normalization for inference.
 
 *@par Inputs:\n
-* Five inputs, including: (NC1HWC0 supported)
+* Five inputs, including:
 *@li x: A Tensor of type float16 or float32.
 *@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
 *@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.

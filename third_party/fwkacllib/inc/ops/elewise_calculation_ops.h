@@ -286,7 +286,7 @@ REG_OP(Minimum)
 *@par Inputs:
 *One inputs, include:
 *x:A Tensor of type float16, float32, int32, int64, double,
-*     complex64, complex128.the format can be [NCHW,NC1HWC0,NHWC,ND,NCHW,NC1HWC0,NHWC,ND]
+*     complex64, complex128.the format can be [NCHW,NHWC,ND]
 
 *@par Outputs:
 *y:A Tensor with same type as "x". \n
@@ -418,7 +418,7 @@ REG_OP(SquaredDifference)
 
 *@par Inputs:
 *x: A Tensor of type float16, float32, double, complex64, complex128.
-* the format can be [NCHW,NC1HWC0,NHWC,ND]
+* the format can be [NCHW,NHWC,ND]
 
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
@@ -439,7 +439,7 @@ REG_OP(Cos)
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types:
 *    float16, float32, int32, int8, uint8, float64, int64, uint16, int16,
-*    complex64, complex128, the format can be [NCHW,NC1HWC0,NHWC,ND].
+*    complex64, complex128, the format can be [NCHW,NHWC,ND].
 *@li x2: A Tensor. Has the same type and format as input "x1". \n
 
 *@par Outputs:
@@ -468,7 +468,7 @@ REG_OP(Div)
 *@li x1: A Tensor. Must be one of the following types:
 *    float16, float32, int32, int8, uint8, double, int16, int64, complex64,
 *    complex128, quint8, qint8, qint32, string, bool. the format can be
-*    [NCHW, NC1HWC0, NHWC, ND]
+*    [NCHW, NHWC, ND]
 *@li x2: A Tensor of the same type and format as "x1". \n
 
 *@par Outputs:
@@ -1177,6 +1177,31 @@ REG_OP(FusedMulAdd)
     .OP_END_FACTORY_REG(FusedMulAdd)
 
 /**
+*@brief Confuse mul+add+add with broadcast. \n
+
+*@par Inputs:
+*Four inputs, including:
+* @li x1: A Tensor. Must be one of the following types:int32, float16, float32.
+* @li x2: A Tensor of the same type as "x1".
+* @li x3: A Tensor of the same type as "x1".
+* @li x4: A Tensor of the same type as "x1". \n
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "x1". \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+
+REG_OP(FusedMulAddAdd)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x3, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x4, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(FusedMulAddAdd)
+	
+/**
 *@brief Returns x1 + x2 element-wise. \n
 
 *
@@ -1299,7 +1324,7 @@ REG_OP(AssignSub)
 
 *@par Inputs:
 * Two inputs, including:
-*@li y: An NCHW, NC1HWC0, NHWC, ND Tensor. Must be one of the following types: \
+*@li y: An NCHW, NHWC, ND Tensor. Must be one of the following types: \
  * float, int32, int8, double, complex64, complex128, half.
 *@li dy: A Tensor of the same type and format as "y". \n
 
@@ -1321,11 +1346,11 @@ REG_OP(RsqrtGrad)
 *@brief Computes hyperbolic sine of "x" element-wise. \n
 
 *@par Inputs:
-*x: An NCHW, NC1HWC0, NHWC,or ND Tensor of type float, double, complex64,
+*x: An NCHW, NHWC,or ND Tensor of type float, double, complex64,
  * complex128, half. \n
 
 *@par Outputs:
-*y: A NCHW, NC1HWC0, NHWC,or ND Tensor of type float, double, complex64,
+*y: A NCHW, NHWC,or ND Tensor of type float, double, complex64,
  * complex128, half. \n
 
 *@par Third-party framework compatibility
@@ -1365,7 +1390,7 @@ REG_OP(ClipByValue)
 
 *@par Inputs:
 *x: A Tensor of type float16, float32, double, complex64, complex128.
-* the format can be [NCHW,NC1HWC0,NHWC,ND]. \n
+* the format can be [NCHW,NHWC,ND]. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -1385,7 +1410,7 @@ REG_OP(Cosh)
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types:float16, float32, int32,
-*    int8, uint8, double, the format can be [NCHW,NC1HWC0,NHWC,ND].
+*    int8, uint8, double, the format can be [NCHW,NHWC,ND].
 *@li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
@@ -1410,7 +1435,7 @@ REG_OP(DivNoNan)
 * One input: \n
 *x: A Tensor, Must be one of the following types:
 *    int32, uint8, int16, int8, int64, int64, uint16, uint32, uint64,
-*    and format can be [NCHW,NC1HWC0,NHWC,ND]
+*    and format can be [NCHW,NHWC,ND]
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as "x"
@@ -1978,7 +2003,7 @@ REG_OP(BitwiseOr)
 *@par Inputs:
 *Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-*       The format is NC1HWC0 or ND. Broadcasting is supported.
+*       The format is ND. Broadcasting is supported.
 *@li x2: A Tensor. Has the same type and format as "x1". \n
 
 *@par Outputs:
@@ -3468,7 +3493,7 @@ REG_OP(AxpyV2)
     .OP_END_FACTORY_REG(AxpyV2)
 
 /**
-* @brief Add the partial values of two tensors in format NC1HWC0.
+* @brief Add the partial values of two tensors.
 
 * @par Inputs:
 * @li x1: A Tensor in 5HD, and must be one of the following types: float16,

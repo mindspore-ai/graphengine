@@ -31,9 +31,9 @@ namespace ge {
 *@par Inputs:
 *Three inputs, including:
 * @li x1: A matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
+* float32, int32. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
+* float32, int32. Has format [ND, NHWC].
 * @li bias: A optional 1D Tensor. Must be one of the following types: float16,
 * float32, int32. Has format [ND, NHWC] . \n
 
@@ -43,7 +43,7 @@ namespace ge {
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC, FRACTAL_NZ] . \n
+* float32, int32. Has format [ND, NHWC] . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -63,9 +63,9 @@ REG_OP(MatMul)
 *@par Inputs:
 *Four inputs, including:
 * @li x1: A matrix Tensor. 2D. Must be one of the following types: float32,
- float16, int32, int8. Has format [ND, NHWC, FRACTAL_NZ].
+ float16, int32, int8. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. 2D. Must be one of the following types: float32,
- float16, int32, int8. Has format [ND, NHWC, FRACTAL_NZ].
+ float16, int32, int8. Has format [ND, NHWC].
 * @li bias: A 1D Tensor. Must be one of the following types: float32,
  float16, int32. Has format [ND, NHWC].
 * @li offset_w: A Optional 1D Tensor for quantized inference. Type is int8.
@@ -82,7 +82,7 @@ REG_OP(MatMul)
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: float32,
- float16, int32. Has format [ND, NHWC, FRACTAL_NZ]. \n
+ float16, int32. Has format [ND, NHWC]. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -147,24 +147,24 @@ REG_OP(MatMulV2Compress)
 *@par Inputs:
 *Five inputs, including:
 *@li a: A matrix Tensor. Must be one of the following types: float16, int8.
-* Has format [ND, FRACTAL_NZ]. 2D(ND) or 4D(FRACTAL_NZ).
+* Has format [ND].
 *@li b: A matrix Tensor. Must be one of the following types: float16, int8.
-* Has format [ND, FRACTAL_NZ, FRACTAL_Z]. 2D(ND) or 4D(FRACTAL_NZ, FRACTAL_Z).
+* Has format ND.
 *@li c: A matrix Tensor. Must be one of the following types: float16, int32,
-* float32. has format [ND, FRACTAL_NZ]. 2D(ND) or 4D(FRACTAL_NZ).
+* float32. has format ND.
 *@li alpha: A 1D Tensor. The shape of alpha is [1].Must be one of the following
 * types: float16, int32, float32. Has format [ND].
 *@li beta: A 1D Tensor. The shape of beta is [1]. Must be one of the following
 * types: float16, int32, float32. Has format [ND].
 * The format of a, b, c has restriction:\n
 * When type of a is int8 and type of c is int32, the format of a, b, c should
-* all be ND, or a is FRACTAL_NZ and b is FRACTAL_Z and c is ND.\n
+* all be ND.\n
 * When type of a is int8 and type of c is float32, the format of a, b, c should
-* all be ND or a is FRACTAL_NZ and b is FRACTAL_Z and c is FRACTAL_NZ.\n
+* all be ND.\n
 * When type of a is float16 and type of c is float16, the format of a, b, c
-* should all be ND or FRACTAL_NZ.\n
+* should all be ND.\n
 * When type of a is float16 and type of c is float32, the format of a, b, c
-* should all be ND or FRACTAL_NZ . \n
+* should all be ND. \n
 
 *@par Attributes:
 *Two attributes, including:
@@ -175,8 +175,7 @@ REG_OP(MatMulV2Compress)
 
 *@par Outputs:
 *y: The result matrix Tensor. Must be one of the following types: float16,
-* float32, int32. Has format [ND, FRACTAL_NZ], the format should be equal to a.
-* 2D(ND) or 4D(FRACTAL_NZ).
+* float32, int32. Has format [ND], the format should be equal to a.
 */
 
 REG_OP(GEMM)
@@ -196,9 +195,9 @@ REG_OP(GEMM)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ].
+* float32, int32. 2D or higher. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ] . \n
+* float32, int32. 2D or higher. Has format [ND, NHWC] . \n
 
 *@par Attributes:
 *@li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
@@ -206,7 +205,7 @@ REG_OP(GEMM)
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ]. Has the same shape length as "x1" and "x2" . \n
+* float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape length as "x1" and "x2" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -227,11 +226,11 @@ REG_OP(BatchMatMul)
 * @par Inputs:
 * Three inputs, including:
 * @li x1: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ].
+* float32, int32. 2D or higher. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ] . \n
+* float32, int32. 2D or higher. Has format [ND, NHWC] . \n
 * @li bias: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ] . \n
+* float32, int32. 2D or higher. Has format [ND, NHWC] . \n
 
 * @par Attributes:
 * @li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
@@ -239,7 +238,7 @@ REG_OP(BatchMatMul)
 
 * @par Outputs:
 * y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ]. Has the same shape length as "x1" and "x2" . \n
+* float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape length as "x1" and "x2" . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.

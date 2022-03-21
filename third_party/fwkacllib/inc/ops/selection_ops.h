@@ -2534,32 +2534,56 @@ REG_OP(StridedSliceV3)
     .OP_END_FACTORY_REG(StridedSliceV3)
 
 /**
-*@brief MovingSumWithSigmoid.
+* @brief Sum the alpha according to the offset and ksize,
+    and quadrature it with the sigmoid value of energy. \n
 
-*@par Inputs:
-*Four inputs, including:
+* @par Inputs:
+* Three inputs, including:
 * @li alpha: A Tensor. Must be one of the following types: float32, float16.
 * @li energy: A Tensor. Must be one of the following types: float32, float16.
-* @li beam_size: A Tensor of type int32.
-* @li frame_size: A Tensor of type int32. \n
+* @li offset: A Tensor of type int32. \n
 
 *@par Outputs:
-* y: A Tensor. Has the same type as "alpha". \n
+* y: A Tensor with same type as "alpha". \n
 *
 * @par Attributes:
-* window_size: A int.
+* ksize: A int.
 *
 * @par Restrictions:
-* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(MovingSumWithSigmoid)
-    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(energy, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(beam_size, TensorType({DT_INT32}))
-    .INPUT(frame_size, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .REQUIRED_ATTR(window_size, Int)
+    .INPUT(alpha, TensorType::BasicType())
+    .INPUT(energy, TensorType::BasicType())
+    .INPUT(offset, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(ksize, Int)
     .OP_END_FACTORY_REG(MovingSumWithSigmoid)
+
+
+/**
+* @brief Sum X1 and X2 according to the offset recorded in seq_len1 and seq_len2. \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li x1: A Tensor. Support BasicType.
+* @li x2: A Tensor. Support BasicType.
+* @li seq_len1: A Tensor. Support int32.
+* @li seq_len2: A Tensor. Support int32. \n
+
+* @par Outputs:
+* y: A Tensor with same type as "x1". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DynSeqOuter)
+    .INPUT(x1, TensorType::BasicType())
+    .INPUT(x2, TensorType::BasicType())
+    .INPUT(seq_len1, TensorType({DT_INT32}))
+    .INPUT(seq_len2, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(DynSeqOuter)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

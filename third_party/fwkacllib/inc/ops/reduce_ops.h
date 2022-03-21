@@ -690,7 +690,7 @@ REG_OP(ReduceMean)
 *@li keep_dims: A bool or NoneType.
 * - If true, retains reduced dimensions with length 1.
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
-*@li keep_dims: A bool default True.
+*@li noop_with_empty_axes: A bool default False.
 * - If true, same as tf.
 * - If false, when x's shape is [], reduce all dims, for onnx.
 *@par Outputs:
@@ -707,7 +707,7 @@ REG_OP(ReduceMeanD)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
-    .ATTR(noop_with_empty_axes, Bool, true)
+    .ATTR(noop_with_empty_axes, Bool, false)
     .OP_END_FACTORY_REG(ReduceMeanD)
 
 /**

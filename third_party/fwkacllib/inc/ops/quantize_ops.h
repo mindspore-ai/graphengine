@@ -115,13 +115,13 @@ REG_OP(AscendQuant)
 *@brief Dequantizes the input . \n
 
 *@par Inputs:
-*@li x: An tensor of type int32, specifying the input.
-*@li deq_scale: An tensor of type float16 or uint64, specifying the scaling ratio . \n
+* @li x: An tensor of type int32, specifying the input.
+* @li deq_scale: An tensor of type uint64, specifying the scaling ratio . \n
 
 *@par Attributes:
-*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
-*@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
-*@li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT" . \n
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
+* @li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
+* @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT" . \n
 
 *@par Outputs:
 *y: The dequantized output tensor of type float16 or float32. \n

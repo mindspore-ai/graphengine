@@ -348,6 +348,117 @@ REG_OP(DynamicRNNV2)
     .OP_END_FACTORY_REG(DynamicRNNV2)
 
 /**
+* @brief: DynamicRNNV2Grad calculation.
+* @par Inputs:
+* twenty-one inputs:
+* @li x:A required 4D Tensor. Must be one of the following types: float16, float32.
+* @li w_x:A required 4D Tensor. Must be one of the following types: float16, float32.
+* @li w_h:A required 4D Tensor. Must be one of the following types: float16, float32.
+* @li y:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li init_h:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li init_c:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li h:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li c:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dh:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dc:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li i:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li j:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li f:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li o:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li seq_length:A 1D Tensor. Must be one of the following types: int32.
+* @li wci:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li wcf:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li wco:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li mask:A 1D Tensor. Must be one of the following types: int8. \n
+
+* @par Attributes:
+* @li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
+* @li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL".
+* Only UNIDIRECTIONAL is currently supported.
+* @li cell_depth:An integer identifying the cell depth in the op. Default to 1. Only 1 is currently supported.
+* @li use_peephole:An bool identifying if use peephole in the op. Default to false.
+* Only false is currently supported.
+* @li keep_prob:An float identifying the keep prob in the op. Default to 1. Only 1 is currently supported.
+* @li cell_clip:An float identifying the cell clip in the op. Default to -1. Only -1 is currently supported.
+* @li num_proj:An integer identifying the num projection in the op. Default to 0. Only 0 is currently supported.
+* @li time_major:An bool identifying the time major in the op. Default to true. Only true is currently supported.
+* @li activation:An string identifying the type of activation function in the op. Default to "tanh".
+* Only "tanh" is currently supported.
+* @li recurrent_activation:An string identifying the type of activation function in the op. Default to "sigmoid".
+* Only "sigmoid" is currently supported.
+* @li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifco". Default to "ijfo".
+* Set "ijfo" for TF operator LSTM, Set "ifco" for TF Keras/Pytorch LSTM .
+* @li stateful: An bool identifying the type of stateful in the op. Default to fasle.Only false is currently supported.
+* @li merge_mode: An string identifying the type of merge_modein the op. Default to "concat".
+* Only "concat" is currently supported. \n
+
+* @par Outputs:
+* nine outputs:
+* @li dw_x:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dw_h:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li db:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dx:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dc_prev:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dwci:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dwcf:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dwco:A 4D Tensor. Must be one of the following types: float16, float32.
+
+* @par Third-party framework compatibility:
+* Compatible with the TF operator LSTM or TF keras operator LSTM.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DynamicRNNV2Grad)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(init_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dh, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dc, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(i, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(j, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(f, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(o, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(tanhct, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(wci, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wcf, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wco, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(dw_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dw_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(db, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dh_prev, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dc_prev, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_OUTPUT(dwci, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_OUTPUT(dwcf, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_OUTPUT(dwco, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(cell_type, String, "LSTM")
+    .ATTR(direction, String, "UNIDIRECTIONAL")
+    .ATTR(cell_depth, Int, 1)
+    .ATTR(use_peephole, Bool, false)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(cell_clip, Float, -1.0)
+    .ATTR(num_proj, Int, 0)
+    .ATTR(time_major, Bool, true)
+    .ATTR(activation, String, "tanh")
+    .ATTR(recurrent_activation, String, "sigmoid")
+    .ATTR(gate_order, String, "ijfo")
+    .ATTR(stateful, Bool, false)
+    .ATTR(merge_mode, String, "concat")
+    .OP_END_FACTORY_REG(DynamicRNNV2Grad)
+
+/**
 *@brief: DynamicRNNV3 calculation.
 *@par Inputs:
 *ten inputs:

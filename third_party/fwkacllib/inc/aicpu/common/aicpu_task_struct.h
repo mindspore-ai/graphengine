@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AICPU_TASK_STRUCT_H_
-#define AICPU_TASK_STRUCT_H_
+#ifndef AICPU_TASK_STRUCT_H
+#define AICPU_TASK_STRUCT_H
 
 #include <cstdint>
 
@@ -46,7 +46,7 @@ enum class AicpuExtInfoMsgType {
     EXT_MODEL_ID_MSG_TYPE = 0,
 };
 
-typedef struct tagAicpuConfigMsg {
+struct AicpuConfigMsg {
     uint8_t msgType;
     uint8_t reserved1;
     uint16_t bufLen;
@@ -54,26 +54,25 @@ typedef struct tagAicpuConfigMsg {
     uint64_t bufAddr;
     uint32_t tsId;
     uint32_t reserved2;
-} AicpuConfigMsg;
+};
 
-
-typedef struct tagAicpuModelIdInfo {
+struct AicpuModelIdInfo {
     uint32_t modelId;
     uint32_t extendModelId;
     uint32_t extendInfo[13];
-} AicpuModelIdInfo;
+};
 
 // 64 bytes
-typedef struct tagAicpuExtendInfo {
+struct AicpuExtendInfo {
     uint8_t msgType;
     uint8_t version;
     uint8_t reserved[2];
     union {
         AicpuModelIdInfo modelIdMap;
     };
-} AicpuExtendInfo;
+};
 
-typedef struct tagAicoreErrMsgInfo {
+struct AicoreErrMsgInfo {
     uint8_t errType;
     uint8_t version;
     uint8_t reserved1[2];    /* reserved1, 4 byte alignment */
@@ -83,9 +82,9 @@ typedef struct tagAicoreErrMsgInfo {
     uint32_t streamId;
     uint64_t transactionId;
     uint8_t reserved2[228];  /* the total byte is 256, reserved2 len = 256 - other lens */
-} AicoreErrMsgInfo;
+};
 
-typedef struct tagAicpuErrMsgInfo {
+struct AicpuErrMsgInfo {
     uint8_t errType;
     uint8_t version;
     uint8_t reserved1[2];    /* reserved1, 4 byte alignment */
@@ -96,10 +95,10 @@ typedef struct tagAicpuErrMsgInfo {
     char opName[64];        /* op name str */
     char errDesc[128];      /* err msg desc info */
     uint8_t reserved2[40];  /* the total byte is 256, reserved2 len = 256 - other lens */
-} AicpuErrMsgInfo;
+};
 #pragma pack(pop)
 
 }  // namespace aicpu
 
-#endif  // AICPU_TASK_STRUCT_H_
+#endif  // AICPU_TASK_STRUCT_H
 

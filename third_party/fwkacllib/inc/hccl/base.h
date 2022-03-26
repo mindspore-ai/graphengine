@@ -197,6 +197,20 @@ typedef struct tagCommAttr {
     WorkMode mode;  // 通信域内的probe工作模式
     uint32_t deviceId = 0;
 } CommAttr;
+
+typedef void* HcclMessage;
+typedef void* HcclRequest;
+
+typedef struct {
+    int srcRank;    // 接收/探测到的msg/信封的发送端rank_id，MPI标准定义，调用者可以访问
+    int tag;        // 接收/探测到的msg/信封的tag，MPI标准定义，调用者可以访问
+    int error;      // 接收/探测的错误码0：no error，others：传输过程出错，MPI标准定义，调用者可以访问
+    int cancelled;  // 指定实现，不建议调用者访问
+    int count;      // 接收/探测到的payload大小，指定实现，不建议调用者访问
+} HcclStatus;
+
+#define HCCL_REQUEST_NULL   NULL
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

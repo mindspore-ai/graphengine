@@ -663,6 +663,9 @@ REG_OP(ReduceProdD)
 *keep_dims: A bool or NoneType.
 * - If true, retains reduced dimensions with length 1.
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
+*noop_with_empty_axes: A bool.
+* - If true, when axes = [], not reduce.
+* - If false, when axes = [], reduce all.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
 
@@ -674,6 +677,7 @@ REG_OP(ReduceMean)
     .INPUT(axes, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
     .ATTR(keep_dims, Bool, false)
+    .ATTR(noop_with_empty_axes, Bool, true)
     .OP_END_FACTORY_REG(ReduceMean)
 
 /**

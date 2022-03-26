@@ -1801,7 +1801,7 @@ REG_OP(SoftmaxCrossEntropyLoss)
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
-REG_OP(AxpyWithSoftmaxAndDropoutdomask)
+REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
     .INPUT(x1, TensorType({DT_FLOAT16}))
     .INPUT(x2, TensorType({DT_FLOAT16}))
     .INPUT(mask, TensorType({DT_UINT8}))
@@ -1810,6 +1810,6 @@ REG_OP(AxpyWithSoftmaxAndDropoutdomask)
     .REQUIRED_ATTR(alpha, Float)
     .REQUIRED_ATTR(input_keep_prob, Float)
     .ATTR(axis, ListInt, {-1})
-    .OP_END_FACTORY_REG(AxpyWithSoftmaxAndDropoutdomask)
+    .OP_END_FACTORY_REG(AxpyWithSoftmaxAndDropOutDoMask)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

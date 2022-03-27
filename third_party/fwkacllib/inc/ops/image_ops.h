@@ -1737,17 +1737,17 @@ round_prefer_ceil, floor, ceil. Only used by nearest interpolation.
 */
 
 REG_OP(Resize)
-    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                                DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(roi, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(scales, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(sizes, TensorType({DT_INT64}))
-    .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                                DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,
+                          DT_INT64,DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
+    .OPTIONAL_INPUT(roi, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
+    .OPTIONAL_INPUT(scales, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(sizes, TensorType({DT_INT64,DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,
+                           DT_INT64,DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
     .ATTR(coordinate_transformation_mode, String, "half_pixel")
     .ATTR(cubic_coeff_a, Float, -0.75)
     .ATTR(exclude_outside, Int, 0)
-    .ATTR(extrapolation_value, Float, 0)
+    .ATTR(extrapolation_value, Float, 0.0)
     .ATTR(mode, String, "nearest")
     .ATTR(nearest_mode, String, "round_prefer_floor")
     .OP_END_FACTORY_REG(Resize)

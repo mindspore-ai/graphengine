@@ -72,6 +72,14 @@ enum {
   kSelectBranch,
   kExecuteSubGraph,
   kInitSubGraphExecutor,
+  // fuzz compile
+  kSelectBin,
+  kFindCompileCache,
+  kAddCompileCache,
+  kFuzzCompileOp,
+  kCalcRuningParam,
+  kGenTask,
+  kRegisterBin,
 
   // Add new definitions here
   kProfilingIndexEnd

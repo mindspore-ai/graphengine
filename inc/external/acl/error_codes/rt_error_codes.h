@@ -45,6 +45,7 @@ static const int32_t ACL_ERROR_RT_INVALID_MEMORY_TYPE = 107016;       // invalid
 static const int32_t ACL_ERROR_RT_INVALID_HANDLE = 107017;            // invalid handle
 static const int32_t ACL_ERROR_RT_INVALID_MALLOC_TYPE = 107018;       // invalid malloc type
 static const int32_t ACL_ERROR_RT_WAIT_TIMEOUT = 107019;              // wait timeout
+static const int32_t ACL_ERROR_RT_TASK_TIMEOUT = 107020;              // task timeout
 
 static const int32_t ACL_ERROR_RT_FEATURE_NOT_SUPPORT = 207000;  // feature not support
 static const int32_t ACL_ERROR_RT_MEMORY_ALLOCATION = 207001;    // memory allocation error

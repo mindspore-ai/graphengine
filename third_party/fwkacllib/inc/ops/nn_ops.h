@@ -116,6 +116,7 @@ REG_OP(FusedBatchNormV2)
  * @par Outputs:
  * One output, including:
  * output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
+ * @par Restrictions:
  * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
  */
 REG_OP(SegmentSort)
@@ -137,6 +138,7 @@ REG_OP(SegmentSort)
  * Two output, including:
  * output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
  * output_index: A Tensor.If include_index is true, output index.
+ * @par Restrictions:
  * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
  */
 REG_OP(MultiMerge)
@@ -146,6 +148,27 @@ REG_OP(MultiMerge)
     .REQUIRED_ATTR(k_num, Int)
     .ATTR(include_index, Bool, false)
     .OP_END_FACTORY_REG(MultiMerge)
+
+/**
+ * @brief Large amount of data sort.Third operator of TopK.
+ * @par Inputs:
+ * One input, including:
+ * input_proposal: A Tensor. Proposal sorted for each channel. Support float16
+ * @par Attributes:
+ * k_num: Int.Number to be sorted.
+ * @par Outputs:
+ * Two output, including:
+ * @li output_data: A Tensor. Datatype and format is same as input_data. Data sorted.
+ * @li output_index: A Tensor. int32. Data index.
+ * @par Restrictions:
+ * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+ */
+REG_OP(SingleMerge)
+    .INPUT(input_proposal, TensorType({DT_FLOAT16}))
+    .OUTPUT(output_data, TensorType({DT_FLOAT16}))
+    .OUTPUT(output_index, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(k_num, Int)
+    .OP_END_FACTORY_REG(SingleMerge)
 
 /**
  * @brief MultiHeadAttention.

@@ -3488,7 +3488,7 @@ REG_OP(Addcmul)
 REG_OP(AxpyV2)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OP_END_FACTORY_REG(AxpyV2)
 

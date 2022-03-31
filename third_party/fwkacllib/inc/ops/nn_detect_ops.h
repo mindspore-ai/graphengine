@@ -1844,6 +1844,7 @@ REG_OP(NonMaxSuppressionV7)
 REG_OP(RoiExtractor)
     .DYNAMIC_INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(index, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(finest_scale, Int, 56)
     .ATTR(roi_scale_factor, Float, 0)
@@ -2183,6 +2184,27 @@ REG_OP(RotatedBoxDecode)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(weight, ListFloat, {1.0, 1.0, 1.0, 1.0, 1.0})
     .OP_END_FACTORY_REG(RotatedBoxDecode)
+
+/**
+* @brief sort rois to balance on each core. \n
+
+* @par Inputs:
+* one inputs, including:
+* @li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
+* the value "5" indicates the indexes of images where the ROIs are located, "batch", "x0", "y0", "x1", and "y1".
+
+* @par Outputs:
+* balance_rois: A 2D Tensor of float32 or float16 with shape (N, 5), Outputs of the rois which balance.
+* index: 1D Tensor 0f int32 with shape (N,), that is the index of origin rois.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(BalanceRois)
+    .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(balance_rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(index, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(BalanceRois)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

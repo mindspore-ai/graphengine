@@ -84,6 +84,10 @@ REG_OP(MatMul)
 *y: The result matrix Tensor. 2D. Must be one of the following types: float32,
  float16, int32. Has format [ND, NHWC]. \n
 
+*@attention Constraints:
+* if performances better in format NZ, please close
+ "MatmulTransdataFusionPass" in fusion configuration. \n
+
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
 */
@@ -123,6 +127,10 @@ REG_OP(MatMulV2)
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: int32,
 * float16. \n
+
+*@attention Constraints:
+* if performances better in format NZ, please close
+ "MatmulTransdataFusionPass" in fusion configuration.
 
 */
 REG_OP(MatMulV2Compress)
@@ -240,6 +248,10 @@ REG_OP(BatchMatMul)
 * y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
 * float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape length as "x1" and "x2" . \n
 
+*@attention Constraints:
+* if performances better in format NZ, please close
+ "MatmulTransdataFusionPass" in fusion configuration. \n
+
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
 */
@@ -264,7 +276,12 @@ REG_OP(BatchMatMulV2)
 *     TensorType::FloatingDataType() . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
+
+*@attention Constraints:
+* if performances better in format NZ, please close
+ "MatmulTransdataFusionPass" in fusion configuration. \n
+
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator L2Loss.
 */
@@ -1210,7 +1227,7 @@ REG_OP(IndexAdd)
 *qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
 
 * @li x2: A Tensor of the same type as "x1".
-* @li indices: A Tensor of the indices, 
+* @li indices: A Tensor of the indices,
 
 * @par Attributes:
 * @li accumulate: Does it support self accumulation.Defaults to 0.
@@ -1393,8 +1410,8 @@ REG_OP(Trace)
 
 */
 REG_OP(Pinverse)
-    .INPUT(x, TensorType({ DT_FLOAT, DT_DOUBLE }))        
-    .OUTPUT(y, TensorType({ DT_FLOAT, DT_DOUBLE })) 
+    .INPUT(x, TensorType({ DT_FLOAT, DT_DOUBLE }))
+    .OUTPUT(y, TensorType({ DT_FLOAT, DT_DOUBLE }))
     .ATTR(rcond, Float, 1e-15)
     .OP_END_FACTORY_REG(Pinverse)
 

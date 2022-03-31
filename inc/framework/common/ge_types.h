@@ -314,7 +314,7 @@ struct TaskDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
-  uint32_t context_id;
+  uint32_t context_id = 0xFFFFFFFFUL;
 };
 
 struct OpDescInfo {

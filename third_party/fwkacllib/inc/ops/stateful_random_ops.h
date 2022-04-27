@@ -236,6 +236,30 @@ REG_OP(StatefulUniformInt)
     .OUTPUT(y, TensorType({DT_INT64}))
     .OP_END_FACTORY_REG(StatefulUniformInt)
 
+/**
+* @brief Advance the counter of a counter-based RNG. The state of the RNG after
+* `rng_skip(n)` will be the same as that after `stateful_uniform([n])`
+* (or any other distribution). The actual increment added to the
+* counter is an unspecified implementation detail . \n
+
+* @par Inputs:
+* @li value: Stores the state of the RNG.
+* @li algorithm: The RNG algorithm.
+* @li delta: The amount of advancement . \n
+
+* @par Outputs:
+* value:A Returns Random values with specified shape . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow RngReadAndSkipV2 operator.
+*/
+
+REG_OP(RngReadAndSkipV2)
+    .INPUT(value, TensorType({DT_INT64}))
+    .INPUT(algorithm, TensorType({DT_INT32}))
+    .INPUT(delta, TensorType({DT_UINT64}))
+    .OUTPUT(value, TensorType({DT_INT64}))
+    .OP_END_FACTORY_REG(RngReadAndSkipV2)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_STATEFUL_RANDOM_OPS_H_

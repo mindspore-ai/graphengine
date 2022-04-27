@@ -17,13 +17,10 @@
 #ifndef INC_FRAMEWORK_COMMON_TYPES_H_
 #define INC_FRAMEWORK_COMMON_TYPES_H_
 
-#include <climits>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/fmk_types.h"
@@ -47,6 +44,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFIL
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASKS;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_HOST_BASE_ADDR;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_HOST_MEMORY_SIZE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_FUSION_MODEL_DEF;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t ALLOC_MEMORY_MAX_SIZE;  // Max size of 8 GB.

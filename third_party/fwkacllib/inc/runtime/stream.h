@@ -82,6 +82,17 @@ RTS_API rtError_t rtStreamWaitEvent(rtStream_t stm, rtEvent_t evt);
 
 /**
  * @ingroup dvrt_stream
+ * @brief wait an recorded event for stream, used for 1951 pg1
+ * @param [in] stm   the wait stream
+ * @param [in] event   the event to wait
+ * @param [in] timeout   timeout value for 1951 pg1
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamWaitEventWithTimeout(rtStream_t stm, rtEvent_t evt, uint32_t timeout);
+
+/**
+ * @ingroup dvrt_stream
  * @brief wait stream to be complete
  * @param [in] stm   stream to wait
  * @return RT_ERROR_NONE for ok

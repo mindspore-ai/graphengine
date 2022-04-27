@@ -115,13 +115,13 @@ REG_OP(AscendQuant)
 *@brief Dequantizes the input . \n
 
 *@par Inputs:
-*@li x: An tensor of type int32, specifying the input.
-*@li deq_scale: An tensor of type float16 or uint64, specifying the scaling ratio . \n
+* @li x: An tensor of type int32, specifying the input.
+* @li deq_scale: An tensor of type uint64, specifying the scaling ratio . \n
 
 *@par Attributes:
-*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
-*@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
-*@li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT" . \n
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
+* @li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
+* @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT" . \n
 
 *@par Outputs:
 *y: The dequantized output tensor of type float16 or float32. \n
@@ -246,14 +246,14 @@ REG_OP(AscendRequantS16)
 * @brief Quantizes the input of int8 . \n
 
 * @par Inputs:
-* @li x: An FRACTAL_Z tensor of type int8, specifying the input.
-* @li offset: An FRACTAL_Z tensor of type int8.
+* @li x: A tensor of type int8, specifying the input.
+* @li offset: A tensor of type int8.
 
 * @par Attributes:
 * @li dst_type: A optional int from: DT_INT8, DT_INT4. Defaults to DT_INT8.
 
 * @par Outputs:
-* @li y: output tensor of type int4 or int8 and with format FRACTAL_Z.
+* @li y: output tensor of type int4 or int8.
 
 * @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe, Onnx, Tensorflow or Pythorch.

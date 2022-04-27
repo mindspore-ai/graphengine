@@ -88,11 +88,12 @@ constexpr uint64_t kInferSessionId = 0U;
 constexpr uint64_t kReleaseFlag = 1U;
 constexpr uint32_t kInvalidModelId = 0xFFFFFFFFU;
 constexpr size_t kNumTaskWithAtomicAddrCleanTask = 2U;
+constexpr uint32_t INVALID_MODEL_ID = 0xFFFFFFFFUL;
 
 // dynamic execute mode
 const char_t *const kLazyRecompile = "lazy_recompile";
 
-constexpr size_t kMaxHostMemInputLen = 64U;
+constexpr size_t kMaxHostMemInputLen = 128U;  // 64 aligned
 
 // Data cache, including data address and length
 struct DataBuffer {
@@ -239,6 +240,19 @@ struct ModelData {
   std::string om_name;         // om file name, used for data dump
 };
 
+struct ModelParam {
+  ModelParam() : priority(0), mem_base(0U), mem_size(0U), weight_base(0U), weight_size(0U) {}
+  ModelParam(const int32_t pri, const uintptr_t m_base, const size_t m_len, const uintptr_t w_base, const size_t w_len)
+      : priority(pri), mem_base(m_base), mem_size(m_len), weight_base(w_base), weight_size(w_len) {}
+  ~ModelParam() = default;
+
+  int32_t priority;
+  uintptr_t mem_base;
+  size_t mem_size;
+  uintptr_t weight_base;
+  size_t weight_size;
+};
+
 // The definition of Model information
 struct ModelInfo {
   uint32_t version = 0U;
@@ -314,7 +328,7 @@ struct TaskDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
-  uint32_t context_id;
+  uint32_t context_id = 0xFFFFFFFFUL;
 };
 
 struct OpDescInfo {

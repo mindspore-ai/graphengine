@@ -231,17 +231,20 @@ constexpr int32_t OM_PROTO_VERSION = 2;
 /// @return string
 ///
 template <typename T>
-GE_FUNC_VISIBILITY std::string ToString(std::vector<T> &v) {
+GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
+  bool first = true;
   std::stringstream ss;
   ss << "[";
-  for (const T x : v) {
-    ss << x;
-    ss << ", ";
+  for (const T &x : v) {
+    if (first) {
+      first = false;
+      ss << x;
+    } else {
+      ss << ", " << x;
+    }
   }
-  // Delete the two extra characters at the end of the line.
-  std::string str = ss.str().substr(0U, ss.str().length() - 2U);
-  str += "]";
-  return str;
+  ss << "]";
+  return ss.str();
 }
 
 ///

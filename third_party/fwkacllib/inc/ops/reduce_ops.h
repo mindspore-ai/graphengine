@@ -28,7 +28,7 @@ namespace ge {
 *@brief Performs reduced batch normalization . \n
 
 *@par Inputs:
-*x: A 5D Tensor of type float16 or float32, with format NC1HWC0 . \n
+*x: A tensor of type float16 or float32. \n
 
 *@par Outputs:
 *@li sum: A 1D Tensor of type float32 for SUM reduced "x".
@@ -49,11 +49,11 @@ REG_OP(BNTrainingReduce)
 *@brief Performs reduced batch normalization . \n
 
 *@par Inputs:
-*x: A 6D Tensor of type float16 or float32, with format NDC1HWC0 . \n
+*x: A tensor of type float16 or float32. \n
 
 *@par Outputs:
-*@li sum: A 3D Tensor of type float32 for SUM reduced "x".
-*@li square_sum: A 3D Tensor of type float32 for SUMSQ reduced "x" . \n
+*@li sum: A tensor of type float32 for SUM reduced "x".
+*@li square_sum: A tensor of type float32 for SUMSQ reduced "x" . \n
 
 *@attention Constraints:
 * This operator is a BatchNorm fusion operator for updating the moving
@@ -71,17 +71,17 @@ REG_OP(BN3DTrainingReduce)
 
 *@par Inputs:
 * Seven inputs, including:
-*@li grads: A 5D Tensor of type float16 or float32, with format NC1HWC0, for
+*@li grads: A tensor of type float16 or float32, for
 * the gradient.
-*@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
-*@li diff_scale: A 5D Tensor of type float32, with format NC1HWC0,
+*@li x: A tensor of type float16 or float32.
+*@li diff_scale: A tensor of type float32,
 * for the mean of "x".
-*@li diff_offset: A 5D Tensor of type float32, with format NC1HWC0,
+*@li diff_offset: A tensor of type float32,
 * for the variance of "x".
-*@li scale: A 5D Tensor of type float32, with format NC1HWC0.
-*@li batch_mean: A 5D Tensor of type float32, with format NC1HWC0,
+*@li scale: A tensor of type float32.
+*@li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0,
+*@li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
 *@par Attributes:
@@ -89,7 +89,7 @@ REG_OP(BN3DTrainingReduce)
 * added to the variance of "x" . \n
 
 *@par Outputs:
-*y: A Tensor of type float16 or float32, with format NC1HWC0, for the offset
+*y: A Tensor of type float16 or float32, for the offset
 * of "x" . \n
 
 *@attention Constraints:
@@ -114,17 +114,17 @@ REG_OP(BNTrainingReduceGrad)
 
 *@par Inputs:
 * Seven inputs, including:
-*@li grads: A 6D Tensor of type float16 or float32, with format NDC1HWC0, for
+*@li grads: A tensor of type float16 or float32, for
 * the gradient.
-*@li x: A 6D Tensor of type float16 or float32, with format NDC1HWC0.
-*@li diff_scale: A 6D Tensor of type float32, with format NDC1HWC0,
+*@li x: A tensor of type float16 or float32.
+*@li diff_scale: A tensor of type float32,
 * for the mean of "x".
-*@li diff_offset: A 6D Tensor of type float32, with format NDC1HWC0,
+*@li diff_offset: A tensor of type float32,
 * for the variance of "x".
-*@li scale: A 6D Tensor of type float32, with format NDC1HWC0.
-*@li batch_mean: A 6D Tensor of type float32, with format NDC1HWC0,
+*@li scale: A tensor of type float32.
+*@li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A 6D Tensor of type float32, with format NDC1HWC0,
+*@li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
 *@par Attributes:
@@ -132,7 +132,7 @@ REG_OP(BNTrainingReduceGrad)
 * added to the variance of "x" . \n
 
 *@par Outputs:
-*y: A Tensor of type float16 or float32, with format NDC1HWC0, for the offset
+*y: A Tensor of type float16 or float32, for the offset
 * of "x" . \n
 
 *@attention Constraints:
@@ -156,8 +156,8 @@ REG_OP(BN3DTrainingReduceGrad)
 *@brief Performs reduced batch normalization . \n
 
 *@par Inputs:
-* Seven inputs, including: (NC1HWC0 supported)
-*@li x: A 5D Tensor of type float16 or float32.
+* Seven inputs, including:
+*@li x: A tensor of type float16 or float32.
 *@li sum: A 1D Tensor of type float32 for the output of operator
 * BNTrainingReduce.
 *@li square_sum: A 1D Tensor of type float32 for the output of operator
@@ -174,10 +174,10 @@ REG_OP(BN3DTrainingReduceGrad)
 * and variance . \n
 
 *@par Outputs:
-* Five outputs, including: (NC1HWC0 supported)
-*@li y: A 5D Tensor of type float16 or float32, for normalized "x".
-*@li mean: A 5D Tensor of type float32, for the updated mean.
-*@li variance: A 5D Tensor of type float32, for the updated variance.
+* Five outputs, including:
+*@li y: A tensor of type float16 or float32, for normalized "x".
+*@li mean: A tensor of type float32, for the updated mean.
+*@li variance: A tensor of type float32, for the updated variance.
 *@li batch_mean: A 1D Tensor of type float32, for the mean of "x".
 *@li batch_variance: A 1D Tensor of type float32, for the variance of "x" . \n
 
@@ -209,16 +209,16 @@ REG_OP(BNTrainingUpdate)
 *@brief Performs reduced batch normalization . \n
 
 *@par Inputs:
-* Seven inputs, including: (NDC1HWC0 supported)
-*@li x: A 6D Tensor of type float16 or float32.
-*@li sum: A 6D Tensor of type float32 for the output of operator
+* Seven inputs, including:
+*@li x: A tensor of type float16 or float32.
+*@li sum: A tensor of type float32 for the output of operator
 * BN3DTrainingUpdate.
-*@li square_sum: A 6D Tensor of type float32 for the output of operator
+*@li square_sum: A tensor of type float32 for the output of operator
 * BN3DTrainingUpdate.
-*@li scale: A 6D Tensor of type float32, for the scaling factor.
-*@li offset: A 6D Tensor of type float32, for the scaling offset.
-*@li mean: A 6D Tensor of type float32, for the updated mean.
-*@li variance: A 6D Tensor of type float32, for the updated variance . \n
+*@li scale: A tensor of type float32, for the scaling factor.
+*@li offset: A tensor of type float32, for the scaling offset.
+*@li mean: A tensor of type float32, for the updated mean.
+*@li variance: A tensor of type float32, for the updated variance . \n
 
 *@par Attributes:
 *@li epsilon: A required float32, specifying the small value added to variance
@@ -227,12 +227,12 @@ REG_OP(BNTrainingUpdate)
 * and variance . \n
 
 *@par Outputs:
-* Five outputs, including: (NDC1HWC0 supported)
-*@li y: A 6D Tensor of type float16 or float32, for normalized "x".
-*@li mean: A 6D Tensor of type float32, for the updated mean.
-*@li variance: A 6D Tensor of type float32, for the updated variance.
-*@li batch_mean: A 6D Tensor of type float32, for the mean of "x".
-*@li batch_variance: A 6D Tensor of type float32, for the variance of "x" . \n
+* Five outputs, including:
+*@li y: A tensor of type float16 or float32, for normalized "x".
+*@li mean: A tensor of type float32, for the updated mean.
+*@li variance: A tensor of type float32, for the updated variance.
+*@li batch_mean: A tensor of type float32, for the mean of "x".
+*@li batch_variance: A tensor of type float32, for the variance of "x" . \n
 
 *@attention Constraints:
 *@li This operator is a BatchNorm fusion operator for updating the moving
@@ -262,19 +262,19 @@ REG_OP(BN3DTrainingUpdate)
 *@brief Performs batch normalization for inference . \n
 
 *@par Inputs:
-* Five inputs, including: (NC1HWC0 supported)
-*@li x: A 5D Tensor of type float16 or float32.
-*@li scale: A 5D Tensor of type float32, for the scaling factor.
-*@li offset: A 5D Tensor of type float32, for the scaling offset.
-*@li mean: A 5D Tensor of type float32, for the mean.
-*@li variance: A 5D Tensor of type float32, for the variance . \n
+* Five inputs, including:
+*@li x: A tensor of type float16 or float32.
+*@li scale: A tensor of type float32, for the scaling factor.
+*@li offset: A tensor of type float32, for the scaling offset.
+*@li mean: A tensor of type float32, for the mean.
+*@li variance: A tensor of type float32, for the variance . \n
 
 *@par Attributes:
 *epsilon: An optional float32, specifying the small value added to variance to
 * avoid dividing by zero. Defaults to "0.0001" . \n
 
 *@par Outputs:
-*y: A 5D Tensor of type float16 or float32 for the normalized "x" . \n
+*y: A tensor of type float16 or float32 for the normalized "x" . \n
 
 *@attention Constraints:
 *For Ascend 310, the result accuracy fails to reach 1/1000 due to the square root
@@ -295,21 +295,21 @@ REG_OP(BNInfer)
 assignmoving average . \n
 
 *@par Inputs:
-*Five inputs, including: (NC1HWC0 supported)
-*@li x: A 5D Tensor of type float16 or float32.
-*@li sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
-*@li scale: A 5D Tensor of type float32, for the scaling factor.
-*@li offset: A 5D Tensor of type float32, for the scaling offset . \n
+*Five inputs, including:
+*@li x: A tensor of type float16 or float32.
+*@li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+*@li square_sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+*@li scale: A tensor of type float32, for the scaling factor.
+*@li offset: A tensor of type float32, for the scaling offset . \n
 
 *@par Attributes:
 *epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero . \n
 
 *@par Outputs:
-*Three outputs, including: (NC1HWC0 supported)
-*@li y: A 5D Tensor of type float16 or float32, for normalized "x".
-*@li batch_mean: A 5D Tensor of type float32, for the mean of "x".
-*@li batch_variance: A 5D Tensor of type float32, for the variance of "x" . \n
+*Three outputs, including:
+*@li y: A tensor of type float16 or float32, for normalized "x".
+*@li batch_mean: A tensor of type float32, for the mean of "x".
+*@li batch_variance: A tensor of type float32, for the variance of "x" . \n
 
 *@attention Constraints:
 *This operator is used in conjunction with BNTrainingReduce.
@@ -332,22 +332,22 @@ REG_OP(BNTrainingUpdateV2)
 assign moving average . \n
 
 *@par Inputs:
-* Five inputs, including: (NC1HWC0 supported)
-*@li x: A 5D Tensor of type float16 or float32.
-*@li sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
-*@li scale: A 5D Tensor of type float32, for the scaling factor.
-*@li offset: A 5D Tensor of type float32, for the scaling offset . \n
+* Five inputs, including:
+*@li x: A tensor of type float16 or float32.
+*@li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+*@li square_sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+*@li scale: A tensor of type float32, for the scaling factor.
+*@li offset: A tensor of type float32, for the scaling offset . \n
 
 *@par Attributes:
 *epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero . \n
 
 *@par Outputs:
-*@li y: A 5D Tensor of type float16 or float32, for normalized "x".
-*@li batch_mean: A 5D Tensor of type float32, for the mean of "x".
-*@li batch_variance: A 5D Tensor of type float32, for the variance of "x".
-*@li reserve_1: A 5D Tensor of type float32, for the mean of batch "x". Has the same type as batch_mean.
-*@li reserve_2: A 5D Tensor of type float32, for the variance of batch "x". Has the same type as batch_mean . \n
+*@li y: A tensor of type float16 or float32, for normalized "x".
+*@li batch_mean: A tensor of type float32, for the mean of "x".
+*@li batch_variance: A tensor of type float32, for the variance of "x".
+*@li reserve_1: A tensor of type float32, for the mean of batch "x". Has the same type as batch_mean.
+*@li reserve_2: A tensor of type float32, for the variance of batch "x". Has the same type as batch_mean . \n
 
 *@attention Constraints:
 *@li This operator is used in conjunction with BNTrainingReduce.
@@ -372,12 +372,12 @@ REG_OP(BNTrainingUpdateV3)
 
 *@par Inputs:
 * Four inputs, including:
-*@li grads: A 5D Tensor of type float16 or float32, with format NC1HWC0,
+*@li grads: A tensor of type float16 or float32,
 * for the gradient.
-*@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
-*@li batch_mean: A 5D Tensor of type float32, with format NC1HWC0,
+*@li x: A tensor of type float16 or float32.
+*@li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0,
+*@li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
 *@par Attributes:
@@ -385,9 +385,9 @@ REG_OP(BNTrainingUpdateV3)
 * added to the variance of "x" . \n
 
 *@par Outputs:
-*@li diff_scale: A Tensor of type float32, with format NC1HWC0,
+*@li diff_scale: A Tensor of type float32,
 * for the offset of "scale".
-*@li diff_offset: A Tensor of type float32, with format NC1HWC0,
+*@li diff_offset: A Tensor of type float32,
 * for the offset of "offset" . \n
 
 */
@@ -406,12 +406,12 @@ REG_OP(BNTrainingUpdateGrad)
 
 *@par Inputs:
 * Four inputs, including:
-*@li grads: A 6D Tensor of type float16 or float32, with format NDC1HWC0,
+*@li grads: A tensor of type float16 or float32,
 * for the gradient.
-*@li x: A 6D Tensor of type float16 or float32, with format NDC1HWC0.
-*@li batch_mean: A 6D Tensor of type float32, with format NDC1HWC0,
+*@li x: A tensor of type float16 or float32.
+*@li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A 6D Tensor of type float32, with format NDC1HWC0,
+*@li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
 *@par Attributes:
@@ -419,9 +419,9 @@ REG_OP(BNTrainingUpdateGrad)
 * added to the variance of "x" . \n
 
 *@par Outputs:
-*@li diff_scale: A Tensor of type float32, with format NDC1HWC0,
+*@li diff_scale: A Tensor of type float32,
 * for the offset of "scale".
-*@li diff_offset: A Tensor of type float32, with format NDC1HWC0,
+*@li diff_offset: A Tensor of type float32,
 * for the offset of "offset" . \n
 
 */
@@ -440,15 +440,15 @@ REG_OP(BN3DTrainingUpdateGrad)
 
 *@par Inputs:
 * Three inputs, including:
-*@li grads: A 5D Tensor of type loat16 or float32, with format NC1HWC0, for the gradient.
-*@li scale: A 5D Tensor of type float32, with format NC1HWC0.
-*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0. It is an output of BatchNorm . \n
+*@li grads: A tensor of type loat16 or float32, for the gradient.
+*@li scale: A tensor of type float32.
+*@li batch_variance: A tensor of type float32. It is an output of BatchNorm . \n
 
 *@par Attributes:
 *epsilon: An optional float32. Defaults to "0.0001". A small float number added to the variance of "x" . \n
 
 *@par Outputs:
-*x_backprop: A Tensor of type float16 or float32, with format NC1HWC0, for the offset of "x" . \n
+*x_backprop: A Tensor of type float16 or float32, for the offset of "x" . \n
 
 *@attention Constraints:
 * The preceding layer of this operator must be operator BatchNorm.
@@ -663,6 +663,9 @@ REG_OP(ReduceProdD)
 *keep_dims: A bool or NoneType.
 * - If true, retains reduced dimensions with length 1.
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
+*noop_with_empty_axes: A bool.
+* - If true, when axes = [], not reduce.
+* - If false, when axes = [], reduce all.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
 
@@ -674,6 +677,7 @@ REG_OP(ReduceMean)
     .INPUT(axes, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
     .ATTR(keep_dims, Bool, false)
+    .ATTR(noop_with_empty_axes, Bool, true)
     .OP_END_FACTORY_REG(ReduceMean)
 
 /**
@@ -690,6 +694,9 @@ REG_OP(ReduceMean)
 *@li keep_dims: A bool or NoneType.
 * - If true, retains reduced dimensions with length 1.
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
+*@li noop_with_empty_axes: A bool default False.
+* - If true, same as tf.
+* - If false, when x's shape is [], reduce all dims, for onnx.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
 
@@ -704,6 +711,7 @@ REG_OP(ReduceMeanD)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
+    .ATTR(noop_with_empty_axes, Bool, false)
     .OP_END_FACTORY_REG(ReduceMeanD)
 
 /**
@@ -983,7 +991,7 @@ REG_OP(EuclideanNormD)
 *@brief Performs instance normalization for inference . \n
 
 *@par Inputs:
-* Five inputs, including: (NC1HWC0 supported)
+* Five inputs, including:
 *@li x: A Tensor of type float16 or float32.
 *@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
 *@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
@@ -1184,22 +1192,22 @@ REG_OP(GNTrainingReduce)
 *@par Inputs:
 * Seven inputs, including: (NCHW NHWC supported)
 *@li x: A Tensor of type float16 or float32.
-*@li sum: A 5D Tensor of type float32,
+*@li sum: A tensor of type float32,
 shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the output of operator GNTrainingReduce.
-*@li square_sum: A 5D Tensor of type float32,
+*@li square_sum: A tensor of type float32,
 shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the output of operator GNTrainingReduce.
-*@li scale: A 5D Tensor of type float32,
+*@li scale: A tensor of type float32,
 shape is [1, G, 1, 1, 1] for NCHW, [1, 1, 1, G, 1] for NHWC
 is for the scaling gamma.
-*@li offset: A 5D Tensor of type float32,
+*@li offset: A tensor of type float32,
 shape is [1, G, 1, 1, 1] for NCHW, [1, 1, 1, G, 1] for NHWC
 for the scaling beta.
-*@li mean: A 5D Tensor of type float32,
+*@li mean: A tensor of type float32,
 shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the updated mean.
-*@li variance: A 5D Tensor of type float32,
+*@li variance: A tensor of type float32,
 shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the updated variance.
 
@@ -1209,7 +1217,7 @@ for the updated variance.
 *@li num_groups: Int, specifying the num of groups. required, same to GNTrainingReduce
 
 *@par Outputs:
-* Three outputs, including: (NC1HWC0 supported)
+* Three outputs, including:
 *@li y: A Tensor of type float16 or float32, for normalized "x".
 *@li batch_mean: A Tensor of type float32, for the updated mean.
 *@li batch_variance: A Tensor of type float32, for the updated variance . \n
@@ -1338,7 +1346,7 @@ REG_OP(ReduceStdWithMean)
 *@brief Performs reduced batch normalization . \n
 
 *@par Inputs:
-*x: A 5D Tensor of type float16 or float32, with format NC1HWC0 . \n
+*x: A tensor of type float16 or float32 . \n
 
 *@par Outputs:
 *@li mean: A Tensor of type float32 for SUM reduced "x".

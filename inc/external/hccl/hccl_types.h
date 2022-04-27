@@ -88,7 +88,6 @@ typedef enum {
 } HcclDataType;
 
 const uint32_t HCCL_ROOT_INFO_BYTES = 4108;  // 4108: root info length
-
 /**
  * @brief HCCL root info
  */

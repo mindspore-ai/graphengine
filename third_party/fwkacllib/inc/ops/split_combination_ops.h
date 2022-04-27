@@ -188,7 +188,7 @@ REG_OP(ParallelConcat)
 
 *@par Inputs:
 * One input:
-*x: Dynamic input.An NC1HWC0 or ND Tensor.
+*x: Dynamic input.A ND Tensor.
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
@@ -219,7 +219,7 @@ REG_OP(ConcatV2D)
 
 *@par Inputs:
 * Two inputs, including:
-*@li Dynamic input "x" is An NC1HWC0 or ND Tensor.
+*@li Dynamic input "x" is A ND Tensor.
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 *@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
 
@@ -247,7 +247,7 @@ REG_OP(ConcatV2)
 
 *@par Inputs:
 * One input:
-*x:Dynamic input. An NC1HWC0 or ND Tensor.
+*x:Dynamic input. A ND Tensor.
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
@@ -278,7 +278,7 @@ REG_OP(ConcatD)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: Dynamic input.An NC1HWC0 or ND Tensor.
+*@li x: Dynamic input.A ND Tensor.
 *Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
 *     complex128, uint32, uint64, qint16, quint16.

@@ -104,9 +104,8 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
 *@par Inputs:
 * Two inputs, including:
 * @li softmax: Output of the softmax operator. Must be one of the following
-* types: float16, float31, int32, int8, uint8. The format is NC1HWC0 or DN.
-* @li grad_softmax: A Tensor. Has the same shape and type as "softmax".
-* The format is NC1HWC0 or DN . \n
+* types: float16, float31, int32, int8, uint8.
+* @li grad_softmax: A Tensor. Has the same shape and type as "softmax".\n
 
 *@par Attributes:
 * axes: An optional list of ints. Defaults to "{-1}" . \n
@@ -1101,8 +1100,8 @@ REG_OP(GroupNorm)
 *@brief Performs instance normalization . \n
 
 *@par Inputs:
-* Five inputs, including: (NC1HWC0, supported)
-*@li x: A 5D Tensor of type float16 or float32, NC1HWC0.
+* Five inputs, including:
+*@li x: A 5D Tensor of type float16 or float32.
 *@li gamma: A Tensor of type float32.
 A 5D Tensor for scaling factor, to scale the normalized x.
 *@li beta: A Tensor of type float32.
@@ -1121,7 +1120,7 @@ the value used for the running_mean and running_var computation. Default: "0.1".
 variance to avoid dividing by zero. Defaults to "0.00001" . \n
 
 *@par Outputs:
-* Three outputs, including: (NHWC, NCHW NC1HWC0 supported)
+* Three outputs, including: (NHWC, NCHW supported)
 *@li y: A 5D tensor of type float16 or float32 for the normalized "x",
 *@li batch_mean: A Tensor of type float32.
 Specifies the mean of "x".
@@ -1154,7 +1153,7 @@ REG_OP(InstanceNormV2)
 *@brief Performs instance normalization for inference.
 
 *@par Inputs:\n
-* Five inputs, including: (NC1HWC0 supported)
+* Five inputs, including:
 *@li x: A Tensor of type float16 or float32.
 *@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
 *@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
@@ -1740,5 +1739,77 @@ REG_OP(DropoutWithMulsAndSoftmaxGrad)
     .REQUIRED_ATTR(alpha, Float)
     .ATTR(axes, ListInt, { -1 })
     .OP_END_FACTORY_REG(DropoutWithMulsAndSoftmaxGrad)
+
+/**
+* @brief Loss function that measures the softmax cross entropy. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li scores: A Tensor. Must be one of the following types: half, float32, double.
+* A "batch_size * num_classes" matrix.
+* @li labels: A Tensor. Must be one of the following types: "int32", "int64".
+* @li weights: A manual rescaling weight given to each class. 
+* If given, it has to be a 1D Tensor assigning weight to each of the classes.
+* Otherwise, it is treated as if having all ones. \n
+
+* @par Attributes:
+* ignore_index:Specifies a target value that is ignored and does not contribute to the input gradient.
+* It's an optional value.
+* reduction: A character string from "none", "mean", and "sum", specifying the gradient output mode. Defaults to "mean" . \n
+
+* @par Outputs:
+* @li loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "scores".
+* @li log_prop: A Tensor. Has the same type as "scores" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the ONNX operator SoftmaxCrossEntropyLoss.
+*/
+REG_OP(SoftmaxCrossEntropyLoss)
+    .INPUT(scores, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT,DT_BFLOAT16}))
+    .INPUT(labels, TensorType({DT_INT32, DT_INT64}))
+    .OPTIONAL_INPUT(weights, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT,DT_BFLOAT16}))
+    .ATTR(ignore_index, Int, 0)
+    .ATTR(reduction, String, "mean")
+    .OUTPUT(loss, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT,DT_BFLOAT16}))
+    .OUTPUT(log_prop, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT,DT_BFLOAT16}))
+    .OP_END_FACTORY_REG(SoftmaxCrossEntropyLoss)
+
+/**
+* @brief Function axpy with softmax and dropoutdomask . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x1: A mutable Tensor. The type only support float16.
+* @li x2: A mutable Tensor. The type only support float16.
+* @li mask: A mutable Tensor. Must meet all of the following rules:
+*     shape of mask should be 1D.
+*     dtype of mask should be uint8.
+*     value of shape should meet the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128 . \n
+
+* @par Attributes:
+* @li alpha: A attribute used to scale tensor. The type is float . \n
+* @li input_keep_prob: A attribute used to judge which units should be keep.
+*     The type is float . \n
+* @li axis: A list of int. The dimension softmax would be performed on. Defaults
+*     to "[-1]" . \n
+
+* @par Outputs:
+* y1: A mutable Tensor. Has the same type as "x1". \n
+* y2: A mutable Tensor. Has the same type as "x1". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
+    .INPUT(x1, TensorType({DT_FLOAT16}))
+    .INPUT(x2, TensorType({DT_FLOAT16}))
+    .INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(y1, TensorType({DT_FLOAT16}))
+    .OUTPUT(y2, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(alpha, Float)
+    .REQUIRED_ATTR(input_keep_prob, Float)
+    .ATTR(axis, ListInt, {-1})
+    .OP_END_FACTORY_REG(AxpyWithSoftmaxAndDropOutDoMask)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

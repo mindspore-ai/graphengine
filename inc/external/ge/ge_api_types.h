@@ -120,6 +120,8 @@ const char_t *const PERFORMANCE_MODE = "ge.performance_mode";
 const char_t *const SHAPE_GENERALIZED_BUILD_MODE = "ge.shape_generalized_build_mode";
 const char_t *const MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 const char_t *const OP_PRECISION_MODE = "ge.exec.op_precision_mode";
+const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
+const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -268,8 +270,17 @@ const std::string ENABLE_SMALL_CHANNEL = "ge.enableSmallChannel";
 // Configure Compress Weight flag
 const std::string ENABLE_COMPRESS_WEIGHT = "ge.enableCompressWeight";
 
+// Configure Sparse Matrix Weight flag
+const std::string ENABLE_SPARSE_MATRIX_WEIGHT = "ge.enableSparseMatrixWeight";
+
 // Configure fusion switch file path
 const std::string FUSION_SWITCH_FILE = "ge.fusionSwitchFile";
+
+// Configure compression optimize file path
+const std::string COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
+
+// Configure customize dtypes path
+const std::string CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 
 // Save original model
 const std::string SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
@@ -288,6 +299,10 @@ const char_t *const ENABLE_PRINT_OP_PASS = "ge.enablePrintOpPass";
 // Configure operator compilation path
 // Its value should be file path, default value is "./"
 const char_t *const DEBUG_DIR = "ge.debugDir";
+
+// Configure switch for op status check such as overflow
+// Its value should be true of flase
+const char_t *const STATUS_CHECK = "ge.status_check";
 
 // Configure operator compiler cache path
 // Its value should be file path, default value is "./"
@@ -411,6 +426,7 @@ static const char_t *const OP_SELECT_IMPL_MODE = ge::OP_SELECT_IMPL_MODE.c_str()
 static const char_t *const OUTPUT_TYPE = ge::OUTPUT_DATATYPE.c_str();
 static const char_t *const BUFFER_OPTIMIZE = ge::BUFFER_OPTIMIZE.c_str();
 static const char_t *const ENABLE_COMPRESS_WEIGHT = ge::ENABLE_COMPRESS_WEIGHT.c_str();
+static const char_t *const SPARSITY = ge::ENABLE_SPARSE_MATRIX_WEIGHT.c_str();
 static const char_t *const COMPRESS_WEIGHT_CONF = "compress_weight_conf";
 static const char_t *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
 static const char_t *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
@@ -427,6 +443,8 @@ static const char_t *const PERFORMANCE_MODE = ge::PERFORMANCE_MODE.c_str();
 static const char_t *const SHAPE_GENERALIZED_BUILD_MODE = ge::SHAPE_GENERALIZED_BUILD_MODE.c_str();
 static const char_t *const MODIFY_MIXLIST = ge::MODIFY_MIXLIST.c_str();
 static const char_t *const OP_PRECISION_MODE = ge::OP_PRECISION_MODE.c_str();
+static const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
+static const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -456,7 +474,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              OP_BANK_UPDATE,
                                                              PERFORMANCE_MODE,
                                                              SHAPE_GENERALIZED_BUILD_MODE,
-                                                             MODIFY_MIXLIST};
+                                                             MODIFY_MIXLIST,
+                                                             CUSTOMIZE_DTYPES};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
@@ -469,6 +488,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               BUFFER_OPTIMIZE,
                                               ENABLE_COMPRESS_WEIGHT,
                                               COMPRESS_WEIGHT_CONF,
+                                              SPARSITY,
                                               PRECISION_MODE,
                                               TUNE_DEVICE_IDS,
                                               EXEC_DISABLE_REUSED_MEMORY,
@@ -483,7 +503,8 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               DEBUG_DIR,
                                               OP_COMPILER_CACHE_DIR,
                                               OP_COMPILER_CACHE_MODE,
-                                              MODIFY_MIXLIST};
+                                              MODIFY_MIXLIST,
+                                              COMPRESSION_OPTIMIZE_CONF};
 #endif
 }  // namespace ir_option
 }  // namespace ge

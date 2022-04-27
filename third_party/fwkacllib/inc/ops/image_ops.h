@@ -671,6 +671,7 @@ size for the images . \n
 output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false .
 * @li half_pixel_centers: An optional bool. Defaults to False . \n
+* @li dtype: An Type attr, support type list [DT_FP32, DT_U8]. Defaults to DT_FP32 . \n
 *@par Outputs:
 *y: 4-D with shape [batch, new_height, new_width, channels] . \n
 
@@ -682,12 +683,13 @@ Defaults to false .
 */
 
 REG_OP(ResizeBilinearV2)
-    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                               DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
+                          DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .INPUT(size, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_UINT8, DT_FLOAT}))
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
+    .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(ResizeBilinearV2)
 
 /**
@@ -1267,7 +1269,7 @@ REG_OP(DecodeAndCropJpeg)
 
 *@par Inputs:
 * One input:
-*x: An NC1HWC0 Tensor.
+*x: A Tensor.
 * Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
@@ -1304,7 +1306,7 @@ REG_OP(ResizeBilinearV2D)
 
 *@par Inputs:
 * One input:
-*images: An NC1HWC0 Tensor.
+*images: A Tensor.
 * Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
@@ -1338,7 +1340,7 @@ REG_OP(KeepRatioResizeBilinear)
 
 *@par Inputs:
 * One input:
-*x: An NC1HWC0 Tensor.
+*x: A Tensor.
 * Must be one of the following types: float16, float32, int32, int8, uint8
 
 *@par Attributes:
@@ -1737,17 +1739,17 @@ round_prefer_ceil, floor, ceil. Only used by nearest interpolation.
 */
 
 REG_OP(Resize)
-    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                                DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(roi, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(scales, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(sizes, TensorType({DT_INT64}))
-    .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                                DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,
+                          DT_INT64,DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
+    .OPTIONAL_INPUT(roi, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
+    .OPTIONAL_INPUT(scales, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(sizes, TensorType({DT_INT64,DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT8,DT_UINT8,DT_INT16,DT_UINT16,DT_INT32,
+                           DT_INT64,DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
     .ATTR(coordinate_transformation_mode, String, "half_pixel")
     .ATTR(cubic_coeff_a, Float, -0.75)
     .ATTR(exclude_outside, Int, 0)
-    .ATTR(extrapolation_value, Float, 0)
+    .ATTR(extrapolation_value, Float, 0.0)
     .ATTR(mode, String, "nearest")
     .ATTR(nearest_mode, String, "round_prefer_floor")
     .OP_END_FACTORY_REG(Resize)
@@ -2308,6 +2310,32 @@ REG_OP(UpsampleNearest1dGrad)
     .REQUIRED_ATTR(output_size, ListInt)
     .ATTR(scales, ListFloat, {})
     .OP_END_FACTORY_REG(UpsampleNearest1dGrad)
+
+/**
+* @brief Function parse image from string to int. \n
+
+* @par Inputs:
+* contents: A Tensor of type string. 0-D. The JPEG, GIF, PNG, BMP-encoded image. \n
+
+* @par Attributes:
+* @li channels: An optional int. Defaults to 0. Number of color channels for the decoded image.
+* @li dtype: type of image
+* @li expand_animations: Controls the shape of the returned op's output. If 'true', the returned op will
+ produce a 4-D tensor for GIF files. If 'false', the returned op will produce a 3-D tensor for GIF files.
+
+* @par Outputs:
+* image: A Tensor dtype of uint8, uint16 or float.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DecodeImage)
+    .INPUT(contents, TensorType({DT_STRING}))
+    .OUTPUT(image, TensorType({DT_UINT8, DT_UINT16, DT_FLOAT}))
+    .ATTR(channels, Int, 0)
+    .ATTR(dtype, Type, DT_UINT8)
+    .ATTR(expand_animations, Bool, true)
+    .OP_END_FACTORY_REG(DecodeImage)
 
 /**
 * @brief JPEG encode input image with provided compression quality. \n

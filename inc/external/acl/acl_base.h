@@ -114,6 +114,7 @@ static const int ACL_ERROR_INVALID_MAX_OPQUEUE_NUM_CONFIG = 148048;
 static const int ACL_ERROR_INVALID_OPP_PATH = 148049;
 static const int ACL_ERROR_OP_UNSUPPORTED_DYNAMIC = 148050;
 static const int ACL_ERROR_RELATIVE_RESOURCE_NOT_CLEARED = 148051;
+static const int ACL_ERROR_UNSUPPORTED_JPEG = 148052;
 
 static const int ACL_ERROR_BAD_ALLOC = 200000;
 static const int ACL_ERROR_API_NOT_SUPPORT = 200001;
@@ -153,7 +154,8 @@ typedef enum {
   ACL_BOOL = 12,
   ACL_STRING = 13,
   ACL_COMPLEX64 = 16,
-  ACL_COMPLEX128 = 17
+  ACL_COMPLEX128 = 17,
+  ACL_BF16 = 27
 } aclDataType;
 
 typedef enum {

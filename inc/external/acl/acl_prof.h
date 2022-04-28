@@ -60,6 +60,15 @@ typedef enum {
   ACL_STEP_END = 1     // step  end
 } aclprofStepTag;
 
+typedef enum {
+  ACL_SUBSCRIBE_OP = 0,
+  ACL_SUBSCRIBE_SUBGRAPH = 1,
+  ACL_SUBSCRIBE_OP_THREAD = 2,
+  ACL_SUBSCRIBE_NONE
+} aclprofSubscribeOpFlag;
+
+typedef enum { ACL_SUBSCRIBE_ATTRI_THREADID = 0, ACL_SUBSCRIBE_ATTRI_NONE } aclprofSubscribeOpAttri;
+
 typedef struct aclprofConfig aclprofConfig;
 typedef struct aclprofStopConfig aclprofStopConfig;
 typedef struct aclprofAicoreEvents aclprofAicoreEvents;
@@ -337,6 +346,34 @@ MSVP_PROF_API uint64_t aclprofGetOpDuration(const void *opInfo, size_t opInfoLen
  * @retval 0 for failed
  */
 MSVP_PROF_API size_t aclprofGetModelId(const void *opInfo, size_t opInfoLen, uint32_t index);
+
+/**
+ * @ingroup AscendCL
+ * @brief get op flag from subscription data
+ *
+ * @param  opInfo [IN]     pointer to subscription data
+ * @param  opInfoLen [IN]  memory size of subscription data
+ * @param  index [IN]      index of op array in opInfo
+ *
+ * @retval op flag
+ * @retval ACL_SUBSCRIBE_NONE for failed
+ */
+MSVP_PROF_API aclprofSubscribeOpFlag aclprofGetOpFlag(const void *opInfo, size_t opInfoLen, uint32_t index);
+
+/**
+ * @ingroup AscendCL
+ * @brief get op flag from subscription data
+ *
+ * @param  opInfo [IN]     pointer to subscription data
+ * @param  opInfoLen [IN]  memory size of subscription data
+ * @param  index [IN]      index of op array in opInfo
+ * @param  attri [IN]      attribute of op
+ *
+ * @retval op flag
+ * @retval NULL for failed
+ */
+MSVP_PROF_API const char *aclprofGetOpAttriValue(const void *opInfo, size_t opInfoLen, uint32_t index,
+                                                 aclprofSubscribeOpAttri attri);
 
 /**
  * @ingroup AscendCL

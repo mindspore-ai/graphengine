@@ -131,7 +131,7 @@ typedef struct tagAllKernelTaskInfo {
     uint16_t argsCount;
     uint16_t argsSize;
     uint16_t reserved;
-    const void *kernelInfoExt;
+    uint64_t tilingKey;
     void *handle;
     uint8_t *smDesc;
     const uint8_t *args;

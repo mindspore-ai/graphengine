@@ -423,8 +423,8 @@ REG_OP(Softplus)
 
 *@par Inputs:
 *Two inputs:
-* @li gradients: An NC1HWC0 or ND Tensor of type float16 or float32.
-* @li features: An NC1HWC0 or ND Tensor of type float16 or float32.
+* @li gradients: A ND Tensor of type float16 or float32.
+* @li features: A ND Tensor of type float16 or float32.
 
 
 *@par Outputs:
@@ -458,15 +458,34 @@ REG_OP(Softsign)
     .OP_END_FACTORY_REG(Softsign)
 
 /**
+ * @brief Computes softsignGrad: y_grad / (1 + abs(x)) ** 2 .
+ *
+ * @par Inputs:
+ * Two inputs, including:
+ * @li y_grad: A Tensor.Must be one of the following types:float16, float32,
+ * @li x: A Tensor of the same type and shape as "gradients".
+
+ * @par x_grad:
+ * output:A Tensor. Has the same type as "y_grad".
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator SoftsignGrad.
+ */
+REG_OP(SoftsignGrad)
+    .INPUT(y_grad, TensorType::FloatingDataType())
+    .INPUT(x, TensorType::FloatingDataType())
+    .OUTPUT(x_grad, TensorType::FloatingDataType())
+    .OP_END_FACTORY_REG(SoftsignGrad)
+
+/**
 *@brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1) . \n
 
 *@par Inputs:
 * One input:
 *x: A Tensor. Must be one of the following types: float16, float, double
- * int32, int8. format:ND, NC1HWC0 . \n
+ * int32, int8. format:ND. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type and format as input "x". format:ND, NC1HWC0 . \n
+*y: A Tensor. Has the same type and format as input "x". format:ND. \n
 
 *@see Region()
 
@@ -479,6 +498,26 @@ REG_OP(Selu)
     .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,
                                      DT_INT8,DT_INT32}))
     .OP_END_FACTORY_REG(Selu)
+
+/**
+* @brief Computes SeluGrad backprops: y_grad * (y + scale * alpha)
+*    if y < 0, scale * y_grad otherwise .
+
+* @par Inputs:
+* Two inputs, including:
+* @li y_grad: A Tensor of type RealNumberType .
+* @li y: A Tensor of type RealNumberType .
+* @par Outputs:
+* x_grad: A Tensor. Must have the same type as "y_grad" .
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator SeluGrad.
+*/
+REG_OP(SeluGrad)
+    .INPUT(y_grad, TensorType::RealNumberType())
+    .INPUT(y, TensorType::RealNumberType())
+    .OUTPUT(x_grad, TensorType::RealNumberType())
+    .OP_END_FACTORY_REG(SeluGrad)
 
 /**
 *@brief Computes rectified linear gradients for a ReLU operation . \n
@@ -640,7 +679,9 @@ REG_OP(Elu)
 *x: A float16, float32, for the input data type . \n
 
 *@par Attributes:
-*li alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
+*@li alpha1: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
+*@li alpha2: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
+*@li alpha3: A float32. Defines at which positive value the ELU saturates. Defaults to "1.0" . \n
 
 *@par Outputs:
 *y: A float16, float32, for the normalized result . \n
@@ -656,8 +697,38 @@ REG_OP(Elu)
 REG_OP(Celu)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16}))
-    .ATTR(alpha, Float, 1.0)
+    .ATTR(alpha1, Float, 1.0)
+    .ATTR(alpha2, Float, 1.0)
+    .ATTR(alpha3, Float, 1.0)
     .OP_END_FACTORY_REG(Celu)
+
+/**
+*@brief Continuously Differentiable Exponential Linear Uints:
+*       Perform the linear uint element-wise on the input tensor X using formula:
+*       max(0, x) + min(0, alpha * (exp(x/alpha) - 1)). \n
+
+*@par Inputs:
+*x: A float16, float32, for the input data type . \n
+
+*@par Attributes:
+*li alpha: A float32. Defines at which negative value the CELU saturates. Defaults to "1.0" .
+
+*@par Outputs:
+*y: A float16, float32, for the normalized result . \n
+
+*@attention Constraints:
+*@li The input is of type float16 or float32 . \n
+
+*@par Multiple batches supported or not
+*Supported
+*@par Third-party framework compatibility
+*@li Compatible with ONNX's Celu operator
+*/
+REG_OP(CeluV2)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .ATTR(alpha, Float, 1.0)
+    .OP_END_FACTORY_REG(CeluV2)
 
 /**
 *@brief Computes gradients for the exponential linear (Elu) operation.

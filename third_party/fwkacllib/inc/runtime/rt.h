@@ -11,7 +11,6 @@
 #include "config.h"
 #include "context.h"
 #include "dev.h"
-#include "dvfsprofile.h"
 #include "event.h"
 #include "kernel.h"
 #include "mem.h"

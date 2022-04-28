@@ -268,7 +268,7 @@ REG_OP(ROIAlign)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li x: An NCHW feature map of type is float32 or float16.
 *@li img: source image. Has the same type and format as "x" . \n
 
 *@par Attributes:
@@ -316,12 +316,12 @@ REG_OP(PriorBox)
 
 *@par Inputs:
 * Six inputs, including:
-*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li x: An NCHW feature map of type is float32 or float16.
 *@li img: source image. Has the same type and format as "x".
-*@li data_h: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map height.
-*@li data_w: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map width.
-*@li box_height: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the height of each prior box.
-*@li box_width: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the width of each prior box . \n
+*@li data_h: An NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map height.
+*@li data_w: An NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map width.
+*@li box_height: An NCHW tensor of type float32 or float16, specifying the height of each prior box.
+*@li box_width: An NCHW tensor of type float32 or float16, specifying the width of each prior box . \n
 
 *@par Attributes:
 *@li min_size: A required float32, specifying the minimum edge length of a square prior box.
@@ -371,7 +371,7 @@ REG_OP(PriorBoxD)
 
 *@par Inputs:
 * Six inputs, including:
-*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li x: An NCHW feature map of type is float32 or float16.
 *@li img: source image. Has the same type and format as "x".
 *@li boxes: An ND tensor of type float32 or float16, specifying the prior box information. Same as output y
 
@@ -420,7 +420,7 @@ REG_OP(PriorBoxDV2)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*@li x: A tensor of type float16 or float32, describing the feature
 * map, dimension C1 must be equal to
 * (int(output_dim+15)/C0))*group_size*group_size.
 *@li rois: A tensor of type float16 or float32, with shape
@@ -438,7 +438,7 @@ REG_OP(PriorBoxDV2)
 * coordinates to the ROI coordinates . \n
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+*y: A tensor of type float16 or float32, describing the result
 * feature map . \n
 
 *@attention Constraints:
@@ -1171,7 +1171,7 @@ REG_OP(SPP)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*@li x: A tensor of type float16 or float32, describing the feature
 * map. The data of x must be greater than or equal to "0.0".
 *@li rois: A tensor of type float16 or float32, with 3D shape
 * [batch, 5, roi_max_num], describing the RIOs. Each ROI consists of five
@@ -1195,7 +1195,7 @@ REG_OP(SPP)
 * coordinates of width to the ROI coordinates . \n
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+*y: A tensor of type float16 or float32, describing the result
 * feature map . \n
 
 *@attention Constraints:
@@ -1844,6 +1844,7 @@ REG_OP(NonMaxSuppressionV7)
 REG_OP(RoiExtractor)
     .DYNAMIC_INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(index, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(finest_scale, Int, 56)
     .ATTR(roi_scale_factor, Float, 0)
@@ -1860,7 +1861,7 @@ REG_OP(RoiExtractor)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*@li x: A tensor of type float16 or float32, describing the feature
 * map, dimension C1 must be equal to
 * (int(output_dim+15)/C0))*group_size*group_size.
 *@li rois: A tensor of type float16 or float32, with shape
@@ -1878,7 +1879,7 @@ REG_OP(RoiExtractor)
 * coordinates to the ROI coordinates . \n
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+*y: A tensor of type float16 or float32, describing the result
 * feature map . \n
 
 *@attention Constraints:
@@ -1898,7 +1899,7 @@ REG_OP(PSROIPoolingV2)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 tensor of type float16 or float32, describing the result
+*@li x: A tensor of type float16 or float32, describing the result
 * feature map . \n
 *@li rois: A tensor of type float16 or float32, with shape
 * [batch, 5, rois_num], describing the ROIs, each ROI consists of five
@@ -1916,7 +1917,7 @@ REG_OP(PSROIPoolingV2)
 *@li input_size: A required listInt, mapping the gradinput size: (H, W)
 
 *@par Outputs:
-*y: An NC1HWC0 tensor of type float16 or float32, describing the feature
+*y: A tensor of type float16 or float32, describing the feature
 * map, dimension C1 must be equal to
 * (int(output_dim+15)/C0))*group_size*group_size.
 
@@ -2030,7 +2031,7 @@ REG_OP(GridAssignPositive)
     .OP_END_FACTORY_REG(GridAssignPositive)
 
 /**
-*@brief GIoUGrad . \n
+* @brief Calculate the inverse gradient of GIoU. \n
 
 *@par Inputs:
 *@li dy : data of grad increment, a 1D Tensor of type float16 or float32 with
@@ -2064,17 +2065,88 @@ REG_OP(GIoUGrad)
     .OP_END_FACTORY_REG(GIoUGrad)
 
 /**
-*@brief RotatedOverlaps . \n
+* @brief Calculate the inverse gradient of DIoU. \n
+
+* @par Inputs:
+* @li dy : data of grad increment, a 1D Tensor of type float16 or float32 with
+* shape (N,).
+* @li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* shape (4, N). "N" indicates the number of bounding boxes, and the value
+* "4" refers to [x1, y1, x2, y2] or [x, y, w, h].
+* @li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* with shape (4, M). "M" indicates the number of ground truth boxes, and
+* the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] . \n
+
+* @par Attributes:
+* @li trans: An optional attr, true for 'xywh', false for 'xyxy', only support true now.
+* @li is_cross: An optional attr, if false M equals N, only support false now.
+* @li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
+*          only support 'iou' now. \n
+
+* @par Outputs:
+* @li dbboxes: A 2D Tensor of type float16 or float32 with shape [4, N].
+* @li dgtboxes: A 2D Tensor of type float16 or float32 with shape [4, M].
+*/
+REG_OP(DIoUGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dbboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dgtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(is_cross, Bool, true)
+    .ATTR(mode, String, "iou")
+    .OP_END_FACTORY_REG(DIoUGrad)
+
+/**
+* @brief Calculate the inverse gradient of CIoU. \n
+
+* @par Inputs:
+* @li dy : data of grad increment, a 1D Tensor of type float16 or float32 with
+* shape (N,).
+* @li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* shape (4, N). "N" indicates the number of bounding boxes, and the value
+* "4" refers to [x1, y1, x2, y2] or [x, y, w, h].
+* @li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* with shape (4, M). "M" indicates the number of ground truth boxes, and
+* the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] .
+* @li atan_sub: Intermediate result of forward calculation, 
+* a 1D Tensor of type float16 or float32 with shape (N,). \n
+
+* @par Attributes:
+* @li trans: An optional attr, true for 'xywh', false for 'xyxy', only support true now.
+* @li is_cross: An optional attr, if false M equals N, only support false now.
+* @li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
+*          only support 'iou' now. \n
+
+* @par Outputs:
+* @li dbboxes: A 2D Tensor of type float16 or float32 with shape [4, N].
+* @li dgtboxes: A 2D Tensor of type float16 or float32 with shape [4, M].
+*/
+REG_OP(CIoUGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(atan_sub, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dbboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dgtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(is_cross, Bool, true)
+    .ATTR(mode, String, "iou")
+    .OP_END_FACTORY_REG(CIoUGrad)
+
+/**
+* @brief RotatedOverlaps . \n
 
 *@par Inputs:
 *@li boxes : data of grad increment, a 3D Tensor of type float32 with
 * shape (B, 5, N). "N" indicates the number of boxes, and the value
 * "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
-*@li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
+* @li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
 * shape (B, 5, K). "K" indicates the number of boxes, and the value
 * "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
 
-*@par Attributes:
+* @par Attributes:
 * trans: An optional attr, true for 'xyxyt', false for 'xywht'.
 
 *@par Outputs:
@@ -2093,21 +2165,21 @@ REG_OP(RotatedOverlaps)
 /**
 *@brief RotatedIou . \n
 
-*@par Inputs:
+* @par Inputs:
 *@li boxes : data of grad increment, a 3D Tensor of type float32 with
 * shape (B, 5, N). "N" indicates the number of boxes, and the value
 * "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
-*@li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
+* @li query_boxes: Bounding boxes, a 3D Tensor of type float32 with
 * shape (B, 5, K). "K" indicates the number of boxes, and the value
 * "5" refers to [x1, y1, x2, y2, theta] or [x, y, w, h, theta].
 
-*@par Attributes:
+* @par Attributes:
 *@li trans: An optional attr, true for 'xyxyt', false for 'xywht'.
-*@li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
+* @li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
 * only support 'iou' now.
 *@li is_cross: Cross calculation when it is True, and one-to-one calculation when it is False.
 *@li v_threshold: An optional attr, provide condition relaxation for intersection calculation.
-*@li e_threshold: An optional attr, provide condition relaxation for intersection calculation.
+* @li e_threshold: An optional attr, provide condition relaxation for intersection calculation.
 
 *@par Outputs:
 * iou: A 3D Tensor of float32 with shape [B, N, K].
@@ -2140,7 +2212,7 @@ REG_OP(RotatedIou)
 * "N" indicates the number of bounding boxes, and the value "5" refers to
 * "x0", "x1", "y0", "y1" and "angle". \n
 
-*@par Attributes:
+* @par Attributes:
 *@li weight: A float list for "x0", "x1", "y0", "y1" and "angle",
 * defaults to [1.0, 1.0, 1.0, 1.0, 1.0].
 
@@ -2183,6 +2255,27 @@ REG_OP(RotatedBoxDecode)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(weight, ListFloat, {1.0, 1.0, 1.0, 1.0, 1.0})
     .OP_END_FACTORY_REG(RotatedBoxDecode)
+
+/**
+* @brief sort rois to balance on each core. \n
+
+* @par Inputs:
+* one inputs, including:
+* @li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
+* the value "5" indicates the indexes of images where the ROIs are located, "batch", "x0", "y0", "x1", and "y1".
+
+* @par Outputs:
+* @li balance_rois:  A 2D Tensor of float32 or float16 with shape (N, 5), Outputs of the rois which balance.
+* @li index: 1D Tensor 0f int32 with shape (N,), that is the index of origin rois.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(BalanceRois)
+    .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(balance_rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(index, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(BalanceRois)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

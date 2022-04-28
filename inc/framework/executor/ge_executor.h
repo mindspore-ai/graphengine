@@ -27,7 +27,6 @@
 #include "framework/common/types.h"
 #include "graph/tensor.h"
 #include "graph/ge_tensor.h"
-#include "runtime/base.h"
 
 namespace ge {
 class SingleOp;

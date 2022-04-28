@@ -35,11 +35,11 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param, const std::string &output_file,
                        ge::ModelBufferData &model) const;
   Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
-                           const std::string &output_file, ModelBufferData &model, const bool is_unknown_shape);
-  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file);
+                           const std::string &output_file, ModelBufferData &model, const bool is_unknown_shape) const;
+  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
-  static void SetModelToGeModel(GeModelPtr &ge_model, Model &model);
+  static void SetModelToGeModel(const GeModelPtr &ge_model, Model &model);
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
@@ -52,7 +52,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   }
 
   Status GetBaseNameFromFileName(const std::string &file_name, std::string &base_name) const;
-  Status GetModelNameFromMergedGraphName(const std::string &graph_name, std::string &model_name) const;
+  Status GetModelNameFromMergedGraphName(const ComputeGraphPtr &compute_graph, std::string &model_name) const;
 
  private:
   bool is_assign_model_ = false;
@@ -64,18 +64,21 @@ class GE_FUNC_VISIBILITY ModelHelper {
 
   ModelHelper(const ModelHelper &) = default;
   ModelHelper &operator=(const ModelHelper &) = default;
-  Status GenerateGeModel(OmFileLoadHelper &om_load_helper);
-  Status GenerateGeRootModel(OmFileLoadHelper &om_load_helper);
-  Status LoadModelData(OmFileLoadHelper &om_load_helper);
-  Status LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadWeights(OmFileLoadHelper &om_load_helper);
-  Status LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadTask(OmFileLoadHelper &om_load_helper);
-  Status LoadTask(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper);
-  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index) const;
-  Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper);
-  Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
+
+  bool IsPartitionedGraph(const GeModelPtr &cur_model) const;
+
+  Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index,
+                         const bool is_dyn_root);
+  Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper);
+
+  Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                       const size_t mode_index) const;
+  Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                     const size_t mode_index) const;
+  Status LoadTask(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model, const size_t mode_index) const;
+  Status LoadTBEKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                            const size_t mode_index) const;
+  Status LoadCustAICPUKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                                   const size_t mode_index) const;
 
   Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const ModelPartitionType type,

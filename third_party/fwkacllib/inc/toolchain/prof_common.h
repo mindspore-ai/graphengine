@@ -28,6 +28,7 @@ enum MsprofDataTag {
     MSPROF_RUNTIME_DATA_TAG_API = 40,   //runtime data tag, range: 40~59
     MSPROF_RUNTIME_DATA_TAG_TRACK = 41,
     MSPROF_AICPU_DATA_TAG = 60,         //aicpu data tag, range: 60~79
+    MSPROF_AICPU_MODEL_TAG = 61,
     MSPROF_HCCL_DATA_TAG = 80,          //hccl data tag, range: 80~99
     MSPROF_DP_DATA_TAG = 100,           //dp data tag, range: 100~119
     MSPROF_MSPROFTX_DATA_TAG = 120,     //hccl data tag, range: 120~139
@@ -52,6 +53,16 @@ struct MsprofMixData {
     } data;
 };
 
+#define PATH_LEN_MAX 1023
+#define PARAM_LEN_MAX 4095
+struct MsprofCommandHandleParams {
+    uint32_t pathLen;
+    uint32_t storageLimit;  // MB
+    uint32_t profDataLen;
+    char path[PATH_LEN_MAX + 1];
+    char profData[PARAM_LEN_MAX + 1];
+};
+
 /**
  * @brief profiling command info
  */
@@ -63,6 +74,7 @@ struct MsprofCommandHandle {
     uint32_t devIdList[MSPROF_MAX_DEV_NUM];
     uint32_t modelId;
     uint32_t type;
+    struct MsprofCommandHandleParams params;
 };
 
 /**
@@ -136,7 +148,7 @@ struct MsprofGeProfInferData {
     uint8_t  reserve[MSPROF_GE_INFER_DATA_RESERVE_BYTES];
 };
 
-#define MSPROF_GE_TASK_DATA_RESERVE_BYTES 16
+#define MSPROF_GE_TASK_DATA_RESERVE_BYTES 12
 #define MSPROF_GE_OP_TYPE_LEN 56
 enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_AI_CORE = 0,
@@ -169,6 +181,7 @@ struct MsprofGeProfTaskData {
     uint32_t streamId;
     uint32_t taskId;
     uint32_t threadId;
+    uint32_t contextId;
     uint8_t  reserve[MSPROF_GE_TASK_DATA_RESERVE_BYTES];
 };
 
@@ -303,6 +316,19 @@ struct MsprofAicpuProfData {
     uint16_t fftsThreadId;
     uint8_t  version;
     uint8_t  reserve[MSPROF_AICPU_DATA_RESERVE_BYTES];
+};
+
+struct MsprofAicpuModelProfData {
+    uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
+    uint16_t dataTag = MSPROF_AICPU_MODEL_TAG;
+    uint32_t rsv;   // Ensure 8-byte alignment
+    uint64_t timeStamp;
+    uint64_t indexId;
+    uint32_t modelId;
+    uint16_t tagId;
+    uint16_t rsv1;
+    uint64_t eventId;
+    uint8_t  reserve[24];
 };
 
 /**

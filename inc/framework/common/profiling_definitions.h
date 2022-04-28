@@ -49,7 +49,12 @@ enum {
   kAtomic,
   kKernelLaunchPrepare,
   kRtKernelLaunch,
+  kRtEventCreateRecord,
+  kRtEventSync,
+  kRtEventDestroy,
+  kRtStreamSync,
   kOpExecute,
+  kModelExecute,
   kAllocMem,
   kCopyH2D,
   kPrepareNode,
@@ -67,6 +72,33 @@ enum {
   kSelectBranch,
   kExecuteSubGraph,
   kInitSubGraphExecutor,
+  // fuzz compile
+  kSelectBin,
+  kFindCompileCache,
+  kAddCompileCache,
+  kFuzzCompileOp,
+  kCalcRuningParam,
+  kGenTask,
+  kRegisterBin,
+
+  // FFTS Plus
+  kFftsPlusPreThread,
+  kFftsPlusNodeThread,
+  kFftsPlusInferShape,
+  kOpFftsCalculateV2,
+  kInitThreadRunInfo,
+  kFftsPlusGraphSchedule,
+  kKnownGetAddrAndPrefCnt,
+  kKernelGetAddrAndPrefCnt,
+  kUpdateAddrAndPrefCnt,
+  kInitOpRunInfo,
+  kGetAutoThreadParam,
+  kAllocateOutputs,
+  kAllocateWorkspaces,
+  kInitTaskAddrs,
+  kInitThreadRunParam,
+  kUpdateTaskAndCache,
+  kFftsPlusTaskLaunch,
 
   // Add new definitions here
   kProfilingIndexEnd
@@ -88,7 +120,7 @@ class ProfilingContext {
    * 因此编译时注册字符串的动作并没有生效。在执行时，动态的打开了profiling，这种场景下，执行时无法拿到注册后字符串
    */
   bool IsEnabled() const noexcept {
-    return enabled_ && profiler_ != nullptr;
+    return enabled_ && (profiler_ != nullptr);
   }
   void SetEnable() noexcept {
     enabled_ = true;
@@ -184,5 +216,6 @@ class ScopeProfiler {
   ge::profiling::ProfilingContext::GetInstance().RecordCurrentThread((element), (event), \
                                                                      ge::profiling::EventType::kEventEnd)
 #define PROFILING_SCOPE(element, event) ge::profiling::ScopeProfiler profiler((element), (event))
+#define PROFILING_SCOPE_CONST(element, event) const ge::profiling::ScopeProfiler profiler((element), (event))
 #define PROFILING_SCOPE_ELEMENT(element) profiler.SetElement((element))
 #endif  // AIR_CXX_PROFILING_DEFINITIONS_H

@@ -206,6 +206,7 @@ enum {
     TUNE,
     HSS, /**< helper */
     FFTS,
+    OP,
     INVLID_MOUDLE_ID
 };
 

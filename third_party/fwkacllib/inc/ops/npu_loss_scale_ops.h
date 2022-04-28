@@ -141,8 +141,7 @@ REG_OP(NPUClearFloatStatusV2)
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUGetFloatStatusV2)
-    .DYNAMIC_INPUT(addr, TensorType{DT_FLOAT})
-    .OUTPUT(data, TensorType({DT_FLOAT}))
+    .OUTPUT(data, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(NPUGetFloatStatusV2)
 }  // namespace ge
 

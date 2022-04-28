@@ -39,7 +39,7 @@ namespace ge {
 *input_format: A required string, specifying the input format. \n
 
 *@par Outputs:
-*y: The output tensor of type uint8, format only support NC1HWC0_C04.
+*y: The output tensor of type uint8.
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 *

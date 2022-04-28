@@ -83,17 +83,6 @@ enum MsprofReporterCallbackType {
     MSPROF_REPORTER_HASH                  // hash data to id
 };
 
-/**
- * @name  MsprofReporterCallback
- * @brief callback to start reporter/stop reporter/report date
- * @param moduleId  [IN] enum MsprofReporterModuleId
- * @param type      [IN] enum MsprofReporterCallbackType
- * @param data      [IN] callback data (nullptr on INTI/UNINIT)
- * @param len       [IN] callback data size (0 on INIT/UNINIT)
- * @return enum MsprofErrorCode
- */
-typedef int32_t (*MsprofReporterCallback)(uint32_t moduleId, uint32_t type, void *data, uint32_t len);
-
 #define MSPROF_OPTIONS_DEF_LEN_MAX (2048)
 
 /**
@@ -114,6 +103,7 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_ACL_JSON,              // start pro with acl.json
     MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
     MSPROF_CTRL_FINALIZE,                   // stop profiling
+    MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
     MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 
@@ -127,40 +117,88 @@ enum MsprofCommandHandleType {
 };
 
 /**
- * @name  MsprofCtrlCallback
+ * @brief   profiling command type
+ */
+enum ProfCtrlType {
+    PROF_CTRL_INVALID = 0,
+    PROF_CTRL_SWITCH,
+    PROF_CTRL_REPORTER,
+    PROF_CTRL_STEPINFO,
+    PROF_CTRL_BUTT
+};
+
+/**
+ * @brief   Prof Chip ID
+ */
+enum Prof_Chip_ID {
+    PROF_CHIP_ID0 = 0
+};
+
+typedef int32_t (*MsprofCtrlCallback)(uint32_t type, void *data, uint32_t len);
+typedef int32_t (*MsprofReporterCallback)(uint32_t moduleId, uint32_t type, void *data, uint32_t len);
+
+/**
+ * @brief  the struct of profiling set setp info
+ */
+typedef struct ProfStepInfoCmd {
+    uint64_t index_id;
+    uint16_t tag_id;
+    void *stream;
+} ProfStepInfoCmd_t;
+
+/**
+ * @name  ProfCommandHandle
  * @brief callback to start/stop profiling
- * @param type      [IN] enum MsprofCtrlCallbackType
+ * @param type      [IN] enum call back type
  * @param data      [IN] callback data
  * @param len       [IN] callback data size
  * @return enum MsprofErrorCode
  */
-typedef int32_t (*MsprofCtrlCallback)(uint32_t type, void *data, uint32_t len);
-
-/**
- * @name  MsprofSetDeviceCallback
- * @brief callback to notify set/reset device
- * @param devId     [IN] device id
- * @param isOpenDevice  [IN] true: set device, false: reset device
- */
-typedef void (*MsprofSetDeviceCallback)(uint32_t devId, bool isOpenDevice);
-
+typedef int32_t (*ProfCommandHandle)(uint32_t type, void *data, uint32_t len);
 /*
- * @name  MsprofInit
+ * @name  profInit
  * @brief Profiling module init
  * @param [in] dataType: profiling type: ACL Env/ACL Json/GE Option
  * @param [in] data: profiling switch data
  * @param [in] dataLen: Length of data
  * @return 0:SUCCESS, >0:FAILED
  */
-MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
-
+MSVP_PROF_API int32_t MsprofInit(uint32_t moduleId, void *data, uint32_t dataLen);
+/**
+ * @name  profRegisterCallback
+ * @brief register callback to profiling
+ * @param moduleId  [IN] module Id
+ * @param handle    [IN] the pointer of callback
+ */
+MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
 /*
- * @name AscendCL
+ * @name profReportData
+ * @brief start reporter/stop reporter/report date
+ * @param moduleId  [IN] enum profReporterModuleId
+ * @param type      [IN] enum profReporterCallbackType
+ * @param data      [IN] data (nullptr on INTI/UNINIT)
+ * @param len       [IN] data size (0 on INIT/UNINIT)
+ * @return enum MsprofErrorCod
+ */
+MSVP_PROF_API int32_t MsprofReportData(uint32_t moduleId, uint32_t type, void* data, uint32_t len);
+
+MSVP_PROF_API int32_t MsprofSetDeviceIdByGeModelIdx(const uint32_t geModelIdx, const uint32_t deviceId);
+MSVP_PROF_API int32_t MsprofUnsetDeviceIdByGeModelIdx(const uint32_t geModelIdx, const uint32_t deviceId);
+/*
+ * @name profFinalize
  * @brief Finishing Profiling
  * @param NULL
  * @return 0:SUCCESS, >0:FAILED
  */
 MSVP_PROF_API int32_t MsprofFinalize();
+/**
+ * @name  profNotifySetDevice
+ * @brief notify set/reset device
+ * @param devId     [IN] device id
+ * @param isOpenDevice  [IN] true: set device, false: reset device
+ */
+MSVP_PROF_API int32_t MsprofNotifySetDevice(uint32_t chipId, uint32_t deviceId, bool isOpen);
+
 #ifdef __cplusplus
 }
 #endif

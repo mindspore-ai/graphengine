@@ -19,11 +19,11 @@
 #include "common/type_def.h"
 namespace tsd {
 #ifdef __cplusplus
-    using TSD_StatusT = uint32_t;
+using TSD_StatusT = uint32_t;
 #else
-    typedef uint32_t TSD_StatusT;
+typedef uint32_t TSD_StatusT;
 #endif
-    // success code
-    constexpr TSD_StatusT TSD_OK = 0U;
-}
+// success code
+constexpr TSD_StatusT TSD_OK = 0U;
+}  // namespace tsd
 #endif  // INC_TDT_STATUS_H

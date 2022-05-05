@@ -27,16 +27,16 @@
 #include "common/cust_aicpu_kernel_store.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "graph/buffer.h"
 #include "external/graph/graph.h"
 #include "proto/task.pb.h"
 
 namespace ge {
-const uint32_t INVALID_MODEL_ID = 0xFFFFFFFFUL;
 class GeModel : public AttrHolder {
  public:
   GeModel();
-  ~GeModel() = default;
+  ~GeModel() override = default;
   GeModel(const GeModel &other) = delete;
   GeModel &operator=(const GeModel &other) = delete;
 
@@ -57,10 +57,13 @@ class GeModel : public AttrHolder {
   void SetCustAICPUKernelStore(const CustAICPUKernelStore &cust_aicpu_kernal_store);
   void SetWeight(const Buffer &weights_buffer);
 
+  bool LoadTBEKernelStore(const uint8_t *const data, const size_t len);
+  bool loadAICPUKernelStore(const uint8_t *const data, const size_t len);
+
   void SetName(const std::string &name);
-  void SetVersion(uint32_t version);
+  void SetVersion(const uint32_t version);
   void SetPlatformVersion(const std::string &platform_version);
-  void SetPlatformType(uint8_t platform_type);
+  void SetPlatformType(const uint8_t platform_type);
 
   void SetAttr(const ProtoAttrMap &attrs);
 
@@ -70,13 +73,10 @@ class GeModel : public AttrHolder {
   using AttrHolder::GetAllAttrs;
   using AttrHolder::GetAllAttrNames;
 
-  void SetModelId(uint32_t model_id) { model_id_ = model_id; }
+  void SetModelId(const uint32_t model_id) { model_id_ = model_id; }
   uint32_t GetModelId() const { return model_id_; }
 
-  Status GetSessionId(uint32_t model_id, uint64_t &session_id) const;
-  void InsertSessionMap(uint32_t model_id, uint64_t session_id) {
-    model_id_to_session_id_map_.insert({model_id, session_id});
-  }
+  Status GetSessionId(const uint32_t model_id, uint64_t &session_id) const;
 
  protected:
   ConstProtoAttrMap &GetAttrMap() const override;
@@ -93,9 +93,9 @@ class GeModel : public AttrHolder {
   Buffer weights_buffer_;  /*lint !e148*/
 
   std::string name_;
-  uint32_t version_ = {0};
+  uint32_t version_ = {0U};
   std::string platform_version_;
-  uint8_t platform_type_ = {0};
+  uint8_t platform_type_ = {0U};
   uint32_t model_id_ = INVALID_MODEL_ID;
   std::map<uint32_t, uint64_t> model_id_to_session_id_map_;
 };

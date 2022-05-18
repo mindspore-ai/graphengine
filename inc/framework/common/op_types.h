@@ -45,14 +45,6 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
  private:
   std::set<std::string> op_type_list_;
 };
-
-class GE_FUNC_VISIBILITY OpTypeRegistrar {
- public:
-  explicit OpTypeRegistrar(const std::string &op_type) noexcept {
-    OpTypeContainer::Instance()->Register(op_type);
-  }
-  ~OpTypeRegistrar() {}
-};
 }  // namespace ge
 
 #define REGISTER_OPTYPE_DECLARE(var_name, str_name) \
@@ -60,7 +52,7 @@ class GE_FUNC_VISIBILITY OpTypeRegistrar {
 
 #define REGISTER_OPTYPE_DEFINE(var_name, str_name) \
   const char_t *var_name = str_name;               \
-  const ge::OpTypeRegistrar g_##var_name##_reg(str_name);
+  const bool g_##var_name##_reg = (static_cast<void>(OpTypeContainer::Instance()->Register(str_name)), true);
 
 #define IS_OPTYPE_EXISTING(str_name) (ge::OpTypeContainer::Instance()->IsExisting(str_name))
 #endif  // INC_FRAMEWORK_COMMON_OP_TYPES_H_

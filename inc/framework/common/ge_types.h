@@ -309,6 +309,7 @@ struct Options {
   int32_t physical_device_id;
   std::string profiling_mode;
   std::string profiling_options;
+  int32_t graphExecTimeout;
 };
 
 // Profiling info of task

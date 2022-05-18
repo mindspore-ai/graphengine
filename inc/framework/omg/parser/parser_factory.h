@@ -23,6 +23,7 @@
 #include <string>
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/parser/parser_types.h"
+#include "external/register/register.h"
 
 namespace domi {
 class WeightsParser;
@@ -131,6 +132,12 @@ class GE_FUNC_VISIBILITY WeightsParserRegisterar {
     return std::shared_ptr<WeightsParser>(ptr);                      \
   }                                                                  \
   WeightsParserRegisterar g_##type##_Weights_Parser_Creator(type, Creator_##type##_Weights_Parser)
-};  // namespace domi
+
+class GE_FUNC_VISIBILITY OpRegTbeParserFactory {
+ public:
+  static OpRegTbeParserFactory *Instance();
+  void Finalize(const domi::OpRegistrationData &reg_data);
+};
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_OMG_PARSER_PARSER_FACTORY_H_

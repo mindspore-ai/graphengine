@@ -88,7 +88,7 @@
     if ((expr) != ge::GRAPH_SUCCESS) {                      \
       REPORT_CALL_ERROR("E19999", "Operator graph failed"); \
       GELOGE(ge::FAILED, __VA_ARGS__);                      \
-      return (FAILED);                                      \
+      return (ge::FAILED);                                  \
     }                                                       \
   } while (false)
 

@@ -27,6 +27,15 @@
 #include "framework/pne/pne_model.h"
 
 namespace ge {
+class ProcessNodeEngineImpl {
+ public:
+  virtual Status OptimizeGraph(const std::vector<GeTensor> &inputs, ComputeGraphPtr &compute_graph) = 0;
+
+  virtual Status BuildGraph(ComputeGraphPtr &compute_graph, PneModelPtr &model) = 0;
+};
+
+using ProcessNodeEngineImplPtr = std::shared_ptr<ProcessNodeEngineImpl>;
+
 class ProcessNodeEngine {
  public:
   ProcessNodeEngine() = default;
@@ -45,8 +54,11 @@ class ProcessNodeEngine {
 
   virtual const std::string &GetEngineName(const ge::NodePtr &node_ptr = nullptr) const = 0;
 
+  virtual void SetImpl(ProcessNodeEngineImplPtr impl) = 0;
+
  protected:
   std::string engine_id_;
+  ProcessNodeEngineImplPtr impl_ = nullptr;
 };
 
 using ProcessNodeEnginePtr = std::shared_ptr<ProcessNodeEngine>;

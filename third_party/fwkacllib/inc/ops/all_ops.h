@@ -42,6 +42,7 @@
 #include "list_ops.h"
 #include "logging_ops.h"
 #include "lookup_ops.h"
+#include "map_ops.h"
 #include "math_ops.h"
 #include "matrix_calculation_ops.h"
 #include "nn_batch_norm_ops.h"
@@ -79,4 +80,5 @@
 #include "warp_perspective_ops.h"
 #include "vector_search.h"
 #include "deep_md.h"
+#include "encoding_ops.h"
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_

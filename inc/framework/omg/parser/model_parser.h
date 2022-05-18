@@ -52,7 +52,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual domi::Status Parse(const char *file, ge::Graph &graph) = 0;
+  virtual Status Parse(const char *file, ge::Graph &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -64,7 +64,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return FAILED
    * @author
    */
-  virtual domi::Status ParseFromMemory(const char *data, uint32_t size, ge::ComputeGraphPtr &graph) = 0;
+  virtual Status ParseFromMemory(const char *data, uint32_t size, ge::ComputeGraphPtr &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -76,7 +76,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return FAILED
    * @author
    */
-  virtual domi::Status ParseFromMemory(const char *data, uint32_t size, ge::Graph &graph) = 0;
+  virtual Status ParseFromMemory(const char *data, uint32_t size, ge::Graph &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -86,7 +86,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual domi::Status ParseProto(const google::protobuf::Message *proto, ge::ComputeGraphPtr &graph) = 0;
+  virtual Status ParseProto(const google::protobuf::Message *proto, ge::ComputeGraphPtr &graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -97,8 +97,8 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual domi::Status ParseProtoWithSubgraph(const google::protobuf::Message *proto, GetGraphCallback callback,
-                                              ge::ComputeGraphPtr &graph) = 0;
+  virtual Status ParseProtoWithSubgraph(const google::protobuf::Message *proto, GetGraphCallback callback,
+                                        ge::ComputeGraphPtr &graph) = 0;
   /**
    * @ingroup domi_omg
    * @brief Convert model files to JSON format
@@ -107,10 +107,10 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual domi::Status ToJson(const char *model_file, const char *json_file) {
+  virtual Status ToJson(const char *model_file, const char *json_file) {
     (void)model_file;
     (void)json_file;
-    return domi::SUCCESS;
+    return SUCCESS;
   }
 
   /*
@@ -121,7 +121,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    */
   virtual ge::DataType ConvertToGeDataType(const uint32_t type) = 0;
 
-  virtual domi::Status ParseAllGraph(const google::protobuf::Message *root_proto, ge::ComputeGraphPtr &root_graph) = 0;
+  virtual Status ParseAllGraph(const google::protobuf::Message *root_proto, ge::ComputeGraphPtr &root_graph) = 0;
 
   /**
    * @ingroup domi_omg
@@ -131,7 +131,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual domi::Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) {
+  virtual Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) {
     (void)serialized_proto;
     (void)graph;
     return UNSUPPORTED;
@@ -146,13 +146,24 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual domi::Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
-                                              ge::ComputeGraphPtr &graph) {
+  virtual Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
+                                        ge::ComputeGraphPtr &graph) {
     (void)serialized_proto;
     (void)callback;
     (void)graph;
     return UNSUPPORTED;
   }
+
+  virtual bool HasError() {
+    return false;
+  }
+
+  virtual Status Save(const std::string &file) {
+    (void)file;
+    return SUCCESS;
+  }
+
+  virtual void Clear(){};
 };
 }  // namespace domi
 

@@ -70,6 +70,8 @@ const char_t *const OPTION_EXEC_DYNAMIC_INPUT = "ge.exec.dynamicInput";
 const char_t *const OPTION_EXEC_DYNAMIC_EXECUTE_MODE = "ge.exec.dynamicGraphExecuteMode";
 const char_t *const OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE = "ge.exec.dataInputsShapeRange";
 const char_t *const OPTION_EXEC_ENABLE_COPY_OUTPUT_ADDR = "ge.exec.enableCopyOutputAddr";
+const char_t *const OPTION_EXEC_GRAPH_EXEC_TIMEOUT = "ge.exec.graphExecTimeout";
+const char_t *const OPTION_EXEC_MODEL_EXEC_TIMEOUT = "ge.exec.modelExecTimeout";
 
 // Option key: memory init
 const char_t *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";

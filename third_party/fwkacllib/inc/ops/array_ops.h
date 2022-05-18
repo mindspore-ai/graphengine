@@ -1550,6 +1550,39 @@ REG_OP(EnsureShape)
                             DT_FLOAT,DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(EnsureShape)
+
+/**
+* @brief Finds the first unique element from every consecutive group of equivalent elements.
+
+* @par Inputs:
+* x: A ND tensor.
+
+* @par Attributes:
+* @li return_idx: An optional bool. Whether to also return the indices. The default value is False
+* @li return_count: An optional bool. Whether to also return the counts for each element. The default is False.
+* @li axis: An optional int. Which one axis to apply unique. The default is 1000, which means None.
+
+* @par Outputs:
+* @li y: "x" in the unique output "y".
+* @li idx: The index of each value of "x".
+* @li count: The counts of each value of "y".
+
+* @attention Constraints:
+* UniqueConsecutive runs on the Ascend AI CPU, which delivers poor performance.
+
+* @par Third-party framework compatibility
+* Compatible with the PyTorch operator UniqueConsecutive.
+*/
+
+REG_OP(UniqueConsecutive)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(idx, TensorType::IndexNumberType())
+    .OUTPUT(count, TensorType::IndexNumberType())
+    .ATTR(return_idx, Bool, false)
+    .ATTR(return_counts, Bool, false)
+    .ATTR(axis, Int, 1000)
+    .OP_END_FACTORY_REG(UniqueConsecutive)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

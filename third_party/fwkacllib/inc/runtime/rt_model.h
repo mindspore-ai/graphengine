@@ -263,6 +263,18 @@ typedef struct tagrtStreamLabelGotoTask_t {
     uint8_t reserved[36];
 } rtStreamLabelGotoTask_t;
 
+typedef struct tagrtNpuGetFloatStatusTask_t {
+    uint64_t outputAddr;
+    uint64_t outputSize;
+    uint32_t checkMode;
+    uint8_t reserved[20];
+} rtNpuGetFloatStatusTask_t;
+
+typedef struct tagrtNpuClearFloatStatusTask_t {
+    uint32_t checkMode;
+    uint8_t reserved[36];
+} rtNpuClearFloatStatusTask_t;
+
 typedef struct tagTaskInfo {
     uint32_t type;
     uint32_t streamID;
@@ -288,6 +300,8 @@ typedef struct tagTaskInfo {
         rtStreamSwitchNTaskInfo_t streamSwitchNTask;
         rtStreamLabelSwitchByIndexTask_t streamLabelSwitchIndexTask;
         rtStreamLabelGotoTask_t streamLabelGotoTask;
+        rtNpuGetFloatStatusTask_t npuGetFloatStatusTask;
+        rtNpuClearFloatStatusTask_t npuClearFloatStatusTask;
         uint32_t reserved[10];
     } u;
 } rtTaskInfo_t;

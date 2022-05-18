@@ -25,6 +25,82 @@
 
 namespace ge {
 /**
+* @brief Backprop W of AttentionLnQKV + ReduceSumD \n
+* @par Inputs:
+* Four inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16.
+* @li query_dx: A Tensor. Must be one of the following types: float16.
+* @li key_dw: A Tensor. Must be one of the following types: float16.
+* @li value_dw: A Tensor. Must be one of the following types: float16.
+
+* @par Attributes:
+* @li trans_a: A optional attribute, the type is bool. Defaults to True.
+* @li trans_b: A optional attribute, the type is bool. Defaults to False. \n
+
+* @par Outputs:
+* Six outputs, including:
+* @li dw_query: A Tensor. Must be one of the following types: float16.
+* @li dw_key: A Tensor. Must be one of the following types: float16.
+* @li dw_value: A Tensor. Must be one of the following types: float16.
+* @li dbias_query: A Tensor. Must be one of the following types: float16.
+* @li dbias_key: A Tensor. Must be one of the following types: float16.
+* @li dbias_value: A Tensor. Must be one of the following types: float16. \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+REG_OP(AttentionQKVGradW)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(query_dx, TensorType({DT_FLOAT16}))
+    .INPUT(key_dw, TensorType({DT_FLOAT16}))
+    .INPUT(value_dw, TensorType({DT_FLOAT16}))
+    .OUTPUT(dw_query, TensorType({DT_FLOAT16}))
+    .OUTPUT(dw_key, TensorType({DT_FLOAT16}))
+    .OUTPUT(dw_value, TensorType({DT_FLOAT16}))
+    .OUTPUT(dbias_query, TensorType({DT_FLOAT16}))
+    .OUTPUT(dbias_key, TensorType({DT_FLOAT16}))
+    .OUTPUT(dbias_value, TensorType({DT_FLOAT16}))
+    .ATTR(trans_a, Bool, true)
+    .ATTR(trans_b, Bool, false)
+    .OP_END_FACTORY_REG(AttentionQKVGradW)
+
+/**
+* @brief Backprop X of AttentionLnQKV + AddN \n
+* @par Inputs:
+* Seven inputs, including:
+* @li ln_dx: A Tensor. Must be one of the following types: float16.
+* @li query_dx: A Tensor. Must be one of the following types: float16.
+* @li key_dw: A Tensor. Must be one of the following types: float16.
+* @li value_dw: A Tensor. Must be one of the following types: float16.
+* @li kernel_query: A Tensor. Must be one of the following types: float16.
+* @li kernel_key: A Tensor. Must be one of the following types: float16.
+* @li kernel_value: A Tensor. Must be one of the following types: float16. \n
+
+* @par Attributes:
+* @li trans_a: A optional attribute, the type is bool. Defaults to False.
+* @li trans_b: A optional attribute, the type is bool. Defaults to True. \n
+
+* @par Outputs:
+* One outputs, including:
+* @li dx: A Tensor. Must be one of the following types: float16. \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+REG_OP(AttentionQKVGradX)
+    .INPUT(ln_dx, TensorType({DT_FLOAT16}))
+    .INPUT(query_dx, TensorType({DT_FLOAT16}))
+    .INPUT(key_dw, TensorType({DT_FLOAT16}))
+    .INPUT(value_dw, TensorType({DT_FLOAT16}))
+    .INPUT(kernel_query, TensorType({DT_FLOAT16}))
+    .INPUT(kernel_key, TensorType({DT_FLOAT16}))
+    .INPUT(kernel_value, TensorType({DT_FLOAT16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16}))
+    .ATTR(trans_a, Bool, false)
+    .ATTR(trans_b, Bool, true)
+    .OP_END_FACTORY_REG(AttentionQKVGradX)
+
+/**
 * @brief
              / (MatMul -> ConfusionTransposeD).
    LayerNorm - (MatMul -> ConfusionTransposeD).
@@ -54,6 +130,9 @@ namespace ge {
 * @li value_output: A Tensor. Must be one of the following types: float16.
 * @li mean: A Tensor. Must be one of the following types: float16.
 * @li variance: A Tensor. Must be one of the following types: float16. \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
 */
 REG_OP(AttentionLnQKV)
     .INPUT(x, TensorType({DT_FLOAT16}))

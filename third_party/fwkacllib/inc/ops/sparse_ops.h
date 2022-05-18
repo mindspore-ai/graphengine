@@ -951,7 +951,7 @@ REG_OP(SerializeSparse)
         DT_UINT16, DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, \
         DT_COMPLEX64, DT_COMPLEX128, DT_RESOURCE, DT_STRING}))
     .INPUT(shape, TensorType({DT_INT64}))
-    .OUTPUT(serialized_sparse, TensorType({DT_STRING}))
+    .OUTPUT(serialized_sparse, TensorType({DT_STRING, DT_VARIANT}))
     .ATTR(out_type, Type, DT_STRING)
     .OP_END_FACTORY_REG(SerializeSparse)
 
@@ -979,7 +979,7 @@ REG_OP(SerializeManySparse)
         DT_UINT16, DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, \
         DT_COMPLEX64, DT_COMPLEX128, DT_RESOURCE, DT_STRING}))
     .INPUT(shape, TensorType({DT_INT64}))
-    .OUTPUT(serialized_sparse, TensorType({DT_STRING}))
+    .OUTPUT(serialized_sparse, TensorType({DT_STRING, DT_VARIANT}))
     .ATTR(out_type, Type, DT_STRING)
     .OP_END_FACTORY_REG(SerializeManySparse)
 
@@ -1002,7 +1002,7 @@ REG_OP(SerializeManySparse)
 * Compatible with the TensorFlow operator DeserializeSparse.
 */
 REG_OP(DeserializeSparse)
-    .INPUT(serialized_sparse, TensorType({DT_STRING}))
+    .INPUT(serialized_sparse, TensorType({DT_STRING, DT_VARIANT}))
     .OUTPUT(indices, TensorType({DT_INT64}))
     .OUTPUT(values, TensorType({DT_BOOL, DT_INT8, DT_UINT8, DT_INT16, \
         DT_UINT16, DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, \

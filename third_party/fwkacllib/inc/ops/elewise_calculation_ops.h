@@ -1620,8 +1620,8 @@ REG_OP(Greater)
 * Compatible with the TensorFlow operator zeros_like.
 */
 REG_OP(ZerosLike)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({BasicType(), DT_VARIANT}))
+    .OUTPUT(y, TensorType({BasicType(), DT_VARIANT}))
     .OP_END_FACTORY_REG(ZerosLike)
 
 /**

@@ -211,6 +211,8 @@ typedef struct {
 
 #define HCCL_REQUEST_NULL   NULL
 
+#define HCCL_TAG_ANY (1 << 30)
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

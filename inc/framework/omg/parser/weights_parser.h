@@ -67,6 +67,17 @@ class GE_FUNC_VISIBILITY WeightsParser {
    * @author
    */
   virtual Status ParseFromMemory(const char *input, uint32_t lengt, ge::ComputeGraphPtr &graph) = 0;
+
+  virtual bool HasError() {
+    return false;
+  }
+
+  virtual Status Save(const std::string &file) {
+    (void)file;
+    return SUCCESS;
+  }
+
+  virtual void Clear() {}
 };
 }  // namespace domi
 

@@ -2612,6 +2612,34 @@ REG_OP(DynSeqOuter)
     .INPUT(seq_len2, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(DynSeqOuter)
+
+/**
+* @brief Returns sliced data based on max nmsed_num. \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li input_nmsed_boxes: A Tensor. Must be the following types: float16.
+* @li input_nmsed_score: A Tensor. Must be the following types: float16.
+* @li input_nmsed_class: A Tensor. Must be the following types: float16.
+* @li input_nmsed_num: A Tensor. Must be the following types: int32. \n
+
+* @par Outputs:
+* output_nmsed_boxes: A Tensor. Must be the following type: float.
+* output_nmsed_score: A Tensor. Must be the following type: float.
+* output_nmsed_class: A Tensor. Must be the following type: float. \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(NonMaxSuppressionBucketize)
+    .INPUT(input_nmsed_boxes, TensorType({DT_FLOAT16}))
+    .INPUT(input_nmsed_score, TensorType({DT_FLOAT16}))
+    .INPUT(input_nmsed_class, TensorType({DT_FLOAT16}))
+    .INPUT(input_nmsed_num, TensorType({DT_INT32}))
+    .OUTPUT(output_nmsed_boxes, TensorType({DT_FLOAT}))
+    .OUTPUT(output_nmsed_score, TensorType({DT_FLOAT}))
+    .OUTPUT(output_nmsed_class, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(NonMaxSuppressionBucketize)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

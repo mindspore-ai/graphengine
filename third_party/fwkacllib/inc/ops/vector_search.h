@@ -154,6 +154,98 @@ REG_OP(CalcBucketsLimitAndOffset)
     .OUTPUT(buckets_offset, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(total_limit, Int)
     .OP_END_FACTORY_REG(CalcBucketsLimitAndOffset)
+
+/**
+*@brief get block tensor according to base addr tensor, for hccl remote read to use.
+*@par Inputs:
+*@li base_addr: A Tensor of type int64/uint64. \n
+*@li row:A Tensor of type int64/uint64. \n
+*@li col: A Tensor of type int64/uint64.
+
+*@par Outputs:
+*addr_table: list of [rank id, host addr, device addr, read size]
+
+*@par Attributes:
+*@li ori_shape: An required list int. Shape of base tensor.
+*@li block_size: An required list int. Shape of split block tensor.
+*@li ori_storage_mode: An optional string from: '"Matrix", "UT"'. Defaults to
+"Matrix". Currently only support Matrix storage
+*@li block_storage_mode: An optional string from: '"Matrix", "UT"'. Defaults to
+"Matrix". Currently only support Matrix storage
+*@li rank_id: An optional int of rank id. Defaults is 0
+*@li dtype: An optional Type of base tensor. Defaults is DT_FLOAT
+*/
+REG_OP(IndexToAddr)
+    .INPUT(base_addr, TensorType({DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_INT64, DT_UINT64}))
+    .OUTPUT(addrs_table, TensorType({DT_INT64, DT_UINT64}))
+    .REQUIRED_ATTR(ori_shape, ListInt)
+    .REQUIRED_ATTR(block_size, ListInt)
+    .ATTR(ori_storage_mode, String, "Matrix")
+    .ATTR(block_storage_mode, String, "Matrix")
+    .ATTR(rank_id, Int, 0)
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(IndexToAddr)
+
+/**
+*@brief Convert one-dimensional coordinates to two-dimensional coordinates.
+*@par Inputs:
+*@li x: A Tensor of type int32/int64/uint64. One-dimensional coordinates.
+*@li shape: A Tensor of type int32/int64/uint64. 4D tensor [N,C,H,W].
+*@par Outputs:
+*@li row: row of two-dimensional
+*@li col: col of two-dimensional
+*@li n: col number of two-dimensional
+*/
+REG_OP(Coordinates1DTo2D)
+    .INPUT(x, TensorType({DT_INT32, DT_INT64, DT_UINT64}))
+    .INPUT(shape, TensorType({DT_INT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(row, TensorType({DT_INT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(col, TensorType({DT_INT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(n, TensorType({DT_INT32, DT_INT64, DT_UINT64}))
+    .OP_END_FACTORY_REG(Coordinates1DTo2D)
+
+/**
+*@brief x[0] is i, x[1] is j and x[2] is k when algorithm is LU,
+y = 0 when i >= k && j < k,
+y = 1 when i == k && j == k,
+y = 2 when i > k && j == k,
+y = 3 when i == k && j > k,
+y = 4 when i > k && j > k,
+default y = 5
+use for lu decomposition
+*@par Inputs:
+*x: A Tensor of type int32/int64/uint64. \n
+
+*@par Attributes:
+*algorithm: A string, only support LU now
+*@par Outputs:
+*y: A Tensor of type int32
+*/
+REG_OP(CaseCondition)
+    .INPUT(x, TensorType({DT_INT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .ATTR(algorithm, String, "LU")
+    .OP_END_FACTORY_REG(CaseCondition)
+
+/**
+*@brief write tensor value to tensor x.
+*@par Inputs:
+*x: A Tensor of type float16/float/double/int32/int64. \n
+*begin:A Tensor of type int32/int64. \n
+*value: A Tensor of type float16/float/double/int32/int64.
+*@par Outputs:
+*x: same tensor with input x
+*/
+REG_OP(SliceWrite)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, \
+        DT_INT32, DT_INT64}))
+    .INPUT(begin, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, \
+        DT_INT32, DT_INT64}))
+    .OUTPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, \
+        DT_INT32, DT_INT64}))
+    .OP_END_FACTORY_REG(SliceWrite)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_VECTOR_SEARCH_H_

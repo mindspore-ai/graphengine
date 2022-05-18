@@ -2276,6 +2276,46 @@ REG_OP(BalanceRois)
     .OUTPUT(balance_rois, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(index, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(BalanceRois)
+
+/**
+* @brief First calculate the minimum closure area of the two boxes, IoU,
+* The CIoU is obtained by combining the center distance and width to height ratio and IoU. \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* shape (4, N). "N" indicates the number of bounding boxes, and the value
+* "4" refers to [x1, y1, x2, y2] or [x, y, w, h].
+* @li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* with shape (4, M). "M" indicates the number of ground truth boxes, and
+* the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] . \n
+
+* @par Attributes:
+* @li trans: An optional bool, true for 'xywh', false for 'xyxy'.
+* @li is_cross: An optional bool, control whether the output shape is [N, M] or [1, N]
+* @li mode: An optional string, computation mode, a character string with the value range of [iou, iof]
+* @li atan_sub_flag: An optional bool, control whether to output atan_sub. \n
+
+* @par Outputs:
+* Two outputs, including:
+* @li overlap: A 2D Tensor of type float16 or float32 with shape [N, M] or [1, N],
+* specifying the IoU or IoF ratio .
+* @li atan_sub: A 2D Tensor of type float16 or float32 with shape [N, M] or [1, N],
+* specifying the IoU or IoF ratio . \n
+
+* @attention Constraints:
+* "is_cross" only support false, "atan_sub_flag" only support true.
+*/
+REG_OP(CIoU)
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(overlap, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(atan_sub, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(is_cross, Bool, true)
+    .ATTR(mode, String, "iou")
+    .ATTR(atan_sub_flag, Bool, false)
+    .OP_END_FACTORY_REG(CIoU)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

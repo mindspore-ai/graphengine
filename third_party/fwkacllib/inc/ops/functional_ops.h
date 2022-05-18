@@ -141,6 +141,30 @@ REG_OP(If)
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator Case.
  */
+REG_OP(StatelessCase)
+    .INPUT(branch_index, DT_INT32)
+    .DYNAMIC_INPUT(input, TensorType::ALL())
+    .DYNAMIC_OUTPUT(output, TensorType::ALL())
+    .DYNAMIC_GRAPH(branches)
+    .OP_END_FACTORY_REG(StatelessCase)
+
+/**
+ *@brief Select one of the subgraphs to pass the input tensors and return the output tensors . \n
+
+ *@par Inputs:
+ *@li branch_index: A int32 scalar which determines the selected subgraph.
+ *@li input: The input tensors, which will be passed to the subgraph . It's a dynamic input. \n
+
+ *@par Graphs:
+ *branches: A list of subgraphs, each of which takes 'input' and returns a list of tensors,
+ *          whose types are the same as what every other subgraph returns . \n
+
+ *@par Outputs:
+ *output: The output tensors returned by one of branches . It's a dynamic output. \n
+
+ *@par Third-party framework compatibility
+ *@Compatible with the TensorFlow operator Case.
+ */
 REG_OP(Case)
     .INPUT(branch_index, DT_INT32)
     .DYNAMIC_INPUT(input, TensorType::ALL())

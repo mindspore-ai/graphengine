@@ -60,7 +60,10 @@ REG_OP(Bitcast)
 *x: A Tensor. Must be 4D Tensor of type float16, float32, int32, uint16, with format HWCN . \n
 
 *@par Outputs:
-*y: A 6D Tensor. Has the same type as "x", with format C1HWNCoC0.
+*y: A 6D Tensor. Has the same type as "x", with format C1HWNCoC0. \n
+
+*@attention Constraints:
+*THIS OPERATOR IS DEPRECATED. It will be removed in a future version.
 */
 REG_OP(DepthwiseWeight4DTo6D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))
@@ -77,7 +80,10 @@ REG_OP(DepthwiseWeight4DTo6D)
 *channel_size: An optional int, specifying the channel size of 4D Tensor with format HWCN . \n
 
 *@par Outputs:
-*y: A 4D Tensor. Has the same type as "x", with format HWCN.
+*y: A 4D Tensor. Has the same type as "x", with format HWCN. \n
+
+*@attention Constraints:
+*THIS OPERATOR IS DEPRECATED. It will be removed in a future version.
 */
 REG_OP(DepthwiseWeight6DTo4D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))

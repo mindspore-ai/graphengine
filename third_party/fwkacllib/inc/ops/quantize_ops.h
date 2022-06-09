@@ -61,16 +61,16 @@ REG_OP(Dequantize)
     .OP_END_FACTORY_REG(Dequantize)
 
 /**
-*@brief Quantizes the input . \n
-*@par Inputs:
-*@li x: shape and dtype of input_x. \n
-*@li scales: shape and dtype of input_scales. \n
-*@li zero_points: shape and dtype of input_zero_points \n
-*@par Attributes:
-*@li dtype: required, type. 
-*@li axis: the processed dim. \n
-*@par Outputs:
-*y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
+* @brief Quantizes the input . \n
+* @par Inputs:
+* @li x: shape and dtype of input_x. \n
+* @li scales: shape and dtype of input_scales. \n
+* @li zero_points: shape and dtype of input_zero_points \n
+* @par Attributes:
+* @li dtype: required, type.
+* @li axis: the processed dim. \n
+* @par Outputs:
+* y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
 */
 REG_OP(Quantize)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -82,23 +82,31 @@ REG_OP(Quantize)
     .OP_END_FACTORY_REG(Quantize)
 
 /**
-*@brief Quantizes the input . \n
+* @brief Quantizes the input . \n
 
-*@par Inputs:
-*x: An tensor of type float16 or float32, specifying the input . \n
+* @par Inputs:
+* x: An tensor of type float16 or float32, specifying the input . \n
 
-*@par Attributes:
-*@li scale: A required float32, specifying the scaling ratio.
-*@li offset: A required float16, specifying the offset.
-*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
-*@li round_mode: An optional string, specifying the float16 to int8 cast type.
+* @par Attributes:
+* @li scale: A required float32, specifying the scaling ratio.
+* @li offset: A required float16, specifying the offset.
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
+* Defaults to "False".
+* @li round_mode: An optional string, specifying the float16 to int8 cast type.
 * The value range is [Round, Floor, Ceil, Truncate]. Defaults to "Round" .
-*@li dst_type: A optional int32, specifying the output data type. Defaults to "DT_INT8" . \n
+* @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_INT8" . \n
 
-*@par Outputs:
-*y: The quantized output tensor of type int8 or int4. \n
+* @par Outputs:
+* y: The quantized output tensor of type int8 or int4. \n
 
-*@par Third-party framework compatibility
+* @attention Constraints:
+* round_mode value range is [Round, Floor, Ceil, Truncate].
+* @li Round: round to nearest, tie to even(c language rint).
+* @li Floor: round to minus infinity(c language floor).
+* @li Ceil: round to positive infinity(c language ceil).
+* @li Truncate: round to zero(c language trunc). \n
+
+* @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendQuant)
@@ -112,21 +120,22 @@ REG_OP(AscendQuant)
     .OP_END_FACTORY_REG(AscendQuant)
 
 /**
-*@brief Dequantizes the input . \n
+* @brief Dequantizes the input . \n
 
-*@par Inputs:
+ *@par Inputs:
 * @li x: An tensor of type int32, specifying the input.
 * @li deq_scale: An tensor of type uint64, specifying the scaling ratio . \n
 
-*@par Attributes:
-* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
+* @par Attributes:
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
+* Defaults to "False".
 * @li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
 * @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT" . \n
 
-*@par Outputs:
-*y: The dequantized output tensor of type float16 or float32. \n
+* @par Outputs:
+* y: The dequantized output tensor of type float16 or float32. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendDequant)
@@ -139,21 +148,22 @@ REG_OP(AscendDequant)
     .OP_END_FACTORY_REG(AscendDequant)
 
 /**
-*@brief Anti quantizes the input . \n
+* @brief Anti quantizes the input . \n
 
-*@par Inputs:
-*x: An tensor of type int8, specifying the input . \n
+* @par Inputs:
+* x: An tensor of type int8, specifying the input . \n
 
-*@par Attributes:
-*@li scale: A required float32 scale.
-*@li offset: A required float32 offset.
-*@li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
-*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False" . \n
+* @par Attributes:
+* @li scale: A required float32 scale.
+* @li offset: A required float32 offset.
+* @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
+* Defaults to "False" . \n
 
-*@par Outputs:
-*y: The dequantized output tensor of type float16 or float32. \n
+* @par Outputs:
+* y: The dequantized output tensor of type float16 or float32. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendAntiQuant)
@@ -166,20 +176,20 @@ REG_OP(AscendAntiQuant)
     .OP_END_FACTORY_REG(AscendAntiQuant)
 
 /**
-*@brief Dequantizes the input of int16 . \n
+* @brief Dequantizes the input of int16 . \n
 
-*@par Inputs:
-*@li x0: An tensor of type int32, specifying the input.
-*@li deq_scale: An tensor of type uint64, specifying the scaling ratio.
-*@li x1: An tensor of type int16, specifying the input . \n
+* @par Inputs:
+* @li x0: An tensor of type int32, specifying the input.
+* @li deq_scale: An tensor of type uint64, specifying the scaling ratio.
+* @li x1: An tensor of type int16, specifying the input . \n
 
-*@par Attributes:
-*relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
+* @par Attributes:
+* relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
 
-*@par Outputs:
-*y: The dequantized output tensor of type int16. \n
+* @par Outputs:
+* y: The dequantized output tensor of type int16. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendDequantS16)
@@ -191,19 +201,19 @@ REG_OP(AscendDequantS16)
   .OP_END_FACTORY_REG(AscendDequantS16)
 
 /**
-*@brief Requantizes the input . \n
+* @brief Requantizes the input . \n
 
-*@par Inputs:
-*@li x: An tensor of type int32, specifying the input.
-*@li req_scale: An tensor of type uint64, specifying the scaling ratio . \n
+* @par Inputs:
+* @li x: An tensor of type int32, specifying the input.
+* @li req_scale: An tensor of type uint64, specifying the scaling ratio . \n
 
-*@par Attributes:
-*relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
+* @par Attributes:
+* relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
 
-*@par Outputs:
-*y: The dequantized output tensor of type int8. \n
+* @par Outputs:
+* y: The dequantized output tensor of type int8. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendRequant)
@@ -214,22 +224,23 @@ REG_OP(AscendRequant)
   .OP_END_FACTORY_REG(AscendRequant)
 
 /**
-*@brief Requantizes the input of int16 . \n
+* @brief Requantizes the input of int16 . \n
 
-*@par Inputs:
-*@li x0: An tensor of type int16, specifying the input.
-*@li req_scale: An tensor of type uint64, specifying the scaling ratio.
-*@li x1: An tensor of type int16 . \n
+* @par Inputs:
+* @li x0: An tensor of type int16, specifying the input.
+* @li req_scale: An tensor of type uint64, specifying the scaling ratio.
+* @li x1: An tensor of type int16 . \n
 
-*@par Attributes:
-*@li dual_output: A optional bool, specifying whether to perform dual ouput, either "True" or "False". Defaults to "False".
-*@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
+* @par Attributes:
+* @li dual_output: A optional bool, specifying whether to perform dual ouput, either "True" or "False".
+* Defaults to "False".
+* @li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
 
-*@par Outputs:
-*@li y0: The dequantized output tensor of type int8.
-*@li y1: The dequantized output tensor of type int16. \n
+* @par Outputs:
+* @li y0: The dequantized output tensor of type int8.
+* @li y1: The dequantized output tensor of type int16. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendRequantS16)

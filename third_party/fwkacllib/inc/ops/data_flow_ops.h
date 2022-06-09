@@ -2507,6 +2507,31 @@ REG_OP(GetNextFromQueue)
   .OP_END_FACTORY_REG(GetNextFromQueue)
 
 /**
+*@brief Get the batch of data in data processing . \n
+
+*@par Attributes:
+*@li output_types: A nested structure of DType objects corresponding to each
+component of an element of this dataset.
+*@li output_shapes: A nested structure of TensorShape objects corresponding
+to each component of an element of this dataset.
+*@li channel_name: A string. Default "" . \n
+
+*@par Outputs:
+*y:A nested structure of Tensor objects . \n
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow GetNext operator
+*/
+
+REG_OP(PeekData)
+    .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64,
+                                   DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL}))
+    .ATTR(output_types, ListType, {})
+    .ATTR(output_shapes, ListListInt, {})
+    .ATTR(channel_name, String, "")
+    .OP_END_FACTORY_REG(PeekData)
+
+/**
 * @brief OptionalGetValue
 * @par Inputs:
 * optional: A tensor of type variant

@@ -1931,9 +1931,6 @@ REG_OP(DenseImageWarpGrad)
 
 *@par Third-party framework compatibility
 *Compatible with pytorch GridSampler2D operator.
-
-*@par Restrictions:
-*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GridSampler2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -1966,9 +1963,6 @@ REG_OP(GridSampler2D)
 
 *@par Third-party framework compatibility
 *Compatible with pytorch GridSampler2DGrad operator.
-
-*@par Restrictions:
-*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GridSampler2DGrad)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -2063,9 +2057,6 @@ REG_OP(IMGWarpOffsets)
 
 *@par Third-party framework compatibility
 *Compatible with pytorch GridSampler3D operator.
-
-*@par Restrictions:
-*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GridSampler3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -2096,9 +2087,6 @@ REG_OP(GridSampler3D)
 
 *@par Third-party framework compatibility
 *Compatible with pytorch GridSampler3DGrad operator.
-
-*@par Restrictions:
-*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GridSampler3DGrad)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

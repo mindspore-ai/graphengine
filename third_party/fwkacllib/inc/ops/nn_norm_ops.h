@@ -426,7 +426,10 @@ REG_OP(ConfusionSoftmaxGrad)
 *@li keepdims: A bool Scalar. If true, retains reduced dimensions with length 1 . \n
 
 *@par Outputs:
-*y: A Tensor dtype of float16, float32.
+*y: A Tensor dtype of float16, float32. \n
+
+*@attention Constraints:
+*THIS OPERATOR IS DEPRECATED. It will be removed in a future version.
 */
 REG_OP(SoftmaxGradExt)
   .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -1026,74 +1029,48 @@ REG_OP(RNNTLoss)
     .OP_END_FACTORY_REG(RNNTLoss)
 
 /**
-*@brief Performs group normalization . \n
+* @brief Performs group normalization . \n
 
-*@par Inputs:
-* Five inputs, including: (NHWC, NCHW supported)
-*@li x: A 4D Tensor of type float16 or float32, with format NHWC or
-NCHW for 4D.
-*@li scale: A Tensor of type float32. Must be 1D if input "x" is with format
-NHWC or NCHW. Specifies the scaling factor.
-*@li offset: A Tensor of type float32. Must be 1D if input "x" is with
-format NHWC or NCHW. Specifies the offset.
-*@li mean: A Tensor of type float32. Must be 1D if input "x" is with format
-NHWC or NCHW. Reserved. Mu
-st be "None" if the operation is used for training.
-*@li variance: A Tensor of type float32. Must be 1D if input "x" is with
-format NHWC or NCHW. Specifies the variance used for inference. Reserved . \n
+* @par Inputs:
+* Three inputs
+* @li x: A ND Tensor of type float16 or float32, with format NCHW for 4D.
+* @li gamma: A Tensor of type float16 or float32. Must be 1D. Specifies the scaling factor.
+* @li beta: A Tensor of type float16 or float32. Must be 1D. Specifies the offset. \n
 
-*@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to
+* @par Attributes:
+* @li num_groups: An required int32, specifying the number of group.
+* @li eps: An optional float32, specifying the small value added to
 variance to avoid dividing by zero. Defaults to "0.0001".
-*@li data_format: An optional string, specifying the format of "x".
+* @li data_format: An optional string, specifying the format of "x".
 Defaults to "NHWC".
-*@li is_training: An optional bool, specifying if the operation is used for
+* @li is_training: An optional bool, specifying if the operation is used for
 training or inference. Defaults to "True" . \n
 
-*@par Outputs:
-* Five outputs, including: (NHWC, NCHW supported)
-*@li y: A 4D Tensor of type float16 or float32 for the normalized "x",
-with format NHWC or NCHW for 4D.
-*@li batch_mean: A Tensor of type float32. Must be 1D if input "x" is with
-format NHWC or NCHW. Specifies the mean of "x".
-*@li batch_variance: A Tensor of type float32. Must be 1D if input "x" is
-with format NHWC or NCHW. Specifies the variance of "x".
-*@li reserve_space_1: An optional Tensor of type float32. Must be 1D if
-input "x" is with format NHWC or NCHW. Specifies the mean o
-f "x" for gradient computation. Pass "None" to skip this output.
-*@li reserve_space_2: An optional Tensor of type float32. Must be 1D if
-input "x" is with format NHWC or NCHW. Specifies the varian
-ce of "x" for gradient computation. Pass "None" to skip this output . \n
+* @par Outputs:
+* Three outputs
+* @li y: A ND Tensor of type float16 or float32 for the normalized "x",
+with format NCHW for 4D.
+* @li mean: A Tensor of type float16 or float32. Must be 1D. Specifies the mean of "x".
+* @li variance: A Tensor of type float16 or float32. Must be 1D. Specifies the variance of "x". \n
 
-*@attention Constraints:
-*@li If the operation is used for inference and outputs "reserve_space_1"
-and "reserve_space_2" are available, then "reserve_space_1" has the same
-value as "mean" and "reserve_spa
-ce_2" has the same value as "variance".
-*@li For Ascend 310, the result accuracy fails  due to the square root
-instruction . \n
+* @attention Constraints:
+* @li For Ascend 310, only support NCHW which can be trans to 5HD. \n
 
-*@par Third-party framework compatibility
-*@li Compatible with the PyTorch operator GroupNorm.
+* @par Third-party framework compatibility
+* @li Compatible with the PyTorch operator GroupNorm.
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(GroupNorm)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(scale, TensorType({DT_FLOAT,}))
-    .INPUT(offset, TensorType({DT_FLOAT,}))
-    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(beta, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
-    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
-    .OUTPUT(reserve_space_1, TensorType({DT_FLOAT}))
-    .OUTPUT(reserve_space_2, TensorType({DT_FLOAT}))
-    .ATTR(epsilon, Float, 0.0001)
+    .OUTPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(variance, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(num_groups, Int)
     .ATTR(data_format, String, "NHWC")
+    .ATTR(eps, Float, 0.0001)
     .ATTR(is_training, Bool, true)
-    .ATTR(num_groups, Int, 2)
     .OP_END_FACTORY_REG(GroupNorm)
 
 /**

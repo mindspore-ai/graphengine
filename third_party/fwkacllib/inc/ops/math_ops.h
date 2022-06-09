@@ -377,7 +377,7 @@ to each component of an element of this dataset.
 
 REG_OP(GetNext)
     .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64,
-                                        DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL}))
+                                   DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL}))
     .ATTR(output_types, ListType, {})
     .ATTR(output_shapes, ListListInt, {})
     .ATTR(output_num, Int, 1)
@@ -1156,6 +1156,185 @@ REG_OP(CdistGrad)
     .ATTR(p, Float, 2.0)
     .OP_END_FACTORY_REG(CdistGrad)
 
+/**
+* @brief  Computes the RaggedBincount. \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li splits: A tensor with shpae: BxPXM. Must be one of the following types:
+*     int64.
+* @li values: A tensor with shpae: BxPXM. Must be one of the following types:
+*     float16, float32.
+* @li size: A tensor with shpae: BxRxM. Must be one of the following types:
+*     int32, int64.
+* @li weights: A tensor with shpae: BxRxM.
+*     Must be one of the following types: int32, int64, float, double. \n
+
+* @par Attributes:
+* @li binary_output: An optional bool \n
+
+* @par Outputs:
+* output: Must be one of the following types: int32, int64, float, double. \n
+*/
+REG_OP(RaggedBincount)
+    .INPUT(splits, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(output, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(binary_output, Bool, false)
+    .OP_END_FACTORY_REG(RaggedBincount)
+
+/**
+ * @brief Count the number of occurrences of each value in the input dense integer array,
+ * and output it according to the sparse matrix. \n
+
+ * @par Inputs:
+ * @li values: A 1D or 2D tensor of type int32 or int64.
+ * @li weights: A tensor of type int32 or int64 or float or double. \n
+
+ * @par Attributes:
+ * @li minlength: An optional int >=-1. Defaults to -1.
+ * @li maxlength: An optional int >=-1. Defaults to -1.
+ * @li binary_output: A required bool. \n
+
+ * @par Outputs:
+ * output_indices: A tensor of type int64.
+ * output_values: A tensor of the same type as "weights".
+ * output_dense_shape: A tensor of type int64. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator DenseCountSparseOutput. \n
+ */
+REG_OP(DenseCountSparseOutput)
+    .INPUT(values, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_indices, TensorType({DT_INT64}))
+    .OUTPUT(output_values, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_dense_shape, TensorType({DT_INT64}))
+    .ATTR(minlength, Int, -1)
+    .ATTR(maxlength, Int, -1)
+    .REQUIRED_ATTR(binary_output, Bool)
+    .OP_END_FACTORY_REG(DenseCountSparseOutput)
+
+/**
+ * @brief Count the number of occurrences of each value in the input ragged integer array,
+ * and output it according to the sparse matrix. \n
+
+ * @par Inputs:
+ * @li splits: A 1D tensor of type int64.
+ * @li values: A 1D or 2D tensor of type int32 or int64.
+ * @li weights: A tensor of type int32 or int64 or float or double. \n
+
+ * @par Attributes:
+ * @li minlength: An optional int >=-1. Defaults to -1.
+ * @li maxlength: An optional int >=-1. Defaults to -1.
+ * @li binary_output: A required bool. \n
+
+ * @par Outputs:
+ * output_indices: A tensor of type int64.
+ * output_values: A tensor of the same type as "weights".
+ * output_dense_shape: A tensor of type int64. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator RaggedCountSparseOutput. \n
+ */
+REG_OP(RaggedCountSparseOutput)
+    .INPUT(splits, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_indices, TensorType({DT_INT64}))
+    .OUTPUT(output_values, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_dense_shape, TensorType({DT_INT64}))
+    .ATTR(minlength, Int, -1)
+    .ATTR(maxlength, Int, -1)
+    .REQUIRED_ATTR(binary_output, Bool)
+    .OP_END_FACTORY_REG(RaggedCountSparseOutput)
+
+/**
+* @brief SignBitsUnpack.
+
+* @par Inputs:
+* one input, including:
+* @li x: A 1D Tensor of uint8.
+
+* @par Attributes:
+* @li size: dim of out put tensor, defaults to 1.
+* @li dtype: dtype of out put tensor: DT_FLOAT(0) or DT_FLOAT16(1).
+
+* @par Outputs:
+* @li y: A 2D Tensor of type float32 (float16) with shape (size, (x.shape * 8) / size),
+*/
+REG_OP(SignBitsUnpack)
+    .INPUT(x, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(size, Int)
+    .REQUIRED_ATTR(dtype, Type)
+    .OP_END_FACTORY_REG(SignBitsUnpack)
+
+/**
+* @brief Function scaled masked softmax . \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A mutable Tensor. The type support float16/float32.
+* @li mask: An optional Tensor. Must meet all of the following rules:
+*     shape of mask should be broadcastable with x.
+*     dtype of mask should be bool.
+*     mask is binary
+
+* @par Attributes:
+* scale: A attribute used to scale tensor. The type is float. The dimension softmax would be performed on. Defaults
+*     to "1.0" . \n
+* fixed_triu_mask: A flag used to enable or disable a fixed upper triangle mask. The type is bool. Defaults
+*     to "false" . \n
+
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(ScaledMaskedSoftmax)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_BOOL, DT_UINT1}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .ATTR(scale, Float, 1.0)
+    .ATTR(fixed_triu_mask, Bool, false)
+    .OP_END_FACTORY_REG(ScaledMaskedSoftmax)
+
+/**
+* @brief Function scaled masked softmax grad . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li y_grad: A mutable Tensor. The type support float16/float32.
+* @li y: A mutable Tensor. The type support float16/float32.
+* @li mask: An optional Tensor. Must meet all of the following rules:
+*     shape of mask should be broadcastable with x.
+*     dtype of mask should be bool.
+*     mask is binary
+
+* @par Attributes:
+* scale: A attribute used to scale tensor. The type is float. The dimension softmax would be performed on. Defaults
+*     to "1.0" . \n
+* fixed_triu_mask: A flag used to enable or disable a fixed upper triangle mask. The type is bool. Defaults
+*     to "false" . \n
+
+* @par Outputs:
+* x_grad: A mutable Tensor. Has the same type as "x". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(ScaledMaskedSoftmaxGrad)
+    .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_BOOL, DT_UINT1}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT16}))
+    .ATTR(scale, Float, 1.0)
+    .ATTR(fixed_triu_mask, Bool, false)
+    .OP_END_FACTORY_REG(ScaledMaskedSoftmaxGrad)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

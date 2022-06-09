@@ -491,6 +491,40 @@ REG_OP(TridiagonalSolve)
     .ATTR(partial_pivoting, Bool, true)
     .OP_END_FACTORY_REG(TridiagonalSolve)
 
+/**
+* @brief Solution of banded triangular matrix . \n
+
+* @par Inputs:
+* The input bands has to be symmetric and positive definite.
+* @li bands:A Tensor. Must be one of the following types: double, float32,
+  float16,complex64, complex128. Shape is  [... K,M], K corresponds to the
+  number of bands (actually stored diagonals), and M is the data of the
+  diagonals.
+  @li rhs:shape is [...M] or [...M, N]. Has the same type as bands \n
+
+* @par Outputs:
+* @li output:A Tensor. Has the same type as bands . \n
+
+* @par Attributes:
+* @li lower:An optional bool. Defaults to True.True: indicates the lower
+  triangular matrix. False: indicates the upper triangular matrix.
+* @li adjoint:An optional bool. Defaults to False.Boolean indicating whether to
+  solve with matrix or its (block-wise) adjoint. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow BandedTriangularSolve operator.
+*/
+
+REG_OP(BandedTriangularSolve)
+    .INPUT(bands, TensorType({DT_FLOAT, DT_DOUBLE, \
+        DT_FLOAT16, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, \
+        DT_FLOAT16, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output,TensorType({DT_FLOAT, DT_DOUBLE, \
+        DT_FLOAT16, DT_COMPLEX64, DT_COMPLEX128}))
+    .ATTR(lower, Bool, true)
+    .ATTR(adjoint, Bool, false)
+    .OP_END_FACTORY_REG(BandedTriangularSolve)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_LINALG_OPS_H_

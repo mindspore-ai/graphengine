@@ -1595,6 +1595,50 @@ REG_OP(Pinverse)
     .ATTR(rcond, Float, 1e-15)
     .OP_END_FACTORY_REG(Pinverse)
 
+/**
+* @brief  From the input tensor and updates tensor, select the maximum value according to indices to output. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li input: Must be one of the following types:
+*       float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*       qint8, quint8, qint32, uint16, complex128, uint32, uint64.
+* @li indices: Must be one of the following types:
+*       int32, int64.
+* @li updates: Must have the same type as input. \n
+
+* @par Outputs:
+* output: A Tensor with the same type as input. \n
+*/
+REG_OP(TensorScatterMax)
+    .INPUT(input, TensorType::BasicType())
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType::BasicType())
+    .OUTPUT(output, TensorType::BasicType())
+    .OP_END_FACTORY_REG(TensorScatterMax)
+
+/**
+* @brief  From the input tensor and updates tensor, select the minimum value according to indices to output. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li input: Must be one of the following types:
+*       float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*       qint8, quint8, qint32, uint16, complex128, uint32, uint64.
+* @li indices: Must be one of the following types:
+*       int32, int64.
+* @li updates: Must have the same type as input. \n
+
+* @par Outputs:
+* output: A Tensor with the same type as input. \n
+*/
+REG_OP(TensorScatterMin)
+    .INPUT(input, TensorType::BasicType())
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType::BasicType())
+    .OUTPUT(output, TensorType::BasicType())
+    .OP_END_FACTORY_REG(TensorScatterMin)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

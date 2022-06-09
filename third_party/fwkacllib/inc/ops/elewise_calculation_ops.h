@@ -42,8 +42,8 @@ namespace ge {
 *Compatible with the TensorFlow operator AddN.
 */
 REG_OP(AddN)
-    .DYNAMIC_INPUT(x, TensorType::NumberType())
-    .OUTPUT(y, TensorType::NumberType())
+    .DYNAMIC_INPUT(x, TensorType({NumberType(), DT_VARIANT}))
+    .OUTPUT(y, TensorType({NumberType(), DT_VARIANT}))
     .REQUIRED_ATTR(N, Int)
     .OP_END_FACTORY_REG(AddN)
 

@@ -349,6 +349,19 @@ REG_OP(StatefulPartitionedCall)
     .ATTR(executor_type, String, "")
     .OP_END_FACTORY_REG(StatefulPartitionedCall)
 
+/**
+ * @par Inputs:
+ * @li input: The input tensors \n
+ *
+ * @par Outputs:
+ * @li output: The output tensors. \n
+ */
+REG_OP(ToBool)
+    .INPUT(input, TensorType({DT_INT64, DT_INT32, DT_INT16, DT_INT8, \
+        DT_UINT8, DT_FLOAT, DT_DOUBLE, DT_STRING, DT_BOOL}))
+    .OUTPUT(output, DT_BOOL)
+    .OP_END_FACTORY_REG(ToBool)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUNCTIONAL_OPS_H_

@@ -70,10 +70,27 @@ typedef enum tagFftsPlusType {
     RT_FFTS_PLUS_TYPE = 4,        // FFTS+ mode
 } rtFftsPlusType_t;
 
+typedef struct tagStarsFftsPlusHeader {
+    uint8_t type : 6;
+    uint8_t l1Lock : 1;
+    uint8_t l1Unlock : 1;
+
+    uint8_t ie : 2;
+    uint8_t preP : 2;
+    uint8_t postP : 2;
+    uint8_t wrCqe : 1;
+    /* tell mcu if this subgraph is overflow-enabled and mcu will send this flag to aicpu when aicpu ctx is excuted */
+    uint8_t overflowEn : 1;
+
+    uint16_t blockDim;
+
+    uint16_t rtStreamId;
+    uint16_t taskId;
+} rtStarsFftsPlusHeader_t;
 // ffts+ sqe
 typedef struct tagFftsPlusSqe {
     // 0-7 bytes
-    rtStarsSqeHeader_t sqeHeader;
+    rtStarsSqeHeader_t sqeHeader; // use rtStarsFftsPlusHeader_t instead
     // 8-11 bytes
     uint16_t fftsType : 3;
     uint16_t reserved1 : 9;

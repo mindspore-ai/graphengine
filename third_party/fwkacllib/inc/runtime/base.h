@@ -92,6 +92,12 @@ typedef enum tagRtLimitType {
     RT_LIMIT_TYPE_LOW_POWER_TIMEOUT = 0,  // timeout for power down , ms
 } rtLimitType_t;
 
+typedef enum tagRtFloatOverflowMode {
+    RT_OVERFLOW_MODE_SATURATION = 0,
+    RT_OVERFLOW_MODE_INFNAN,
+    RT_OVERFLOW_MODE_UNDEF,
+} rtFloatOverflowMode_t;
+
 typedef struct rtExceptionInfo {
     uint32_t taskid;
     uint32_t streamid;

@@ -180,13 +180,13 @@
 #define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)        \
   {                                                        \
     GELOGE((_status), "[Check][InnerData]%s", (errormsg)); \
-    REPORT_INNER_ERROR("E19999", "%s", (errormsg));        \
+    REPORT_INNER_ERROR("E10052", "%s", (errormsg));        \
   }
 
 #define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                             \
   {                                                                                      \
     GELOGW("%s", (errormsg));                                                            \
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {(errormsg)}); \
+    ErrorManager::GetInstance().ATCReportErrMessage("E10052", {"reason"}, {(errormsg)}); \
   }
 
 #define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                   \
@@ -194,7 +194,7 @@
     const bool b = (expr);                                                                 \
     if (!b) {                                                                              \
       GELOGE((_status), "%s", (errormsg));                                                 \
-      ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {(errormsg)}); \
+      ErrorManager::GetInstance().ATCReportErrMessage("E10052", {"reason"}, {(errormsg)}); \
       return (_status);                                                                    \
     }                                                                                      \
   } while (false)

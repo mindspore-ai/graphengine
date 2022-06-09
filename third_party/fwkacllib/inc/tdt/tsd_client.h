@@ -41,6 +41,10 @@ struct InitFlowGwInfo {
     char_t rsv[128];
 };
 
+typedef enum {
+    TSD_CAPABILITY_PIDQOS = 0,
+    TSD_CAPABILITY_BUT
+} TsdCapabilityType;
 /**
 * @ingroup Open
 * @brief Used for the Framework process to communicate with the TSDDaemon process,
@@ -198,6 +202,36 @@ TDT_LIB_EXPORT uint32_t TsdSetMsprofReporterCallback(const MsprofReporterCallbac
 * @retval OtherValues Failure
 */
 TDT_LIB_EXPORT uint32_t TsdSetAttr(const char * const attrKey, const char * const attrValue);
+
+/**
+* @ingroup TsdCapabilityGet
+* @brief use tsd to get some capability
+*
+* @par type
+* capability type
+*
+* @par ptr
+* the result
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdCapabilityGet(const uint32_t logicDeviceId, const int32_t type, const uint64_t ptr);
+
+
+/**
+* @ingroup GetHdcConctStatus
+* @brief used to get hdc connection status
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par hdcSessStat
+* hdc session status, DRV_ERROR_SOCKET_CONNECT or DRV_ERROR_SOCKET_CLOSE
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t GetHdcConctStatus(const uint32_t logicDeviceId, int32_t *hdcSessStat);
+
 #ifdef __cplusplus
 }
 #endif  // __cplusplus

@@ -433,6 +433,32 @@ RTS_API rtError_t rtGetDevMsg(rtGetDevMsgType_t getMsgType, rtGetMsgCallback cal
  * @return RT_MEMORY_TS, RT_MEMORY_HBM, RT_MEMORY_TS | RT_MEMORY_POLICY_HUGE_PAGE_ONLY
  */
 RTS_API uint32_t rtGetTsMemType(rtMemRequestFeature_t featureType, uint32_t memSize);
+
+/**
+ * @ingroup
+ * @brief set saturation mode for current device.
+ * @param [in] saturation mode.
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtSetDeviceSatMode(rtFloatOverflowMode_t floatOverflowMode);
+
+/**
+ * @ingroup
+ * @brief get saturation mode for current device.
+ * @param [out] saturation mode.
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetDeviceSatMode(rtFloatOverflowMode_t *floatOverflowMode);
+
+/**
+ * @ingroup
+ * @brief get saturation mode for target stream.
+ * @param [in] target stm
+ * @param [out] saturation mode.
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetDeviceSatModeForStream(rtStream_t stm, rtFloatOverflowMode_t *floatOverflowMode);
+
 #if defined(__cplusplus)
 }
 #endif

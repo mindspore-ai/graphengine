@@ -110,7 +110,8 @@ typedef struct tagFftsPlusAicAivCtx {
     // 0-3 bytes
     uint16_t contextType;
     uint8_t successorNum;
-    uint8_t resv : 7;
+    uint8_t resv : 6;
+    uint8_t dumpSwitch : 1;
     uint8_t aten : 1;
     // 4-7
     uint8_t prefetchConfig;
@@ -172,7 +173,8 @@ typedef struct tagFftsPlusMixAicAivCtx {
     // 0-3 bytes
     uint16_t contextType;
     uint8_t successorNum;
-    uint8_t reserved1 : 7;
+    uint8_t reserved1 : 6;
+    uint8_t dumpSwitch : 1;
     uint8_t aten : 1;
     // 4-7
     uint8_t prefetchConfig;
@@ -236,7 +238,8 @@ typedef struct tagFftsPlusSdmaCtx {
     // 0-3 bytes
     uint16_t contextType;
     uint8_t successorNum;
-    uint8_t res1 : 7;
+    uint8_t res1 : 6;
+    uint8_t dumpSwitch : 1;
     uint8_t aten : 1;
     // 4-7
     uint8_t res2;
@@ -376,7 +379,8 @@ typedef struct tagFftsPlusAiCpuCtx {
     // 0-3 bytes
     uint16_t contextType;
     uint8_t successorNum;
-    uint8_t res1 : 7;
+    uint8_t res1 : 6;
+    uint8_t dumpSwitch : 1;
     uint8_t aten : 1;
     // 4-7
     uint8_t res2;

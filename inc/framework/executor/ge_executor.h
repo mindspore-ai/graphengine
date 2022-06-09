@@ -178,7 +178,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
 
   Status GetAippType(const uint32_t model_id, const uint32_t index, InputAippType &type, size_t &aipp_index);
 
-  Status CommandHandle(const Command &command);
+  Status CommandHandle(const Command &command) const;
 
   Status SetDump(const DumpConfig &dump_config);
 

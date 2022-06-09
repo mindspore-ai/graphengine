@@ -27,6 +27,7 @@ extern "C" {
 #define RT_STREAM_HEAD (0x20U)
 #define RT_STREAM_PRIMARY_DEFAULT (0x40U)
 #define RT_STREAM_PRIMARY_FIRST_DEFAULT (0x80U)
+#define RT_STREAM_OVERFLOW (0x100U)
 
 /**
  * @ingroup stream_type
@@ -211,6 +212,26 @@ RTS_API rtError_t rtDebugRegisterForStream(rtStream_t stm, uint32_t flag, const 
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDebugUnRegisterForStream(rtStream_t stm);
+
+/*
+ * @ingroup dvrt_stream
+ * @brief enable or disable stream overflow
+ * @param [in] stm: stream handle
+ * @param [in] flag: 0:disable others:enable
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetStreamOverflowSwitch(rtStream_t stm, uint32_t flags);
+
+/*
+ * @ingroup dvrt_stream
+ * @brief get whether overflow of the stream is enable or disable
+ * @param [in] stm: stream handle
+ * @param [out] flag: 0:disable others:enable
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetStreamOverflowSwitch(rtStream_t stm, uint32_t *flags);
 
 #if defined(__cplusplus)
 }

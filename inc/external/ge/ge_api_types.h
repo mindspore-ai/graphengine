@@ -71,12 +71,14 @@ const char_t *const OPTION_EXEC_DYNAMIC_EXECUTE_MODE = "ge.exec.dynamicGraphExec
 const char_t *const OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE = "ge.exec.dataInputsShapeRange";
 const char_t *const OPTION_EXEC_ENABLE_COPY_OUTPUT_ADDR = "ge.exec.enableCopyOutputAddr";
 const char_t *const OPTION_EXEC_GRAPH_EXEC_TIMEOUT = "ge.exec.graphExecTimeout";
-const char_t *const OPTION_EXEC_MODEL_EXEC_TIMEOUT = "ge.exec.modelExecTimeout";
 
 // Option key: memory init
 const char_t *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
 const char_t *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
 const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyMemory";
+
+const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
+const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
 
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
@@ -107,6 +109,7 @@ const char_t *const OPTYPELIST_FOR_IMPLMODE = "ge.optypelistForImplmode";
 const char_t *const HCOM_PARALLEL = "ge.hcomParallel";
 const char_t *const AUTO_TUNE_MODE = "ge.autoTuneMode";
 const char_t *const SOC_VERSION = "ge.socVersion";
+const char_t *const VIRTUAL_TYPE = "ge.virtual_type";
 const char_t *const CORE_TYPE = "ge.engineType";
 const char_t *const AICORE_NUM = "ge.aicoreNum";
 const char_t *const L1_FUSION = "ge.l1Fusion";
@@ -254,8 +257,15 @@ const std::string AUTO_TUNE_MODE = "ge.autoTuneMode";
 // Configure soc version , example: "Ascend310"
 const std::string SOC_VERSION = "ge.socVersion";
 
+// configure whether to enable virtualization,
+// its value should be "0" or "1", default value is "0"
+const std::string VIRTUAL_TYPE = "ge.virtual_type";
+
 // Configure core type "VectorEngine", default value is "AIcoreEngine"
 const std::string CORE_TYPE = "ge.engineType";
+
+// Configure graph exclude one or more engines
+const std::string EXCLUDE_ENGINES = "ge.exec.exclude_engines";
 
 // Configure AICORE NUM
 const std::string AICORE_NUM = "ge.aicoreNum";
@@ -420,6 +430,7 @@ static const char_t *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_
 static const char_t *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
 static const char_t *const CORE_TYPE = ge::CORE_TYPE.c_str();
 static const char_t *const SOC_VERSION = ge::SOC_VERSION.c_str();
+static const char_t *const VIRTUAL_TYPE = ge::VIRTUAL_TYPE.c_str();
 static const char_t *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
 static const char_t *const AICORE_NUM = ge::AICORE_NUM.c_str();
 static const char_t *const FUSION_SWITCH_FILE = ge::FUSION_SWITCH_FILE.c_str();
@@ -487,6 +498,7 @@ const std::set<std::string> ir_parser_suppported_options = {
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,
                                               SOC_VERSION,
+                                              VIRTUAL_TYPE,
                                               BUFFER_OPTIMIZE,
                                               ENABLE_COMPRESS_WEIGHT,
                                               COMPRESS_WEIGHT_CONF,

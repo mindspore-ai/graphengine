@@ -17,10 +17,19 @@ extern "C" {
 #pragma pack(push)
 #pragma pack (1)
 
+typedef struct tagFftsPlusDumpInfo {
+    const void *loadDumpInfo;
+    const void *unloadDumpInfo;
+    uint32_t loadDumpInfolen;
+    uint32_t unloadDumpInfolen;
+} rtFftsPlusDumpInfo_t;
+
+
 typedef struct tagFftsPlusTaskInfo {
     const rtFftsPlusSqe_t *fftsPlusSqe;
     const void *descBuf;           // include total context
     size_t      descBufLen;        // the length of descBuf
+    rtFftsPlusDumpInfo_t fftsPlusDumpInfo; // used only in the dynamic shape
 } rtFftsPlusTaskInfo_t;
 
 #pragma pack(pop)

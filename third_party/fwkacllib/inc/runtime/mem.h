@@ -391,6 +391,18 @@ RTS_API rtError_t rtMemcpyHostTask(void * const dst, const uint64_t destMax, con
 RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtMemcpyKind_t kind,
                                 rtStream_t stm);
 
+typedef struct rtMemcpyAddrInfo {
+    uint32_t resv0;
+    uint32_t resv1;
+    uint32_t resv2;
+    uint32_t len;
+    uint64_t src;
+    uint64_t dst;
+} rtMemcpyAddrInfo;
+
+RTS_API rtError_t rtMemcpyAsyncPtr(void *memcpyAddrInfo, uint64_t destMax, uint64_t count,
+                                   rtMemcpyKind_t kind, rtStream_t stream);
+
 /**
  * @ingroup dvrt_mem
  * @brief asynchronized reduce memcpy
@@ -406,6 +418,23 @@ RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, ui
  */
 RTS_API rtError_t rtReduceAsync(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtRecudeKind_t kind,
                                 rtDataType_t type, rtStream_t stm);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief asynchronized reduce memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] Max length of destination address memory
+ * @param [in] src   source address pointer
+ * @param [in] count   the number of byte to copy
+ * @param [in] kind   memcpy type
+ * @param [in] type   data type
+ * @param [in] stm   asynchronized task stream
+ * @param [in] overflowAddr   addr of overflow flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtReduceAsyncV2(void *dst, uint64_t destMax, const void *src, uint64_t count, rtRecudeKind_t kind,
+                                  rtDataType_t type, rtStream_t stm, void *overflowAddr);
 
 /**
  * @ingroup dvrt_mem

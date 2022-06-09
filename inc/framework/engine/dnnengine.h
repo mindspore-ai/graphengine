@@ -31,6 +31,7 @@ enum class PriorityEnum {
   COST_1 = 1,
   COST_2 = 2,
   COST_3 = 3,
+  COST_4 = 4,
   COST_9 = 9,
   COST_10 = 10,
 };

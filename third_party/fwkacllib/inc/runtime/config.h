@@ -145,12 +145,6 @@ typedef enum tagRTTaskTimeoutType {
     RT_TIMEOUT_TYPE_OP_EXECUTE,
 } rtTaskTimeoutType_t;
 
-typedef enum tagRtFloatOverflowMode {
-    RT_OVERFLOW_MODE_SATURATION = 0,
-    RT_OVERFLOW_MODE_INFNAN,
-    RT_OVERFLOW_MODE_UNDEF,
-} rtFloatOverflowMode_t;
-
 /**
  * @ingroup
  * @brief get AI core count

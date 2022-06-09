@@ -162,6 +162,7 @@ REGISTER_OPTYPE_DECLARE(_IF, "_If");
 REGISTER_OPTYPE_DECLARE(STATELESSIF, "StatelessIf");
 REGISTER_OPTYPE_DECLARE(IF, "If");
 REGISTER_OPTYPE_DECLARE(CASE, "Case");
+REGISTER_OPTYPE_DECLARE(STATELESSCASE, "StatelessCase");
 REGISTER_OPTYPE_DECLARE(_WHILE, "_While");
 REGISTER_OPTYPE_DECLARE(WHILE, "While");
 REGISTER_OPTYPE_DECLARE(STATELESSWHILE, "StatelessWhile");
@@ -626,8 +627,8 @@ struct ModelFileHeader {
   uint32_t version = MODEL_VERSION;                     // version 1.0
   uint8_t checksum[MODEL_FILE_CHECKSUM_LENGTH] = {0U};  // signature
   uint32_t length = 0U;  // Ciphertext length. In the non-encryption model, the length is the plaintext length.
-  uint8_t is_encrypt =
-      static_cast<uint8_t>(ModelEncryptType::UNENCRYPTED);            // whether encrypted 0:not encrypt, 1:encrypt
+  // whether encrypted 0:not encrypt, 1:encrypt
+  uint8_t is_encrypt = static_cast<uint8_t>(ModelEncryptType::UNENCRYPTED);
   uint8_t is_checksum = static_cast<uint8_t>(ModelCheckType::CHECK);  // whether to check the checksum
   uint8_t modeltype = 0U;                                  // 0：IR model 1：standard model 2: OM Tiny model
   uint8_t genmode = 0U;                                    // 0：offline generate 1：online generate

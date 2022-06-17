@@ -426,10 +426,10 @@ REG_OP(ConfusionSoftmaxGrad)
 *@li keepdims: A bool Scalar. If true, retains reduced dimensions with length 1 . \n
 
 *@par Outputs:
-*y: A Tensor dtype of float16, float32. \n
+* y: A Tensor dtype of float16, float32. \n
 
 *@attention Constraints:
-*THIS OPERATOR IS DEPRECATED. It will be removed in a future version.
+* THIS OPERATOR IS DEPRECATED. It will be removed in a future version.
 */
 REG_OP(SoftmaxGradExt)
   .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))

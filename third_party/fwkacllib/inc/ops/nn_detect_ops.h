@@ -1550,8 +1550,8 @@ REG_OP(DecodeWheelsTarget)
 *@li max_size_per_class: A required attribute of type int, specifying the nms output num per class.
 *@li max_total_size: A required attribute of type int, specifying the the nms output num per batch.
 *@li change_coordinate_frame: A optional attribute of type bool, whether to normalize coordinates after clipping.
-*@li transpose_box: A optional attribute of type bool, whether inserted transpose before this op. must be "false".
-*@li image_size: A optional attribute of type ListInt, the size of the image. \n
+* @li transpose_box: A optional attribute of type bool, whether inserted transpose before this op. must be "false".
+* @li image_size: A optional attribute of type ListInt, the size of the image. \n
 
 *@par Outputs:
 *@li nmsed_boxes: A 3D Tensor of type float16 with shape (batch, max_total_size, 4),
@@ -2352,6 +2352,51 @@ REG_OP(DIoU)
     .ATTR(is_cross, Bool, true)
     .ATTR(mode, String, "iou")
     .OP_END_FACTORY_REG(DIoU)
+
+/**
+* @brief Calculate the intersection ratio of two rotated cuboids . \n
+
+* @par Inputs:
+* @li bboxes : data of grad increment, a 3D Tensor of type float32 with
+* shape (B, 7, N). "N" indicates the number of boxes, and the value
+* "7" refers to [x, y, z, w, h, d, theta].
+* @li gtboxes: Bounding boxes, a 3D Tensor of type float32 with
+* shape (B, 7, K). "K" indcates the number of boxes, and the value
+* "7" refers to [x, y, z, w, h, d, theta].
+
+* @par Outputs:
+* iou: A 3D Tensor of float32 with shape [B, N, K].
+
+* @attention Constraints:
+* In each batch, the invalid box cannot appear before the valid box.
+*/
+REG_OP(Iou3D)
+    .INPUT(bboxes, TensorType({DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT}))
+    .OUTPUT(iou, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(Iou3D)
+
+/**
+* @brief Generates bounding boxes based on "priors" and "bboxes".
+* It is a customized yolox operator . \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li priors: prior sample boxes of origin image 
+* A 2D Tensor of type float32 or float16 with shape (N, 4).
+* "N" indicates the number of boxes, and the value "4" refers to "x0", "x1", "y0", and "y1".
+* @li bboxes_input: bboxes predicted by the model. A 2D Tensor of type float32 or float16 with shape (B, N, 4).
+* "B" indicates the batch_size, N indicates the number of boxes, 4 indicates "dx", "dy", "dw", and "dh" . \n
+
+* @par Outputs:
+* bboxes_output: Bboxes generated based on "priors" and "bboxes_input". Have the same format
+* and type as "bboxes_input".
+*/
+REG_OP(YoloxBoundingBoxDecode)
+    .INPUT(priors, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(decoded_bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(YoloxBoundingBoxDecode)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

@@ -180,7 +180,7 @@
 #define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)        \
   {                                                        \
     GELOGE((_status), "[Check][InnerData]%s", (errormsg)); \
-    REPORT_INNER_ERROR("E10052", "%s", (errormsg));        \
+    REPORT_INNER_ERROR("E19999", "%s", (errormsg));        \
   }
 
 #define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                             \

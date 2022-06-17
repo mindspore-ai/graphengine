@@ -156,6 +156,49 @@ REG_OP(AttentionLnQKV)
     .OP_END_FACTORY_REG(AttentionLnQKV)
 
 /**
+* @brief
+   swin_transformer model specific structure.Operator only supports swin_transformer. \n
+* @par Inputs:
+* Five inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16.
+* @li gamma: A Tensor. Must be one of the following types: float16.
+* @li beta: A Tensor. Must be one of the following types: float16.
+* @li weight: A Tensor. Must be one of the following types: float16.
+* @li bias: A Tensor. Must be one of the following types: float16. \n
+
+* @par Attributes:
+* @li head_num: A optional attribute, the type is int.
+* @li head_dim: A optional attribute, the type is int.
+* @li seq_length: A optional attribute, the type is int.
+* @li shifts: A optional attribute, the type is list int. Defaults to ().
+* @li epsilon: A optional attribute, the type is float. Defaults to 1e-7. \n
+
+* @par Outputs:
+* Three outputs, including:
+* @li query_output: A Tensor. Must be one of the following types: float16.
+* @li key_output: A Tensor. Must be one of the following types: float16.
+* @li value_output: A Tensor. Must be one of the following types: float16. \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+REG_OP(SwinTransformerLnQKV)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT16}))
+    .INPUT(beta, TensorType({DT_FLOAT16}))
+    .INPUT(weight, TensorType({DT_FLOAT16}))
+    .INPUT(bias, TensorType({DT_FLOAT16}))
+    .OUTPUT(query_output, TensorType({DT_FLOAT16}))
+    .OUTPUT(key_output, TensorType({DT_FLOAT16}))
+    .OUTPUT(value_output, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(head_num, Int)
+    .REQUIRED_ATTR(head_dim, Int)
+    .REQUIRED_ATTR(seq_length, Int)
+    .ATTR(shifts, ListInt, {})
+    .ATTR(epsilon, Float, 0.0000001)
+    .OP_END_FACTORY_REG(SwinTransformerLnQKV)
+
+/**
 *@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
 
 *@par Inputs:
@@ -1638,6 +1681,80 @@ REG_OP(TensorScatterMin)
     .INPUT(updates, TensorType::BasicType())
     .OUTPUT(output, TensorType::BasicType())
     .OP_END_FACTORY_REG(TensorScatterMin)
+
+/**
+* @brief: Returns the batched diagonal part of a batched tensor. \n
+
+* @par Inputs:
+* @li x: A Tensor. Rank r tensor where r >= 2.
+* @li k: A Tensor of type int32. Diagonal offset(s). Positive value means superdiagonal,
+         0 refers to the main diagonal, and negative value means subdiagonals. k can be a
+         single integer (for a single diagonal) or a pair of integers specifying the low and
+         high ends of a matrix band. k[0] must not be larger than k[1].
+* @li padding_value:A Tensor. Must have the same type as input. The value to fill the area
+                    outside the specified diagonal band with. Default is 0. \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "input". \n
+
+* @par Attributes:
+* @li align:An optional string from: "LEFT_RIGHT", "RIGHT_LEFT", "LEFT_LEFT", "RIGHT_RIGHT". Defaults to "RIGHT_LEFT".
+
+* @par Third-party framework compatibility
+* Compatible with the Tensorflow  operator FillDiagonal.
+*/
+ REG_OP(MatrixDiagPartV3)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .INPUT(padding_value, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(align,String ,"RIGHT_LEFT")
+    .OP_END_FACTORY_REG(MatrixDiagPartV3)
+
+/**
+* @brief Returns a batched diagonal tensor with given batched diagonal values . \n
+
+* @par Inputs:
+* Five inputs, including:
+* @li x: Rank `r`, where `r >= 1` \n
+
+* @li k:
+* Diagonal offset(s). Positive value means superdiagonal, 0 refers to the main
+* diagonal, and negative value means subdiagonals. `k` can be a single integer
+* (for a single diagonal) or a pair of integers specifying the low and high ends
+* of a matrix band. `k[0]` must not be larger than `k[1]`. \n
+
+* @li num_rows:
+* The number of rows of the output matrix. If it is not provided, the op assumes
+* the output matrix is a square matrix and infers the matrix size from k and the
+* innermost dimension of `diagonal`. \n
+
+* @li num_cols: An NCHW, NHWC, or ND Tensor.
+* The number of columns of the output matrix. If it is not provided, the op
+* assumes the output matrix is a square matrix and infers the matrix size from
+* k and the innermost dimension of `diagonal`. \n
+
+* @li padding_value: The number to fill the area outside the specified diagonal band with. \n
+
+* @par Attributes:
+* @li align: An optional string from: "LEFT_RIGHT", "RIGHT_LEFT", "LEFT_LEFT", "RIGHT_RIGHT".
+* Defaults to "RIGHT_LEFT" \n
+
+* @par Outputs:
+* @li y: Has rank `r+1` when `k` is an integer or `k[0] == k[1]`, rank `r` otherwise . \n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator ScatterUpdate.
+*/
+REG_OP(MatrixDiagV3)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .INPUT(num_rows, TensorType({DT_INT32}))
+    .INPUT(num_cols, TensorType({DT_INT32}))
+    .INPUT(padding_value, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(align, String, "RIGHT_LEFT")
+    .OP_END_FACTORY_REG(MatrixDiagV3)
 
 }  // namespace ge
 

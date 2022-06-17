@@ -651,21 +651,21 @@ REG_OP(Deconvolution)
     | Name             | Field    | Scope        |\n
     |------------------|----------|--------------|\n
     | x(fmap)          | H        | [1, 200000]  |\n
-    |                  | W        | [1, 4096]    |\n
-    | Filter Size      | H        | [1, 255]     |\n
-    |                  | W        | [1, 255]     |\n
+    |                  | W        | [1, 200000]  |\n
+    | Filter Size      | H        | [1, 200000]  |\n
+    |                  | W        | [1, 200000]  |\n
     | out_backprop     | H        | [1, 200000]  |\n
-    |                  | W        | [1, 4096]    |\n
+    |                  | W        | [1, 200000]  |\n
     | y                | H        | [1, 200000]  |\n
-    |                  | W        | [1, 4096]    |\n
-    | Stride           | H        | [1, 63]      |\n
-    |                  | W        | [1, 63]      |\n
-    | Padding          | Top      | [0, 255]     |\n
-    |                  | Bottom   | [0, 255]     |\n
-    |                  | Left     | [0, 255]     |\n
-    |                  | Right    | [0, 255]     |\n
-    | Dilation         | H        | [1, 255]     |\n
-    |                  | W        | [1, 255]     |\n
+    |                  | W        | [1, 200000]  |\n
+    | Stride           | H        | [1, 200000]  |\n
+    |                  | W        | [1, 200000]  |\n
+    | Padding          | Top      | [0, 200000]  |\n
+    |                  | Bottom   | [0, 200000]  |\n
+    |                  | Left     | [0, 200000]  |\n
+    |                  | Right    | [0, 200000]  |\n
+    | Dilation         | H        | [1, 200000]  |\n
+    |                  | W        | [1, 200000]  |\n
  *\n
 *@par Outputs:
  * y: A Tensor. Has the same type as x, has the same format as filter_size.

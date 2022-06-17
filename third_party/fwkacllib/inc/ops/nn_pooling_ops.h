@@ -1317,33 +1317,38 @@ REG_OP(AvgPool1DD)
     .ATTR(count_include_pad, Bool, false)
     .OP_END_FACTORY_REG(AvgPool1DD)
 /**
-*@brief Performs max pooling on the input and outputs both max values and indices . \n
+* @brief Performs max pooling on the input and outputs both max values and indices . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x: An 4d Tensor of type float16. Must set the format, supported format list ["NCHW, NHWC"].
-*@par Attributes:
-*@li ksize: A required list of int8, int16, int32, or int64 values, specifying the size of the window for
-* each dimension of the input tensor. No default value.
-*@li strides: A required list of int8, int16, int32, or int64 values, specifying the stride of the sliding window for
-* each dimension of the input tensor. No default value.
-*@li pads: A required string. No default value.
-*@li dtype: A optional int. default value is 3.
-*@li dilation: A optional list of int8, int16, int32, or int64 values.
-*@li ceil_mode: A optional bool. default value is false . \n
+* x: An 5hd Tensor of type float16. 
+* Must set the format, supported format list ["NC1HWC0"].
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
+* specifying the size of the window for each dimension of the input tensor. No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values,
+* specifying the stride of the sliding window for each dimension of the input tensor. No default value.
+* @li pads: A required list of int8, int16, int32, or int64 values,
+* specifying the pad of the input feature map. No default value. \n
+* @li dtype: A optional int. default value is 3.
+* @li dilation: A optional list of int8, int16, int32, or int64 values.
+* @li ceil_mode: A optional bool. default value is false . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x".
-*argmax:  A Tensor. type:uint16.
-*@attention Constraints:
-*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1, ksize[1] * ksize[2] <= 255.
-*@li "strides is a list that has length 4: strides[0] = 1 or strides[3] = 1, strides[1] <= 63, strides[0] >= 1,
-* strides[2] <= 63, strides[2] >= 1.
-*@li "dilation" is a list that has length 4.
-*@li "ceil_mode" is a bool, default is false . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x".
+* argmax:  A Tensor. type:uint16.
+* @attention Constraints:
+* @li ksize: a list that has length 4:
+* ksize[0] = 1, ksize[1] = 1, ksize[2] * ksize[3] <= (ub_size-8)*1024//6//2//16.
+* @li strides: a list that has length 4:
+* strides[0] = 1, strides[1] = 1, 1 <= strides[2] <= 2048, 1 <= strides[3] <= 2048.
+* @li pads: a list that has length 4:
+* pads[0] = 1, pads[1] = 1, 1 <= pads[2] <= (ksize[2]//2), 1 <= pads[3] <= (ksize[3]//2).
+* @li dilation: a list that has length 4.
+* @li ceil_mode: is a bool, default is false . \n
 
-*@par Third-party framework compatibility
-* Compatible with the TensorFlow operator MaxPoolWithArgmax.
+* @par Third-party framework compatibility
+* Compatible with the PyTorch operator max_pool2d_with_indices.
 */
 REG_OP(MaxPoolWithArgmaxV2)
     .INPUT(x, TensorType({DT_FLOAT16}))
@@ -1358,36 +1363,44 @@ REG_OP(MaxPoolWithArgmaxV2)
     .OP_END_FACTORY_REG(MaxPoolWithArgmaxV2)
 
 /**
-*@brief Performs the backpropagation of MaxPoolWithArgmaxV2 . \n
+* @brief Performs the backpropagation of MaxPoolWithArgmaxV2. \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li x: An 4d tensor of type float16. Must set the format, supported format list ["NCHW, NHWC"]
-*@li grad: An 4d tensor of type float16. Must set the format, supported format list ["NCHW, NHWC"]
-*@li argmx: An 4d tensor of type uint16 or int64. Must set the format, supported format list ["NCHW, NHWC"] \n
+* @li x: An 5hd tensor of type float16. 
+* Must set the format, supported format list ["NC1HWC0"]
+* @li grad: An 5hd tensor of type float16. 
+* Must set the format, supported format list ["NC1HWC0"]
+* @li argmax: An 5hd tensor of type uint16 or int64. 
+* Must set the format, supported format list ["NC1HWC0"] \n
 
-*@par Attributes:
-*@li ksize: A required list of int8, int16, int32, or int64 values, specifying the size of the window for
- * each dimension of the input tensor. No default value.
-*@li strides: A required list of int8, int16, int32, or int64 values, specifying the stride of the sliding window for
- * each dimension of the input tensor. No default value.
-*@li pads: A required string. No default value.
-*@li dtype: A optional int. default value is 3.
-*@li dilation: A optional list of int8, int16, int32, or int64 values.
-*@li ceil_mode: A optional bool. default value is false . \n
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values, 
+* specifying the size of the window for each dimension of the input tensor. No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values, 
+* specifying the stride of the sliding window for each dimension of the input tensor. No default value.
+* @li pads: A required list of int8, int16, int32, or int64 values, 
+* specifying the pad of the input feature map. No default value. \n
+* @li dtype: A optional int. default value is 3.
+* @li dilation: A optional list of int8, int16, int32, or int64 values.
+* @li ceil_mode: A optional bool. default value is false. \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x". \n
 
-*@attention Constraints:
-*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1, ksize[1] * ksize[2] <= 255.
-*@li "strides" is a list that has length 4: strides[0] = 1 or strides[3] = 1
-*@li "dilation" is a list that has length 4.
-*@li "ceil_mode" is a bool, default is false . \n
+* @attention Constraints:
+* @li ksize: a list that has length 4: 
+* ksize[0] = 1, ksize[1] = 1, ksize[2] * ksize[3] <= (ub_size-8)*1024//7//2//16.
+* @li strides: a list that has length 4: 
+* strides[0] = 1, strides[1] = 1, 1 <= strides[2] <= 2048, 1 <= strides[3] <= 2048.
+* @li pads: a list that has length 4: 
+* pads[0] = 1, pads[1] = 1, 1 <= pads[2] <= (ksize[2]//2), 1 <= pads[3] <= (ksize[3]//2).
+* @li dilation: a list that has length 4.
+* @li ceil_mode: is a bool, default is false. \n
 
-*@see max_pool_grad_with_argmaxv2
-*@par Third-party framework compatibility
-* Compatible with the TensorFlow operator MaxPoolGradWithArgmaxV2.
+* @see max_pool_grad_with_argmaxv2
+* @par Third-party framework compatibility
+* Compatible with the PyTorch backward operator of max_pool2d_with_indices.
 */
 
 REG_OP(MaxPoolGradWithArgmaxV2)
@@ -1674,24 +1687,28 @@ REG_OP(AdaptiveAvgPool2dGrad)
 * @li argmax: A tensor of type uint16 or int64. \n
 
 * @par Attributes:
-* @li ksize: A required list of int8, int16, int32, or int64 values, specifying the size of the window for
-* each dimension of the input tensor. No default value.
-* @li strides: A required list of int8, int16, int32, or int64 values, specifying the stride of the sliding window for
-* each dimension of the input tensor. No default value.
-* @li pads: A required listint. \n
+* @li ksize: A required list of int8, int16, int32, or int64 values, 
+* specifying the size of the window for each dimension of the input tensor. No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values, 
+* specifying the stride of the sliding window for each dimension of the input tensor. No default value.
+* @li pads: A required list of int8, int16, int32, or int64 values, 
+* specifying the pad of the input feature map. No default value. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "x". \n
 
 * @attention Constraints:
-* @li ksize: is a list that has length 4: ksize[0] = 1 or ksize[3] = 1, ksize[1] * ksize[2] <= 255.
-* @li strides: is a list that has length 4: strides[0] = 1 or strides[3] = 1
-* @li pads: listint.
-* @li ceil_mode: defaults to False.
-* @li data_format: A optional string. \n
+* @li The MaxPoolGradWithArgmaxV2 operator has the same function, and it is recommended to use the V2 operator.
+* @li ksize: a list that has length 4: 
+* ksize[0] = 1, ksize[3] = 1, ksize[1] * ksize[2] <= (ub_size-8)*1024//7//2//16.
+* @li strides: a list that has length 4: 
+* strides[0] = 1, strides[3] = 1, 1 <= strides[1] <= 2048, 1 <= strides[2] <= 2048.
+* @li pads: a list that has length 4: 
+* pads[0] = 1, pads[3] = 1, 1 <= pads[2] <= (ksize[1]//2), 1 <= pads[2] <= (ksize[3]//2).
+* @li ceil_mode: defaults to False.\n
 
 * @par Third-party framework compatibility
-* Compatible with the TensorFlow operator MaxPoolGradWithArgmaxV1.
+* Compatible with the Pytorch backward operator of max_pool2d_with_indices.
 */
 
 REG_OP(MaxPoolGradWithArgmaxV1)
@@ -1715,26 +1732,29 @@ REG_OP(MaxPoolGradWithArgmaxV1)
 * x: A Tensor of type float16. \n
 
 * @par Attributes:
-* @li ksize: A required list of int8, int16, int32, or int64 values, specifying the size of the window for
-* each dimension of the input tensor. No default value.
-* @li strides: A required list of int8, int16, int32, or int64 values, specifying the stride of the sliding window for
-* each dimension of the input tensor. No default value.
-* @li pads: A required string. No default value. \n
+* @li ksize: A required list of int8, int16, int32, or int64 values,
+* specifying the size of the window for each dimension of the input tensor. No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values,
+* specifying the stride of the sliding window for each dimension of the input tensor. No default value.
+* @li pads: A required list of int8, int16, int32, or int64 values,
+* specifying the pad of the input feature map. No default value. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "x".
 * argmax:  A Tensor. type:uint16. \n
 
 * @attention Constraints:
-* @li ksize: a list that has length 4: ksize[0] = 1 or ksize[3] = 1, ksize[1] * ksize[2] <= 255.
-* @li stride: a list that has length 4: strides[0] = 1 or strides[3] = 1, strides[1] <= 63, strides[0] >= 1,
-* strides[2] <= 63, strides[2] >= 1.
-* @li pads: listint.
+* @li The MaxPoolWithArgmaxV2 operator has the same function, and it is recommended to use the V2 operator.
+* @li ksize: a list that has length 4:
+* ksize[0] = 1, ksize[3] = 1, ksize[1] * ksize[2] <= (ub_size-8)*1024//6//2//16.
+* @li strides: a list that has length 4:
+* strides[0] = 1, strides[3] = 1, 1 <= strides[1] <= 2048, 1 <= strides[2] <= 2048.
+* @li pads: a list that has length 4:
+* pads[0] = 1, pads[3] = 1, 1 <= pads[1] <= (ksize[1]//2), 1 <= pads[2] <= (ksize[2]//2).
 * @li ceil_mode: defaults to False.
-* @li data_format: A optional string. \n
 
 * @par Third-party framework compatibility
-* Compatible with the TensorFlow operator MaxPoolWithArgmaxV1.
+* Compatible with the PyTorch operator max_pool2d_with_indices.
 */
 REG_OP(MaxPoolWithArgmaxV1)
     .INPUT(x, TensorType({DT_FLOAT16}))

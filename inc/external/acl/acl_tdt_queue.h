@@ -219,6 +219,7 @@ ACL_FUNC_VISIBILITY aclError acltdtQueryQueueRoutes(const acltdtQueueRouteQueryI
  * @brief alloc acltdtBuf
  *
  * @param size [IN] alloc buf size
+ * @param type [IN] reserved parameters, need to set zero currently
  * @param buf [OUT] pointer to the acltdtBuf
  *
  * @retval ACL_SUCCESS  The function is successfully executed.
@@ -226,7 +227,7 @@ ACL_FUNC_VISIBILITY aclError acltdtQueryQueueRoutes(const acltdtQueueRouteQueryI
  *
  * @see acltdtFreeBuf
  */
-ACL_FUNC_VISIBILITY aclError acltdtAllocBuf(size_t size, acltdtBuf *buf);
+ACL_FUNC_VISIBILITY aclError acltdtAllocBuf(size_t size, uint32_t type, acltdtBuf *buf);
 
 /**
  * @ingroup AscendCL

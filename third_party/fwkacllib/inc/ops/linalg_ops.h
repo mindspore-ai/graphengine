@@ -525,6 +525,26 @@ REG_OP(BandedTriangularSolve)
     .ATTR(lower, Bool, true)
     .ATTR(adjoint, Bool, false)
     .OP_END_FACTORY_REG(BandedTriangularSolve)
+
+/**
+* @brief Returns the complex conjugatetranspose.
+
+* @par Inputs:
+* @li x: A Tensor. Must be one of the following types: double, float32, float16,
+         int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
+* @li perm: A Index. Must be one of the following types: int32, int64 \n
+*
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x" . \n
+
+* @par Third-party framework compatibility.
+* Compatible with tensorflow ConjugateTranspose operator.
+*/
+REG_OP(ConjugateTranspose)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(perm, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(ConjugateTranspose)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_LINALG_OPS_H_

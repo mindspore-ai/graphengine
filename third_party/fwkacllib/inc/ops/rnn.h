@@ -1320,6 +1320,7 @@ REG_OP(DynamicGRUV2Grad)
 * @li reset:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li new:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li seq_length:A 1D Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
 * @li t_state:An Int identifying the current t state. Default to [0, 4].
@@ -1343,6 +1344,7 @@ REG_OP(GRUV2HiddenGradCell)
     .INPUT(reset, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(new, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(hidden_new, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dh_prev, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dgate_h, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dnt_x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1353,7 +1355,7 @@ REG_OP(GRUV2HiddenGradCell)
 /**
 * @brief: DynamicGRUCellGrad calculation.
 * @par Inputs:
-* ten inputs: \n
+* eleven inputs: \n
 * @li dh_pre_t:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -1364,6 +1366,7 @@ REG_OP(GRUV2HiddenGradCell)
 * @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.+
 * @li init_h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li t_state:A 1D Tensor. Must be one of the following types: int32. The format must be ND.
+* @li seq_length:A 1D Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
 * gate_order:An string identifying the gate order in weight and bias. Default to "zrh". "rzh" is another option.
@@ -1388,6 +1391,7 @@ REG_OP(DynamicGRUCellGrad)
     .INPUT(hidden_new, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(t_state, TensorType({DT_INT32, DT_INT32}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dh_prev, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dgate_h, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dnt_x, TensorType({DT_FLOAT16, DT_FLOAT}))

@@ -239,10 +239,10 @@ REG_OP(OCRDetectionPostHandle)
 *@li polys_data: A Tensor of type int32. point data of every poly.
 *@li polys_offset:A Tensor of type int32. Offset of every poly .
 *@li polys_size:A Tensor of type int32. Size of every poly.
-*@li img_h:A Tensor of type int32. Height of original image.
-*@li img_w:A Tensor of type int32. Width of original image.
 *@li h_scale:A Tensor of type float. Expand scale of height.
-*@li w_scale:A Tensor of type float. Expand scale of width. \n
+*@li w_scale:A Tensor of type float. Expand scale of width.
+*@li img_h:A Tensor of type int32. Height of original image.
+*@li img_w:A Tensor of type int32. Width of original image. \n
 
 *@par Outputs:
 *@li clipped_polys_data: A Tensor of type int32. point data of every clipped poly. \n
@@ -254,10 +254,10 @@ REG_OP(ResizeAndClipPolys)
     .INPUT(polys_data, TensorType({DT_INT32}))
     .INPUT(polys_offset, TensorType({DT_INT32}))
     .INPUT(polys_size, TensorType({DT_INT32}))
-    .INPUT(img_h, TensorType({DT_INT32}))
-    .INPUT(img_w, TensorType({DT_INT32}))
     .INPUT(h_scale, TensorType({DT_FLOAT}))
     .INPUT(w_scale, TensorType({DT_FLOAT}))
+    .INPUT(img_h, TensorType({DT_INT32}))
+    .INPUT(img_w, TensorType({DT_INT32}))
     .OUTPUT(clipped_polys_data, TensorType({DT_INT32}))
     .OUTPUT(clipped_polys_offset, TensorType({DT_INT32}))
     .OUTPUT(clipped_polys_size, TensorType({DT_INT32}))

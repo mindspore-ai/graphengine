@@ -52,8 +52,8 @@ namespace ge {
 REG_OP(AttentionQKVGradW)
     .INPUT(x, TensorType({DT_FLOAT16}))
     .INPUT(query_dx, TensorType({DT_FLOAT16}))
-    .INPUT(key_dw, TensorType({DT_FLOAT16}))
-    .INPUT(value_dw, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(key_dw, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(value_dw, TensorType({DT_FLOAT16}))
     .OUTPUT(dw_query, TensorType({DT_FLOAT16}))
     .OUTPUT(dw_key, TensorType({DT_FLOAT16}))
     .OUTPUT(dw_value, TensorType({DT_FLOAT16}))
@@ -199,24 +199,25 @@ REG_OP(SwinTransformerLnQKV)
     .OP_END_FACTORY_REG(SwinTransformerLnQKV)
 
 /**
-*@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
-
+*@brief Multiplies matrix "a" by matrix "b", producing "a * b". \n
 *@par Inputs:
 *Three inputs, including:
 * @li x1: A matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC].
+* float32, int32, bfloat16. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC].
+* float32, int32, bfloat16. Has format [ND, NHWC].
 * @li bias: A optional 1D Tensor. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC] . \n
+* float32, int32, bfloat16. Has format [ND, NHWC]. \n
 
 *@par Attributes:
-*@li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
-*@li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
+*@li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to
+* [K, M].
+*@li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to
+* [K, M]. \n
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC] . \n
+* float32, int32, bfloat16. Has format [ND, NHWC]. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -231,35 +232,34 @@ REG_OP(MatMul)
     .OP_END_FACTORY_REG(MatMul)
 
 /**
-*@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
-
+*@brief Multiplies matrix "a" by matrix "b", producing "a * b". \n
 *@par Inputs:
 *Four inputs, including:
 * @li x1: A matrix Tensor. 2D. Must be one of the following types: float32,
- float16, int32, int8. Has format [ND, NHWC].
+* float16, int32, int8, int4, bfloat16. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. 2D. Must be one of the following types: float32,
- float16, int32, int8. Has format [ND, NHWC].
+* float16, int32, int8, int4, bfloat16. Has format [ND, NHWC].
 * @li bias: A 1D Tensor. Must be one of the following types: float32,
- float16, int32. Has format [ND, NHWC].
+* float16, int32 bfloat16. Has format [ND, NHWC].
 * @li offset_w: A Optional 1D Tensor for quantized inference. Type is int8.
- Reserved. \n
+* Reserved. \n
 
 *@par Attributes:
 * @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
- [M, K].
+* [M, K].
 * @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
 [K, N].
 * @li offset_x: An optional integer for quantized MatMulV2.
 * The negative offset added to the input x1 for int8 type. Ensure offset_x
- within the effective range of int8 [-128, 127]. Defaults to "0". \n
+* within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: float32,
- float16, int32. Has format [ND, NHWC]. \n
+* float16, int32, bfloat16. Has format [ND, NHWC]. \n
 
 *@attention Constraints:
 * if performances better in format NZ, please close
- "MatmulTransdataFusionPass" in fusion configuration. \n
+* "MatmulTransdataFusionPass" in fusion configuration. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -276,26 +276,25 @@ REG_OP(MatMulV2)
     .OP_END_FACTORY_REG(MatMulV2)
 
 /**
-*@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
-
+*@brief Multiplies matrix "a" by matrix "b", producing "a * b". \n
 *@par Inputs:
 *Five inputs, including:
 * @li x1: A matrix Tensor. 2D. Must be one of the following types: int8.
 * @li x2: A matrix Tensor. 2D. Must be one of the following types: int8.
 * @li compress_index: A compress index matrix of type int8.
 * @li bias: An optional Tensor. 1D. Must be one of the following types: int32,
- float16.
+* float16.
 * @li offset_w: An optional matrix Tensor. 2D. Must be one of the following
- types: int8. \n
+* types: int8. \n
 
 *@par Attributes:
 *@li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
- [M, K].
+* [M, K].
 *@li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
- [K, N].
+* [K, N].
 *@li offset_x: An optional integer for quantized MatMulV2Compress.
 *The negative offset added to the input x1 for int8 type. Ensure offset_x
- within the effective range of int8 [-128, 127]. Defaults to "0". \n
+* within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: int32,
@@ -303,7 +302,7 @@ REG_OP(MatMulV2)
 
 *@attention Constraints:
 * if performances better in format NZ, please close
- "MatmulTransdataFusionPass" in fusion configuration.
+* "MatmulTransdataFusionPass" in fusion configuration.
 
 */
 REG_OP(MatMulV2Compress)
@@ -319,29 +318,29 @@ REG_OP(MatMulV2Compress)
     .OP_END_FACTORY_REG(MatMulV2Compress)
 
 /**
-*@brief Performs Matrix-to-matrix Multiply, producing y=alpha[0]*a*b+beta[0]*c . \n
-
+*@brief Performs Matrix-to-matrix Multiply,
+* producing y=alpha[0]*a*b+beta[0]*c. \n
 *@attention Constraints:
 * For better performance, The k-axis must be aligned to 16 (input type
 * is float16) or 32 (input type is int8). \n
 
 *@par Inputs:
 *Five inputs, including:
-*@li a: A matrix Tensor. Must be one of the following types: float16, int8.
-* Has format [ND].
-*@li b: A matrix Tensor. Must be one of the following types: float16, int8.
-* Has format ND.
-*@li c: A matrix Tensor. Must be one of the following types: float16, int32,
-* float32. has format ND.
-*@li alpha: A 1D Tensor. The shape of alpha is [1].Must be one of the following
-* types: float16, int32, float32. Has format [ND].
+* @li a: A matrix Tensor. Must be one of the following types:float32, float16,
+* int8, int32. Has format ND.
+* @li b: A matrix Tensor. Must be one of the following types:float32, float16,
+* int8, int32. Has format ND.
+*@li c: A matrix Tensor. Must be one of the following types:float32, float16,
+* int8, int32. Has format ND.
+* @li alpha: A 1D Tensor. The shape of alpha is [1].Must be one of the
+* following types: float16, int32, float32, int8. Has format ND.
 *@li beta: A 1D Tensor. The shape of beta is [1]. Must be one of the following
-* types: float16, int32, float32. Has format [ND].
+* types: float16, int32, float32, int8. Has format ND.\n
 * The format of a, b, c has restriction:\n
 * When type of a is int8 and type of c is int32, the format of a, b, c should
 * all be ND.\n
-* When type of a is int8 and type of c is float32, the format of a, b, c should
-* all be ND.\n
+* When type of a is int8 and type of c is float32, the format of a, b, c
+* should all be ND.\n
 * When type of a is float16 and type of c is float16, the format of a, b, c
 * should all be ND.\n
 * When type of a is float16 and type of c is float32, the format of a, b, c
@@ -352,7 +351,7 @@ REG_OP(MatMulV2Compress)
 *@li transpose_a: Optional. A bool. If True, changes the shape of "a" from
 * [M, K] to [K, M].
 *@li transpose_b: Optional. A bool. If True, changes the shape of "b" from
-* [K, N] to [N, K] . \n
+* [K, N] to [N, K]. \n
 
 *@par Outputs:
 *y: The result matrix Tensor. Must be one of the following types: float16,
@@ -371,22 +370,25 @@ REG_OP(GEMM)
     .OP_END_FACTORY_REG(GEMM)
 
 /**
-*@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
-
+*@brief Multiplies matrix "a" by matrix "b", producing "a * b". \n
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC].
+* float32, int32, bfloat16. 2D or higher. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC] . \n
+* float32, int32, bfloat16. 2D or higher. Has format [ND, NHWC]. \n
 
 *@par Attributes:
-*@li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
-*@li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K] to [B, K, M] . \n
+*@li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K]
+* to [B, K, M].
+*@li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K]
+* to [B, K, M]. \n
 
 *@par Outputs:
-*y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape length as "x1" and "x2" . \n
+* y: The result matrix Tensor. 2D or higher. Must be one of the following
+* types: float16, bfloat16,
+* float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape
+* length as "x1" and "x2". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -403,27 +405,33 @@ REG_OP(BatchMatMul)
 
 /**
 * @brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
-
 * @par Inputs:
 * Three inputs, including:
 * @li x1: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC].
+* float32, int32, int8, int4, bfloat16. 2D or higher. Has format [ND, NHWC].
 * @li x2: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC] . \n
-* @li bias: A matrix Tensor. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC] . \n
+* float32, int32, int8, int4, bfloat16. 2D or higher. Has format [ND, NHWC].
+* @li bias: A optional Tensor. Must be one of the following types:
+* float16,
+* float32, int32, int8, int4, bfloat16. Has format [ND, NHWC].
+* @li offset_w: A optional Tensor. Must be one of the following types:
+* int8, int4. Has format [ND, NHWC]. \n
 
 * @par Attributes:
-* @li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
-* @li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K] to [B, K, M] . \n
+* @li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to
+* [B, K, M].
+* @li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K] to
+* [B, K, M]. \n
 
 * @par Outputs:
-* y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
-* float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape length as "x1" and "x2" . \n
+* y: The result matrix Tensor. 2D or higher. Must be one of the following
+* types: float16,
+* float32, int32. 2D or higher. Has format [ND, NHWC]. Has the same shape
+* length as "x1" and "x2". \n
 
 *@attention Constraints:
 * if performances better in format NZ, please close
- "MatmulTransdataFusionPass" in fusion configuration. \n
+* "MatmulTransdataFusionPass" in fusion configuration. \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -1025,29 +1033,33 @@ REG_OP(DiagPart)
     .OP_END_FACTORY_REG(DiagPart)
 
 /**
-*@brief Also known as a "fully-connected" layer, computes an inner product with a set of learned weights, and (optionally) adds biases . \n
-
+*@brief Also known as a "fully-connected" layer, computes an inner product
+* with a set of learned weights, and (optionally) adds biases. \n
 *@par Inputs:
 * Four inputs, including:
-*@li x: A Tensor of type float16, int8.
-*@li w: A weight matrix of type float16, int8.
-*@li b: An optional Tensor of type float16, int32, float32.
-*@li offset_w: An optional Tensor of type int8. Reserved. Only None Supported. \n
+*@li x: A Tensor of type float16, int8, int4, float32, bfloat16.
+*@li w: A weight matrix of type float16, int8, int4, float32, bfloat16.
+*@li b: An optional Tensor of type float16, int8, int4, float32, bfloat16.
+*@li offset_w: An optional Tensor of type int8, int4.
+* Reserved. Only None Supported. \n
 
 *@par Attributes:
 *@li num_output: Required. An int, output neuron number. Reserved.
-*@li transpose: A bool, specifying weight whether to transpose input w, either "true" or "false". Defaults to "false".
-*@li axis: Optional. An int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
-* The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
+*@li transpose: A bool, specifying weight whether to transpose input w,
+* either "true" or "false". Defaults to "false".
+*@li axis: Optional. An int, 1 or 2, specifying which dimension the input
+* "K" starts from. Defaults to 1.
+* The product of the subsequent dimensions starting form first dimension
+* or the second dimension is "K".
 *@li offset_x: An optional integer for quantized FullyConnection.
-*The negative offset added to the input image for int8 type. Ensure offset_x within the
-*effective range of int8 [-128, 127]. Defaults to "0". \n
+*The negative offset added to the input image for int8 type. Ensure offset_x
+* within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
-*y: The result tensor of type float16, int32, float32 . \n
+*y: The result tensor of type float16, int32, float32, bfloat16. \n
 
 *@par Third-party framework compatibility
-* Compatible with the Caffe operator InnerProduct . \n
+* Compatible with the Caffe operator InnerProduct. \n
 
 *@par Quantization supported or not
 * Yes
@@ -1066,27 +1078,26 @@ REG_OP(FullyConnection)
 
 /**
 *@brief Also known as a "fully-connected-compress" layer, computes an inner
-product with a set of learned weights, and (optionally) adds biases . \n
-
+* product with a set of learned weights, and (optionally) adds biases. \n
 *@par Inputs:
 * Five inputs, including:
 *@li x: A Tensor of type uint8, int8.
 *@li w: A weight matrix of type int8.
 *@li compress_index: A compress index matrix of type int8.
-*@li b: A Tensor of type int32.
-*@li offset_w: A Tensor of type int8.
+*@li b: A optional Tensor of type int32.
+*@li offset_w: A optional Tensor of type int8.
 
 *@par Attributes:
 *@li num_output: A int, specifying the number of outputs.
 *@li transpose: A bool, specifying whether to transpose input w, either "true"
- or "false". Defaults to "false".
+* or "false". Defaults to "false".
 *@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K"
-starts from. Defaults to "1".
-* The product of the subsequent dimensions starting form first dimension or the
-second dimension is "K".
+* starts from. Defaults to "1".
+*The product of the subsequent dimensions starting form first dimension or the
+* second dimension is "K".
 *@li offset_x: An optional integer for quantized FullyConnectionCompress.
 *The negative offset added to the input image for int8 type. Ensure offset_x
-within the effective range of int8 [-128, 127]. Defaults to "0". \n
+* within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
 *y: The result tensor of type int32. \n
@@ -1520,21 +1531,18 @@ REG_OP(Tril)
 /**
 *@brief Concatenates a list of N tensors along the first dimension.
 *@par Inputs:
-* Two inputs, including:
-* @li values: A list of Tensors. Must be one of the following types:  int32, float16, float32.
-*     Tensors to be concatenated. All must have size 1 in the first dimension and same shape.
-*     It's a dynamic input.
-* @li shape: A Tensor of the same type as "x".
-* The final shape of the result. Should be equal to the shapes of any input
-* but with the number of input values in the first dimension . \n
+* @li x: A list of Tensors. Must be one of the following types:  int32,
+* float16, float32. Tensors to be concatenated. All must have size 1 in
+*  the first dimension and same shape.It's a dynamic input. \n
 
 *@par Attributes:
-*equation: The subscripts for the Einstein summation. \n
-*N: tensor size of input \n
+* @li equation: The subscripts for the Einstein summation. \n
+* @li N: tensor size of input. \n
 
 *@par Outputs:
-*@li y: Sums the product of the elements of the input operands along dimensions specified
- using a notation based on the Einstein summation convention. \n
+*@li y: Sums the product of the elements of the input operands along
+* dimensions specified
+* using a notation based on the Einstein summation convention. \n
 
 *@attention Constraints:
 *Input N must be Int. \n
@@ -1756,6 +1764,57 @@ REG_OP(MatrixDiagV3)
     .ATTR(align, String, "RIGHT_LEFT")
     .OP_END_FACTORY_REG(MatrixDiagV3)
 
+/**
+* @brief Function SwinAttentionScore. \n
+
+* @par Inputs:
+* six inputs, including:
+* @li query: A matrix Tensor. The type only support float16.
+* @li key: A matrix Tensor. The type only support float16.
+* @li value: A matrix Tensor. The type only support float16.
+* @li padding_mask1: A matrix Tensor. The type only support float16.
+* @li padding_mask2: A matrix Tensor. The type only support float16.
+* @li scale: A scalar. The type only support float16.
+* @li drop_mask: A matrix Tensor. The type only support uint8. \n
+
+* @par Attributes:
+* @li keep_prob: A mutable Tensor. Must met all of the following rules:
+ shape of "keep_prob" should be (1,) or [1,].
+* @li query_transpose: A bool. If True, changes the shape of "query" from [K, M] to
+ [M, K].
+* @li key_transpose: A bool. If True, changes the shape of "key" from [N, K] to
+ [K, N].
+* @li bmm_score_transpose_a: A bool. If True, changes the shape of "mid_data" from [K, M] to
+ [M, K].
+* @li bmm_score_transpose_b: A bool. If True, changes the shape of "value" from [N, K] to
+ [K, N].
+* @li axes: A list of int. The dimension softmax would be performed on. Defaults
+ to "[]" . \n
+
+* @par Outputs:
+* attention_score: The result matrix Tensor. The type only support float16.
+* softmax: The result matrix Tensor. The type only support float16.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(SwinAttentionScore)
+    .INPUT(query, TensorType({DT_FLOAT16}))
+    .INPUT(key, TensorType({DT_FLOAT16}))
+    .INPUT(value, TensorType({DT_FLOAT16}))
+    .INPUT(padding_mask1, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(padding_mask2, TensorType({DT_FLOAT16}))
+    .INPUT(scale, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_INT8}))
+    .OUTPUT(attention_score, TensorType({DT_FLOAT16}))
+    .OUTPUT(softmax, TensorType({DT_FLOAT16}))
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(query_transpose, Bool, false)
+    .ATTR(key_transpose, Bool, false)
+    .ATTR(bmm_score_transpose_a, Bool, false)
+    .ATTR(bmm_score_transpose_b, Bool, false)
+    .ATTR(softmax_axes, ListInt, {})
+    .OP_END_FACTORY_REG(SwinAttentionScore)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

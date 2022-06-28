@@ -2002,40 +2002,41 @@ REG_OP(ApplyAdadeltaD)
     .OP_END_FACTORY_REG(ApplyAdadeltaD)
 
 /**
-* @brief Updates "var" according to the ApplyMomentum algorithm.
-*   accum = accum * momentum + x1 * x2
-*   if use_nesterov is True:
-*       var -= x1 * x2 * lr + accum * momentum * lr
-*   else:
-*       var -= accum * lr
+*@brief Updates "var" according to the ApplyMomentum algorithm.
+* accum = accum * momentum + x1 * x2
+* if use_nesterov is True:
+* var -= x1 * x2 * lr + accum * momentum * lr
+* else: var -= accum * lr
 *
-* @par Inputs:
-*   Six inputs, including:
-*  @li var: A mutable Tensor has type TensorType::NumberType().
-*      Should be a Variable Tensor.
-*  @li accum: A mutable Tensor has the same type as "var".
-*      Should be a Variable Tensor.
-*  @li lr: A scalar has the same type as "var", for the scaling factor.
-*  @li x1: A Tensor has type TensorType::NumberType().
-*  @li momentum: A scalar has the same type as "var".
-*  @li x2: A scalar has the same type as "var".
+*@par Inputs:
+* Six inputs, including:
+*@li var: A mutable Tensor has type TensorType::NumberType().
+* Should be a Variable Tensor.
+*@li accum: A mutable Tensor has the same type as "var".
+* Should be a Variable Tensor.
+*@li lr: A scalar has the same type as "var", for the scaling factor.
+*@li x1: A Tensor has type TensorType::NumberType().
+*@li momentum: A scalar has the same type as "var".
+*@li x2: A scalar has the same type as "var". \n
 *
-* @par Attributes:
-*   Two attributes, including:
-*  @li use_nesterov: An optional bool. Defaults to "False".
-*       If True, the tensor passed to compute grad will be var - lr * momentum * accum,
-*       so in the end, the var you get is actually var - lr * momentum * accum.
-*  @li use_locking: An optional bool. Defaults to "False".
-*       If "True", updating of the "var", m", and "v" tensors will be protected
-*       by a lock; otherwise the behavior is undefined, but may exhibit less contention.
+*@par Attributes:
+* Two attributes, including:
+*@li use_nesterov: An optional bool. Defaults to "False".
+* If True, the tensor passed to compute grad will be
+* var - lr * momentum * accum, so in the end,
+* the var you get is actually var - lr * momentum * accum.
+*@li use_locking: An optional bool. Defaults to "False".
+* If "True", updating of the "var", m", and "v" tensors will be protected
+* by a lock; otherwise the behavior is undefined, but may exhibit
+* less contention. \n
 *
-* @par Outputs:
-*   Two outputs, including:
-*  @li var: A mutable Tensor has the same type as "var".
-*  @li accum: A mutable Tensor has the same type as "var".
+*@par Outputs:
+* Two outputs, including:
+*@li var: A mutable Tensor has the same type as "var".
+*@li accum: A mutable Tensor has the same type as "var". \n
 
 *@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(FusedMulApplyMomentum)
     .INPUT(var, TensorType::NumberType())

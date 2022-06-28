@@ -112,7 +112,10 @@ REG_OP(FusedBatchNormV2)
  * @li input_data: A Tensor. Data to be sorted. Support float16 or float32.
  * @li input_index: A Tensor. Range(0, 2048). Support float16 or int32.
  * @par Attributes:
- * k_num: Int.Number to be sorted.
+ * @li k_num: Int.Number to be sorted.
+ * @li largest: An optional bool, controls whether to return largest or smallest elements. Defaults to true.
+ * If "True", the "k" largest elements are returned in descending order.
+ * If "False", the "k" smallest elements are returned in ascending order.
  * @par Outputs:
  * One output, including:
  * output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
@@ -124,6 +127,7 @@ REG_OP(SegmentSort)
     .INPUT(input_index, TensorType({DT_FLOAT16,DT_INT32}))
     .OUTPUT(output_proposal, TensorType({DT_FLOAT16,DT_FLOAT}))
     .REQUIRED_ATTR(k_num, Int)
+    .ATTR(largest, Bool, true)
     .OP_END_FACTORY_REG(SegmentSort)
 
 /**
@@ -132,8 +136,11 @@ REG_OP(SegmentSort)
  * One input, including:
  * input_proposal: A Tensor. Proposal sorted for each channel. Support float16 or float32
  * @par Attributes:
- * k_num: Int.Number to be sorted.
- * include_index: Bool.include_index is false,output proposal. include_index is true, output data and index.
+ * @li k_num: Int.Number to be sorted.
+ * @li include_index: Bool.include_index is false,output proposal. include_index is true, output data and index.
+ * @li largest: An optional bool, controls whether to return largest or smallest elements. Defaults to true.
+ * If "True", the "k" largest elements are returned in descending order.
+ * If "False", the "k" smallest elements are returned in ascending order.
  * @par Outputs:
  * Two output, including:
  * output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
@@ -147,6 +154,7 @@ REG_OP(MultiMerge)
     .OUTPUT(output_index, TensorType({DT_INT32}))
     .REQUIRED_ATTR(k_num, Int)
     .ATTR(include_index, Bool, false)
+    .ATTR(largest, Bool, true)
     .OP_END_FACTORY_REG(MultiMerge)
 
 /**
@@ -155,7 +163,10 @@ REG_OP(MultiMerge)
  * One input, including:
  * input_proposal: A Tensor. Proposal sorted for each channel. Support float16
  * @par Attributes:
- * k_num: Int.Number to be sorted.
+ * @li k_num: Int.Number to be sorted.
+ * @li largest: An optional bool, controls whether to return largest or smallest elements. Defaults to true.
+ * If "True", the "k" largest elements are returned in descending order.
+ * If "False", the "k" smallest elements are returned in ascending order.
  * @par Outputs:
  * Two output, including:
  * @li output_data: A Tensor. Datatype and format is same as input_data. Data sorted.
@@ -168,6 +179,7 @@ REG_OP(SingleMerge)
     .OUTPUT(output_data, TensorType({ DT_FLOAT16 }))
     .OUTPUT(output_index, TensorType({ DT_INT32 }))
     .REQUIRED_ATTR(k_num, Int)
+    .ATTR(largest, Bool, true)
     .OP_END_FACTORY_REG(SingleMerge)
 
 /**

@@ -25,7 +25,7 @@
 
 namespace ge {
 /**
-*@brief Performs reduced batch normalization . \n
+*@brief Performs reduced batch normalization .
 
 *@par Inputs:
 *x: A tensor of type float16 or float32. \n
@@ -67,7 +67,7 @@ REG_OP(BN3DTrainingReduce)
     .OP_END_FACTORY_REG(BN3DTrainingReduce)
 
 /**
-*@brief Performs the backpropagation of BatchNorm . \n
+*@brief Performs the backpropagation of BatchNorm .
 
 *@par Inputs:
 * Seven inputs, including:
@@ -153,7 +153,7 @@ REG_OP(BN3DTrainingReduceGrad)
     .OP_END_FACTORY_REG(BN3DTrainingReduceGrad)
 
 /**
-*@brief Performs reduced batch normalization . \n
+*@brief Performs reduced batch normalization .
 
 *@par Inputs:
 * Seven inputs, including:
@@ -183,10 +183,10 @@ REG_OP(BN3DTrainingReduceGrad)
 
 *@attention Constraints:
 *@li This operator is a BatchNorm fusion operator for updating the moving
-averages for training.
-*This operator is used in conjunction with BNTrainingUpdate.
-*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to the square
-* root instruction.
+* averages for training. This operator is used in conjunction with
+* BNTrainingUpdate.
+*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to the
+* square root instruction.
 */
 REG_OP(BNTrainingUpdate)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -259,7 +259,7 @@ REG_OP(BN3DTrainingUpdate)
     .OP_END_FACTORY_REG(BN3DTrainingUpdate)
 
 /**
-*@brief Performs batch normalization for inference . \n
+*@brief Performs batch normalization for inference .
 
 *@par Inputs:
 * Five inputs, including:
@@ -277,8 +277,8 @@ REG_OP(BN3DTrainingUpdate)
 *y: A tensor of type float16 or float32 for the normalized "x" . \n
 
 *@attention Constraints:
-*For Ascend 310, the result accuracy fails to reach 1/1000 due to the square root
-* instruction.
+*For Ascend 310, the result accuracy fails to reach 1/1000 due to the
+* square root instruction.
 */
 REG_OP(BNInfer)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -291,19 +291,21 @@ REG_OP(BNInfer)
     .OP_END_FACTORY_REG(BNInfer)
 
 /**
-*@brief Performs reduced batch normalization. For some scene which don't contain
-assignmoving average . \n
+*@brief Performs reduced batch normalization. For some scenes which don't
+* contain assign moving average .
 
 *@par Inputs:
 *Five inputs, including:
 *@li x: A tensor of type float16 or float32.
 *@li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+*@li square_sum: A tensor of type float32 for the output of operator
+* BNTrainingReduce.
 *@li scale: A tensor of type float32, for the scaling factor.
 *@li offset: A tensor of type float32, for the scaling offset . \n
 
 *@par Attributes:
-*epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero . \n
+*epsilon: A required float32, specifying the small value added to
+* variance to avoid dividing by zero . \n
 
 *@par Outputs:
 *Three outputs, including:
@@ -313,7 +315,8 @@ assignmoving average . \n
 
 *@attention Constraints:
 *This operator is used in conjunction with BNTrainingReduce.
-For Ascend 310, the result accuracy fails to reach 1/1000 due to the square root instruction.
+*For Ascend 310, the result accuracy fails to reach 1/1000 due to
+* the square root instruction.
 */
 REG_OP(BNTrainingUpdateV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -328,30 +331,35 @@ REG_OP(BNTrainingUpdateV2)
     .OP_END_FACTORY_REG(BNTrainingUpdateV2)
 
 /**
-*@brief Performs reduced batch normalization v3. For some scene which don't contain
-assign moving average . \n
+*@brief Performs reduced batch normalization v3. For some scenes which
+* don't contain assign moving average .
 
 *@par Inputs:
 * Five inputs, including:
 *@li x: A tensor of type float16 or float32.
 *@li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+*@li square_sum: A tensor of type float32 for the output of operator
+* BNTrainingReduce.
 *@li scale: A tensor of type float32, for the scaling factor.
 *@li offset: A tensor of type float32, for the scaling offset . \n
 
 *@par Attributes:
-*epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero . \n
+*epsilon: A required float32, specifying the small value added to variance
+* to avoid dividing by zero . \n
 
 *@par Outputs:
 *@li y: A tensor of type float16 or float32, for normalized "x".
 *@li batch_mean: A tensor of type float32, for the mean of "x".
 *@li batch_variance: A tensor of type float32, for the variance of "x".
-*@li reserve_1: A tensor of type float32, for the mean of batch "x". Has the same type as batch_mean.
-*@li reserve_2: A tensor of type float32, for the variance of batch "x". Has the same type as batch_mean . \n
+*@li reserve_1: A tensor of type float32, for the mean of batch "x".
+* Has the same type as batch_mean.
+*@li reserve_2: A tensor of type float32, for the variance of batch "x".
+* Has the same type as batch_mean . \n
 
 *@attention Constraints:
 *@li This operator is used in conjunction with BNTrainingReduce.
-*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to the square root instruction.
+*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to
+* the square root instruction.
 */
 REG_OP(BNTrainingUpdateV3)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -368,7 +376,7 @@ REG_OP(BNTrainingUpdateV3)
     .OP_END_FACTORY_REG(BNTrainingUpdateV3)
 
 /**
-*@brief Performs the backpropagation of BatchNorm . \n
+*@brief Performs the backpropagation of BatchNorm .
 
 *@par Inputs:
 * Four inputs, including:
@@ -436,16 +444,17 @@ REG_OP(BN3DTrainingUpdateGrad)
     .OP_END_FACTORY_REG(BN3DTrainingUpdateGrad)
 
 /**
-*@brief Performs the backpropagation of BatchNorm for inference . \n
+*@brief Performs the backpropagation of BatchNorm for inference .
 
 *@par Inputs:
 * Three inputs, including:
-*@li grads: A tensor of type loat16 or float32, for the gradient.
+*@li grads: A tensor of type float16 or float32, for the gradient.
 *@li scale: A tensor of type float32.
 *@li batch_variance: A tensor of type float32. It is an output of BatchNorm . \n
 
 *@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number added to the variance of "x" . \n
+*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* added to the variance of "x" . \n
 
 *@par Outputs:
 *x_backprop: A Tensor of type float16 or float32, for the offset of "x" . \n

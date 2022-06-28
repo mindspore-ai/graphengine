@@ -544,23 +544,30 @@ REG_OP(BNInference)
     .OP_END_FACTORY_REG(BNInference)
 
 /**
-*@brief Performs batch normalization . \n
+*@brief Performs batch normalization .
 
 *@par Inputs:
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
-*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x" Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x" Specifies the variance used for inference.
-*@li scale: An optional tensor of type float16 or float32, no use
-*@li offset: An optional tensor of type float16 or float32, no use
+*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"
+* Specifies the mean used for inference.
+*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"
+* Specifies the variance used for inference.
+*@li scale: An optional tensor of type float16 or float32, no use.
+*@li offset: An optional tensor of type float16 or float32, no use. \n
+
 *@par Attributes:
-*@li momentum: An optional float32 num, represents the mean and the variance's scale factor
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
+*@li momentum: An optional float32 num, represents the mean and
+* the variance's scale factor.
+*@li epsilon: An optional float32, specifying the small value
+* added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional attr, not use
+*@li mode: An optional attr, not use. \n
+
 *@par Outputs:
-*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
+*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x". \n
+
 *@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED. Please use BNInference instead.
+* Warning: THIS FUNCTION IS DEPRECATED. Please use BNInference instead.
 */
 REG_OP(BNInferenceD)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))

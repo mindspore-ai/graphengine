@@ -1583,6 +1583,39 @@ REG_OP(UniqueConsecutive)
     .ATTR(return_counts, Bool, false)
     .ATTR(axis, Int, 1000)
     .OP_END_FACTORY_REG(UniqueConsecutive)
+
+/**
+* @brief Decodes a variant Tensor into a RaggedTensor. \n
+*
+* @par Input:  
+* @li encoded_ragged:  A Tensor of type variant. A variant Tensor containing encoded RaggedTensors. \n
+*
+* @par Outputs:
+* @li output_nested_splits: A list of output_ragged_rank Tensor objects with type int32 or int64.
+* @li output_dense_values:  A Tensor, which must be one of the following types:
+*               double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool. \n
+*
+* @par Attributes:
+* @li input_ragged_rank: An int that is >= -1. The ragged rank of each encoded RaggedTensor component in the input. 
+*         If set to -1, this is inferred as output_n - rank(encoded_ragged).
+* @li output_ragged_rank: An int that is >= 0. The expected ragged rank of the output RaggedTensor. 
+*          The following must hold: output_n = rank(encoded_ragged) + input_n.
+* @li Tvalues: The data type of output_dense_values.
+* @li Tsplits: The data type of output_nested_splits. An optional DType of "int32, int64". Defaults to `int64`. \n
+*
+* @par Third-party framework compatibility.
+* Compatible with tensorflow RaggedTensorFromVariant operator.
+*/
+REG_OP(RaggedTensorFromVariant)
+    .INPUT(encoded_ragged, TensorType({DT_VARIANT}))
+    .DYNAMIC_OUTPUT(output_nested_splits, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(output_dense_values, TensorType::BasicType())
+    .REQUIRED_ATTR(input_ragged_rank, Int)
+    .REQUIRED_ATTR(output_ragged_rank, Int)
+    .REQUIRED_ATTR(Tvalues, Type)
+    .ATTR(Tsplits, Type, DT_INT64)
+    .OP_END_FACTORY_REG(RaggedTensorFromVariant)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

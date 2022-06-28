@@ -93,18 +93,18 @@ REG_OP(Quantize)
 * @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
 * Defaults to "False".
 * @li round_mode: An optional string, specifying the float16 to int8 cast type.
-* The value range is [Round, Floor, Ceil, Truncate]. Defaults to "Round" .
+* The value range is [Round, Floor, Ceil, Trunc]. Defaults to "Round" .
 * @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_INT8" . \n
 
 * @par Outputs:
 * y: The quantized output tensor of type int8 or int4. \n
 
 * @attention Constraints:
-* round_mode value range is [Round, Floor, Ceil, Truncate].
+* round_mode value range is [Round, Floor, Ceil, Trunc].
 * @li Round: round to nearest, tie to even(c language rint).
 * @li Floor: round to minus infinity(c language floor).
 * @li Ceil: round to positive infinity(c language ceil).
-* @li Truncate: round to zero(c language trunc). \n
+* @li Trunc: round to zero(c language trunc). \n
 
 * @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.

@@ -2029,26 +2029,29 @@ REG_OP(Cummax)
 
 /**
 *@brief Extends the input with copies of data along a specified dimension. For example:
-*(1) If x = [[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]], with shape (2, 3, 2);
-*(2) axis = 1;
-*(3) tiles = 2;
-*(4) Then, y = [[[1, 2], [3, 4], [5, 6], [1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12], [7, 8], [9, 10], [11, 12]]], with shape (2, 6, 2) . \n
+*(1) If x = [[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]], with shape (2, 3, 2); \n
+*(2) axis = 1; \n
+*(3) tiles = 2; \n
+*(4) Then, y = [[[1, 2], [3, 4], [5, 6], [1, 2], [3, 4], [5, 6]], [[7, 8],
+* [9, 10], [11, 12], [7, 8], [9, 10], [11, 12]]],
+* with shape (2, 6, 2) . \n
 
 *@par Inputs:
 * One input:
 *input_x: A Tensor with any format. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
 
-*@par Attributes:
-*@li axis: An optional int32, specifying the axis to tile. Defaults to 1.
-*@li tiles: A required int32, specifying the number of copies (tiles) to output . \n
+* @par Attributes:
+* @li axis: An optional int32, specifying the axis to tile. Defaults to 1.
+* @li tiles: A required int32, specifying the number of copies (tiles) to output . \n
 
 *@par Outputs:
-*output_y: A Tensor of any format. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
+* output_y: A Tensor of any format. Must be one of the following types:
+* float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
 
-*@attention Constraints:
-*@li "axis" must be within the rank of the input tensor.
-*@li "tiles" must be greater than 1.
-*@par Third-party framework compatibility
+* @attention Constraints:
+* @li "axis" must be within the rank of the input tensor.
+* @li "tiles" must be greater than 1.
+* @par Third-party framework compatibility
 * Compatible with the Caffe operator Tile.
 */
 REG_OP(TileWithAxis)
@@ -2061,17 +2064,17 @@ REG_OP(TileWithAxis)
     .OP_END_FACTORY_REG(TileWithAxis)
 
 /**
-*@brief Read data with offset and stride . \n
+* @brief Read data with offset and stride .
 
-*@par Inputs:
-*One input:
-*x: A Tensor. Must be one of the following types: float16, int8 . \n
+* @par Inputs:
+* One input:
+* x: A Tensor. Must be one of the following types: float16, int8 . \n
 
-*@par Attributes:
-*@li stride_list: An optional 5D list of type int32. Defaults to "[1,1,1,1,1]" . \n
+* @par Attributes:
+* stride_list: An optional 5D list of type int32. Defaults to "[1,1,1,1,1]" . \n
 
-*@par Outputs:
-*y: A Tensor of the same type as "x".
+* @par Outputs:
+* y: A Tensor of the same type as "x".
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
@@ -2083,10 +2086,10 @@ REG_OP(ReadSelect)
     .OP_END_FACTORY_REG(ReadSelect)
 
 /**
-*@brief: Write data with offset . \n
+* @brief: Write data with offset .
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: int32, float32, float16, int8 . \n
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: int32, float32, float16, int8 . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -2100,14 +2103,14 @@ REG_OP(WriteSelect)
     .OP_END_FACTORY_REG(WriteSelect)
 
 /**
-*@brief Read data by stride.
+* @brief Read data by stride.
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, int8. \n
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, int8. \n
 
-*@par Attributes:
-*@li axis: A required int32, specifying the index of axis to read by stride. \n
-*@li stride: A required int32, specifying the value of reading stride. \n
+* @par Attributes:
+* @li axis: A required int32, specifying the index of axis to read by stride.
+* @li stride: A required int32, specifying the value of reading stride. \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
@@ -2120,14 +2123,14 @@ REG_OP(StridedRead)
     .OP_END_FACTORY_REG(StridedRead)
 
 /**
-*@brief Write data by stride.
+* @brief Write data by stride.
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, int8. \n
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, int8. \n
 
-*@par Attributes:
-*@li axis: A required int32, specifying the index of axis to write by stride. \n
-*@li stride: A required int32, specifying the value of writing stride. \n
+* @par Attributes:
+* @li axis: A required int32, specifying the index of axis to write by stride.
+* @li stride: A required int32, specifying the value of writing stride. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -2140,20 +2143,20 @@ REG_OP(StridedWrite)
     .OP_END_FACTORY_REG(StridedWrite)
 
 /**
-*@brief Computes the cumulative log sum exp of the tensor "x" along "axis" . \n
+* @brief Computes the cumulative log sum exp of the tensor "x" along "axis" .
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: A Tensor. Must be one of the following types: float32, float16.
-*@li axis A Tensor of type int32 or int16. Defaults to "0".
+* @li x: A Tensor. Must be one of the following types: float32, float16.
+* @li axis A Tensor of type int32 or int16. Defaults to "0".
 *
 *@par Attributes:
 *@li exclusive: If "False", performs inclusive CumulativeLogsumexp, which means that the first element of the input is identical to the first element of the output. If "True", performs exclusive CumulativeLogsumexp.
 *@li reverse: A bool. Defaults to "False".
 *
-*@par Outputs:
-*@li y: A Tensor. Has the same type as "x".
-*@par Third-party framework compatibility
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumsum.
 */
 REG_OP(CumulativeLogsumexp)
@@ -2169,7 +2172,7 @@ REG_OP(CumulativeLogsumexp)
 *
 *@par Inputs:
 * One input:
-*x: A Tensor. Must be one of the following types: float32, float16.
+* x: A Tensor. Must be one of the following types: float32, float16.
 *
 *@par Attributes:
 *@li axis A Tensor of type int32 or int16. Defaults to "0".
@@ -2224,15 +2227,16 @@ REG_OP(InplaceIndexAdd)
 
 /**
 * @brief Replace the value of X with value according to mask.
+
 * @par Inputs:
-* three inputs, including:
-*  @li x: A Tensor of dtype is float16 or float32 or int64 or int32 or int8.
-*  @li mask: A Tensor of dtype bool.
-*  @li value: A Tensor of dtype float16 or float32 or int64 or int32 or int8.
+* Three inputs, including:
+* @li x: A Tensor of dtype is float16 or float32 or int64 or int32 or int8.
+* @li mask: A Tensor of dtype bool.
+* @li value: A Tensor of dtype float16 or float32 or int64 or int32 or int8. \n
 
 * @par Outputs:
-*  y: A tensor. Must be one of the following dtypes:
-*   float16, float32, int64, int32, int8.
+* y: A tensor. Must be one of the following dtypes:
+* float16, float32, int64, int32, int8.
 */
 REG_OP(MaskedFill)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
@@ -2362,25 +2366,25 @@ REG_OP(StridedSliceV2)
     .OP_END_FACTORY_REG(StridedSliceV2)
 
 /**
-*@brief Fills the elements of the input tensor with value val by selecting the indices in the order given in index. \n
+* @brief Fills the elements of the input tensor with value val by selecting the indices in the order given in index.
 
-*@par Inputs:
-*Three inputs, including:
+* @par Inputs:
+* Three inputs, including:
 * @li x: A tensor. Must be one of the following types:
 *     float16, float32, int32. \n
-*@li assist1: A tensor. Must be one of the following types:
+* @li assist1: A tensor. Must be one of the following types:
 *     float16, float32, int32. \n
-*@li assist2: A tensor. Must be one of the following types:
+* @li assist2: A tensor. Must be one of the following types:
 *     float16, float32, int32. \n
 
 * @par Attributes:
 * dim: A required int. Used to select the dimension of this tensor. \n
 
-*@par Outputs:
-*y: A Tensor with the same type and shape of input_x's. \n
+* @par Outputs:
+* y: A Tensor with the same type and shape of input_x's. \n
 
-*@par Third-party framework compatibility
-*Compatible with the Pytorch operator IndexFill. \n
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator IndexFill. \n
 */
 REG_OP(IndexFillD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -2417,27 +2421,27 @@ REG_OP(AddRowRanges)
     .OP_END_FACTORY_REG(AddRowRanges)
 
 /**
-*@brief masked fill tensor along with one axis by range.
+* @brief masked fill tensor along with one axis by range.
 * boxes. It is a customized masked fill range operator . \n
 
-*@par Inputs:
+* @par Inputs:
 * Four inputs, including:
-*@li x: input tensor. A ND Tensor of float32/float16/int32/int8 with shapes
+* @li x: input tensor. A ND Tensor of float32/float16/int32/int8 with shapes
 * 1-D (D,), 2-D(N, D), 3-D(N, C, D)
-*@li start: masked fill start pos. A 3D Tensor of int32 with
+* @li start: masked fill start pos. A 3D Tensor of int32 with
 * shape (num, N). "num" indicates the number of loop masked fill, and the value N
-* indicates the batch of ND Tensor, if input x shape is 1-D, N = 1. \n
-*@li end: masked fill end pos. A 3D Tensor of int32 with
+* indicates the batch of ND Tensor, if input x shape is 1-D, N = 1.
+* @li end: masked fill end pos. A 3D Tensor of int32 with
 * shape (num, N). "num" indicates the number of loop masked fill, and the value N
-* indicates the batch of ND Tensor. \n
-*@li value: masked fill value. A 2D Tensor of float32/float16/int32/int8 with
-* shape (num,). "num" indicates the number of loop masked fill
+* indicates the batch of ND Tensor.
+* @li value: masked fill value. A 2D Tensor of float32/float16/int32/int8 with
+* shape (num,). "num" indicates the number of loop masked fill. \n
 
-*@par Attributes:
-*@li axis: axis with masked fill of int32. Defaults to -1.
+* @par Attributes:
+* @li axis: axis with masked fill of int32. Defaults to -1.
 
-*@par Outputs:
-*y: A ND Tensor of float32/float16/int32/int8 with shapes 1-D (D,), 2-D(N, D), 3-D(N, C, D)
+* @par Outputs:
+* y: A ND Tensor of float32/float16/int32/int8 with shapes 1-D (D,), 2-D(N, D), 3-D(N, C, D)
 
 *@attention Constraints:
 * Warning: input shape's length must not be bigger than 1024 * 1024 * 1024.
@@ -2456,10 +2460,12 @@ REG_OP(MaskedFillRange)
 *
 * @par Inputs:
 * Six inputs, including:
-* @li topk_pq_distance: A sorted Tensor, Will be updated after calculation. Must be one of the following types: float32, float16. 
+* @li topk_pq_distance: A sorted Tensor, Will be updated after calculation.
+* Must be one of the following types: float32, float16. 
 * @li topk_pq_index: A Tensor of type int32, index corresponding to topk_pq_distance.
 * @li topk_pq_ivf: A Tensor of type int32 , the bucket number corresponding to topk_pq_distance.
-* @li pq_distance: A Tensor of type float32 or float16, the new data set will be reordered with topk_pq_distance and updated to topk_pq_distance.
+* @li pq_distance: A Tensor of type float32 or float16,
+* the new data set will be reordered with topk_pq_distance and updated to topk_pq_distance.
 * @li pq_index: A Tensor of type int32, index corresponding to pq_distance. 
 * @li pq_ivf: A scalar of type int32 , the bucket number corresponding to pq_distance. \n
 *

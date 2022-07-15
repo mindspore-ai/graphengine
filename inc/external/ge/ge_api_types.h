@@ -77,6 +77,8 @@ const char_t *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
 const char_t *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
 const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyMemory";
 
+const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
+
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
 

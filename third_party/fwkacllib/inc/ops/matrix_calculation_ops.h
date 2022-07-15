@@ -1815,6 +1815,60 @@ REG_OP(SwinAttentionScore)
     .ATTR(bmm_score_transpose_b, Bool, false)
     .ATTR(softmax_axes, ListInt, {})
     .OP_END_FACTORY_REG(SwinAttentionScore)
+
+/**
+* @brief Uses "updates" to update tensor "data" by "indices". \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li var: A Tensor of type BasicType.
+* @li indices: An ND Tensor of type int32 or int64.
+* @li updates: An Tensor with the same dtype as 'var'. Same shape as indices. \n
+
+* @par Attributes:
+* @li use_locking: An optional bool. Defaults to "False". If "True",
+* the operation will be protected by a lock . \n
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator ScatterNdMax.
+*/
+REG_OP(ScatterNdMax)
+    .INPUT(var, TensorType::BasicType())
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType::BasicType())
+    .OUTPUT(var,  TensorType::BasicType())
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(ScatterNdMax)
+
+/**
+* @brief Uses "updates" to update tensor "data" by "indices". \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li var: A Tensor of type BasicType.
+* @li indices: A ND Tensor of type int32 or int64.
+* @li updates: A Tensor with the same dtype as 'var'. Same shape as indices. \n 
+
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False". If "True",
+* the operation will be protected by a lock . \n
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator ScatterNdMin.
+*/
+REG_OP(ScatterNdMin)
+    .INPUT(var, TensorType::BasicType())
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType::BasicType())
+    .OUTPUT(var,  TensorType::BasicType())
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(ScatterNdMin)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

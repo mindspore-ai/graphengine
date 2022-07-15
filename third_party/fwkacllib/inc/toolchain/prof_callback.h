@@ -170,7 +170,7 @@ MSVP_PROF_API int32_t MsprofInit(uint32_t moduleId, void *data, uint32_t dataLen
  * @param moduleId  [IN] module Id
  * @param handle    [IN] the pointer of callback
  */
-MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
+MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle callback);
 /*
  * @name profReportData
  * @brief start reporter/stop reporter/report date

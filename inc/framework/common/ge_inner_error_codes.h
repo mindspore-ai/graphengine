@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,57 @@
 #include <string>
 #include "ge/ge_api_error_codes.h"
 
+// Each module defines error codes using the following macros, name can not be modified to (name)
+#define GE_ERRORNO_COMMON(name, value, desc)                                                                \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::COMMON_MODULE, name, (value), (desc))
+#define GE_ERRORNO_CLIENT(name, value, desc)                                                                \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::CLIENT_MODULE, name, (value), (desc))
+#define GE_ERRORNO_INIT(name, value, desc)                                                                  \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::INIT_MODULE, name, (value), (desc))
+#define GE_ERRORNO_SESSION(name, value, desc)                                                               \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::SESSION_MODULE, name, (value), (desc))
+#define GE_ERRORNO_GRAPH(name, value, desc)                                                                 \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::GRAPH_MODULE, name, (value), (desc))
+#define GE_ERRORNO_ENGINE(name, value, desc)                                                                \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::ENGINE_MODULE, name, (value), (desc))
+#define GE_ERRORNO_OPS(name, value, desc)                                                                   \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::OPS_MODULE, name, (value), (desc))
+#define GE_ERRORNO_PLUGIN(name, value, desc)                                                                \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::PLUGIN_MODULE, name, (value), (desc))
+#define GE_ERRORNO_RUNTIME(name, value, desc)                                                               \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::RUNTIME_MODULE, name, (value), (desc))
+#define GE_ERRORNO_EXECUTOR(name, value, desc)                                                                \
+  GE_ERRORNO(ge::InnLogRuntime::RT_DEVICE, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::EXECUTOR_MODULE, name, (value), (desc))
+#define GE_ERRORNO_GENERATOR(name, value, desc)                                                             \
+  GE_ERRORNO(ge::InnLogRuntime::RT_HOST, ge::InnErrorCodeType::ERROR_CODE, ge::InnErrorLevel::COMMON_LEVEL, \
+             ge::InnSystemIdType::SYSID_GE, ge::InnSubModuleId::GENERATOR_MODULE, name, (value), (desc))
+
+// Get error code description
+#define GE_GET_ERRORNO_STR(value) ge::StatusFactory::Instance()->GetErrDesc(value)
+
+#define RT_ERROR_TO_GE_STATUS(RT_ERROR) static_cast<Status>(RT_ERROR)
+
 namespace ge {
 // System ID
-enum SystemIdType { SYSID_GE = 8 };
+enum class InnSystemIdType { SYSID_GE = 8 };
 // Runtime location
-enum LogRuntime {
+enum class InnLogRuntime {
   RT_HOST = 0b01,
   RT_DEVICE = 0b10,
 };
 
 // Sub model
-enum SubModuleId {
+enum class InnSubModuleId {
   COMMON_MODULE = 0,
   CLIENT_MODULE = 1,
   INIT_MODULE = 2,
@@ -47,46 +87,19 @@ enum SubModuleId {
 };
 
 // Error code type
-enum ErrorCodeType {
+enum class InnErrorCodeType {
   ERROR_CODE = 0b01,
   EXCEPTION_CODE = 0b10,
 };
 
 // Error level
-enum ErrorLevel {
+enum class InnErrorLevel {
   COMMON_LEVEL = 0b000,
   SUGGESTION_LEVEL = 0b001,
   MINOR_LEVEL = 0b010,
   MAJOR_LEVEL = 0b011,
   CRITICAL_LEVEL = 0b100,
 };
-
-// Each module defines error codes using the following macros
-#define GE_ERRORNO_COMMON(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, COMMON_MODULE, name, value, desc)
-#define GE_ERRORNO_CLIENT(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, CLIENT_MODULE, name, value, desc)
-#define GE_ERRORNO_INIT(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, INIT_MODULE, name, value, desc)
-#define GE_ERRORNO_SESSION(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, SESSION_MODULE, name, value, desc)
-#define GE_ERRORNO_GRAPH(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, GRAPH_MODULE, name, value, desc)
-#define GE_ERRORNO_ENGINE(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, ENGINE_MODULE, name, value, desc)
-#define GE_ERRORNO_OPS(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, OPS_MODULE, name, value, desc)
-#define GE_ERRORNO_PLUGIN(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, PLUGIN_MODULE, name, value, desc)
-#define GE_ERRORNO_RUNTIME(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, RUNTIME_MODULE, name, value, desc)
-#define GE_ERRORNO_EXECUTOR(name, value, desc) \
-  GE_ERRORNO(RT_DEVICE, ERROR_CODE, COMMON_LEVEL, SYSID_GE, EXECUTOR_MODULE, name, value, desc)
-#define GE_ERRORNO_GENERATOR(name, value, desc) \
-  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, GENERATOR_MODULE, name, value, desc)
-
-// Get error code description
-#define GE_GET_ERRORNO_STR(value) ge::StatusFactory::Instance()->GetErrDesc(value)
 
 // Common module error code definition
 GE_ERRORNO_COMMON(MEMALLOC_FAILED, 0, "Failed to allocate memory!");  // 1343225856
@@ -125,13 +138,13 @@ GE_ERRORNO_CLIENT(GE_CLI_GE_ALREADY_INITIALIZED, 10, "GE is already initialized.
 GE_ERRORNO_CLIENT(GE_CLI_GE_NOT_INITIALIZED, 11, "GE is not yet initialized or is finalized.");  // 1343229963
 
 // Init module error code definition
-GE_ERRORNO_INIT(GE_MULTI_INIT, 0, "Multiple initializations are not supported.");            // 1343234048
-GE_ERRORNO_INIT(GE_FINALIZE_NOT_INIT, 1, "Finalize is not allowed before initialization.");  // 1343234049
-GE_ERRORNO_INIT(GE_MULTI_FINALIZE, 2, "Multiple finalizations are not supported.");          // 1343234050
-GE_ERRORNO_INIT(GE_PROF_MULTI_INIT, 3, "Multiple profiling initializations are not supported.");          // 1343234051
-GE_ERRORNO_INIT(GE_PROF_NOT_INIT, 4, "Profing initializations have not been done.");          // 1343234052
+GE_ERRORNO_INIT(GE_MULTI_INIT, 0, "Multiple initializations are not supported.");                 // 1343234048
+GE_ERRORNO_INIT(GE_FINALIZE_NOT_INIT, 1, "Finalize is not allowed before initialization.");       // 1343234049
+GE_ERRORNO_INIT(GE_MULTI_FINALIZE, 2, "Multiple finalizations are not supported.");               // 1343234050
+GE_ERRORNO_INIT(GE_PROF_MULTI_INIT, 3, "Multiple profiling initializations are not supported.");  // 1343234051
+GE_ERRORNO_INIT(GE_PROF_NOT_INIT, 4, "Profing initializations have not been done.");              // 1343234052
 GE_ERRORNO_INIT(GE_PROF_MODE_CONFLICT, 5,
-                "Profiling command mode which is preferred is running, the api mode will not work.");   // 1343234053
+                "Profiling command mode which is preferred is running, the api mode will not work.");  // 1343234053
 
 // Session module error code definition
 GE_ERRORNO_SESSION(GE_SESS_INIT_FAILED, 0, "Failed to initialize session.");                          // 1343238144
@@ -216,8 +229,8 @@ GE_ERRORNO_ENGINE(GE_ENG_FINALIZE_FAILED, 1, "Engine finalize failed.");        
 GE_ERRORNO_ENGINE(GE_ENG_MEMTYPE_ERROR, 2, "Memory type HBM is necessary when engine is in device");  // 1343246338
 
 // Optimize errocode
-GE_ERRORNO_GRAPH(TO_BE_DELETED, 63, "The node of the graph to be deleted.");          // 1343242303
-GE_ERRORNO_GRAPH(NOT_CHANGED, 64, "The node of the graph no changed.");               // 1343242304
+GE_ERRORNO_GRAPH(TO_BE_DELETED, 63, "The node of the graph to be deleted.");  // 1343242303
+GE_ERRORNO_GRAPH(NOT_CHANGED, 64, "The node of the graph no changed.");       // 1343242304
 
 // Ops module error code definition
 GE_ERRORNO_OPS(GE_OPS_KERNEL_STORE_INIT_FAILED, 0, "Failed to initialize OpsKernelInfoStore.");  // 1343250432
@@ -313,7 +326,6 @@ GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, 3, "Graph ma
 GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED, 4, "Graph manager finalize failed.");
 GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_SAVE_MODEL_FAILED, 5, "Graph manager save model failed.");
 
-#define RT_ERROR_TO_GE_STATUS(RT_ERROR) static_cast<Status>(RT_ERROR)
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_

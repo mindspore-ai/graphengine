@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,8 @@
 
 #include <google/protobuf/text_format.h>
 #include "framework/omg/parser/parser_types.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 #include "proto/om.pb.h"
-#include "graph/ge_tensor.h"
-#include "graph/op_desc.h"
 #include "graph/utils/op_desc_utils.h"
 
 using google::protobuf::Message;
@@ -50,7 +48,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status ParseParams(const Message *op_src, ge::OpDescPtr &op_desc) = 0;
+  virtual domi::Status ParseParams(const google::protobuf::Message *op_src, ge::OpDescPtr &op_desc) = 0;
 
   /**
    * @ingroup domi_omg
@@ -60,7 +58,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status ParseParams(const Message *op_src, ge::Operator &op_dest) = 0;
+  virtual domi::Status ParseParams(const google::protobuf::Message *op_src, ge::Operator &op_dest) = 0;
 
   /**
    * @ingroup domi_omg
@@ -70,7 +68,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status ParseWeights(const Message *op_src, ge::NodePtr &node) = 0;
+  virtual domi::Status ParseWeights(const google::protobuf::Message *op_src, ge::NodePtr &node) = 0;
 
   /**
    * @ingroup domi_omg
@@ -80,7 +78,7 @@ class GE_FUNC_VISIBILITY OpParser {
    * @return SUCCESS
    * @return FAILED
    */
-  virtual Status GetFormat(const Message *op_src, domi::domiTensorFormat_t &format) {
+  virtual domi::Status GetFormat(const google::protobuf::Message *op_src, domi::domiTensorFormat_t &format) {
     (void)op_src;
     // Indicates that the op does not provide a value for format
     format = domi::DOMI_TENSOR_RESERVED;

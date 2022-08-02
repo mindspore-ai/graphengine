@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,10 @@
 #include <memory>
 #include <string>
 
-#include "common/fmk_types.h"
-#include "common/helper/om_file_helper.h"
+#include "framework/common/helper/om_file_helper.h"
 #include "common/model/ge_model.h"
 #include "common/model/ge_root_model.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "graph/model.h"
 
 namespace ge {
@@ -34,77 +33,71 @@ class GE_FUNC_VISIBILITY ModelHelper {
   ~ModelHelper();
 
   Status SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param, const std::string &output_file,
-                       ge::ModelBufferData &model);
-  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param, const string &output_file,
-                           ModelBufferData &model, bool is_unknown_shape);
-  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file);
+                       ge::ModelBufferData &model) const;
+  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
+                           const std::string &output_file, ModelBufferData &model, const bool is_unknown_shape) const;
+  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
-  Status GetModelBufferData(ge::ModelBufferData &model);
-
-  const ModelFileHeader *GetFileHeader() const {
-    return file_header_;
-  }
+  static void SetModelToGeModel(const GeModelPtr &ge_model, Model &model);
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
-  void SetSaveMode(bool val) {
+  void SetSaveMode(const bool val) {
     is_offline_ = val;
   }
-  bool GetSaveMode(void) const {
-    return is_offline_;
-  }
+
   bool GetModelType() const {
     return is_unknown_shape_model_;
-  };
+  }
 
-  Status GetBaseNameFromFileName(const std::string &file_name, std::string &base_name);
-  Status GetModelNameFromMergedGraphName(const std::string &graph_name, std::string &model_name);
+  Status GetBaseNameFromFileName(const std::string &file_name, std::string &base_name) const;
+  Status GetModelNameFromMergedGraphName(const ComputeGraphPtr &compute_graph, std::string &model_name) const;
 
  private:
   bool is_assign_model_ = false;
   bool is_offline_ = true;
   bool is_unknown_shape_model_ = false;
   ModelFileHeader *file_header_ = nullptr;
-  // Encrypted model need delete temp model and unencrypted model need not delete model
-  uint8_t *model_addr_tmp_ = nullptr;
-  uint32_t model_len_tmp_ = 0;
   GeModelPtr model_;
   GeRootModelPtr root_model_;
 
-  ModelHelper(const ModelHelper &);
-  ModelHelper &operator=(const ModelHelper &);
-  Status GenerateGeModel(OmFileLoadHelper &om_load_helper);
-  Status GenerateGeRootModel(OmFileLoadHelper &om_load_helper);
-  Status LoadModelData(OmFileLoadHelper &om_load_helper);
-  void SetModelToGeModel(GeModelPtr &ge_model, Model &model);
-  Status LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);
-  Status LoadWeights(OmFileLoadHelper &om_load_helper);
-  Status LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);
-  Status LoadTask(OmFileLoadHelper &om_load_helper);
-  Status LoadTask(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);
-  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper);
-  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);
-  Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper);
-  Status LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);
-  Status ReleaseLocalModelData() noexcept;
-  Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, ModelPartitionType type,
-                            const uint8_t *data, size_t size, size_t model_index);
+  ModelHelper(const ModelHelper &) = default;
+  ModelHelper &operator=(const ModelHelper &) = default;
+
+  bool IsPartitionedGraph(const GeModelPtr &cur_model) const;
+
+  Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index,
+                         const bool is_dyn_root);
+  Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper);
+
+  Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                       const size_t mode_index) const;
+  Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                     const size_t mode_index) const;
+  Status LoadTask(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model, const size_t mode_index) const;
+  Status LoadTBEKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                            const size_t mode_index) const;
+  Status LoadCustAICPUKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+                                  const size_t mode_index) const;
+
+  Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const ModelPartitionType type,
+                            const uint8_t *const data, const size_t size, const size_t model_index) const;
   Status SaveModelDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                      Buffer &model_buffer, size_t model_index = 0);
-  Status SaveSizeToModelDef(const GeModelPtr &ge_model);
+                      Buffer &model_buffer, const size_t model_index = 0U) const;
+  Status SaveSizeToModelDef(const GeModelPtr &ge_model) const;
   Status SaveModelWeights(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                          size_t model_index = 0);
+                          const size_t model_index = 0U) const;
   Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                            size_t model_index = 0);
+                            const size_t model_index = 0U) const;
   Status SaveModelCustAICPU(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                            size_t model_index = 0);
+                            const size_t model_index = 0U) const;
   Status SaveModelTaskDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                          Buffer &task_buffer, size_t model_index = 0);
+                          Buffer &task_buffer, const size_t model_index = 0U) const;
   Status SaveModelHeader(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                         size_t model_num = 1);
+                         const size_t model_num = 1U) const;
   Status SaveAllModelPartiton(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                              Buffer &model_buffer, Buffer &task_buffer, size_t model_index = 0);
+                              Buffer &model_buffer, Buffer &task_buffer, const size_t model_index = 0U) const;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_

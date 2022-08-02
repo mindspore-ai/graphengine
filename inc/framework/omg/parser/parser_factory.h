@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,13 @@
 #include <string>
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/parser/parser_types.h"
-
-using Status = domi::Status;
+#include "external/register/register.h"
 
 namespace domi {
 class WeightsParser;
 class ModelParser;
 
-typedef std::shared_ptr<ModelParser> (*MODEL_PARSER_CREATOR_FUN)(void);
+using MODEL_PARSER_CREATOR_FUN = std::shared_ptr<ModelParser> (*)(void);
 
 // Create modelparser for different frameworks
 class GE_FUNC_VISIBILITY ModelParserFactory {
@@ -63,7 +62,7 @@ class GE_FUNC_VISIBILITY ModelParserFactory {
 
 class GE_FUNC_VISIBILITY ModelParserRegisterar {
  public:
-  ModelParserRegisterar(const domi::FrameworkType type, MODEL_PARSER_CREATOR_FUN fun) {
+  ModelParserRegisterar(const domi::FrameworkType type, MODEL_PARSER_CREATOR_FUN const fun) noexcept {
     ModelParserFactory::Instance()->RegisterCreator(type, fun);
   }
   ~ModelParserRegisterar() {}
@@ -82,7 +81,7 @@ class GE_FUNC_VISIBILITY ModelParserRegisterar {
   }                                                              \
   ModelParserRegisterar g_##type##_Model_Parser_Creator(type, Creator_##type##_Model_Parser)
 
-typedef std::shared_ptr<WeightsParser> (*WEIGHTS_PARSER_CREATOR_FUN)(void);
+using WEIGHTS_PARSER_CREATOR_FUN = std::shared_ptr<WeightsParser> (*)(void);
 
 // Create weightsparser for different frameworks
 class GE_FUNC_VISIBILITY WeightsParserFactory {
@@ -115,7 +114,7 @@ class GE_FUNC_VISIBILITY WeightsParserFactory {
 
 class GE_FUNC_VISIBILITY WeightsParserRegisterar {
  public:
-  WeightsParserRegisterar(const domi::FrameworkType type, WEIGHTS_PARSER_CREATOR_FUN fun) {
+  WeightsParserRegisterar(const domi::FrameworkType type, WEIGHTS_PARSER_CREATOR_FUN const fun) noexcept {
     WeightsParserFactory::Instance()->RegisterCreator(type, fun);
   }
   ~WeightsParserRegisterar() {}
@@ -133,6 +132,12 @@ class GE_FUNC_VISIBILITY WeightsParserRegisterar {
     return std::shared_ptr<WeightsParser>(ptr);                      \
   }                                                                  \
   WeightsParserRegisterar g_##type##_Weights_Parser_Creator(type, Creator_##type##_Weights_Parser)
-};  // namespace domi
+
+class GE_FUNC_VISIBILITY OpRegTbeParserFactory {
+ public:
+  static OpRegTbeParserFactory *Instance();
+  void Finalize(const domi::OpRegistrationData &reg_data);
+};
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_OMG_PARSER_PARSER_FACTORY_H_

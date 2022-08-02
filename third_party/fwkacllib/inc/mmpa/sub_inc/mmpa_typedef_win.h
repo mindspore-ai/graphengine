@@ -63,6 +63,9 @@ extern "C" {
 #define MMPA_MIN_NI (-20)
 #define MMPA_MAX_FILE 128
 
+#define MMPA_PATH_SEPARATOR_STR "\\"
+#define MMPA_PATH_SEPARATOR_CHAR '\\'
+
 #define MMPA_MAX_THREAD_PIO 99
 #define MMPA_MIDDLE_THREAD_PIO 66
 #define MMPA_LOW_THREAD_PIO 33

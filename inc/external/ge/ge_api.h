@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2022 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,22 +57,22 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup client
-  /// @brief add a graph with a specific graphId
-  /// @param [in] graphId graph id
+  /// @brief add a graph with a specific graph id
+  /// @param [in] graph_id graph id
   /// @return Status result of function
   ///
-  Status AddGraph(uint32_t graphId, const Graph &graph);
+  Status AddGraph(uint32_t graph_id, const Graph &graph);
 
   ///
   /// @ingroup client
-  /// @brief add a graph with a specific graphId and graphOptions
+  /// @brief add a graph with a specific graph id and graphOptions
   /// @param [in] graphId graph id
   /// @param [in] graph the graph
   /// @param [in] options graph options
   /// @return Status result of function
   ///
   ATTRIBUTED_DEPRECATED(Status AddGraph(uint32_t, const Graph &, const std::map<AscendString, AscendString> &))
-  Status AddGraph(uint32_t graphId, const Graph &graph, const std::map<std::string, std::string> &options);
+  Status AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
 
   ///
   /// @ingroup client
@@ -82,7 +82,7 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] options graph options
   /// @return Status result of function
   ///
-  Status AddGraph(uint32_t graphId, const Graph &graph, const std::map<AscendString, AscendString> &options);
+  Status AddGraph(uint32_t graph_id, const Graph &graph, const std::map<AscendString, AscendString> &options);
 
   ///
   /// @ingroup client
@@ -106,10 +106,10 @@ class GE_FUNC_VISIBILITY Session {
   ///
   /// @ingroup ge_graph
   /// @brief remove a graph of the session with specific session id
-  /// @param [in] graphId graph id
+  /// @param [in] graph_d graph id
   /// @return Status result of function
   ///
-  Status RemoveGraph(uint32_t graphId);
+  Status RemoveGraph(uint32_t graph_id);
 
   ///
   /// @ingroup ge_graph
@@ -119,7 +119,7 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] outputs output data
   /// @return Status result of function
   ///
-  Status RunGraph(uint32_t graphId, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
+  Status RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
 
   ///
   /// @ingroup ge_graph
@@ -140,9 +140,9 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] inputs: input data
   /// @return Status result of function
   ///
-  Status BuildGraph(uint32_t graphId, const std::vector<InputTensorInfo> &inputs);
+  Status BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
 
-  Status BuildGraph(uint32_t graphId, const std::vector<ge::Tensor> &inputs);  /*lint !e148*/
+  Status BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs); /*lint !e148*/
 
   ///
   /// @ingroup ge_graph
@@ -154,7 +154,7 @@ class GE_FUNC_VISIBILITY Session {
   ///                        Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
-  Status RunGraphAsync(uint32_t graphId, const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback);
+  Status RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph
@@ -189,7 +189,7 @@ class GE_FUNC_VISIBILITY Session {
 
   Status RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback);
 
-  bool IsGraphNeedRebuild(uint32_t graphId);
+  bool IsGraphNeedRebuild(uint32_t graph_id);
 
  private:
   uint64_t sessionId_;

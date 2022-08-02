@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 #ifndef INC_FRAMEWORK_OMG_PARSER_WEIGHTS_PARSER_H_
 #define INC_FRAMEWORK_OMG_PARSER_WEIGHTS_PARSER_H_
 
+#include "external/register/register_error_codes.h"
 #include "graph/graph.h"
 #include "graph/attr_value.h"
 #include "graph/compute_graph.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
-#include "graph/operator.h"
-#include "graph/range_vistor.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -68,6 +67,17 @@ class GE_FUNC_VISIBILITY WeightsParser {
    * @author
    */
   virtual Status ParseFromMemory(const char *input, uint32_t lengt, ge::ComputeGraphPtr &graph) = 0;
+
+  virtual bool HasError() {
+    return false;
+  }
+
+  virtual Status Save(const std::string &file) {
+    (void)file;
+    return SUCCESS;
+  }
+
+  virtual void Clear() {}
 };
 }  // namespace domi
 

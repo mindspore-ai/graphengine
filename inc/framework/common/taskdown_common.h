@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@
 
 namespace ge {
 
-const int CC_FUSION_OP_MAX = 32;
+const int32_t CC_FUSION_OP_MAX = 32;
 
-typedef enum tagCcStatus {
+enum class ccStatus_t {
   CC_STATUS_SUCCESS = 0,         /**< succ */
   CC_STATUS_NOT_INITIALIZED = 1, /**< not init */
   CC_STATUS_ALLOC_FAILED = 2,    /**< alloc mem failed */
@@ -33,10 +33,10 @@ typedef enum tagCcStatus {
   CC_STATUS_RUNTIME_ERROR = 6,   /**< runtime error */
   CC_STATUS_NOT_SUPPORTED = 7,   /**< unsupport error */
   CC_STATUS_INVALID_VALUE = 7,   /**< invalid value error for blas*/
-  CC_STATUS_RESERVED             /**< just for check */
-} ccStatus_t;
+  CC_STATUS_RESERVED = 8,        /**< just for check */
+};
 
-typedef enum tagccKernelType {
+enum class ccKernelType {
   CCE_AI_CORE = 0, /* cce aicore */
   CCE_AI_CPU = 1,  /* cce aicpu */
   TE = 2,          /* te operator*/
@@ -47,9 +47,9 @@ typedef enum tagccKernelType {
   CUST_AI_CPU = 7, /* custom aicpu*/
   HOST_CPU = 8,    /* host cpu */
   INVALID = 10000  /* unknown kernel type */
-} ccKernelType;
+};
 
-typedef struct tagOpContext {
+using ccOpContext = struct tagOpContext {
   ccKernelType kernelType;
   uint32_t opId;
   uint32_t kernelFuncId;
@@ -66,7 +66,28 @@ typedef struct tagOpContext {
   uint64_t genVariableBaseAddr;
   uint64_t genVariableBaseSize;
   uint64_t l2ctrlSize;
-} ccOpContext;
-}  // namespace ge
+};
 
+enum class tagOpTensorFormat { OP_TENSOR_FORMAT_NC1HWC0 = 0, OP_TENSOR_FORMAT_ND, OP_TENSOR_FORMAT_RESERVED };
+
+enum class tagOpDataType {
+  OP_DATA_FLOAT = 0,            /**< float type */
+  OP_DATA_HALF,                 /**< fp16 type */
+  OP_DATA_INT8,                 /**< int8 type */
+  OP_DATA_INT32,                /**< int32 type */
+  OP_DATA_UINT8,                /**< uint8 type */
+  OP_DATA_HALF_UINT16_PROPOSAL, /**< mixed type for proposal */
+  OP_DATA_RESERVED
+};
+
+// AICPU Tensor
+using ccAICPUTensor = struct tagOpTensor {
+  // real dim info
+  tagOpTensorFormat format;
+  tagOpDataType data_type;
+  int32_t dim_cnt;
+  int32_t mm;
+  int32_t dim[8];
+};
+}  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_TASKDOWN_COMMON_H_

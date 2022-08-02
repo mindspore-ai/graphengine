@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,25 +21,20 @@
 #include <vector>
 
 #include "external/ge/ge_ir_build.h"
-#include "framework/common/fmk_types.h"
 #include "framework/common/types.h"
 #include "framework/common/ge_types.h"
-
-using ProcParam = struct PROC_PARAM;
-using std::string;
-using std::vector;
 
 namespace ge {
 struct ModelPartition {
   ModelPartitionType type;
-  uint8_t *data = 0;
-  uint32_t size = 0;
+  const uint8_t *data = nullptr;
+  uint32_t size = 0U;
 };
 
 struct OmFileContext {
   std::vector<ModelPartition> partition_datas_;
-  std::vector<char> partition_table_;
-  uint32_t model_data_len_ = 0;
+  std::vector<char_t> partition_table_;
+  uint32_t model_data_len_ = 0U;
 };
 
 struct SaveParam {
@@ -53,57 +48,56 @@ struct SaveParam {
 
 class GE_FUNC_VISIBILITY OmFileLoadHelper {
  public:
-  Status Init(const ge::ModelData &model);
+  Status Init(const ModelData &model);
 
-  Status Init(uint8_t *model_data, const uint32_t model_data_size);
+  Status Init(uint8_t *const model_data, const uint32_t model_data_size);
 
-  Status Init(uint8_t *model_data, const uint32_t model_data_size, uint32_t model_num);
+  Status Init(uint8_t *const model_data, const uint32_t model_data_size, const uint32_t model_num);
 
-  Status GetModelPartition(ModelPartitionType type, ModelPartition &partition);
+  Status GetModelPartition(const ModelPartitionType type, ModelPartition &partition);
 
-  Status GetModelPartition(ModelPartitionType type, ModelPartition &partition, size_t model_index);
+  Status GetModelPartition(const ModelPartitionType type, ModelPartition &partition, const size_t model_index) const;
 
   OmFileContext context_;
 
-  vector<OmFileContext> model_contexts_;
+  std::vector<OmFileContext> model_contexts_;
 
  private:
-  Status CheckModelValid(const ge::ModelData &model) const;
+  Status LoadModelPartitionTable(uint8_t *const model_data, const uint32_t model_data_size, const size_t model_index,
+                                 size_t &mem_offset);
 
-  Status LoadModelPartitionTable(uint8_t *model_data, const uint32_t model_data_size);
-
-  Status LoadModelPartitionTable(uint8_t *model_data, const uint32_t model_data_size, uint32_t model_num);
+  Status LoadModelPartitionTable(uint8_t *const model_data, const uint32_t model_data_size, const uint32_t model_num);
 
   bool is_inited_{false};
 };
 
 class GE_FUNC_VISIBILITY OmFileSaveHelper {
  public:
-  ModelFileHeader &GetModelFileHeader() { return model_header_; }
+  ModelFileHeader &GetModelFileHeader() {
+    return model_header_;
+  }
 
-  uint32_t GetModelDataSize() const { return context_.model_data_len_; }
+  uint32_t GetModelDataSize() const;
 
   ModelPartitionTable *GetPartitionTable();
 
-  Status AddPartition(ModelPartition &partition);
+  Status AddPartition(const ModelPartition &partition);
 
-  Status AddPartition(ModelPartition &partition, size_t cur_index);
+  Status AddPartition(const ModelPartition &partition, const size_t cur_index);
 
-  const std::vector<ModelPartition> &GetModelPartitions() const;
+  Status SaveModel(const SaveParam &save_param, const char_t *const output_file, ModelBufferData &model,
+                   const bool is_offline = true);
 
-  Status SaveModel(const SaveParam &save_param, const char *target_file, ge::ModelBufferData &model,
-                   bool is_offline = true);
+  Status SaveModelToFile(const char_t *const output_file, ModelBufferData &model, const bool is_offline = true);
 
-  Status SaveModelToFile(const char *output_file, ge::ModelBufferData &model, bool is_offline = true);
+  ModelPartitionTable *GetPartitionTable(const size_t cur_ctx_index);
 
-  vector<OmFileContext> model_contexts_;
+  Status SaveRootModel(const SaveParam &save_param, const char_t *const output_file, ModelBufferData &model,
+                       const bool is_offline);
 
+ private:
   ModelFileHeader model_header_;
-  OmFileContext context_;
-
-  ModelPartitionTable *GetPartitionTable(size_t cur_ctx_index);
-
-  Status SaveRootModel(const SaveParam &save_param, const char *output_file, ModelBufferData &model, bool is_offline);
+  std::vector<OmFileContext> model_contexts_;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_OM_FILE_HELPER_H_

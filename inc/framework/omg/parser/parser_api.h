@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,14 @@
 #ifndef INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
 #define INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
 
-#include <iostream>
 #include <map>
 #include <string>
-#include "ge/ge_api_error_codes.h"
+#include "external/ge/ge_api_error_codes.h"
 
 namespace ge {
 // Initialize parser
-GE_FUNC_VISIBILITY Status ParserInitialize(const std::map<std::string, std::string>& options);
+GE_FUNC_VISIBILITY Status ParserInitialize(const std::map<std::string, std::string> &options);
 // Finalize parser, release all resources
 GE_FUNC_VISIBILITY Status ParserFinalize();
 }  // namespace ge
-#endif // INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
+#endif  // INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_

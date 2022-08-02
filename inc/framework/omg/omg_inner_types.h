@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,7 @@
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_RESERVED;
 using domi::domiTensorFormat_t;
-using domi::FRAMEWORK_RESERVED;
-using domi::FrameworkType;
-using std::map;
-using std::string;
 using std::unordered_map;
-using std::vector;
 
 namespace ge {
 /**
@@ -51,34 +46,13 @@ enum RunMode {
   DISPLAY_OM_INFO = 6  // display model info
 };
 
-///
-/// @ingroup domi_omg
-/// @brief high-precision mode
-///
-enum HighPrecisionMode {
-  // the FP16 high-precision function is disabled in common mode
-  HIGH_PRECISION_DEFAULT = 0,
-
-  // high-precision mode, enabling FP16 high-precision mode (Convolution/FullConnect/AvgPooling are involved)
-  HIGH_PRECISION_FP16 = 1
-};
-
-///
-/// @ingroup domi_omg
-/// @brief description buffer data
-///
-struct OMGBufferData {
-  void *data;
-  uint32_t length;
-};
-
 struct OmgContext {
-  OmgContext() { format = DOMI_TENSOR_ND; }
-  domiTensorFormat_t format;
+  OmgContext() : format(domi::DOMI_TENSOR_ND) {}
+  domi::domiTensorFormat_t format;
 
   // format of the input specified by the command line
-  std::unordered_map<std::string, domiTensorFormat_t> input_nodes_format_map;
-  std::vector<domiTensorFormat_t> output_formats;
+  std::unordered_map<std::string, domi::domiTensorFormat_t> input_nodes_format_map;
+  std::vector<domi::domiTensorFormat_t> output_formats;
 
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
@@ -96,18 +70,18 @@ struct OmgContext {
   // default out nodes (this is used for determing the orders)
   std::vector<std::pair<std::string, int32_t>> default_out_nodes;
   // save the output node of the network, value = topName,
-  // topName indicates the output name of the operator.
-  std::vector<std::string> user_out_nodes_top_vec;
+  // tensorName indicates the output name of the operator.
+  std::vector<std::string> user_out_tensors;
   // net out nodes (where user_out_nodes or leaf nodes)
   std::vector<std::string> net_out_nodes;
-  // net out nodes top names(only caffe has top)
-  std::vector<std::string> out_top_names;
-  // net data nodes top names(only caffe has top)
-  std::vector<std::string> data_top_names;
+  // net out nodes tensor names(caffe or onnx)
+  std::vector<std::string> out_tensor_names;
+  // net data nodes tensor names(caffe or onnx)
+  std::vector<std::string> data_tensor_names;
   // preferential format used by the entire network
-  domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
+  domi::domiTensorFormat_t net_format = domi::DOMI_TENSOR_RESERVED;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
-  RunMode run_mode = ONLY_PRE_CHECK;
+  RunMode run_mode = RunMode::ONLY_PRE_CHECK;
   bool train_flag = false;
 
   std::string output_type;
@@ -118,14 +92,13 @@ struct OmgContext {
   std::string dynamic_image_size;
   std::string dynamic_dims;
   std::string dynamic_node_type;
-  std::vector<std::vector<int64_t>> user_real_input_dims;
-  std::vector<int64_t> cur_dynamic_dims;
   bool need_multi_batch = false;
   std::vector<NodePtr> data_nodes;
   std::vector<NodePtr> getnext_nosink_nodes;
   bool fuzz_compile_flag = false;
   std::string atc_cmdline;
   bool user_attr_index_valid = false;
+  bool is_online_model = false;
 };
 }  // namespace ge
 

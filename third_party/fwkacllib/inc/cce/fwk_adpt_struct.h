@@ -21,7 +21,7 @@
 
 namespace aicpu {
 namespace FWKAdapter {
-
+using char_t = char;
 // API RETURN CODE
 enum FWKAdptAPIRetCode {
   FWK_ADPT_SUCCESS = 0,                  // success
@@ -63,6 +63,8 @@ enum FWKTaskExtInfoType {
   FWK_ADPT_EXT_BITMAP,
   FWK_ADPT_EXT_TOPIC_TYPE,
   FWK_ADPT_EXT_ASYNCWAIT,
+  FWK_ADPT_EXT_UNKNOWN_SHAPE_INPUT_INDEX,
+  FWK_ADPT_EXT_UNKNOWN_SHAPE_OUTPUT_INDEX,
   FWK_ADPT_EXT_INVALID
 };
 
@@ -113,7 +115,7 @@ struct StrFWKKernel {
 typedef StrFWKKernel FWKOperateParam;
 
 // Extent info ShapeAndType
-const uint32_t kMaxShapeDims = 8;
+const uint32_t kMaxShapeDims = 8U;
 #pragma pack(push, 1)
 struct ShapeAndType {
   int32_t type;
@@ -122,13 +124,13 @@ struct ShapeAndType {
 #pragma pack(pop)
 
 // Extend info structure for extInfoAddr
-const uint32_t kExtInfoHeadSize = 8;
+const uint32_t kExtInfoHeadSize = 8U;
 
 #pragma pack(push, 1)
 struct ExtInfo {
   int32_t  infoType;    // extend type
   uint32_t infoLen;     // length for infoMsg
-  char     infoMsg[0];  // extend value
+  char_t  infoMsg[0];  // extend value
 };
 #pragma pack(pop)
 
@@ -143,9 +145,9 @@ struct ResultSummary {
 
 #pragma pack(push, 1)
 struct AsyncWait {
-  uint8_t waitType; // wait type, FWK_ADPT_WAIT_TYPE_EVENT: event wait
-  uint32_t waitId; // wait id, GE refresh
-  uint32_t timeOut; // reserved
+  uint8_t waitType;  // wait type, FWk_ADPT_WAIT_TPYE_EVENT: event wait
+  uint32_t waitId;  // wait id, GE refresh
+  uint32_t timeOut;  // reserved
   uint64_t reserved;
 };
 #pragma pack(pop)

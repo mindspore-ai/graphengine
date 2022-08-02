@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,15 @@
 #ifndef INC_FRAMEWORK_COMMON_TYPES_H_
 #define INC_FRAMEWORK_COMMON_TYPES_H_
 
-#include <limits.h>
-#include <stdint.h>
-#include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/fmk_types.h"
 #include "framework/common/op_types.h"
 #include "register/register_types.h"
-
-#if !defined(__ANDROID__) && !defined(ANDROID)
-#define DOMI_DYNAMIC_CAST static_cast
-#define DOMI_DYNAMIC_POINTER_CAST std::static_pointer_cast
-#else
-#define DOMI_DYNAMIC_CAST static_cast
-#define DOMI_DYNAMIC_POINTER_CAST std::static_pointer_cast
-#endif
 
 namespace ge {
 // dump
@@ -51,54 +39,20 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_DEB
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_DEBUG_ATOMIC;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_DEBUG_ALL;
 
-// Supported public properties name
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_START_TIME;  // Start time
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_DUMP_PATH;   // Dump path
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_LOG_PATH;    // Log path
-
 // Profile-related constants
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CCE_PROFILE_ON;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CCE_PROFILE_OFF;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OME_PROFILE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string CCE_PROFILE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string RTS_PROFILE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILER_JOBCTX;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILER_TARGET_PATH;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string RTS_PROFILE_PATH;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_STOP_KEY;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_STOP_VALUE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::map<std::string, std::string> PROFILE_COMPONENT_MAP;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_CONFIG;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_MODEL_ID;
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASKS;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_HOST_BASE_ADDR;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_HOST_MEMORY_SIZE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_FUSION_MODEL_DEF;
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int MODEL_MAX_SIZE;  // Max size of 2 GB minus 1 byte.
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t FILE_HEADER_MAX_SIZE;  // Max size of 3 GB.
-
-#if !defined(__ANDROID__) && !defined(ANDROID)
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t ALLOC_MEMORY_MAX_SIZE;  // Max size of 8 GB.
-#else
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint64_t ALLOC_MEMORY_MAX_SIZE;  // Max size of 512M.
-#endif
-
-template <typename K, typename V>
-static std::pair<V, K> flip_pair(const std::pair<K, V> &p) {
-  return std::pair<V, K>(p.second, p.first);
-}
-
-template <typename K, typename V>
-static std::map<V, K> flip_map(std::map<K, V> src) {
-  std::map<V, K> dst;
-  std::transform(src.begin(), src.end(), std::inserter(dst, dst.begin()), flip_pair<K, V>);
-  return dst;
-}
 
 REGISTER_OPTYPE_DECLARE(DATA, "Data");
 REGISTER_OPTYPE_DECLARE(AIPPDATA, "AippData");
+REGISTER_OPTYPE_DECLARE(QUEUE_DATA, "QueueData");
 REGISTER_OPTYPE_DECLARE(CONVOLUTION, "Convolution");
 REGISTER_OPTYPE_DECLARE(CORRELATION, "Correlation");
 REGISTER_OPTYPE_DECLARE(CORRELATIONV2, "Correlation_V2");
@@ -134,6 +88,7 @@ REGISTER_OPTYPE_DECLARE(DROPOUTDOMASKV3, "DropOutDoMaskV3");
 REGISTER_OPTYPE_DECLARE(DROPOUTDOMASKV3D, "DropOutDoMaskV3D");
 REGISTER_OPTYPE_DECLARE(SOFTMAXV2WITHDROPOUTDOMASKV3D, "SoftmaxV2WithDropOutDoMaskV3D");
 REGISTER_OPTYPE_DECLARE(DROPOUTGENMASK, "DropOutGenMask");
+REGISTER_OPTYPE_DECLARE(AXPYWITHSOFTMAXANDDROPOUTDOMASK, "AxpyWithSoftmaxAndDropOutDoMask");
 REGISTER_OPTYPE_DECLARE(CONCAT, "Concat");
 REGISTER_OPTYPE_DECLARE(ROIPOOLING, "ROIPooling");
 REGISTER_OPTYPE_DECLARE(PROPOSAL, "Proposal");
@@ -167,6 +122,10 @@ REGISTER_OPTYPE_DECLARE(SLICED, "SliceD");
 REGISTER_OPTYPE_DECLARE(FLOORDIV, "FloorDiv");
 REGISTER_OPTYPE_DECLARE(SQUEEZE, "Squeeze");
 REGISTER_OPTYPE_DECLARE(UNSQUEEZE, "Unsqueeze");
+REGISTER_OPTYPE_DECLARE(SQUEEZEV2, "SqueezeV2");
+REGISTER_OPTYPE_DECLARE(UNSQUEEZEV2, "UnsqueezeV2");
+REGISTER_OPTYPE_DECLARE(SQUEEZEV3, "SqueezeV3");
+REGISTER_OPTYPE_DECLARE(UNSQUEEZEV3, "UnsqueezeV3");
 REGISTER_OPTYPE_DECLARE(STRIDEDSLICE, "StridedSlice");
 REGISTER_OPTYPE_DECLARE(RANGE, "Range");
 REGISTER_OPTYPE_DECLARE(RPNPROPOSALS, "GenerateRpnProposals");
@@ -203,6 +162,7 @@ REGISTER_OPTYPE_DECLARE(_IF, "_If");
 REGISTER_OPTYPE_DECLARE(STATELESSIF, "StatelessIf");
 REGISTER_OPTYPE_DECLARE(IF, "If");
 REGISTER_OPTYPE_DECLARE(CASE, "Case");
+REGISTER_OPTYPE_DECLARE(STATELESSCASE, "StatelessCase");
 REGISTER_OPTYPE_DECLARE(_WHILE, "_While");
 REGISTER_OPTYPE_DECLARE(WHILE, "While");
 REGISTER_OPTYPE_DECLARE(STATELESSWHILE, "StatelessWhile");
@@ -339,10 +299,15 @@ REGISTER_OPTYPE_DECLARE(PLACEHOLDER, "PlaceHolder");
 REGISTER_OPTYPE_DECLARE(END, "End");
 REGISTER_OPTYPE_DECLARE(BASICLSTMCELL, "BasicLSTMCell");
 REGISTER_OPTYPE_DECLARE(GETNEXT, "GetNext");
+REGISTER_OPTYPE_DECLARE(ITERATOR, "Iterator");
+REGISTER_OPTYPE_DECLARE(ITERATORV2, "IteratorV2");
 REGISTER_OPTYPE_DECLARE(INITDATA, "InitData");
 REGISTER_OPTYPE_DECLARE(TRANSSHAPE, "TransShape")
 REGISTER_OPTYPE_DECLARE(REFIDENTITY, "RefIdentity");
 REGISTER_OPTYPE_DECLARE(BITCAST, "Bitcast");
+REGISTER_OPTYPE_DECLARE(GATHERSHAPES, "GatherShapes");
+REGISTER_OPTYPE_DECLARE(FLATTENV2, "FlattenV2");
+REGISTER_OPTYPE_DECLARE(FILECONSTANT, "FileConstant");
 
 // ANN dedicated operator
 REGISTER_OPTYPE_DECLARE(ANN_MEAN, "AnnMean");
@@ -460,6 +425,7 @@ REGISTER_OPTYPE_DECLARE(MODELEXIT, "ModelExit");
 REGISTER_OPTYPE_DECLARE(SEND, "Send");
 REGISTER_OPTYPE_DECLARE(RECV, "Recv");
 REGISTER_OPTYPE_DECLARE(ENDOFSEQUENCE, "EndOfSequence");
+REGISTER_OPTYPE_DECLARE(STARTOFSEQUENCE, "StartOfSequence");
 
 REGISTER_OPTYPE_DECLARE(LABELSET, "LabelSet");
 REGISTER_OPTYPE_DECLARE(LABELGOTO, "LabelGoto");
@@ -483,8 +449,6 @@ REGISTER_OPTYPE_DECLARE(ELU_GRAD, "EluGrad");
 REGISTER_OPTYPE_DECLARE(ADD_V2, "AddV2");
 REGISTER_OPTYPE_DECLARE(DATAFORMATDIMMAP, "DataFormatDimMap");
 REGISTER_OPTYPE_DECLARE(DATAFORMATVECPERMUTE, "DataFormatVecPermute");
-REGISTER_OPTYPE_DECLARE(BESSELI0e, "BesselI0e");
-REGISTER_OPTYPE_DECLARE(BESSELI1e, "BesselI1e");
 REGISTER_OPTYPE_DECLARE(DEQUANTIZE, "Dequantize");
 REGISTER_OPTYPE_DECLARE(APPLYADADELTA, "ApplyAdadelta");
 REGISTER_OPTYPE_DECLARE(APPLYADAGRAD, "ApplyAdagrad");
@@ -538,29 +502,11 @@ REGISTER_OPTYPE_DECLARE(GETDYNAMICDIMS, "GetDynamicDims");
 // profiling training trace node
 REGISTER_OPTYPE_DECLARE(PROFILINGTRAININGTRACE, "ProfilingTrainingTrace");
 
-enum InputMode { INPUT = 0, CONST_INPUT };
-
-// Definition of the processing status enum of the process module
-enum ModelProcessState {
-  INIT_STATE = 0,    // init status
-  WAIT_EVENT_STATE,  // Wait for the event status
-  IND_RSLT_STATE,    // The model execution result is being output to the high level
-  STOPPED_STATE,     // Model execution completed. The model enters this state after Model Manager::Stop
-  RESERVED_STATE,    // reserved
-};
-
-// Indicates the enun definition of the execution mode of the access module
-enum SysMode {
-  INFERENCE = 0,  // Normal, that is, Inference mode
-  DEBUG,          // Debug mode
-  TIME,           // Model execution time mode, including the execution time of each OP
-  STOP,           // STOP mode
-  RESET,          // RESET mode
-  PERFORMANCE,  // Impact of enabling the performance model: 1. The input data of the model is considered ready and does
-                // not need to be converted
-  ANDROID_DEBUG,  // Exports Android platform computing data
-  RESERVED,       // reserved
-};
+// Stack series
+REGISTER_OPTYPE_DECLARE(STACK, "Stack");
+REGISTER_OPTYPE_DECLARE(STACKPUSH, "StackPush");
+REGISTER_OPTYPE_DECLARE(STACKPOP, "StackPop");
+REGISTER_OPTYPE_DECLARE(STACKCLOSE, "StackClose");
 
 // @brief encryption type of the model file
 enum ModelEncryptType {
@@ -599,50 +545,22 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t MODEL_FIL
 ///
 /// @brief model name length
 ///
-static constexpr uint32_t MODEL_NAME_LENGTH = 32;
+constexpr uint32_t MODEL_NAME_LENGTH = 32U;
 
 ///
 /// @brief length of user-defined information
 ///
-static constexpr uint32_t USER_DEFINE_INFO_LENGTH = 32;
+constexpr uint32_t USER_DEFINE_INFO_LENGTH = 32U;
 
 ///
 /// @brief length of the model file signature
 ///
-static constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64;
+constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64U;
 
 ///
 /// @brief length of the reserved field in the model file header
 ///
-static constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75;
-
-///
-/// @ingroup domi_omg
-/// @brief INPUT node type
-///
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string INPUT_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMMY_DATA;
-
-///
-/// @ingroup domi_omg
-/// @brief AIPP flag, indicating the aipp conv operator
-///
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_CONV_FLAG;
-
-///
-/// @ingroup domi_omg
-/// @brief AIPP flag, indicating the aipp data operator
-///
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_DATA_FLAG;
-
-// flag of the Data operator, indicating that the input will be input to the dynamic AIPP operator
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string INPUT_TO_DYNAMIC_AIPP;
-
-// records the W dimension of the model input corresponding to the dynamic AIPP
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_RELATED_DATA_DIM_W;
-
-// H dimension of the model input corresponding to the dynamic AIPP
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_RELATED_DATA_DIM_H;
+constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75U;
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DATA_TYPE;
@@ -655,10 +573,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string FRAMEW
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_DATA_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_NETOUTPUT_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_DEPTHCONV_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_CONV_TYPE;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ANN_FC_TYPE;
 // convolution node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_NET_OUTPUT;
 
@@ -667,78 +581,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_N
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_OP_DEBUG;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_TYPE_OP_DEBUG;
 
-// convolution node type
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_TYPE_CONVOLUTION;
-// adds a convolutional node name for the hard AIPP
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string AIPP_CONV_OP_NAME;
 // delimiter of operator configuration items
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string OP_CONF_DELIMITER;
 
-// op attr name
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ATTR_NAME_VALUE1;
-
-// op attr name, used to 6d_2_4d C channel
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ATTR_NAME_INPUT_CVALUE;
-
-// op attr name
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string ATTR_NAME_VALUE1;
-
-// alpha default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float ALPHA_DEFAULT_VALUE;
-
-// beta default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float BETA_DEFAULT_VALUE;
-
-// coef default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float COEF_DEFAULT_VALUE;
-
-// coef value of Relu6
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const float RELU6_COEF;
-
-// stride default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STRIDE_DEFAULT_VALUE;
-
-// pad default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_DEFAULT_VALUE;
-
-// dilation default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int DILATION_DEFAULT_VALUE;
-
-// kernel default value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KERNEL_DEFAULT_VALUE;
-
-// default conv Group Size
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DEFAULT_CONV_GROUP;
-
-// default deconv adj
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DEFAULT_DECONV_ADJ;
-
-// indicate num 1
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NUM_ONE;
-
 // dim default size value
-static const int32_t DIM_DEFAULT_SIZE = 4;
-
-// the shape of c must be the mutiply of 16 for depthwise
-static const uint32_t DEPTHWISE_DIM_C_BASE_NUM = 16;
-
-// C1HWNCoC0 dim size
-static const int32_t DIM_C1HWNCoC0_SIZE = 6;
-// C1HWNCoC0 C0 value
-static const int C1HWCOC_C0_VALUE = 16;
-// spatial default dim size
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t SPATIAL_DIM_DEFAULT_SIZE;
+constexpr int32_t DIM_DEFAULT_SIZE = 4;
 
 // dim extension default value
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t DIM_DEFAULT_VALUE;
-
-// the first item in the weight list of opdef is filter
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t WEIGHT_FILTER_INDEX;
-
-// the second item in the weight list of opdef is bias.
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t WEIGHT_BIAS_INDEX;
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int32_t TENSOR_ND_SUPPORT_SIZE;
 
 // default NCHW index
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_N;
@@ -746,82 +596,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_H;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NCHW_DIM_W;
 
-// default C1HWNCoC0 index
-static const uint32_t C1HWNCoC0_DIM_C1 = 0;
-static const uint32_t C1HWNCoC0_DIM_H = 1;
-static const uint32_t C1HWNCoC0_DIM_W = 2;
-static const uint32_t C1HWNCoC0_DIM_N = 3;
-static const uint32_t C1HWNCoC0_DIM_Co = 4;
-static const uint32_t C1HWNCoC0_DIM_C0 = 5;
-
-// default KCHW index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_K;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t KCHW_DIM_W;
-
-// default HWCK index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_W;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWCK_DIM_K;
-
 // default NHWC index
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_N;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_H;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_W;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t NHWC_DIM_C;
 
-// default CHWN index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_N;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHWN_DIM_W;
-
-// default CHW index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHW_DIM_C;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHW_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t CHW_DIM_W;
-
-// default HWC index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWC_DIM_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWC_DIM_W;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t HWC_DIM_C;
-// default Pad index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_H_HEAD;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_H_TAIL;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_W_HEAD;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t PAD_W_TAIL;
-
-// default window index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t WINDOW_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t WINDOW_W;
-
-// default stride index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STRIDE_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STRIDE_W;
-
-// default dilation index
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DILATION_H;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t DILATION_W;
-
-// the num of XRBG channel
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t XRGB_CHN_NUM;
-
-// default tensor format
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int DEFAULT_FORMAT;
-
-// default global pooling
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const bool DEFAULT_GLOBAL_POOLING;
-
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t MODEL_VERSION;  // model version 1.0
-
-// Number of inputs of the Eltwise operator
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int ELTWISE_MIN_INPUT_SIZE;
 
 // flowctrl
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_STREAM_SWITCH;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_STREAM_ACTIVE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_PER_ITER;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_COND;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_INCREMENT;
@@ -833,41 +617,36 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t TRUE_STRE
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STREAM_SWITCH_INPUT_NUM;
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_GLOBAL_STEP;
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_GLOBAL_STEP_ASSIGNADD;
 
-static const int PLATFORM_VERSION_LEN = 20;
+constexpr uint32_t PLATFORM_VERSION_LEN = 20U;
 
 // Definition of the file header of the model file
 struct ModelFileHeader {
-  uint32_t magic = MODEL_FILE_MAGIC_NUM;               // magic number of DOMI
-  uint32_t headsize = MODEL_FILE_HEAD_LEN;             // length of the model header. The value is fixed at 256
-  uint32_t version = MODEL_VERSION;                    // version 1.0
-  uint8_t checksum[MODEL_FILE_CHECKSUM_LENGTH] = {0};  // signature
-  uint32_t length = 0;  // Ciphertext length. In the non-encryption model, the length is the plaintext length.
-  uint8_t is_encrypt = ModelEncryptType::UNENCRYPTED;     // whether encrypted 0:not encrypt, 1:encrypt
-  uint8_t is_checksum = ModelCheckType::CHECK;            // whether to check the checksum
-  uint8_t modeltype = 0;                                  // 0：IR model 1：standard model 2: OM Tiny model
-  uint8_t genmode = 0;                                    // 0：offline generate 1：online generate
-  uint8_t name[MODEL_NAME_LENGTH] = {0};                  // Model name, which contains 32 characters
-  uint32_t ops = 0;                                       // Computing power (Kops)
-  uint8_t userdefineinfo[USER_DEFINE_INFO_LENGTH] = {0};  // User-defined information. The value contains 32 characters
-  uint32_t om_ir_version = 0;
-  uint32_t model_num = 0;
-  uint8_t platform_version[PLATFORM_VERSION_LEN] = {0};
-  uint8_t platform_type = {0};
-  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0};  // Reserved field 75
+  uint32_t magic = MODEL_FILE_MAGIC_NUM;                // magic number of DOMI
+  uint32_t headsize = MODEL_FILE_HEAD_LEN;              // length of the model header. The value is fixed at 256
+  uint32_t version = MODEL_VERSION;                     // version 1.0
+  uint8_t checksum[MODEL_FILE_CHECKSUM_LENGTH] = {0U};  // signature
+  uint32_t length = 0U;  // Ciphertext length. In the non-encryption model, the length is the plaintext length.
+  // whether encrypted 0:not encrypt, 1:encrypt
+  uint8_t is_encrypt = static_cast<uint8_t>(ModelEncryptType::UNENCRYPTED);
+  uint8_t is_checksum = static_cast<uint8_t>(ModelCheckType::CHECK);  // whether to check the checksum
+  uint8_t modeltype = 0U;                                  // 0：IR model 1：standard model 2: OM Tiny model
+  uint8_t genmode = 0U;                                    // 0：offline generate 1：online generate
+  uint8_t name[MODEL_NAME_LENGTH] = {0U};                  // Model name, which contains 32 characters
+  uint32_t ops = 0U;                                       // Computing power (Kops)
+  uint8_t userdefineinfo[USER_DEFINE_INFO_LENGTH] = {0U};  // User-defined information. The value contains 32 characters
+  uint32_t om_ir_version = 0U;
+  uint32_t model_num = 0U;
+  uint8_t platform_version[PLATFORM_VERSION_LEN] = {0U};
+  uint8_t platform_type = {0U};
+  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 75
 };
 
-static constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0;
-static constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1;
-static constexpr uint8_t TARGET_TYPE_TINY_8BIT = 2;
-
-static constexpr int32_t PARTITION_TYPE_MODEL_DEF = 0;
-static constexpr int32_t PARTITION_TYPE_WEIGHTS = 1;
-static constexpr int32_t PARTITION_TYPE_TASK_INFO = 2;
+constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0U;
+constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1U;
 
 // number of partitions in the current model
-static constexpr uint32_t PARTITION_SIZE = 5;
+constexpr uint32_t PARTITION_SIZE = 5U;
 
 enum ModelPartitionType { MODEL_DEF = 0, WEIGHTS_DATA, TASK_INFO, TBE_KERNELS, CUST_AICPU_KERNELS };
 
@@ -882,24 +661,9 @@ struct ModelPartitionTable {
   ModelPartitionMemInfo partition[0];
 };
 
-#define SIZE_OF_MODEL_PARTITION_TABLE(table) (sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * (table).num)
-
-static constexpr int32_t PTHREAD_CREAT_SUCCESS = 0;  // pthread_creat success
-
-// Filter format
-typedef enum tagDomiFilterFormat {
-  DOMI_FILTER_KCHW,  // KCHW
-  DOMI_FILTER_HWCK,  // HWCK
-  DOMI_FILTER_RESERVED
-} domiFilterFormat_t;
-
-// Const data trans type
-typedef enum tagDomiConstDataTransType {
-  DOMI_CONST_DATA_NOT_CHANGE = 0,  // No action is required
-  DOMI_CONST_DATA_TRANS_MATMUL,    // The const input to MatMul and needs to be transposed
-  DOMI_CONST_DATA_RESERVED
-} domiConstDataTransType_t;
-
+inline uint64_t SizeOfModelPartitionTable(const ModelPartitionTable &table) {
+  return sizeof(ModelPartitionTable) + (sizeof(ModelPartitionMemInfo) * static_cast<uint64_t>(table.num));
+}
 // mode of activation
 typedef enum tagDomiActivationMode {
   DOMI_ACTIVATION_SIGMOID = 0,   // sigmoid
@@ -919,190 +683,6 @@ typedef enum tagDomiActivationMode {
   DOMI_ACTIVATION_RESERVED
 } domiActivationMode_t;
 
-// mode of batchnorm
-typedef enum tagDomiBatchNormMode {
-  DOMI_BATCHNORM_PER_ACTIVATION = 0,  // bnScale, bnBias tensor dims are 1xCxHxW
-  DOMI_BATCHNORM_SPATIAL,             // bnScale, bnBias tensor dims are 1xCx1x1
-  DOMI_BATCHNORM_RESERVED
-} domiBatchNormMode_t;
-
-// eltwise mode
-typedef enum tagDomiEltwiseMode {
-  DOMI_ELTWISE_PROD = 0,  // prod
-  DOMI_ELTWISE_SUM,       // sum
-  DOMI_ELTWISE_MAX,       // max
-  DOMI_ELTWISE_RESERVED
-} domiEltwiseMode_t;
-
-// mode of padding
-typedef enum tagDomiPaddingMode {
-  DOMI_PADDING_CEIL = 0,      // Default padding mode
-  DOMI_PADDING_DIRECTASSIGN,  // Default padding mode: NOTSET
-  DOMI_PADDING_VALID,         // VALID padding mode
-  DOMI_PADDING_SAME,          // Padding values of 0 are always used
-  DOMI_PADDING_CEIL_NEW,      // Padding values of 0 are always used
-  DOMI_PADDING_VALID_NEW,     // Padding values of 0 are always used
-  DOMI_PADDING_SAME_NEW,      // Padding values of 0 are always used
-  DOMI_PADDING_RESERVED
-} domiPaddingMode_t;
-
-// algorithm of convolution forward
-typedef enum tagDomiConvolutionFwdAlgo {
-  DOMI_CONVOLUTION_FWD_ALGO_GEMM = 0,           // matrix gemm algo
-  DOMI_CONVOLUTION_FWD_ALGO_WINOGRAD,           // Winograd Transform algo
-  DOMI_CONVOLUTION_FWD_ALGO_GEMM_ACCU_FLOAT32,  // accumulate in L0c with FP32
-  DOMI_CONVOLUTION_FWD_ALGO_RESERVED
-} domiConvolutionFwdAlgo_t;
-
-typedef enum tagDomiFullConnectFwdAlgo {
-  DOMI_FULLCONNECT_FWD_ALGO_HALF = 0,  // accumulate in L0c with FP16
-  DOMI_FULLCONNECT_FWD_ALGO_FLOAT32    // accumulate in L0c with FP32
-} domiFullConnectFwdAlgo_t;
-
-typedef enum tagDomiPooingFwdAlgo {
-  DOMI_POOLING_FWD_ALGO_HALF = 0,  // accumulate in L0c with FP16
-  DOMI_POOLING_FWD_ALGO_FLOAT32    // accumulate in L0c with FP32
-} domiPooingFwdAlgo_t;
-
-// mode of convolution
-typedef enum tagDomiConvolutionMode {
-  DOMI_CONV_CONVOLUTION = 0,    // math convolution
-  DOMI_CONV_CROSS_CORRELATION,  // cross-correlation convolution
-  DOMI_CONV_DECONVOLUTION,      // deconvolution, also named transposed convolution
-  DOMI_CONV_MODE_DEPTHWISE,     // depthwise convolution
-  DOMI_CONV_MODE_RESERVED
-} domiConvolutionMode_t;
-
-// softmax mode
-typedef enum tagDomiSoftmaxMode {
-  DOMI_SOFTMAX_MODE_INSTANCE = 0,  // compute the softmax over all C, H, W for each N
-  DOMI_SOFTMAX_MODE_CHANNEL,       // compute the softmax over all C for each H, W, N
-  DOMI_SOFTMAX_MODE_HEIGHT,        // compute the softmax over all H for each N, C, W
-  DOMI_SOFTMAX_MODE_WIDTH,         // compute the softmax over all W for each N, C, H
-  DOMI_SOFTMAX_MODE_RESERVED
-} domiSoftmaxMode_t;
-
-// softmax algorithm
-typedef enum tagDomiSoftmaxAlgo {
-  DOMI_SOFTMAX_FAST = 0,  // straightforward implementation
-  DOMI_SOFTMAX_ACCURATE,  // subtract max from every point to avoid overflow
-  DOMI_SOFTMAX_LOG,       // perform the Log softmax operation to avoid overflow
-  DOMI_SOFTMAX_ACCURATE_FP32,
-  DOMI_SOFTMAX_RESERVED
-} domiSoftmaxAlgo_t;
-
-// algorithm of convolution backward
-typedef enum tagDomiConvolutionBwdAlgo {
-  DOMI_CONVOLUTION_BWD_ALGO_GEMM = 0,  // matrix gemm algo
-  DOMI_CONVOLUTION_BWD_ALGO_WINOGRAD,  // Winograd Transform algo
-  DOMI_CONVOLUTION_BWD_ALGO_RESERVED
-} domiConvolutionBwdAlgo_t;
-
-// mode of pooling
-typedef enum tagDomiPoolingMode {
-  DOMI_POOLING_MAX = 0,  // max pooling
-  DOMI_POOLING_AVG,      // average pooling
-  DOMI_POOLING_L2,       // L2 pooling
-  DOMI_POOLING_RESERVED
-} domiPoolingMode_t;
-
-// propagate Nan
-typedef enum tagDomiNanPropagation {
-  DOMI_NAN_NOT_PROPAGATE = 0,  // Nan numbers are not propagated
-  DOMI_NAN_PROPAGATE,          // Nan numbers are propagated
-  DOMI_NAN_PROPAGATE_RESERVED
-} domiNanPropagation_t;
-
-// mode of cropandresize
-typedef enum tagDomiCropAndResizeMode {
-  DOMI_RESIZE_METHOD_BILINEAR = 0,  // resize bilinear
-  DOMI_RESIZE_METHOD_NEAREST,       // resize nearest
-  DOMI_RESIZE_RESERVED
-} domiCropAndResizeMode_t;
-
-// yolo version
-typedef enum tagDomiYoloVersion { DOMI_YOLO_V2 = 1, DOMI_YOLO_V3, DOMI_YOLO_TRSERVED } domiYoloVersion_t;
-
-typedef enum tagDomiRNNScopePassType {
-  DOMI_STATIC_BIDIRECTIONAL_RNN_GENERAL_PASS = 0,
-  DOMI_DYNAMIC_BIDIRECTIONAL_RNN_GENERAL_PASS,
-  DOMI_DYNAMIC_BIDIRECTIONAL_RNN_BIDAF_PASS
-} domiRNNScopePassType;
-
-// RNNDataLayout
-typedef enum tagDomiRNNDataLayout {
-  DOMI_RNN_ND_TBX = 0,  // data[max_time,batch_size,Xt]
-  DOMI_RNN_ND_BTX,      // data[batch_size,max_time,Xt]
-  DOMI_RNN_5D_TX1BX,    // data[max_time,Xt,1,batch_size,Xt]
-  DOMI_RNN_5D_BX1TX,    // dataa[batch_size,Xt,1,max_time,Xt]
-  DOMI_RNN_4DTBX1,
-  DOMI_ENN_DL_RESERVED
-} domiRNNDataLayout_t;
-
-// RNNInputMode
-typedef enum tagDomiRNNInputMode { DOMI_RNN_LINEAR_INPUT = 0, DOMI_RNN_SKIP_INPUT } domiRNNInputMode_t;
-
-// RNNDirectionMode
-typedef enum tagDomiRNNDirectionMode { DOMI_RNN_UNIDIRECTIONAL = 0, DOMI_RNN_BIDIRECTIONAL } domiDirectionMode_t;
-
-typedef enum tagDomiPoolingCeilMode { DOMI_POOLING_FLOOR = 0, DOMI_POOLING_CEIL } domiPoolingCeilMode_t;
-
-// RNNMode
-typedef enum tagDomiRNNActivationMode {
-  DOMI_RNN_ACTIVATION_SIGMOID = 0,  // sigmoid
-  DOMI_RNN_ACTIVATION_TANH,         // tanh
-  DOMI_RNN_ACTIVATION_RELU,         // ReLU
-  DOMI_RNN_ACTIVATION_RELU1,        //  ReLU1
-  DOMI_RNN_ACTIVATION_RELU6,        //  ReLU6
-  DOMI_RNN_ACTIVATION_RESERVED
-} domiRNNActivationMode_t;
-
-typedef enum tagDomiRNNLSTMOutMode {
-  DOMI_RNN_LSTM_OUT_SEPARATE = 0,
-  DOMI_RNN_LSTM_OUT_CONCAT,
-  DOMI_RNN_LSTM_OUT_RESERVED
-} domiRNNLSTMOutPutMode_t;
-typedef enum tagDomiRNNLSTMStateOutMode {
-  DOMI_RNN_LSTM_STATE_OUT_SEPARATE = 0,
-  DOMI_RNN_LSTM_STATE_OUT_CONCAT_ALL,
-  DOMI_RNN_LSTM_STATE_OUT_RESERVED
-} domiRNNLSTMStateOutMode_t;
-
-typedef enum tagDomiRNNMode {
-  DOMI_RNN_RELU = 0,
-  DOMI_RNN_TANH,
-  DOMI_LSTM,
-  DOMI_GRU,
-  DOMI_RNN_MODE_RESERVED
-} domiRNNMode_t;
-
-typedef enum tagDomiResizeBilinearMode {
-  DOMI_RESIZE_OUTPUT_DIM_BY_ZOOM_FACTOR = 0,  // Output dimension specified by zoom factor
-  DOMI_RESIZE_OUTPUT_DIM_BY_SHRINK_FACTOR,    // specified by shrink factor
-  DOMI_RESIZE_OUTPUT_DIM_EXPLICIT,            // specified explicitly
-  DOMI_RESIZE_OUTPUT_DIM_RESERVED
-} domiResizeOutputDimMode_t;
-
-#pragma pack(1)  // single-byte alignment
-// DUMP file struct
-struct FileHeader {
-  int32_t Version;          // version
-  int32_t Output_Offset;    // output offset address
-  char Reserved[24] = {0};  // 24 bytes reserved
-};
-
-struct BasicInfo {
-  struct FileHeader header;  // file header
-  int32_t stream_id;         // stread id
-  uint64_t start_time;       // start time
-  uint64_t end_time;         // end time
-  uint32_t input_size;       // input memory size
-  uint32_t output_size;      // output memory size
-  uint32_t weight_size;      // weight Memory Size
-  uint32_t workspace_size;   // workspace
-  uint32_t total_size;       // total memory size
-};
-#pragma pack()  // Cancels single-byte alignment
 enum class MemorySizeCalcType { NORMAL = 0, ALWAYS_EMPTY };
 }  // namespace ge
 

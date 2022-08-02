@@ -1,18 +1,18 @@
 /**
-* Copyright 2020 Huawei Technologies Co., Ltd
-
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-
-* http://www.apache.org/licenses/LICENSE-2.0
-
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef INC_EXTERNAL_GE_IR_BUILD_H_
 #define INC_EXTERNAL_GE_IR_BUILD_H_
@@ -36,14 +36,10 @@
 #include <memory>
 #include "graph/graph.h"
 #include "graph/ge_error_codes.h"
-
-namespace {
-const int IR_MAJOR_VERSION = 1;
-const int IR_MINOR_VERSION = 0;
-const int IR_PATCH_VERSION = 0;
-}  // namespace
-
 namespace ge {
+const int32_t IR_MAJOR_VERSION = 1;
+const int32_t IR_MINOR_VERSION = 0;
+const int32_t IR_PATCH_VERSION = 0;
 
 struct ModelBufferData {
   std::shared_ptr<uint8_t> data = nullptr;
@@ -102,10 +98,10 @@ GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph,
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *, const ModelBufferData &))
-GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model);
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char_t *, const ModelBufferData &))
+GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const std::string &output_file, const ModelBufferData &model);
 
-GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model);
+GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char_t *output_file, const ModelBufferData &model);
 
 /**
  * @ingroup AscendCL
@@ -117,7 +113,8 @@ GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *output_file, const M
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version);
+GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int32_t *major_version, int32_t *minor_version,
+                                                   int32_t *patch_version);
 
 /**
  * @ingroup AscendCL
@@ -129,7 +126,7 @@ GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int *major_version, int *mino
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-GE_FUNC_VISIBILITY graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
+GE_FUNC_VISIBILITY graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char_t *file, const size_t len);
 
 /**
  * @ingroup AscendCL
@@ -153,7 +150,7 @@ GE_FUNC_VISIBILITY graphStatus aclgrphGenerateForOp(const AscendString &op_type,
  * @param cfg_path   [IN] the config file path
  * @return graphStatus
  */
-GE_FUNC_VISIBILITY graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char *cfg_path);
+GE_FUNC_VISIBILITY graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char_t *cfg_path);
 
 };      // namespace ge
 #endif  // INC_EXTERNAL_GE_IR_BUILD_H_

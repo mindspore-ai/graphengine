@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,17 @@
 #include <string>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "graph/types.h"
 
 namespace ge {
-enum PriorityEnum {
+enum class PriorityEnum {
   COST_0 = 0,
-  COST_1,
-  COST_2,
-  COST_3,
+  COST_1 = 1,
+  COST_2 = 2,
+  COST_3 = 3,
+  COST_4 = 4,
   COST_9 = 9,
   COST_10 = 10,
 };
@@ -38,19 +39,37 @@ enum PriorityEnum {
 struct DNNEngineAttribute {
   std::string engine_name;
   std::vector<std::string> mem_type;
-  uint32_t compute_cost;
+  PriorityEnum compute_cost;
   enum RuntimeType runtime_type;  // HOST, DEVICE
   // If engine input format must be specific, set this attribute, else set FORMAT_RESERVED
   Format engine_input_format;
   Format engine_output_format;
+  bool atomic_engine_flag;
 };
 
 class GE_FUNC_VISIBILITY DNNEngine {
  public:
+  DNNEngine() = default;
+  explicit DNNEngine(const DNNEngineAttribute &attrs) {
+    engine_attribute_ = attrs;
+  }
   virtual ~DNNEngine() = default;
-  virtual Status Initialize(const std::map<std::string, std::string> &options) = 0;
-  virtual Status Finalize() = 0;
-  virtual void GetAttributes(DNNEngineAttribute &attr) const = 0;
+  Status Initialize(const std::map<std::string, std::string> &options) const {
+    (void)options;
+    return SUCCESS;
+  }
+  Status Finalize() const {
+    return SUCCESS;
+  }
+  void GetAttributes(DNNEngineAttribute &attr) const {
+    attr = engine_attribute_;
+  }
+  bool IsAtomic() const {
+    return engine_attribute_.atomic_engine_flag;
+  }
+
+ protected:
+  DNNEngineAttribute engine_attribute_;
 };
 }  // namespace ge
 

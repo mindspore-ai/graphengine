@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,18 @@
 #if defined(_MSC_VER)
 #ifdef FUNC_VISIBILITY
 #define GE_FUNC_VISIBILITY _declspec(dllexport)
+#define GE_OBJECT_VISIBILITY
 #else
 #define GE_FUNC_VISIBILITY
+#define GE_OBJECT_VISIBILITY
 #endif
 #else
 #ifdef FUNC_VISIBILITY
 #define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#define GE_OBJECT_VISIBILITY
 #else
 #define GE_FUNC_VISIBILITY
+#define GE_OBJECT_VISIBILITY __attribute__((visibility("hidden")))
 #endif
 #endif
 
@@ -42,23 +46,23 @@
 #define DECLARE_ERRORNO_OME(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OME, name, value)
 #define DECLARE_ERRORNO_CALIBRATION(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_CALIBRATION, name, value)
 
-#define DEF_ERRORNO(name, desc) const ErrorNoRegisterar g_##name##_errorno(name, desc);
+#define DEF_ERRORNO(name, desc) const ErrorNoRegisterar g_##name##_errorno((name), (desc));
 
 // Interface for Obtaining Error Code Description
 #define GET_ERRORNO_STR(value) domi::StatusFactory::Instance()->GetErrDesc(value)
 
-const int MODID_OMG = 1;          // OMG module ID
-const int MODID_OME = 2;          // OME module ID
-const int MODID_CALIBRATION = 3;  // Calibration module ID
-
 namespace domi {
+constexpr int32_t MODID_OMG = 1;          // OMG module ID
+constexpr int32_t MODID_OME = 2;          // OME module ID
+constexpr int32_t MODID_CALIBRATION = 3;  // Calibration module ID
+
 class GE_FUNC_VISIBILITY StatusFactory {
  public:
   static StatusFactory *Instance();
 
-  void RegisterErrorNo(uint32_t err, const std::string &desc);
+  void RegisterErrorNo(const uint32_t err, const std::string &desc);
 
-  std::string GetErrDesc(uint32_t err);
+  std::string GetErrDesc(const uint32_t err);
 
  protected:
   StatusFactory() {}
@@ -70,7 +74,9 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
 class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
-  ErrorNoRegisterar(uint32_t err, const std::string &desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
+  ErrorNoRegisterar(const uint32_t err, const std::string &desc) {
+    StatusFactory::Instance()->RegisterErrorNo(err, desc);
+  }
   ~ErrorNoRegisterar() {}
 };
 

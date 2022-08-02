@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,15 @@
 #ifndef INC_FRAMEWORK_COMMON_GE_PROFILING_H_
 #define INC_FRAMEWORK_COMMON_GE_PROFILING_H_
 
-#include "ge/ge_api_error_codes.h"
-#include "toolchain/prof_callback.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "runtime/base.h"
-
-const int MAX_DEV_NUM = 64;
-
-enum ProfCommandHandleType {
-  kProfCommandhandleInit = 0,
-  kProfCommandhandleStart,
-  kProfCommandhandleStop,
-  kProfCommandhandleFinalize,
-  kProfCommandhandleModelSubscribe,
-  kProfCommandhandleModelUnsubscribe
-};
-
-struct ProfCommandHandleData {
-  uint64_t profSwitch;
-  uint32_t devNums;  // length of device id list
-  uint32_t devIdList[MAX_DEV_NUM];
-  uint32_t modelId;
-};
-
-GE_FUNC_VISIBILITY ge::Status RegProfCtrlCallback(MsprofCtrlCallback func);
-GE_FUNC_VISIBILITY ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func);
-GE_FUNC_VISIBILITY ge::Status RegProfReporterCallback(MsprofReporterCallback func);
-GE_FUNC_VISIBILITY ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t len);
 
 ///
 /// @brief Output the profiling data of single operator in Pytorch, and does not support multithreading
 /// @return Status result
 ///
-GE_FUNC_VISIBILITY ge::Status ProfSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream);
+GE_FUNC_VISIBILITY ge::Status ProfSetStepInfo(const uint64_t index_id, const uint16_t tag_id, rtStream_t const stream);
 
-GE_FUNC_VISIBILITY ge::Status ProfGetDeviceFormGraphId(uint32_t graph_id, uint32_t &device_id);
+GE_FUNC_VISIBILITY ge::Status ProfGetDeviceFormGraphId(const uint32_t graph_id, uint32_t &device_id);
 
 #endif  // INC_FRAMEWORK_COMMON_GE_PROFILING_H_

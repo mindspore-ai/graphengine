@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,24 @@ REG_OP(Bucketize)
     .OP_END_FACTORY_REG(Bucketize)
 
 /**
+*@brief Returns a new tensor with the truncated integer values of the elements of input. \n
+
+*@par Inputs:
+*One inputs, including:
+*input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
+
+*@par Outputs:
+*output_y: A tensor with the same type and shape of input_x \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Trunc. \n
+*/
+REG_OP(Trunc)
+    .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OP_END_FACTORY_REG(Trunc)
+	
+/**
 *@brief Computes the sum along sparse segments of a tensor . \n
 
 *@par Inputs:
@@ -280,7 +298,7 @@ REG_OP(SparseSegmentMean)
 
 *@par Inputs:
 *The input grad must have be type float or double. Inputs include:
-*@li grad: A Tensor. Must be one of the following types: float, double.
+*@li x: A Tensor. Must be one of the following types: float, double.
 gradient propagated to the SparseSegmentMean op.
 *@li indices: A Tensor. Must be one of the following types: int32, int64.
 indices passed to the corresponding SparseSegmentMean op.
@@ -347,6 +365,7 @@ REG_OP(InitData)
 component of an element of this dataset.
 *@li output_shapes: A nested structure of TensorShape objects corresponding
 to each component of an element of this dataset.
+*@li output_num:output of nums.
 *@li channel_name: A string. Default "" . \n
 
 *@par Outputs:
@@ -358,12 +377,33 @@ to each component of an element of this dataset.
 
 REG_OP(GetNext)
     .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64,
-                                        DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL}))
-    .ATTR(output_types, ListInt, {})
+                                   DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL}))
+    .ATTR(output_types, ListType, {})
     .ATTR(output_shapes, ListListInt, {})
     .ATTR(output_num, Int, 1)
     .ATTR(channel_name, String, "")
     .OP_END_FACTORY_REG(GetNext)
+
+/**
+*@brief Get dynamic dims after GetNext. \n
+
+*@par Inputs:
+*input: A nested structure of Tensor objects, from GetNext's output. \n
+
+*@par Attributes:
+*@li shape_info: GE shape_info for each inputs, -1 means unknow dim.
+*@li N: Inputs number. \n
+
+*@par Outputs:
+*dims: GE unknow dims, a vector of int64. \n
+*/
+
+REG_OP(GetDynamicDims)
+    .DYNAMIC_INPUT(input, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(dims, TensorType({DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(shape_info, ListInt)
+    .REQUIRED_ATTR(N, Int)
+    .OP_END_FACTORY_REG(GetDynamicDims)
 
 /**
 *@brief End of sequence . \n
@@ -385,7 +425,7 @@ REG_OP(EndOfSequence)
 
 *@par Inputs:
 *x: A Tensor of type float16, float32 or double. the format can be
-*    [NCHW,NC1HWC0,NHWC,ND]
+*    [NCHW,NHWC,ND]
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as "x" . \n
@@ -422,15 +462,15 @@ REG_OP(Erfc)
 
 *@par Inputs:
 *Three inputs, including:
-*@li x: A Tensor of type float32, float16, int32, int64.
-*@li range: A Tensor of type float32,float16,int32, int64.
+*@li x: A Tensor of type float32, int32, int64. float16 is currently not supported.
+*@li range: A Tensor of type float32, int32, int64. float16 is currently not supported.
 *@li nbins: A Tensor of type int32 . \n
 
 *@par Attributes:
 * dtype: An optional attribute. Defaults to "int32" . \n
 
 *@par Outputs:
-*y: A Tensor. A Tensor of type int32 or int64 . \n
+*y: A Tensor. A Tensor of type int32. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator HistogramFixedWidth.
@@ -440,7 +480,7 @@ REG_OP(HistogramFixedWidth)
     .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .INPUT(nbins, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT32}))
-    .ATTR(dtype, String, "int32")
+    .ATTR(dtype, Int, 3)
     .OP_END_FACTORY_REG(HistogramFixedWidth)
 
 /**
@@ -471,7 +511,7 @@ REG_OP(HistogramFixedWidthD)
     .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT32}))
     .REQUIRED_ATTR(nbins, Int)
-    .ATTR(dtype, String, "int32")
+    .ATTR(dtype, Int, 3)
     .OP_END_FACTORY_REG(HistogramFixedWidthD)
 
 /**
@@ -495,13 +535,36 @@ REG_OP(NextAfter)
     .OP_END_FACTORY_REG(NextAfter)
 
 /**
+*@brief Calculate the P-norm distance between vectors  function. \n
+
+*@par Inputs:
+*One inputs, including:
+* input_x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+*p: An optional float.Defaults to 2. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of input_x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Pdist. \n
+*/
+REG_OP(Pdist)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(Pdist)
+
+/**
  *@brief Compute element-wise finiteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor.
+ *x:A Tensor of type float16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x.
+ *y:A Tensor. Returns which elements of x are finite
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsFinite operator.
@@ -515,10 +578,10 @@ REG_OP(IsFinite)
  *@brief Compute element-wise infiniteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor.
+ *x:A Tensor of type float16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x.
+ *y:A Tensor. Has the same shape as x. Returns which elements of x are isinf.
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsInf operator.
@@ -532,7 +595,11 @@ REG_OP(IsInf)
  *@brief Computes the complex absolute value of a tensor.
 
  *@par Inputs:
- *x:A Tensor.
+ *x: x of complex numbers, this operation returns a tensor of type 
+ float or double that is the absolute value of each element in x .
+
+* @par Attributes:
+* Tout: representing the output of type. 
 
  *@par Outputs:
  *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
@@ -550,10 +617,10 @@ REG_OP(ComplexAbs)
  *@brief Returns which elements of x are NaN.
 
  *@par Inputs:
- *x:A Tensor.
+ *x:A Tensor of type float16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x.
+ *y:A Tensor. Has the same shape as x. Returns which elements of x are isnan
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsNan operator.
@@ -567,7 +634,10 @@ REG_OP(IsNan)
  *@brief Returns the real part of a complex number.
 
  *@par Inputs:
- *input:A Tensor.
+ *input:A Tensor. Must have numeric type.
+
+ *@par Attributes:
+ *Tout: Type of outputs. \n
 
  *@par Outputs:
  *output:A Tensor. Has the same shape as input.
@@ -608,7 +678,8 @@ REG_OP(Conj)
 *@li weight: A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *@li y: A Tensor dtype of float32.
@@ -620,10 +691,11 @@ REG_OP(Conj)
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(target, TensorType({DT_INT32}))
-    .INPUT(weight, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
@@ -637,7 +709,8 @@ REG_OP(NLLLoss)
 *@li total_weight:A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *x_grad: A Tensor. Must be the following type: float32 . \n
@@ -653,27 +726,28 @@ REG_OP(NLLLossGrad)
     .INPUT(total_weight, TensorType({DT_FLOAT}))
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
-*@brief The ifmr . \n
+*@brief IFMR(Input Feature Map Reconstruction). \n
 
 *@par Inputs:
-*@li data:A Tensor of feature map
-*@li data_min:A Tensor of min value of feature map.
-*@li data_max:A Tensor of max value of feature map.
-*@li cumsum:A Tensor of cumsum bin of data . \n
+*@li data: A Tensor of feature map.
+*@li data_min: A Tensor of min value of feature map.
+*@li data_max: A Tensor of max value of feature map.
+*@li cumsum: A Tensor of cumsum bin of data . \n
 
 *@par Attributes:
-*min_percentile: min init percentile.
-*max_percentile: max init percentile.
-*search_range: search range.
-*search_step: step size of searching.
-*with_offset: whether using offset . \n
+*@li min_percentile: min init percentile.
+*@li max_percentile: max init percentile.
+*@li search_range: search range.
+*@li search_step: step size of searching.
+*@li with_offset: whether using offset . \n
 
 *@par Outputs:
-*scale: optimal scale.
-*offset: optimal offset . \n
+*@li scale: optimal scale.
+*@li offset: optimal offset . \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
@@ -694,22 +768,25 @@ REG_OP(IFMR)
   .OP_END_FACTORY_REG(IFMR)
 
 /**
-*@brief weights adaptive range quantization. \n
+*@brief Weights Adaptive Range Quantization. \n
 
 *@par Inputs:
-*@li w:A Tensor of weights. \n
-*@li w_min:A Tensor of weights reduce_min. \n
-*@li w_max:A Tensor of weights reduce_max. \n
+*@li w: A Tensor of weights. \n
+*@li w_min: A Tensor of weights reduce_min. \n
+*@li w_max: A Tensor of weights reduce_max. \n
 
 *@par Attributes:
-*num_bits: the bits num used for quantize.
-*offset_flag: whether using offset. \n
+*@li num_bits: the bits num used for quantize.
+*@li offset_flag: whether using offset. \n
 
 *@par Outputs:
 *y: fake quantized weights. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(WtsARQ)
@@ -722,25 +799,28 @@ REG_OP(WtsARQ)
   .OP_END_FACTORY_REG(WtsARQ)
 
 /**
-*@brief The acts_ulq. \n
+*@brief Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li x:A Tensor of feature map
-*@li clamp _min:A Tensor of min clamp value of feature map.
-*@li clamp _max:A Tensor of max clamp value of feature map.
+*@li x: A Tensor of feature map.
+*@li clamp _min: A Tensor of min clamp value of feature map.
+*@li clamp _max: A Tensor of max clamp value of feature map.
 
 *@par Attributes:
-*fixed_min: fix min to zero.
-*num_bits: quant bits. \n
+*@li fixed_min: fix min to zero.
+*@li num_bits: quant bits. \n
 
 *@par Outputs:
-*y: output fake quant feature map.
-*clamp_min_mask: where x > clamp_min
-*clamp_min_mask: where x < clamp_max
-*x_clamped_loss: clamp loss. \n
+*@li y: output fake quant feature map.
+*@li clamp_min_mask: where x > clamp_min.
+*@li clamp_min_mask: where x < clamp_max.
+*@li x_clamped_loss: clamp loss. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQ)
@@ -748,40 +828,43 @@ REG_OP(ActsULQ)
   .INPUT(clamp_min, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(clamp_max, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .OUTPUT(clamp_min_mask, TensorType({DT_BOOL}))
-  .OUTPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .OUTPUT(clamp_min_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(clamp_max_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .ATTR(fixed_min, Bool, false)
   .ATTR(num_bits, Int, 8)
   .OP_END_FACTORY_REG(ActsULQ)
 
 /**
-*@brief The acts_ulq_input_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
-*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'
-*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'
+*@li y_grad: A Tensor of gradient.
+*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
+*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
 
 *@par Outputs:
 *x_grapd: The gradient of inpust. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQInputGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(clamp_min_mask, TensorType({DT_BOOL}))
-  .INPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_min_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_max_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(x_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActsULQInputGrad)
 
 /**
-*@brief The act_ulq_clamp_max_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp max. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -790,20 +873,23 @@ REG_OP(ActsULQInputGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMaxGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_max_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(clamp_max_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActULQClampMaxGrad)
 
 /**
-*@brief The act_ulq_clamp_min_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp min. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -812,15 +898,553 @@ REG_OP(ActULQClampMaxGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMinGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(clamp_min_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_min_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(clamp_min_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActULQClampMinGrad)
 
+/**
+* @brief Computes Lp norm.
+
+* @par Inputs:
+* x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNorm.
+*/
+REG_OP(LpNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNorm)
+
+/**
+* @brief Computes LpNormReduce.
+
+* @par Inputs:
+* x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNormReduce.
+*/
+REG_OP(LpNormReduce)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormReduce)
+
+/**
+* @brief Computes LpNormUpdate.
+
+* @par Inputs:
+* x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, float32. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNormUpdate.
+*/
+REG_OP(LpNormUpdate)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormUpdate)
+
+/**
+* @brief get complex.
+
+* @par Inputs:
+* @li real: An ND tensor of type  float32 double, representing the real part of a complex number.
+* @li imag: An ND tensor of type  float32 double, representing the imaginary part of a complex number. \n
+*
+* @par Attributes:
+* Tout: representing the output of type. 
+* @par Outputs:
+* out: An ND tensor of type complex64, complex128 \n
+*/
+REG_OP(Complex)
+    .INPUT(real, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(imag, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(out, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .ATTR(Tout, Type, DT_COMPLEX64)
+    .OP_END_FACTORY_REG(Complex)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* input: An ND tensor of type complex64, complex128 \n
+
+* @par Attributes:
+* Tout: representing the output of type. 
+
+* @par Outputs:
+* output: An ND tensor of type float32. double \n
+*/
+REG_OP(Imag)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Imag)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Angle)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Angle)
+
+/**
+*@brief Computes the gradient of SoftMarginLossGrad. \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li predict: A tensor. Must be one of the following types:
+*     float16, float32. \n
+* @li label: A tensor with same shape of predict. Must be one of the following types:
+*     float16, float32. \n
+* @li dout: A tensor with same shpae of predcit. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+* reduction: Specifies the reduction to apply to the output:
+*     'none' | 'mean' | 'sum'. Default: 'mean'. \n
+
+*@par Outputs:
+* gradient: A Tensor with the same type of predict. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator SoftMarginLoss Backward. \n
+*/
+REG_OP(SoftMarginLossGrad)
+    .INPUT(predict, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(dout, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SoftMarginLossGrad)
+
+/**
+*@brief Calculate the cross product of two tensors. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x1: A tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8, int16. \n
+* @li x2: A tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8, int16. \n
+
+*@par Attributes:
+*@li dim: the dimination of compute.Defaults to -65530. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of x1's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator cross. \n
+*/
+REG_OP(Cross)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .ATTR(dim, Int, -65530)
+    .OP_END_FACTORY_REG(Cross)
+
+/**
+ *@brief Computes batched the p-norm distance between each pair of
+ *the two collections of row vectors. \n
+
+ *@par Inputs:
+ *Two inputs, including:
+ * @li x1: A tensor with shpae: BxPXM. Must be one of the following types:
+ *     float16, float32. \n
+ * @li x2: A tensor with shpae: BxRxM. Must be one of the following types:
+ *     float16, float32. \n
+
+ *@par Attributes:
+ * @li p: An optional float >= 0 or inf. Defaults to 2.0. \n
+
+ *@par Outputs:
+ * y: A Tensor with the same type of x1's and with shape BxPxR. \n
+
+ *@par Third-party framework compatibility
+ *Compatible with the Pytorch operator Cdist. \n
+ */
+REG_OP(Cdist)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(Cdist)
+
+/**
+*@brief  Computes the grad of x1 in cdist. \n
+
+*@par Inputs:
+*Four inputs, including:
+ * @li grad: Grad with shape BxPxR. Must be one of the following types:
+*     float16, float32. \n
+* @li x1: A tensor with shpae: BxPXM. Must be one of the following types:
+*     float16, float32. \n
+* @li x2: A tensor with shpae: BxRxM. Must be one of the following types:
+*     float16, float32. \n
+* @li cdist: Output tensor of cdist forward with shpae: BxPXR.
+*     Must be one of the following types: float16, float32. \n
+
+*@par Attributes:
+* @li p: An optional float >= 0 or inf. Defaults to 2.0. \n
+
+*@par Outputs:
+* y: A Tensor with the same type and shape of x1's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Cdist Backward. \n
+*/
+REG_OP(CdistGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(cdist, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(CdistGrad)
+
+/**
+* @brief  Computes the RaggedBincount. \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li splits: A tensor with shpae: BxPXM. Must be one of the following types:
+*     int64.
+* @li values: A tensor with shpae: BxPXM. Must be one of the following types:
+*     float16, float32.
+* @li size: A tensor with shpae: BxRxM. Must be one of the following types:
+*     int32, int64.
+* @li weights: A tensor with shpae: BxRxM.
+*     Must be one of the following types: int32, int64, float, double. \n
+
+* @par Attributes:
+* @li binary_output: An optional bool \n
+
+* @par Outputs:
+* output: Must be one of the following types: int32, int64, float, double. \n
+*/
+REG_OP(RaggedBincount)
+    .INPUT(splits, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(output, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(binary_output, Bool, false)
+    .OP_END_FACTORY_REG(RaggedBincount)
+
+/**
+ * @brief Count the number of occurrences of each value in the input dense integer array,
+ * and output it according to the sparse matrix. \n
+
+ * @par Inputs:
+ * @li values: A 1D or 2D tensor of type int32 or int64.
+ * @li weights: A tensor of type int32 or int64 or float or double. \n
+
+ * @par Attributes:
+ * @li minlength: An optional int >=-1. Defaults to -1.
+ * @li maxlength: An optional int >=-1. Defaults to -1.
+ * @li binary_output: A required bool. \n
+
+ * @par Outputs:
+ * output_indices: A tensor of type int64.
+ * output_values: A tensor of the same type as "weights".
+ * output_dense_shape: A tensor of type int64. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator DenseCountSparseOutput. \n
+ */
+REG_OP(DenseCountSparseOutput)
+    .INPUT(values, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_indices, TensorType({DT_INT64}))
+    .OUTPUT(output_values, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_dense_shape, TensorType({DT_INT64}))
+    .ATTR(minlength, Int, -1)
+    .ATTR(maxlength, Int, -1)
+    .REQUIRED_ATTR(binary_output, Bool)
+    .OP_END_FACTORY_REG(DenseCountSparseOutput)
+
+/**
+* @brief Computes gradients for SparseSegmentSum . \n
+
+* @par Inputs:
+* The input grad must have be type float or double. Inputs include:
+* @li grad: A Tensor. Must be one of the following types: bfloat16, float16, float32, double.
+  gradient propagated to the SparseSegmentSum op.
+* @li indices: A Tensor. Must be one of the following types: int32, int64.
+  indices passed to the corresponding SparseSegmentSum op.
+* @li segment_ids: A Tensor of type int32, int64. segment_ids passed to the
+  corresponding SparseSegmentSum op.
+* @li output_dim0: A Tensor of type int32. dimension 0 of "x" passed to
+  SparseSegmentSum op . \n
+
+* @par Outputs:
+* output:A Tensor. Has the same type as grad . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow SparseSegmentSumGrad operator
+*/
+
+REG_OP(SparseSegmentSumGrad)
+    .INPUT(grad, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(output_dim0, TensorType({DT_INT32}))
+    .OUTPUT(output, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(SparseSegmentSumGrad)
+
+/**
+ * @brief Count the number of occurrences of each value in the input ragged integer array,
+ * and output it according to the sparse matrix. \n
+
+ * @par Inputs:
+ * @li splits: A 1D tensor of type int64.
+ * @li values: A 1D or 2D tensor of type int32 or int64.
+ * @li weights: A tensor of type int32 or int64 or float or double. \n
+
+ * @par Attributes:
+ * @li minlength: An optional int >=-1. Defaults to -1.
+ * @li maxlength: An optional int >=-1. Defaults to -1.
+ * @li binary_output: A required bool. \n
+
+ * @par Outputs:
+ * output_indices: A tensor of type int64.
+ * output_values: A tensor of the same type as "weights".
+ * output_dense_shape: A tensor of type int64. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator RaggedCountSparseOutput. \n
+ */
+REG_OP(RaggedCountSparseOutput)
+    .INPUT(splits, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_indices, TensorType({DT_INT64}))
+    .OUTPUT(output_values, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_dense_shape, TensorType({DT_INT64}))
+    .ATTR(minlength, Int, -1)
+    .ATTR(maxlength, Int, -1)
+    .REQUIRED_ATTR(binary_output, Bool)
+    .OP_END_FACTORY_REG(RaggedCountSparseOutput)
+
+/**
+* @brief SignBitsUnpack.
+
+* @par Inputs:
+* one input, including:
+* @li x: A 1D Tensor of uint8.
+
+* @par Attributes:
+* @li size: dim of out put tensor, defaults to 1.
+* @li dtype: dtype of out put tensor: DT_FLOAT(0) or DT_FLOAT16(1).
+
+* @par Outputs:
+* @li y: A 2D Tensor of type float32 (float16) with shape (size, (x.shape * 8) / size),
+*/
+REG_OP(SignBitsUnpack)
+    .INPUT(x, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(size, Int)
+    .REQUIRED_ATTR(dtype, Type)
+    .OP_END_FACTORY_REG(SignBitsUnpack)
+
+/**
+* @brief Function scaled masked softmax . \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A mutable Tensor. The type support float16/float32.
+* @li mask: An optional Tensor. Must meet all of the following rules:
+*     shape of mask should be broadcastable with x.
+*     dtype of mask should be bool.
+*     mask is binary
+
+* @par Attributes:
+* scale: A attribute used to scale tensor. The type is float. The dimension softmax would be performed on. Defaults
+*     to "1.0" . \n
+* fixed_triu_mask: A flag used to enable or disable a fixed upper triangle mask. The type is bool. Defaults
+*     to "false" . \n
+
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(ScaledMaskedSoftmax)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_BOOL, DT_UINT1}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .ATTR(scale, Float, 1.0)
+    .ATTR(fixed_triu_mask, Bool, false)
+    .OP_END_FACTORY_REG(ScaledMaskedSoftmax)
+
+/**
+* @brief Function scaled masked softmax grad . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li y_grad: A mutable Tensor. The type support float16/float32.
+* @li y: A mutable Tensor. The type support float16/float32.
+* @li mask: An optional Tensor. Must meet all of the following rules:
+*     shape of mask should be broadcastable with x.
+*     dtype of mask should be bool.
+*     mask is binary
+
+* @par Attributes:
+* scale: A attribute used to scale tensor. The type is float. The dimension softmax would be performed on. Defaults
+*     to "1.0" . \n
+* fixed_triu_mask: A flag used to enable or disable a fixed upper triangle mask. The type is bool. Defaults
+*     to "false" . \n
+
+* @par Outputs:
+* x_grad: A mutable Tensor. Has the same type as "x". \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(ScaledMaskedSoftmaxGrad)
+    .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_BOOL, DT_UINT1}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT16}))
+    .ATTR(scale, Float, 1.0)
+    .ATTR(fixed_triu_mask, Bool, false)
+    .OP_END_FACTORY_REG(ScaledMaskedSoftmaxGrad)
+    
+/**
+ * @brief SignBitsPack.
+
+ * @par Inputs:
+ * one input, including:
+ * @li x: A 1D Tensor of float32 or float16.
+ * 
+ * @par Attributes:
+ * @li size: first dim value of output tensor.
+ * 
+ * @par Outputs:
+ * @li y: A 2D Tensor of type uint8 with shape (size, N)
+ */
+REG_OP(SignBitsPack)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .REQUIRED_ATTR(size, Int)
+    .OP_END_FACTORY_REG(SignBitsPack)
+
+/**
+* @brief  Get sobol samples. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li dim: Dimension of results, which must be a scalar of type int32.
+* @li num_results: Number of results, which must be a scalar of type int32.
+* @li skip: Number of initial points, which must be a scalar of type int32. \n
+
+* @par Attributes:
+* @li dtype: Data type of output samples. \n
+
+* @par Outputs:
+* @li y: A Tensor with the DT_FLOAT or DT_DOUBLE type generated samples. \n
+
+* @par Third-party framework compatibility
+* @li compatible with tensorflow SobolSample operator.
+**/
+REG_OP(SobolSample)
+    .INPUT(dim, TensorType({DT_INT32}))
+    .INPUT(num_results, TensorType({DT_INT32}))
+    .INPUT(skip, TensorType({DT_INT32}))
+    .OUTPUT(samples, TensorType({DT_FLOAT,DT_DOUBLE}))
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(SobolSample)
+
+/**
+ * @brief Count the number of occurrences of each value in the input sparse integer array,
+ * and output it according to the sparse matrix. \n 
+
+ * @par Inputs:
+ * @li indices: A tensor of type int64.
+ * @li values: A tensor of type int32 or int64. 
+ * @li dense_shape: A tensor of type int64.
+ * @li weights: A tensor of type int32 or int64 or float or double. \n
+ 
+ * @par Attributes:
+ * @li minlength: An optional int >=-1. Defaults to -1. 
+ * @li maxlength: An optional int >=-1. Defaults to -1. 
+ * @li binary_output: A required bool. \n
+
+ * @par Outputs:
+ * @li output_indices: A tensor of type int64. 
+ * @li output_values: A tensor of the same type as "weights".
+ * @li output_dense_shape: A tensor of type int64. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator SparseCountSparseOutput. \n
+ */
+REG_OP(SparseCountSparseOutput)
+    .INPUT(indices, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(dense_shape, TensorType({DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_indices, TensorType({DT_INT64}))
+    .OUTPUT(output_values, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_dense_shape, TensorType({DT_INT64}))
+    .ATTR(minlength, Int, -1)
+    .ATTR(maxlength, Int, -1)
+    .REQUIRED_ATTR(binary_output, Bool)
+    .OP_END_FACTORY_REG(SparseCountSparseOutput)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

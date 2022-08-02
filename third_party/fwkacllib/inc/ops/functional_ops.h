@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,6 +141,30 @@ REG_OP(If)
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator Case.
  */
+REG_OP(StatelessCase)
+    .INPUT(branch_index, DT_INT32)
+    .DYNAMIC_INPUT(input, TensorType::ALL())
+    .DYNAMIC_OUTPUT(output, TensorType::ALL())
+    .DYNAMIC_GRAPH(branches)
+    .OP_END_FACTORY_REG(StatelessCase)
+
+/**
+ *@brief Select one of the subgraphs to pass the input tensors and return the output tensors . \n
+
+ *@par Inputs:
+ *@li branch_index: A int32 scalar which determines the selected subgraph.
+ *@li input: The input tensors, which will be passed to the subgraph . It's a dynamic input. \n
+
+ *@par Graphs:
+ *branches: A list of subgraphs, each of which takes 'input' and returns a list of tensors,
+ *          whose types are the same as what every other subgraph returns . \n
+
+ *@par Outputs:
+ *output: The output tensors returned by one of branches . It's a dynamic output. \n
+
+ *@par Third-party framework compatibility
+ *@Compatible with the TensorFlow operator Case.
+ */
 REG_OP(Case)
     .INPUT(branch_index, DT_INT32)
     .DYNAMIC_INPUT(input, TensorType::ALL())
@@ -162,9 +186,6 @@ REG_OP(Case)
  *          if it is a string scalar, non-empty means True and empty means False;
  *          if it is not a scalar, non-empty means True and empty means False.
  *@li body: A subgraph takes 'input' and returns a another list of tensors .  \n
-
- *@par Attributes:
- *parallel_iterations: An optional int, default as 10 . \n
 
  *@par Outputs:
  *output: The output tensors returned by "body". Has the same type as "input" . \n
@@ -327,6 +348,19 @@ REG_OP(StatefulPartitionedCall)
     .ATTR(config_proto, String, "")
     .ATTR(executor_type, String, "")
     .OP_END_FACTORY_REG(StatefulPartitionedCall)
+
+/**
+ * @par Inputs:
+ * @li input: The input tensors \n
+ *
+ * @par Outputs:
+ * @li output: The output tensors. \n
+ */
+REG_OP(ToBool)
+    .INPUT(input, TensorType({DT_INT64, DT_INT32, DT_INT16, DT_INT8, \
+        DT_UINT8, DT_FLOAT, DT_DOUBLE, DT_STRING, DT_BOOL}))
+    .OUTPUT(output, DT_BOOL)
+    .OP_END_FACTORY_REG(ToBool)
 
 }  // namespace ge
 

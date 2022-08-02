@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,39 @@
 #ifndef INC_FRAMEWORK_COMMON_GE_TYPES_H_
 #define INC_FRAMEWORK_COMMON_GE_TYPES_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <string>
 #include <vector>
 
 #include "framework/common/fmk_error_codes.h"
-#include "ge/ge_api_error_codes.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "external/graph/types.h"
 #include "external/ge/ge_api_types.h"
 
 namespace ge {
 enum RuntimeType { HOST = 0, DEVICE = 1 };
 
-enum PerfLevel { GEN_TASK_WITH_FUSION = -1, GEN_TASK_WITHOUT_L2FUSION = 3, GEN_TASK_WITHOUT_FUSION = 4 };
+enum class PerfLevel : int32_t {
+  GEN_TASK_WITH_FUSION = -1,
+  GEN_TASK_WITHOUT_L2FUSION = 3,
+  GEN_TASK_WITHOUT_FUSION = 4
+};
 
 enum FrameworkType {
   CAFFE = 0,
   MINDSPORE = 1,
   TENSORFLOW = 3,
-  ANDROID_NN,
-  ONNX,
+  ANDROID_NN = 4,
+  ONNX = 5,
 };
 
+enum class GraphStage : int64_t { GRAPH_STAGE_FUZZ = 0, GRAPH_STAGE_RESERVED };
+
+const char_t *const kGraphDumpStage = "DumpStage";
+
 const std::map<std::string, std::string> kFwkTypeToStr = {
-  {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
+    {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
 
 enum OpEngineType {
   ENGINE_SYS = 0,  // default engine
@@ -53,28 +61,52 @@ enum OpEngineType {
 
 enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
 
-const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
-const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
+const char_t *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
+const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 
 // profiling data
+
 const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
+const std::string kTaskTypeFftsPlus = "FFTS_PLUS";
+const std::string kEngineNameVectorCore = "VectorEngine";
+
+const std::string kEngineNameHccl = "ops_kernel_info_hccl";
+const std::string kEngineNameRts = "DNN_VM_RTS_OP_STORE";
+const std::string kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
+const std::string kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
+const std::string kEngineNameAiCpu = "aicpu_ascend_kernel";
+const std::string kEngineNameAiCpuTf = "aicpu_tf_kernel";
+const std::string kEngineNameAiCore = "AIcoreEngine";
+const std::string kAtomicOpType = "DynamicAtomicAddrClean";
+
+const std::string kShapeTypeStatic = "static";
+const std::string kShapeTypeDynamic = "dynamic";
+
+constexpr uint64_t kInferSessionId = 0U;
+constexpr uint64_t kReleaseFlag = 1U;
+constexpr uint32_t kInvalidModelId = 0xFFFFFFFFU;
+constexpr size_t kNumTaskWithAtomicAddrCleanTask = 2U;
+constexpr uint32_t INVALID_MODEL_ID = 0xFFFFFFFFUL;
 
 // dynamic execute mode
-const char *const kLazyRecompile = "lazy_recompile";
+const char_t *const kLazyRecompile = "lazy_recompile";
+
+constexpr size_t kMaxHostMemInputLen = 128U;  // 64 aligned
 
 // Data cache, including data address and length
 struct DataBuffer {
- public:
   void *data;       // Data address
   uint64_t length;  // Data length
   bool isDataSupportMemShare = false;
-  uint32_t placement = 0;
-  DataBuffer(void *dataIn, uint64_t len, bool isSupportMemShare, uint32_t placement = 0)
-      : data(dataIn), length(len), isDataSupportMemShare(isSupportMemShare), placement(placement) {}
+  uint32_t placement = 0U;
 
-  DataBuffer() : data(nullptr), length(0), isDataSupportMemShare(false) {}
+  DataBuffer(void *const data_in, const uint64_t data_len, const bool is_support_mem_share = false,
+             const uint32_t data_placement = 0U)
+      : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(data_placement) {}
+
+  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false), placement(0U) {}
 };
 
 ///
@@ -86,7 +118,7 @@ struct InputData {
   uint32_t timestamp;                        // Data creation time
   uint32_t timeout;                          // Processing timeout
   uint32_t model_id;                         // Model ID required for data processing
-  uint64_t request_id = 0;                   // Request ID
+  uint64_t request_id = 0UL;                 // Request ID
   std::vector<DataBuffer> blobs;             // Actual input data, currently only supports one input
   bool is_dynamic_batch = false;             // Whether is dynamic batch size scene, default:false
   std::string batch_label;                   // Gear used for current inference in dynamic batch scene
@@ -113,10 +145,10 @@ struct Command {
 
 // The definition of I/O shape description
 struct ShapeDescription {
-  int64_t num = 0;
-  int64_t channel = 0;
-  int64_t height = 0;
-  int64_t width = 0;
+  int64_t num = 0L;
+  int64_t channel = 0L;
+  int64_t height = 0L;
+  int64_t width = 0L;
   std::vector<int64_t> dims;
   std::vector<std::pair<int64_t, int64_t>> shape_ranges;
 };
@@ -186,14 +218,14 @@ struct AippConfigInfo {
   int32_t mean_chn_1;
   int32_t mean_chn_2;
   int32_t mean_chn_3;
-  float min_chn_0;
-  float min_chn_1;
-  float min_chn_2;
-  float min_chn_3;
-  float var_reci_chn_0;
-  float var_reci_chn_1;
-  float var_reci_chn_2;
-  float var_reci_chn_3;
+  float32_t min_chn_0;
+  float32_t min_chn_1;
+  float32_t min_chn_2;
+  float32_t min_chn_3;
+  float32_t var_reci_chn_0;
+  float32_t var_reci_chn_1;
+  float32_t var_reci_chn_2;
+  float32_t var_reci_chn_3;
   int8_t support_rotation;
   uint32_t related_input_rank;
   uint32_t max_src_image_size;
@@ -202,26 +234,42 @@ struct AippConfigInfo {
 // The structure of offline Modeldata
 struct ModelData {
   void *model_data = nullptr;  // Model binary data start addr
-  uint32_t model_len = 0;      // Model binary data length
+  uint32_t model_len = 0U;     // Model binary data length
   int32_t priority = 0;        // Model priority
   std::string key;             // Key path for encrypt model, Empty for unencrypt
   std::string om_name;         // om file name, used for data dump
 };
 
+struct ModelParam {
+  ModelParam() : priority(0), mem_base(0U), mem_size(0U), weight_base(0U), weight_size(0U) {}
+  ModelParam(const int32_t pri, const uintptr_t m_base, const size_t m_len, const uintptr_t w_base, const size_t w_len)
+      : priority(pri), mem_base(m_base), mem_size(m_len), weight_base(w_base), weight_size(w_len) {}
+  ~ModelParam() = default;
+
+  int32_t priority;
+  uintptr_t mem_base;
+  size_t mem_size;
+  uintptr_t weight_base;
+  size_t weight_size;
+};
+
 // The definition of Model information
 struct ModelInfo {
-  uint32_t version = 0;
+  uint32_t version = 0U;
   std::string name;
-  bool is_encrypt = 0;  //  0:unencrypt, 1:encrypt
+  bool is_encrypt = false;  //  0:unencrypt, 1:encrypt
   std::vector<ShapeDescription> input_desc;
   std::vector<ShapeDescription> output_desc;
-  uint8_t reserved[3] = {0};  // 3-byte reserved field
+  uint8_t reserved[3] = {0U};  // 3-byte reserved field
 };
 
 // Asynchronous callback interface, implemented by the caller
 class GE_FUNC_VISIBILITY ModelListener {
  public:
   virtual ~ModelListener() {}
+  ModelListener() = default;
+  ModelListener(const ModelListener &) = delete;
+  ModelListener &operator=(const ModelListener &) = delete;
   ///
   /// @brief Asynchronous callback interface
   /// @param [in] model_id   Model ID of the callback
@@ -230,6 +278,18 @@ class GE_FUNC_VISIBILITY ModelListener {
   ///
   virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
                                std::vector<ge::Tensor> &outputs) = 0;
+
+  virtual void SetCallback(const RunAsyncCallback &callback) {
+    (void)callback;
+  }
+
+  virtual uint32_t GetResultCode() {
+    return 0U;
+  };
+
+  virtual Status ResetResult() {
+    return SUCCESS;
+  };
 };
 
 // OMM configuration item
@@ -249,6 +309,7 @@ struct Options {
   int32_t physical_device_id;
   std::string profiling_mode;
   std::string profiling_options;
+  int32_t graphExecTimeout;
 };
 
 // Profiling info of task
@@ -268,13 +329,24 @@ struct TaskDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
+  uint32_t context_id = 0xFFFFFFFFUL;
 };
 
 struct OpDescInfo {
   std::string op_name;
   std::string op_type;
-  uint32_t task_id;
-  uint32_t stream_id;
+  uint32_t task_id = 0U;
+  uint32_t stream_id = 0U;
+  uint32_t imply_type = 0U;
+  uint32_t block_dim = 0U;
+  std::string op_file_path;
+  std::string dev_func;
+  std::string tvm_magic;
+  uint32_t tiling_key = 0U;
+  uintptr_t args = 0U;
+  std::string tiling_data;
+  std::string node_info;
+  std::vector<int64_t> workspace_bytes;
   std::vector<Format> input_format;
   std::vector<std::vector<int64_t>> input_shape;
   std::vector<DataType> input_data_type;

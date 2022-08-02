@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,7 @@
 #ifndef INC_FRAMEWORK_MEMORY_MEMORY_API_H_
 #define INC_FRAMEWORK_MEMORY_MEMORY_API_H_
 
-#include <string>
-#include <vector>
-
-#include "ge/ge_api_error_codes.h"
-#include "graph//types.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "runtime/mem.h"
 
 namespace ge {

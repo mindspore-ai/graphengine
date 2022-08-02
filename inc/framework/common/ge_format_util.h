@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/tensor.h"
 
 namespace ge {
@@ -33,7 +33,7 @@ class GE_FUNC_VISIBILITY GeFormatUtil {
   /// @param  [out] dst_shape     destination shape
   /// @return Status
   ///
-  static Status TransShape(const TensorDesc &src_desc, Format dst_format, std::vector<int64_t> &dst_shape);
+  static Status TransShape(const TensorDesc &src_desc, const Format dst_format, std::vector<int64_t> &dst_shape);
 };
 }  // namespace ge
 

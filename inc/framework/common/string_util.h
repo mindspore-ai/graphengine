@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,24 +39,27 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "graph/types.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY StringUtils {
  public:
   static std::string &Ltrim(std::string &s) {
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return !std::isspace(c); }));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](const int32_t c) { return std::isspace(c) == 0; }));
 #else
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))));
 #endif
     return s;
   }
   // lint -esym(551,*)
-  static std::string &Rtrim(std::string &s) {  /*lint !e618*/
+  static std::string &Rtrim(std::string &s) { /*lint !e618*/
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return !std::isspace(c); }));
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(), [](const int32_t c) { return std::isspace(c) == 0; }).base(),
+                  s.end());
 #else
-    (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))).base(),
+                  s.end());
 #endif
     return s;
   }
@@ -67,7 +70,9 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] string to be trimmed
   ///  @return string after trim
   ///
-  static std::string &Trim(std::string &s) { return Ltrim(Rtrim(s)); }
+  static std::string &Trim(std::string &s) {
+    return Ltrim(Rtrim(s));
+  }
 
   ///
   ///  @ingroup domi_common
@@ -76,8 +81,8 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] delim  separator
   ///  @return string array after segmentation
   ///
-  static std::vector<std::string> Split(const std::string &str, char delim) {
-    std::vector<std::string> elems;
+  static std::vector<std::string, std::allocator<std::string>> Split(const std::string &str, const char_t delim) {
+    std::vector<std::string, std::allocator<std::string>> elems;
 
     if (str.empty()) {
       elems.emplace_back("");
@@ -91,8 +96,8 @@ class GE_FUNC_VISIBILITY StringUtils {
       elems.push_back(item);
     }
 
-    auto str_size = str.size();
-    if (str_size > 0 && str[str_size - 1] == delim) {
+    const auto str_size = str.size();
+    if ((str_size > 0U) && (str[str_size - 1U] == delim)) {
       elems.emplace_back("");
     }
 
@@ -104,13 +109,13 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] s path name
   ///  @return file name
   ///
-  static std::string GetFileName(std::string &s) {
+  static std::string GetFileName(const std::string &s) {
     if (s.empty()) {
       return "";
     }
-    std::vector<std::string> files = StringUtils::Split(s, '/');
+    const std::vector<std::string> files = StringUtils::Split(s, '/');
 
-    return files.empty() ? "" : files[files.size() - 1];
+    return files.empty() ? "" : files[files.size() - 1U];
   }
   ///
   ///  @ingroup domi_common
@@ -122,12 +127,13 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @return string after replacement
   ///
   static std::string ReplaceAll(std::string str, const std::string &old_value, const std::string &new_value) {
-    std::string::size_type cur_pos = 0;
-    std::string::size_type old_length = old_value.length();
-    std::string::size_type new_length = new_value.length();
+    std::string::size_type cur_pos = 0U;
+    const std::string::size_type old_length = old_value.length();
+    const std::string::size_type new_length = new_value.length();
     // cycle replace
     for (; cur_pos != std::string::npos; cur_pos += new_length) {
-      if ((cur_pos = str.find(old_value, cur_pos)) != std::string::npos) {
+      cur_pos = str.find(old_value, cur_pos);
+      if (cur_pos != std::string::npos) {
         (void)str.replace(cur_pos, old_length, new_value);
       } else {
         break;
@@ -145,7 +151,7 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @return if the value is a prefix, true is returned. Otherwise, false is returned
   ///
   static bool StartWith(const std::string &str, const std::string str_x) {
-    return ((str.size() >= str_x.size()) && (str.compare(0, str_x.size(), str_x) == 0));
+    return ((str.size() >= str_x.size()) && (str.compare(0U, str_x.size(), str_x) == 0));
   }
 
   ///
@@ -156,14 +162,14 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] ... format Filling Content
   ///  @return formatted string
   ///
-  static std::string FormatString(const char *format, ...) {
-    const uint32_t MAX_BUFFER_LEN = 1024;  // the stack memory plint check result must be less than 1024
+  static std::string FormatString(const char_t *const format, ...) {
+    const uint32_t MAX_BUFFER_LEN = 1024U;  // the stack memory plint check result must be less than 1024
     va_list args;
     va_start(args, format);
-    char buffer[MAX_BUFFER_LEN] = {0};
-    int32_t ret = vsnprintf_s(buffer, MAX_BUFFER_LEN, MAX_BUFFER_LEN - 1, format, args);
+    char_t buffer[MAX_BUFFER_LEN] = {};
+    const int32_t ret = vsnprintf_s(&buffer[0], MAX_BUFFER_LEN, MAX_BUFFER_LEN - 1U, format, args);
     va_end(args);
-    return ret > 0 ? buffer : "";
+    return (ret > 0) ? buffer : "";
   }
 };
 }  // namespace ge

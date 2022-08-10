@@ -326,6 +326,10 @@ const char_t *const OP_COMPILER_CACHE_DIR = "ge.op_compiler_cache_dir";
 // Its value should be "disable", "enable" or "force", default value is "disable"
 const char_t *const OP_COMPILER_CACHE_MODE = "ge.op_compiler_cache_mode";
 
+// Configure build model type. FE need this option to judge inner model or not
+// Its value should be "true" or "false"
+const char_t *const BUILD_INNER_MODEL = "ge.build_inner_model";
+
 // Configure whether to use single stream.
 // Its value should be "true" or "false", default value is "false"
 const char_t *const ENABLE_SINGLE_STREAM = "ge.enableSingleStream";
@@ -375,6 +379,17 @@ const std::string OP_EXECUTE_TIMEOUT = "ge.exec.opExecuteTimeout";
 
 const char_t *const FILE_CONSTANT_PATH = "ge.exec.value_bins";
 
+const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
+
+const char_t *const RESOURCE_CONFIG_PATH = "ge.resourceConfigPath";
+
+const std::string RECOMPUTE = "ge.recompute";
+
+const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
+
+// 1: Complete graph resource evaluation(Inclusion graph fusion optimization)
+// 2: Simplified graph resource evaluation(No graph fusion optimization)
+const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -450,6 +465,7 @@ static const char_t *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE
 static const char_t *const DEBUG_DIR = ge::DEBUG_DIR;
 static const char_t *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
 static const char_t *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
+static const char_t *const BUILD_INNER_MODEL = ge::BUILD_INNER_MODEL;
 static const char_t *const MDL_BANK_PATH = ge::MDL_BANK_PATH_FLAG.c_str();
 static const char_t *const OP_BANK_PATH = ge::OP_BANK_PATH_FLAG.c_str();
 static const char_t *const OP_BANK_UPDATE = ge::OP_BANK_UPDATE_FLAG.c_str();
@@ -490,7 +506,9 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              PERFORMANCE_MODE,
                                                              SHAPE_GENERALIZED_BUILD_MODE,
                                                              MODIFY_MIXLIST,
-                                                             CUSTOMIZE_DTYPES};
+                                                             CUSTOMIZE_DTYPES,
+                                                             BUILD_INNER_MODEL,
+                                                             EVALUATE_GRAPH_RESOURCE_MODE};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {

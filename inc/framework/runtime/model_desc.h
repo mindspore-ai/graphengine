@@ -17,13 +17,15 @@
 #ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_MODEL_DESC_H_
 #define AIR_CXX_INC_FRAMEWORK_RUNTIME_MODEL_DESC_H_
 #include "common/ge_types.h"
+#include "common/ge_visibility.h"
+
 #include "exe_graph/runtime/shape.h"
 #include "exe_graph/runtime/continuous_vector.h"
 #include "exe_graph/runtime/storage_format.h"
 #include "exe_graph/runtime/storage_shape.h"
 
 namespace gert {
-class ShapeRange {
+class VISIBILITY_EXPORT ShapeRange {
  public:
   const Shape &GetMin() const;
   const Shape &GetMax() const;
@@ -35,7 +37,7 @@ class ShapeRange {
   Shape max_;
 };
 
-class ModelIoDesc {
+class VISIBILITY_EXPORT ModelIoDesc {
  public:
   const char *GetName() const;
   int32_t GetDataType() const;
@@ -65,7 +67,7 @@ class ModelIoDesc {
   ShapeRange origin_shape_range_;
 };
 
-class ModelDesc {
+class VISIBILITY_EXPORT ModelDesc {
  public:
   static size_t CalcSize(size_t input_num, size_t output_num);
   const ModelIoDesc *GetInputDesc(size_t index) const;

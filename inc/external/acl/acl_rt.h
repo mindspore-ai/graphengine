@@ -163,6 +163,17 @@ ACL_FUNC_VISIBILITY uint32_t aclrtGetDeviceIdFromExceptionInfo(const aclrtExcept
 
 /**
  * @ingroup AscendCL
+ * @brief Get error code from exception information
+ *
+ * @param info [IN]   pointer of exception information
+ *
+ * @retval The error code from exception information
+ * @retval 0xFFFFFFFF if info is null
+ */
+ACL_FUNC_VISIBILITY uint32_t aclrtGetErrorCodeFromExceptionInfo(const aclrtExceptionInfo *info);
+
+/**
+ * @ingroup AscendCL
  * @brief The thread that handles the callback function on the Stream
  *
  * @param threadId [IN] thread ID

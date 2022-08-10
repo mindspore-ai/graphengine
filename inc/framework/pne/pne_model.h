@@ -31,8 +31,10 @@
 namespace ge {
 const std::string PNE_ID_NPU = "NPU";
 const std::string PNE_ID_CPU = "HOST_CPU";
+const std::string PNE_ID_UDF = "UDF";
 
 struct ModelRelation;
+struct ModelDeployResource;
 class PneModel {
  public:
   PneModel() = default;
@@ -100,6 +102,14 @@ class PneModel {
     return model_relation_;
   }
 
+  inline void SetDeployResource(std::shared_ptr<ModelDeployResource> deploy_resource) {
+    deploy_resource_ = std::move(deploy_resource);
+  }
+
+  inline const std::shared_ptr<ModelDeployResource> GetDeployResource() const {
+    return deploy_resource_;
+  }
+
  public:
   virtual Status SerializeModel(ModelBufferData &model_buff) = 0;
 
@@ -113,9 +123,14 @@ class PneModel {
     return model_id_;
   }
 
+  virtual std::string GetLogicDeviceId() const {
+    return "";
+  }
+
  private:
   std::map<std::string, std::shared_ptr<PneModel>> submodels_;
   std::shared_ptr<ModelRelation> model_relation_;
+  std::shared_ptr<ModelDeployResource> deploy_resource_;
   ComputeGraphPtr root_graph_ = nullptr;
   std::string model_name_;
   std::string model_type_;

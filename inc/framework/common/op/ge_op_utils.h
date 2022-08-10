@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-#include "framework/common/op/attr_value_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "framework/common/util.h"
 #include "graph/attr_value.h"
 #include "graph/ge_tensor.h"

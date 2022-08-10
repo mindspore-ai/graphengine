@@ -75,37 +75,37 @@ REG_OP(Pooling)
     .OP_END_FACTORY_REG(Pooling)
 
 /**
-*@brief Performs average pooling on the input. \n
-*@par Inputs:
-*x: A tensor of type float16, float32, double. \n
+* @brief Performs average pooling on the input. \n
+* @par Inputs:
+* x: A tensor of type float16, float32, double. \n
 
-*@par Attributes:
-*@li ksize: A required list of 4 ints, specifying the size (N, C, H, and W)
+* @par Attributes:
+* @li ksize: A required list of 4 ints, specifying the size (N, C, H, and W)
 * of the sliding window, where N = C = 1, and H and W are positive integers
 *  within the range [1, 255].
 * @li strides: A required list of 4 ints, specifying the stride of the
 * sliding window. The strides of the N and C dimensions are 1. The strides of
 *  the H and W dimensions are positive integers within the range [1, 63].
-*@li padding: A required string, specifying the padding algorithm,
+* @li padding: A required string, specifying the padding algorithm,
  * either "VALID" or "SAME". With "SAME" means that the outputs will have the
  * same spatial dimensions as its inputs. With "VALID" means no padding.
-*@li data_format: An optional string, specifying the data format of "ksize"
+* @li data_format: An optional string, specifying the data format of "ksize"
 * and "strides", either "NCHW", or "NHWC" (default). \n
 
-*@par Outputs:
+* @par Outputs:
 * y: The average pooled output tensor. Has the same type and format
 * as input "x". \n
 
 * @attention Constraints:
 * @li This operator applies only to a TensorFlow network.
 * @li Only single input and single output are supported.
-*@li Global pooling is supported.
+* @li Global pooling is supported.
 * @li "ksize_H" and "ksize_W" are positive integers within the range [1, 255].
 * ksize_H * ksize_W < 256
-*@li Due to instruction restrictions,
+* @li Due to instruction restrictions,
  * the values of "strides_h" and "strides_w" are positive integers within
  * the range [1, 63].
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPool.
 */
 REG_OP(AvgPool)
@@ -118,37 +118,44 @@ REG_OP(AvgPool)
     .OP_END_FACTORY_REG(AvgPool)
 
 /**
-*@brief Performs average pooling on the input.
-*@par Inputs:
-*x: A tensor of type float16, float32, double.
+* @brief Performs average pooling on the input.
+* @par Inputs:
+* x: A tensor of type float16, float32, double.
 
-*@par Attributes:
-*@li ksize: A required list of 4 ints, specifying the size (N, C, H, and W) of the sliding window,
- * where N = C = 1, and H and W are positive integers within the range [1, 255].
-*@li strides: A required list of 4 ints, specifying the stride of the sliding window.
- * The strides of the N and C dimensions are 1.
- * The strides of the H and W dimensions are positive integers within the range [1, 63].
-*@li padding_mode: A required string, specifying the padding algorithm,
+* @par Attributes:
+* @li ksize: A required list of 4 ints, specifying the size (N, C, H, and W)
+* of the sliding window, where N = C = 1,
+ * and H and W are positive integers within the range [1, 255].
+* @li strides: A required list of 4 ints, specifying the stride of the
+ * sliding window. The strides of the N and C dimensions are 1.
+ * The strides of the H and W dimensions are positive integers within
+ * the range [1, 63].
+* @li padding_mode: A required string, specifying the padding algorithm,
  * either "VALID", "SAME" and "CALCULATED".
- * With "SAME" means that the outputs will have the same spatial dimensions as its inputs.
- * With "VALID" means no padding.
+ * With "SAME" means that the outputs will have the same spatial dimensions
+ * as its inputs. With "VALID" means no padding.
 * @li pads: Pad value when padding_mode is "CALCULATED".
-* @li data_format: An optional string, specifying the data format of "ksize" and "strides",
- * either "NCHW", or "NHWC" (default).
-* @li global_pooling: Global or not. If true, pads will change to {0,0,0,0} and ksize will change to [input_h, input_w]
-* @li ceil_mode: Use ceil or floor to calculate the output size when padding_mode is "CALCULATED".
+* @li data_format: An optional string, specifying the data format of "ksize"
+ * and "strides", either "NCHW", or "NHWC" (default).
+* @li global_pooling: Global or not. If true, pads will change to {0,0,0,0}
+* and ksize will change to [input_h, input_w].
+* @li ceil_mode: Use ceil or floor to calculate the output size when
+* padding_mode is "CALCULATED".
 * @li exclusive: Ignore padding area or not when calculating average.
 
 * @par Outputs:
-* y: The average pooled output tensor. Has the same type and format as input "x".
+* y: The average pooled output tensor. Has the same type and format as
+* input "x".
 
-*@attention Constraints:
-*@li Only single input and single output are supported.
+* @attention Constraints:
+* @li Only single input and single output are supported.
 * @li Global pooling is supported.
-*@li "ksize_H" and "ksize_W" are positive integers within the range [1, 255]. ksize_H * ksize_W < 256
-*@li Due to instruction restrictions,
- * the values of "strides_h" and "strides_w" are positive integers within the range [1, 63].
-*@par Third-party framework compatibility
+* @li "ksize_H" and "ksize_W" are positive integers within the range [1, 255].
+* ksize_H * ksize_W < 256
+* @li Due to instruction restrictions,
+ * the values of "strides_h" and "strides_w" are positive integers within
+ * the range [1, 63].
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPoolV2.
 */
 REG_OP(AvgPoolV2)
@@ -173,7 +180,7 @@ REG_OP(AvgPoolV2)
 * @par Attributes:
 * @li ksize: List of ints that has length 1, 3 or 5. The size of the window
 * for each dimension of the input tensor.
-*@li strides:List of ints that has length 1, 3 or 5. The stride of the sliding
+* @li strides:List of ints that has length 1, 3 or 5. The stride of the sliding
 * window for each dimension of the input tensor.
 * @li pads: List of ints, implicit zero paddings on both sides of the input.
 * @li ceil_mode: When true, will use ceil instead of floor in the formula to
@@ -184,13 +191,13 @@ REG_OP(AvgPoolV2)
 * size of the pooling region will be used.
 * @li data_format: A string, format of input data. \n
 
-*@par Outputs:
-*y: The average pooled output tensor. \n
+* @par Outputs:
+* y: The average pooled output tensor. \n
 
-*@attention Constraints:
+* @attention Constraints:
 * @li "ksize" is in the range [1, 255]. "strides" is in the range [1, 63].
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPool3D.
 */
 REG_OP(AvgPool3D)
@@ -211,24 +218,24 @@ REG_OP(AvgPool3D)
 * @par Inputs:
 * @li x: A 5-D Tensor of shape [batch, depth, height, width, channels] and type float16, float32, double.
 * @li filter: An optional tensor of type float16, float32, double, fractal_z_3d layout.
-*@li multiplier: An optional tensor of float16, float32, double.
+* @li multiplier: An optional tensor of float16, float32, double.
 
 * @par Attributes:
-*@li ksize: List of ints that has length 1, 3 or 5. The size of the window for each dimension of the input tensor.
+* @li ksize: List of ints that has length 1, 3 or 5. The size of the window for each dimension of the input tensor.
 * @li strides:List of ints that has length 1, 3 or 5. The stride of the sliding window for each dimension of the input tensor.
-*@li pads: List of ints, implicit zero paddings on both sides of the input.
-*@li ceil_mode: When true, will use ceil instead of floor in the formula to compute the output shape.
+* @li pads: List of ints, implicit zero paddings on both sides of the input.
+* @li ceil_mode: When true, will use ceil instead of floor in the formula to compute the output shape.
 * @li count_include_pad: When true, will include the zero-padding in the averaging calculation.
-*@li divisor_override: if specified, it will be used as divisor, otherwise size of the pooling region will be used.
-*@li data_format: A string, format of input data . \n
+* @li divisor_override: if specified, it will be used as divisor, otherwise size of the pooling region will be used.
+* @li data_format: A string, format of input data . \n
 
-*@par Outputs:
-*y: The average pooled output tensor . \n
+* @par Outputs:
+* y: The average pooled output tensor . \n
 
-*@attention Constraints:
-*"ksize" is in the range [1, 255]. "strides" is in the range [1, 63]
+* @attention Constraints:
+* "ksize" is in the range [1, 255]. "strides" is in the range [1, 63]
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPool3D.
 */
 REG_OP(AvgPool3DD)
@@ -266,7 +273,7 @@ REG_OP(AvgPool3DD)
 * @li data_format: A string, format of input data. \n
 
 * @par Outputs:
-* @li output: A mutable tensor with the same shape and type as "grads".
+* output: A mutable tensor with the same shape and type as "orig_input_shape".
 
 * @attention Constraints:
 * @li "ksize" is in the range [1, 255]. "strides" is in the range [1, 63]. \n
@@ -336,31 +343,31 @@ REG_OP(AvgPool3DGradD)
     .OP_END_FACTORY_REG(AvgPool3DGradD)
 
 /**
-*@brief Performs max_pool_ext2 on the input . \n
+* @brief Performs max_pool_ext2 on the input . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x: A Tensor of type float16.
+* x: A Tensor of type float16.
 
 
-*@par Attributes:
-*@li ksize: A required list of int8, int16, int32, or int64 values,
- * specifying the size of the window for each dimension of the input tensor. No default value.
-*@li strides: A required list of int8, int16, int32, or int64 values,
- * specifying the stride of the sliding window for each dimension of the input tensor. No default value.
-*@li padding: A required string. No default value.
-*@li data_format: An optional string . \n
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
+* specifying the size of the window for each dimension of the input tensor. No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values,
+* specifying the stride of the sliding window for each dimension of the input tensor. No default value.
+* @li padding: A required string. No default value.
+* @li data_format: An optional string . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x" . \n
 
-*@attention Constraints:
-*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1, ksize[1] * ksize[2] <= 255.
-*@li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
+* @attention Constraints:
+* @li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1, ksize[1] * ksize[2] <= 255.
+* @li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
  * strides[1] <= 63, strides[0] >= 1, strides[2] <= 63, strides[2] >= 1.
-*@li "padding" is either "SAME" or "VALID" . \n
+* @li "padding" is either "SAME" or "VALID" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator MaxPoolV2.
 */
 REG_OP(MaxPoolExt2)
@@ -377,35 +384,35 @@ REG_OP(MaxPoolExt2)
     .OP_END_FACTORY_REG(MaxPoolExt2)
 
 /**
-*@brief Performs max pooling on the input . \n
+* @brief Performs max pooling on the input . \n
 
 * @par Inputs:
 * One input:
 * x: A Tensor. Supported type:float16, float32, double, int8, int16,
 * int32, int64, uint8, uint16, qint8
 
-*@par Attributes:
-*@li ksize: A required list of int8, int16, int32, or int64 values,
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
 * specifying the size of the window for each dimension of the input tensor.
 * No default value.
-*@li strides: A required list of int8, int16, int32, or int64 values,
+* @li strides: A required list of int8, int16, int32, or int64 values,
 * specifying the stride of the sliding window for each dimension of
 * the input tensor. No default value.
-*@li padding: A required string. No default value.
-*@li data_format: An optional string. Defaults to "NHWC" . \n
+* @li padding: A required string. No default value.
+* @li data_format: An optional string. Defaults to "NHWC" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x" . \n
 
-*@attention Constraints:
-*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
+* @attention Constraints:
+* @li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
 * ksize[1] * ksize[2] <= 255.
-*@li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
+* @li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
 * strides[1] <= 63, strides[0] >= 1, strides[2] <= 63, strides[2] >= 1.
-*@li "padding" is either "SAME" or "VALID".
+* @li "padding" is either "SAME" or "VALID".
 
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator MaxPool.
 */
 REG_OP(MaxPool)
@@ -423,33 +430,33 @@ REG_OP(MaxPool)
 /**
 * @brief Performs max 3d pooling on the input . \n
 
-*@par Inputs:
+* @par Inputs:
 * x: A Tensor. Supported type float16, float32, double . \n
 
-*@par Attributes:
-*@li ksize: A required list of int8, int16, int32, or int64 values,
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
 specifying the size of the window for each dimension of the input tensor.
 No default value.
-*@li strides: A required list of int8, int16, int32, or int64 values,
+* @li strides: A required list of int8, int16, int32, or int64 values,
 specifying the stride of the sliding window for each dimension of
 the input tensor. No default value.
-*@li padding: A required string type of float16.
-*@li pads: A list type of int32. Default value {0,0,0,0,0,0}.
-*@li dilation: A list type of int32. Default value {1,1,1,1,1,1}.
-*@li ceil_mode: A ceil mode number of int32 . Default value 0.
-*@li data_format: An optional string. Defaults to "NDHWC" . \n
+* @li padding: A required string type of float16.
+* @li pads: A list type of int32. Default value {0,0,0,0,0,0}.
+* @li dilation: A list type of int32. Default value {1,1,1,1,1,1}.
+* @li ceil_mode: A ceil mode number of int32 . Default value 0.
+* @li data_format: An optional string. Defaults to "NDHWC" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x" . \n
 
-*@attention Constraints:
-*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
+* @attention Constraints:
+* @li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
  * ksize[1] * ksize[2] <= 255.
-*@li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
+* @li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
  * strides[1] <= 63, strides[0] >= 1, strides[2] <= 63, strides[2] >= 1.
-*@li "padding" is either "SAME" or "VALID" . \n
+* @li "padding" is either "SAME" or "VALID" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator MaxPool3D.
 */
 REG_OP(MaxPool3D)
@@ -466,7 +473,7 @@ REG_OP(MaxPool3D)
 
 /**
 * @brief Performs max pooling3d on both max values and indices.
-* 
+*
 * @par Inputs:
 *  One input:
 *  x: An 6D tensor. Supported type: float16. Format as NDC1HWC0.
@@ -484,7 +491,7 @@ REG_OP(MaxPool3D)
 *  @li data_format: the format of torch input, default value is "NCDHW".
 *  @li argmax_type: the function of this field is to determine the type of
 *   output argmax, "bitmask" is the default value, the argmax will return
-*   a img2col bitmask. "index_int32" and "index_int64" represent the torch 
+*   a img2col bitmask. "index_int32" and "index_int64" represent the torch
 *   output indices.
 * @par Outputs:
 *  y: An 6D tensor. the maxpool3d output(max value), format as NDoC1HoWoC0.
@@ -505,8 +512,8 @@ REG_OP(MaxPool3DWithArgmax)
     .OP_END_FACTORY_REG(MaxPool3DWithArgmax)
 
 /**
-*@brief Applies a 2D adaptive max pooling over an input signal conposed of several input planes. \n
-* The output is of size H x W, for any input size. 
+* @brief Applies a 2D adaptive max pooling over an input signal conposed of several input planes. \n
+* The output is of size H x W, for any input size.
 
 * @par Inputs:
 * One input, including:
@@ -698,31 +705,31 @@ REG_OP(MaxPoolV2)
 * @brief Performs max pooling on the input and outputs both max values and
  * indices . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
 * x: An 4D Tensor. Supported type: float, double, int32,
  * uint8, int16, int8, int64, uint16, half, uint32, uint64.
  * Must set the format, supported format list ["NCHW, NHWC"]. \n
 
-*@par Attributes:
-*@li ksize: A required list of int8, int16, int32, or int64 values,
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
  * specifying the size of the window for each dimension of the input tensor.
  * No default value.
-*@li strides: A required list of int8, int16, int32, or int64 values,
+* @li strides: A required list of int8, int16, int32, or int64 values,
  * specifying the stride of the sliding window for each dimension of
  * the input tensor. No default value.
-*@li padding: A required string. No default value .
-*@li Targmax:An optional int with default value 7 . \n
+* @li padding: A required string. No default value .
+* @li Targmax:An optional int with default value 7 . \n
 
-*@par Outputs:
-*@li y: A Tensor. Has the same type and format as input "x".
-*@li argmax: A Tensor. Has the same type and format as input "x".
+* @par Outputs:
+* @li y: A Tensor. Has the same type and format as input "x".
+* @li argmax: A Tensor. Has the same type and format as input "x".
 * @attention Constraints:
-*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
+* @li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
  * ksize[1] * ksize[2] <= 255.
-*@li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
+* @li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
  * strides[1] <= 63, strides[0] >= 1, strides[2] <= 63, strides[2] >= 1.
-*@li "padding" is either "SAME" or "VALID" .
+* @li "padding" is either "SAME" or "VALID" .
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator MaxPoolWithArgmax.
@@ -760,7 +767,7 @@ REG_OP(MaxPoolWithArgmax)
 * @li padding: A required string. No default value . \n
 
 * @par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* y: A Tensor. Has the same type and format as input "x" . \n
 
 * @attention Constraints:
 * @li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
@@ -873,7 +880,7 @@ REG_OP(MaxPoolGradGradWithArgmax)
 * @li data_format: An optional string. Defaults to "NHWC". \n
 
 * @par Outputs:
-* out_grad: A mutable tensor with the same shape and type as "input_grad". \n
+* out_grad: A mutable tensor with the same shape and type as "orig_input_shape". \n
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator AvgPoolGrad.
@@ -965,7 +972,7 @@ REG_OP(AvgPoolV2Grad)
 /**
 * @brief Computes gradients of averagev2 pooling function.
 * @par Inputs:
-*input_grad: An NHWC tensor of type float16, float32, or double.
+* input_grad: An NHWC tensor of type float16, float32, or double.
 
 * @par Attributes:
 * @li orig_input_shape: A required tuple or list of type int32.
@@ -983,10 +990,10 @@ REG_OP(AvgPoolV2Grad)
 * @li data_format: An optional string. Defaults to "NHWC".
 
 * @par Outputs:
-*out_grad: A mutable tensor with the same shape and type as "orig_input".
+* out_grad: A mutable tensor with the same shape and type as "orig_input".
 
 * @par Third-party framework compatibility
-*Compatible with the TensorFlow operator AvgPoolGrad.
+* Compatible with the TensorFlow operator AvgPoolGrad.
 */
 REG_OP(AvgPoolV2GradD)
     .INPUT(input_grad, TensorType({DT_FLOAT16}))
@@ -1005,16 +1012,16 @@ REG_OP(AvgPoolV2GradD)
     .OP_END_FACTORY_REG(AvgPoolV2GradD)
 
 /**
-*@brief upsample the layer, similar to the nearest-neighbor difference scaling algorithm.
+* @brief upsample the layer, similar to the nearest-neighbor difference scaling algorithm.
 
-*@par Inputs:
+* @par Inputs:
 * one input, including:
 * x: A tensor of type float16 or float32.
-*@par Attributes:
-*@li  scale: A optional float32, scale factor of x. Defaults to "1.0".
-*@li  stride_h: An optional int32, broadcast the axis of h. Defaults to "2".
-*@li  stride_w: An optional int32, broadcast the axis of w. Defaults to "2".
-*@par Outputs:
+* @par Attributes:
+* @li  scale: A optional float32, scale factor of x. Defaults to "1.0".
+* @li  stride_h: An optional int32, broadcast the axis of h. Defaults to "2".
+* @li  stride_w: An optional int32, broadcast the axis of w. Defaults to "2".
+* @par Outputs:
 *y: A tensor of type float16 or float32.
 */
 REG_OP(Upsample)
@@ -1026,10 +1033,10 @@ REG_OP(Upsample)
    .OP_END_FACTORY_REG(Upsample)
 
 /**
-*@brief Computes gradient of the FractionalMaxPool function . \n
+* @brief Computes gradient of the FractionalMaxPool function . \n
 
-*@par Inputs:
-*Inputs include:
+* @par Inputs:
+* Inputs include:
 * @li orig_input: A Tensor. Must be one of the following types: float32, float64, int32, int64.
 * @li orig_output: A Tensor. Must have the same type as orig_input.
 * @li out_backprop: A Tensor. Must have the same type as orig_input.
@@ -1037,17 +1044,17 @@ REG_OP(Upsample)
 * @li row_pooling_sequence: A Tensor of type int64.
 * @li col_pooling_sequence: A Tensor of type int64 . \n
 
-*@par Attributes:
-*overlapping: An optional bool. Defaults to False . \n
+* @par Attributes:
+* overlapping: An optional bool. Defaults to False . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as orig_input . \n
+* @par Outputs:
+* y: A Tensor. Has the same type as orig_input . \n
 
-*@attention Constraints:
-*The implementation for FractionalMaxPoolGrad on Ascend uses AICPU, with bad performance.
+* @attention Constraints:
+* The implementation for FractionalMaxPoolGrad on Ascend uses AICPU, with bad performance.
 
-*@par Third-party framework compatibility
-*@li compatible with tensorflow FractionalMaxPoolGrad operator.
+* @par Third-party framework compatibility
+* @li compatible with tensorflow FractionalMaxPoolGrad operator.
 */
 REG_OP(FractionalMaxPoolGrad)
     .INPUT(orig_input, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64}))
@@ -1330,7 +1337,7 @@ REG_OP(AvgPool1DD)
 
 * @par Inputs:
 * One input:
-* x: An 5hd Tensor of type float16. 
+* x: An 5hd Tensor of type float16.
 * Must set the format, supported format list ["NC1HWC0"].
 * @par Attributes:
 * @li ksize: A required list of int8, int16, int32, or int64 values,
@@ -1376,19 +1383,19 @@ REG_OP(MaxPoolWithArgmaxV2)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: An 5hd tensor of type float16. 
+* @li x: An 5hd tensor of type float16.
 * Must set the format, supported format list ["NC1HWC0"]
-* @li grad: An 5hd tensor of type float16. 
+* @li grad: An 5hd tensor of type float16.
 * Must set the format, supported format list ["NC1HWC0"]
-* @li argmax: An 5hd tensor of type uint16 or int64. 
+* @li argmax: An 5hd tensor of type uint16 or int64.
 * Must set the format, supported format list ["NC1HWC0"] \n
 
 * @par Attributes:
-* @li ksize: A required list of int8, int16, int32, or int64 values, 
+* @li ksize: A required list of int8, int16, int32, or int64 values,
 * specifying the size of the window for each dimension of the input tensor. No default value.
-* @li strides: A required list of int8, int16, int32, or int64 values, 
+* @li strides: A required list of int8, int16, int32, or int64 values,
 * specifying the stride of the sliding window for each dimension of the input tensor. No default value.
-* @li pads: A required list of int8, int16, int32, or int64 values, 
+* @li pads: A required list of int8, int16, int32, or int64 values,
 * specifying the pad of the input feature map. No default value. \n
 * @li dtype: A optional int. default value is 3.
 * @li dilation: A optional list of int8, int16, int32, or int64 values.
@@ -1398,11 +1405,11 @@ REG_OP(MaxPoolWithArgmaxV2)
 * y: A Tensor. Has the same type and format as input "x". \n
 
 * @attention Constraints:
-* @li ksize: a list that has length 4: 
+* @li ksize: a list that has length 4:
 * ksize[0] = 1, ksize[1] = 1, ksize[2] * ksize[3] <= (ub_size-8)*1024//7//2//16.
-* @li strides: a list that has length 4: 
+* @li strides: a list that has length 4:
 * strides[0] = 1, strides[1] = 1, 1 <= strides[2] <= 2048, 1 <= strides[3] <= 2048.
-* @li pads: a list that has length 4: 
+* @li pads: a list that has length 4:
 * pads[0] = 1, pads[1] = 1, 1 <= pads[2] <= (ksize[2]//2), 1 <= pads[3] <= (ksize[3]//2).
 * @li dilation: a list that has length 4.
 * @li ceil_mode: is a bool, default is false. \n
@@ -1532,7 +1539,7 @@ REG_OP(MaxPoolV3Grad)
 *@brief Performs Dilation2D on the input . \n
 
 *@par Inputs:
-*@li x: A tensor of shape is 4d, format is support NHWC.
+* @li x: A tensor of shape is 4d, format is support NHWC.
 *@li filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x. \n
 
 *@par Attributes:
@@ -1566,12 +1573,12 @@ REG_OP(Dilation2D)
 
 *@par Inputs:
 *@li x: A tensor of shape is 4d, format is support NHWC.
-*@li filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x.
+* @li filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x.
 *@li out_backprop: Has the same type and format as input x and the c dimension is same with x. \n
 
 *@par Attributes
 *@li strides: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C dimension are 1.
-*@li rates: A required list of 4 ints, the rates of the N and C dimensions are 1.
+* @li rates: A required list of 4 ints, the rates of the N and C dimensions are 1.
 *@li padding_mode: A optional string. Defaults to "SAME", it support SAME and VALID.
 *@li pads: A optional list of 4 ints.
 *@li ceil_mode: An optional bool. Defaults to "false". Use ceil or floor to calculate the output size when padding_mode is "CALCULATED".
@@ -1605,7 +1612,7 @@ REG_OP(Dilation2DBackpropFilter)
 
 *@par Inputs:
 *@li x: A tensor of shape is 4d, format is support NHWC.
-*@li filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x.
+* @li filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x.
 *@li out_backprop: Has the same type and format as input x and the c dimension is same with x. \n
 
 *@par Attributes
@@ -1640,7 +1647,7 @@ REG_OP(Dilation2DBackpropInput)
     .OP_END_FACTORY_REG(Dilation2DBackpropInput)
 
 /**
-* @brief Applies a 2D adaptive average pooling over  
+* @brief Applies a 2D adaptive average pooling over
 *       an input signal composed of several input planes.  \n
 
 * @par Inputs:
@@ -1696,11 +1703,11 @@ REG_OP(AdaptiveAvgPool2dGrad)
 * @li argmax: A tensor of type uint16 or int64. \n
 
 * @par Attributes:
-* @li ksize: A required list of int8, int16, int32, or int64 values, 
+* @li ksize: A required list of int8, int16, int32, or int64 values,
 * specifying the size of the window for each dimension of the input tensor. No default value.
-* @li strides: A required list of int8, int16, int32, or int64 values, 
+* @li strides: A required list of int8, int16, int32, or int64 values,
 * specifying the stride of the sliding window for each dimension of the input tensor. No default value.
-* @li pads: A required list of int8, int16, int32, or int64 values, 
+* @li pads: A required list of int8, int16, int32, or int64 values,
 * specifying the pad of the input feature map. No default value. \n
 
 * @par Outputs:
@@ -1708,11 +1715,11 @@ REG_OP(AdaptiveAvgPool2dGrad)
 
 * @attention Constraints:
 * @li The MaxPoolGradWithArgmaxV2 operator has the same function, and it is recommended to use the V2 operator.
-* @li ksize: a list that has length 4: 
+* @li ksize: a list that has length 4:
 * ksize[0] = 1, ksize[3] = 1, ksize[1] * ksize[2] <= (ub_size-8)*1024//7//2//16.
-* @li strides: a list that has length 4: 
+* @li strides: a list that has length 4:
 * strides[0] = 1, strides[3] = 1, 1 <= strides[1] <= 2048, 1 <= strides[2] <= 2048.
-* @li pads: a list that has length 4: 
+* @li pads: a list that has length 4:
 * pads[0] = 1, pads[3] = 1, 1 <= pads[2] <= (ksize[1]//2), 1 <= pads[2] <= (ksize[3]//2).
 * @li ceil_mode: defaults to False.\n
 
@@ -1778,7 +1785,7 @@ REG_OP(MaxPoolWithArgmaxV1)
     .OP_END_FACTORY_REG(MaxPoolWithArgmaxV1)
 
 /**
-*@brief Randomly sample a subset of positive and negative examples,and overwrite
+* @brief Randomly sample a subset of positive and negative examples,and overwrite
 the label vector to the ignore value (-1) for all elements that are not
 included in the sample.\n
 
@@ -1790,14 +1797,14 @@ included in the sample.\n
 * @li batch_size_per_images: A require attribute of type int.
 * @li positive_fraction: A require attribute of type float.
 
-*@par Outputs:
-*y: The result of subSample. \n
+* @par Outputs:
+* y: The result of subSample. \n
 
-*@par Third-party framework compatibility
-*Compatible with the Pytorch operator SubSample.
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator SubSample.
 
-*@attention Constraints:
-*Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
+* @attention Constraints:
+* Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
 */
 REG_OP(SubSample)
     .INPUT(labels, TensorType({DT_INT32}))
@@ -1807,7 +1814,7 @@ REG_OP(SubSample)
     .OP_END_FACTORY_REG(SubSample)
 
 /**
-*@brief Randomly sample a subset of positive and negative examples,and overwrite
+* @brief Randomly sample a subset of positive and negative examples,and overwrite
 the label vector to the ignore value (-1) for all elements that are not
 included in the sample.\n
 
@@ -1820,14 +1827,14 @@ included in the sample.\n
 * @li batch_size_per_images: A require attribute of type int.
 * @li positive_fraction: A require attribute of type float.
 
-*@par Outputs:
-*y: The result of subSample. \n
+* @par Outputs:
+* y: The result of subSample. \n
 
-*@par Third-party framework compatibility
-*Compatible with the Pytorch operator SubSampleLabels.
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator SubSampleLabels.
 
-*@attention Constraints:
-*Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
+* @attention Constraints:
+* Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
 */
 REG_OP(SubSampleLabels)
     .INPUT(labels, TensorType({DT_INT32}))
@@ -1838,22 +1845,22 @@ REG_OP(SubSampleLabels)
     .OP_END_FACTORY_REG(SubSampleLabels)
 
 /**
-*@brief Computes GlobalLpPool, GlobalLpPool consumes an input tensor X and applies lp pool pooling across the
+* @brief Computes GlobalLpPool, GlobalLpPool consumes an input tensor X and applies lp pool pooling across the
 values in the same channel. \n
 
-*@par Inputs:
+* @par Inputs:
 * x: A Tensor of type float16 or float32 . \n
 
-*@par Attributes:
-*@li p: Optional. Must be one of the following types: float32. Defaults to 2.0. \n
+* @par Attributes:
+* @li p: Optional. Must be one of the following types: float32. Defaults to 2.0. \n
 
-*@par Outputs:
+* @par Outputs:
 * y: A Tensor. Has the same type as "x", when shape of x is [N,C,H,W], shape of y is [N,C,1,1].
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the onnx operator GlobalLpPool.
-*@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED.
-*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED.
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(GlobalLpPool)

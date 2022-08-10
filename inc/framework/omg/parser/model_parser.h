@@ -30,8 +30,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 
-using Status = domi::Status;
-
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
     const google::protobuf::Message *root_proto, const std::string &graph)>;

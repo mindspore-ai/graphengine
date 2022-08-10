@@ -59,6 +59,7 @@ static const int32_t ACL_ERROR_RT_QUEUE_FULL                 = 207014; // queue 
 static const int32_t ACL_ERROR_RT_REPEATED_INIT              = 207015; // repeated init
 static const int32_t ACL_ERROR_RT_AIVEC_OVER_FLOW            = 207016; // aivec over flow
 static const int32_t ACL_ERROR_RT_OVER_FLOW                  = 207017; // common over flow
+static const int32_t ACL_ERROR_RT_DEVIDE_OOM                 = 207018; // device oom
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR             = 507000; // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR                   = 507001; // ts internel error

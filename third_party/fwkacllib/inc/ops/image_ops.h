@@ -2371,5 +2371,78 @@ REG_OP(ImageProjectiveTransform)
     .ATTR(fill_mode, String, "CONSTANT")
     .OUTPUT(transformed_images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(ImageProjectiveTransform)
+
+/**
+* @brief image to transforms. \n
+
+* @par Inputs:
+* @li images: [batch, height, width, channels], 4-D tensor.
+* @li transforms: [batch, 8] or [1, 8] matrix, 2-D tensor.
+* @li outout_shape: [new_height, new_width], 1-D tensor.
+* @li fill_value: [scalar], 1-D tensor.
+
+* @par Attributes:
+* @li interpolation: Interpolation method, "NEAREST" or "BILINEAR", 0-D tensor.
+* @li fill_mode: Defaults to "CONSTANT". Fill mode, "REFLECT", "WRAP", or "CONSTANT", 0-D tensor.
+
+* @par Outputs
+* transformed_images: has the same type as iamges, 4-D tensor with shape[batch, new_height, new_width, channels]. \n
+
+* @par Third-party framework compatibility.
+* Compatible with tensorflow ImageProjectiveTransformv2 operator.
+*/
+REG_OP(ImageProjectiveTransformV2)
+    .INPUT(images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(transforms, TensorType({DT_FLOAT}))
+    .INPUT(output_shape, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(fill_value, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(interpolation, String)
+    .ATTR(fill_mode, String, "CONSTANT")
+    .OUTPUT(transformed_images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(ImageProjectiveTransformV2)
+
+/**
+* @brief Extracts a glimpse from the input tensor . \n
+
+* @par Inputs:
+* Input input must be a 4-D tensor. Inputs include:
+* @li input: A 4-D float tensor of shape [batch_size, height, width, channels].
+The format must be NHWC.
+* @li size: A 1-D tensor of 2 elements containing the size of the glimpses to
+extract. The glimpse height must be specified first, following by the glimpse
+width.
+* @li offsets: A 2-D integer tensor of shape [batch_size, 2] containing the y,
+x locations of the center of each window . \n
+
+* @par Attributes:
+* @li centered: indicates if the offset coordinates are centered relative to
+the image, in which case the (0, 0) offset is relative to the center of the
+input images. If false, the (0,0) offset corresponds to the upper left corner
+of the input images.
+* @li normalized: indicates if the offset coordinates are normalized.
+* @li uniform_noise: indicates if the noise should be generated using a
+uniform distribution or a Gaussian distribution.
+* @li noise: indicates if the noise should uniform, gaussian, or zero.
+The default is uniform which means the the noise type will be decided by
+uniform_noise . \n
+
+* @par Outputs:
+* glimpse:A tensor representing the glimpses [batch_size, glimpse_height,
+glimpse_width, channels]. The format must be NHWC. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow ExtractGlimpseV2 operator.
+*/
+
+REG_OP(ExtractGlimpseV2)
+    .INPUT(input, TensorType({DT_FLOAT}))
+    .INPUT(size, TensorType({DT_INT32}))
+    .INPUT(offsets, TensorType({DT_FLOAT}))
+    .OUTPUT(glimpse, TensorType({DT_FLOAT}))
+    .ATTR(centered, Bool, true)
+    .ATTR(normalized, Bool, true)
+    .ATTR(uniform_noise, Bool, true)
+    .ATTR(noise, String, "uniform")
+    .OP_END_FACTORY_REG(ExtractGlimpseV2)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

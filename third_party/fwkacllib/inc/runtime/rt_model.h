@@ -49,6 +49,7 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_BARRIER,
     RT_MODEL_TASK_NPU_GET_FLOAT_STATUS,
     RT_MODEL_TASK_NPU_CLEAR_FLOAT_STATUS,
+    RT_MODEL_TASK_DVPP,
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {

@@ -1,12 +1,19 @@
-/*
- * Copyright (c) Huawei Technologies Co., Ltd. 2019-2021. All rights reserved.
- * Description: handle perf data
- * Author: xp
- * Create: 2019-10-13
+/**
+ * @file prof_callback.h
+ *
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
  */
 
 #ifndef MSPROFILER_PROF_CALLBACK_H_
 #define MSPROFILER_PROF_CALLBACK_H_
+
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,9 +24,6 @@ extern "C" {
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
-
-#include "stddef.h"
-#include "stdint.h"
 
 /**
  * @name  MsprofErrorCode
@@ -170,7 +174,7 @@ MSVP_PROF_API int32_t MsprofInit(uint32_t moduleId, void *data, uint32_t dataLen
  * @param moduleId  [IN] module Id
  * @param handle    [IN] the pointer of callback
  */
-MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle callback);
+MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
 /*
  * @name profReportData
  * @brief start reporter/stop reporter/report date

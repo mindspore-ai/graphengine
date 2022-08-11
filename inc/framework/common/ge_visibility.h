@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_
-#define AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_
-#include "model_v2_executor.h"
-#include "common/ge_types.h"
-#include "common/ge_visibility.h"
+#ifndef AIR_CXX_INC_FRAMEWORK_COMMON_GE_VISIBILITY_H_
+#define AIR_CXX_INC_FRAMEWORK_COMMON_GE_VISIBILITY_H_
 
-namespace gert {
-VISIBILITY_EXPORT
-std::unique_ptr<ModelV2Executor> LoadExecutorFromFile(const char *model_path, ge::graphStatus &error_code);
+#if defined(_MSC_VER)
+#define VISIBILITY_EXPORT _declspec(dllexport)
+#define VISIBILITY_HIDDEN _declspec(dllimport)
+#else
+#define VISIBILITY_EXPORT __attribute__((visibility("default")))
+#define VISIBILITY_HIDDEN __attribute__((visibility("hidden")))
+#endif
 
-VISIBILITY_EXPORT
-std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
-                                                           ge::graphStatus &error_code);
-}  // namespace gert
-#endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_
+#endif  // AIR_CXX_INC_FRAMEWORK_COMMON_GE_VISIBILITY_H_

@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_
-#define AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_
-#include "model_v2_executor.h"
-#include "common/ge_types.h"
-#include "common/ge_visibility.h"
+#ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBER_C_H_
+#define AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBER_C_H_
+#include "exe_graph/runtime/base_type.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+typedef enum { kExecuteStart, kExecuteEnd, kModelStart, kModelEnd, kExecuteEventEnd } ExecutorEvent;
 
-namespace gert {
-VISIBILITY_EXPORT
-std::unique_ptr<ModelV2Executor> LoadExecutorFromFile(const char *model_path, ge::graphStatus &error_code);
-
-VISIBILITY_EXPORT
-std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
-                                                           ge::graphStatus &error_code);
-}  // namespace gert
-#endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_
+typedef void (*SubscriberFunc)(void *arg, ExecutorEvent event, const void *node, KernelStatus result);
+typedef struct {
+  SubscriberFunc callback;
+  void *arg;
+} ExecutorSubscriber;
+#ifdef __cplusplus
+}
+#endif
+#endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBER_C_H_

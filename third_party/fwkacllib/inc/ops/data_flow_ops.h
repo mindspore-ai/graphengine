@@ -2549,5 +2549,32 @@ REG_OP(OptionalGetValue)
   .REQUIRED_ATTR(output_types, ListType)
   .REQUIRED_ATTR(output_shapes, ListListInt)
   .OP_END_FACTORY_REG(OptionalGetValue)
+
+/**
+* @brief User define function process. \n
+
+* @par Inputs:
+* @li x: A list of input tensor objects. It's a dynamic input. \n
+
+* @par Outputs:
+* @li y: A list of output tensor objects. It's a dynamic output. \n
+
+* @par Attributes:
+* @li bin_path: User's binary path.
+* @li func_name: User defined function name.
+* @li output_types: Types of outputs data.
+* @li output_shapes: Shapes of outputs data.
+* @li _flow_attr_process_node_engine_id: Default process node engine of FlowFunc.
+*/
+REG_OP(FlowFunc)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, \
+        DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, \
+        DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .REQUIRED_ATTR(bin_path, String)
+    .REQUIRED_ATTR(func_name, String)
+    .ATTR(output_shapes, ListListInt, {})
+    .REQUIRED_ATTR(output_types, ListType)
+    .OP_END_FACTORY_REG(FlowFunc)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

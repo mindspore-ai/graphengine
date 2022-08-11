@@ -191,6 +191,8 @@ class GE_FUNC_VISIBILITY Session {
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
 
+  uint64_t GetSessionId() const;
+
  private:
   uint64_t sessionId_;
 };

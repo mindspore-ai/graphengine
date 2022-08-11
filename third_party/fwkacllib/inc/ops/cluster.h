@@ -30,18 +30,18 @@ namespace ge {
 
 * @par Inputs:
 * Three required inputs and one optional inputs, including:
-* @li x: A 2D tensor of data type float32. 
-* @li y: A 2D tensor of data type float32. 
-* @li sum_square_x: An optional 2D tensor of data type float32. 
+* @li x: A 2D tensor of data type float32.
+* @li y: A 2D tensor of data type float32.
+* @li sum_square_x: An optional 2D tensor of data type float32.
 * @li sum_square_y: A 2D tensor of data type float32. \n
 
 * @par Attributes:
 * use_actual_distance: Indicates whether to calculate the complete distance. \n
 
 * @par Outputs:
-* @li segment_sum: A tensor of data type float32. 
-* @li segment_count: A tensor of data type float32. 
-* @li k_mean_total_sum: A tensor of data type float32. 
+* @li segment_sum: A tensor of data type float32.
+* @li segment_count: A tensor of data type float32.
+* @li k_mean_total_sum: A tensor of data type float32.
 */
 REG_OP(KMeansCentroids)
     .INPUT(x, TensorType({DT_FLOAT}))

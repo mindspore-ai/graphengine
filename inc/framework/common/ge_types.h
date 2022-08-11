@@ -83,6 +83,7 @@ const std::string kAtomicOpType = "DynamicAtomicAddrClean";
 
 const std::string kShapeTypeStatic = "static";
 const std::string kShapeTypeDynamic = "dynamic";
+const std::string kAtomicPrefix = "_atomic";
 
 constexpr uint64_t kInferSessionId = 0U;
 constexpr uint64_t kReleaseFlag = 1U;
@@ -369,7 +370,16 @@ struct DumpConfig {
   std::string dump_status;
   std::string dump_op_switch;
   std::string dump_debug;
+  std::string dump_step;
   std::vector<ModelDumpConfig> dump_list;
+};
+
+struct ModelQueueParam {
+  uint32_t group_total_count{1};
+  uint32_t group_index{0U};
+  uint32_t group_policy{0U};
+  std::vector<uint32_t> input_queues;
+  std::vector<uint32_t> output_queues;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

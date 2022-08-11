@@ -362,6 +362,59 @@ REG_OP(ToBool)
     .OUTPUT(output, DT_BOOL)
     .OP_END_FACTORY_REG(ToBool)
 
+/**
+ * @brief Abstract tiling function to an op definition
+ *        The input will be data or shape \n
+
+ * @par Inputs:
+ * @li x: the data of input.  all types are available,
+ * @li outputshape: the shape of previous op output shape . all types are available. \n
+
+ * @par Outputs:
+ * @li tiling_data: tiling data of tiling function. It should be a buffer
+ * @li tiling_key: tiling key of tiling function.
+ * @li block_dim: block dim of tiling function.
+ * @li tiling_cond: tiling condition of tiling function which will be used to determined real execute kernel. \n
+
+ * @par Attributes:
+ * @li tiling_node: A string. real tiling node such as matmul.
+ * @li op_type:  A string. Op type of the original node. \n
+
+ * @par Third-party framework compatibility
+ */
+REG_OP(OpTiling)
+    .DYNAMIC_INPUT(x, TensorType::ALL())
+    .DYNAMIC_INPUT(output_shape, TensorType::ALL())
+    .OUTPUT(tiling_data, TensorType({DT_UINT8}))
+    .OUTPUT(tiling_key, TensorType({DT_UINT64}))
+    .OUTPUT(block_dim, TensorType({DT_INT32}))
+    .OUTPUT(tiling_cond, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(tiling_node, String)
+    .REQUIRED_ATTR(op_type, String)
+    .OP_END_FACTORY_REG(OpTiling)
+
+/**
+ * @brief  Calculate condition value by input tensor which will be used for if input or case input. \n
+
+ * @par Inputs:
+ * @li x: the data or shape of input.  all types are available,
+
+ * @par Outputs:
+ * @li cond: condition value calculated by cond fuction.
+            It will be cond input of if or branch_index input of case. \n
+
+ * @par Attributes:
+ * @li cond_func: A string. real condition function registered to calculate condition value.
+ * @li x_dependency: List of int. It should be the same number of inputs: 0(shape) 1(data). \n
+
+ * @par Third-party framework compatibility
+ */
+REG_OP(ConditionCalc)
+    .DYNAMIC_INPUT(x, TensorType::ALL())
+    .OUTPUT(cond, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(cond_func, String)
+    .REQUIRED_ATTR(x_dependency, ListInt)
+    .OP_END_FACTORY_REG(ConditionCalc)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUNCTIONAL_OPS_H_

@@ -85,9 +85,10 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
     }                                                                                                      \
   } while (false)
 
-#define GEEVENT(fmt, ...)                                                                                \
-  do {                                                                                                   \
-    dlog_event(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+#define GEEVENT(fmt, ...)                                                                                 \
+  do {                                                                                                    \
+    dlog_event((RUN_LOG_MASK | GE_MODULE_NAME), "%" PRIu64 " %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], \
+               ##__VA_ARGS__);                                                                            \
   } while (false)
 
 #define GELOGT(VALUE, fmt, ...)                                                                              \

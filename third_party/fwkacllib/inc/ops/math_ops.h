@@ -230,7 +230,7 @@ REG_OP(Bucketize)
 *input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
 
 *@par Outputs:
-*output_y: A tensor with the same type and shape of input_x \n
+* output_y: A tensor with the same type and shape of input_x \n
 
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator Trunc. \n
@@ -1009,6 +1009,36 @@ REG_OP(Complex)
     .OP_END_FACTORY_REG(Complex)
 
 /**
+* @brief Counts the number of occurrences of each value in an integer array . \n
+
+* @par Inputs:
+* Five inputs, including:
+* indices: A 2D Tensor of type int64.
+* values: A 1D Tensor of type int32 or int64.
+* dense_shape: A 1D Tensor of type int64.
+* size: A non-negative scalar Tensor.
+* weights: A Tensor of type int32 or int64 or fp32 or fp64 or only 1 \n
+
+* @par Attributes:
+* dtype: An optional bool.Defaults to False. bool . \n
+
+* @par Outputs:
+* y: A Tensor . Has the same type as `input_weights` .\n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseBincount.
+*/
+REG_OP(SparseBincount)
+    .INPUT(indices, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(dense_shape, TensorType({DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(binary_output, Bool, false)
+    .OUTPUT(output, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(SparseBincount)
+
+/**
 * @brief  deal complex.
 
 * @par Inputs:
@@ -1098,7 +1128,7 @@ REG_OP(Cross)
     .OP_END_FACTORY_REG(Cross)
 
 /**
- *@brief Computes batched the p-norm distance between each pair of
+ * @brief Computes batched the p-norm distance between each pair of
  *the two collections of row vectors. \n
 
  *@par Inputs:
@@ -1445,6 +1475,72 @@ REG_OP(SparseCountSparseOutput)
     .ATTR(maxlength, Int, -1)
     .REQUIRED_ATTR(binary_output, Bool)
     .OP_END_FACTORY_REG(SparseCountSparseOutput)
+
+/**
+* @brief Counts the number of occurrences of each value in an integer array. \n
+
+* @par Inputs:
+* @li splits: A Tensor of type int64. 1D int64 Tensor.
+* @li values: A Tensor. Must be one of the following types: int32, int64. 2D int Tensor.
+* @li size: A Tensor. Must have the same type as values. non-negative int scalar Tensor. 
+* @li weights: A Tensor. Must be one of the following types: float32.
+               is a float32 Tensor with the same shape as input,
+               or a length-0 Tensor, in which case it acts as all weights equal to 1. \n
+
+* @par Outputs:
+* @li output: A Tensor with length "size" for each stride and has the same dtype as weights. \n
+
+* @par Attributes:
+* binary_output: An optional bool. Defaults to False. bool;
+                 Whether the kernel should count the appearance or number of occurrences. \n
+
+* @attention Constraints:
+* The operator will use the interface set_atomic_add(), therefore weights and output should be float32 only. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow RaggedBinCount operator.
+*/
+
+REG_OP(RaggedBinCount)
+    .INPUT(splits, TensorType(DT_INT64))
+    .INPUT(values, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .OUTPUT(output, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .ATTR(binary_output, Bool, false)
+    .OP_END_FACTORY_REG(RaggedBinCount)
+
+/**
+* @brief Counts the number of occurrences of each value in an integer array. \n
+
+* @par Inputs:
+* @li input: A Tensor of type int32, int64. 1D or 2D int Tensor.
+* @li size: A Tensor. Must have the same type as input. non-negative int scalar Tensor.
+* @li weights: A Tensor. Must be one of the following types: int32, int64, float32, float64.
+               with the same shape as input,
+               or a length-0 Tensor, in which case it acts as all weights equal to 1. \n
+
+* @par Outputs:
+* @li output: A Tensor with length "size" for each stride and has the same dtype as weights. \n
+
+* @par Attributes:
+* binary_output: An optional bool. Defaults to False. bool;
+                 Whether the kernel should count the appearance or number of occurrences. \n
+
+* @attention Constraints:
+* The operator will use the interface set_atomic_add(), therefore weights and output should be float32 only. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow DenseBincount operator.
+*/
+
+REG_OP(DenseBincount)
+    .INPUT(input, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .OUTPUT(output, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .ATTR(binary_output, Bool, false)
+    .OP_END_FACTORY_REG(DenseBincount)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

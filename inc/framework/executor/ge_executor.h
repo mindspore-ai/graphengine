@@ -229,15 +229,14 @@ class GE_FUNC_VISIBILITY GeExecutor {
 
   ///
   /// @ingroup ge
-  /// @brief Load task list from ModelData with queue.
+  /// @brief Load task list from GeRootModel with queue and param.
   /// @param [out] model_id: model id allocate from manager.
   /// @param [in] root_model: Instance of GeRootModel.
-  /// @param [in] input_queue_ids: input queue ids create from user.
-  /// @param [in] output_queue_ids: input queue ids create from user.
+  /// @param [in] model_queue_param: params and queue ids and create from user.
   /// @return: 0 for success / others for fail
   ///
   Status LoadModelWithQ(uint32_t &model_id, const std::shared_ptr<GeRootModel> &root_model,
-                        const std::vector<uint32_t> &input_queue_ids, const std::vector<uint32_t> &output_queue_ids);
+                        const ModelQueueParam &model_queue_param);
 
   ///
   /// @ingroup ge
@@ -323,6 +322,8 @@ class GE_FUNC_VISIBILITY GeExecutor {
                              std::vector<DataBuffer> &outputs);
 
   static Status ReleaseSingleOpResource(void *const stream);
+
+  static Status ClearCustomAicpuSo();
 
   static Status GetDeviceIdByModelId(const uint32_t model_id, uint32_t &device_id);
 

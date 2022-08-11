@@ -68,7 +68,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   bool IsPartitionedGraph(const GeModelPtr &cur_model) const;
 
   Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index,
-                         const bool is_dyn_root);
+                         const bool is_dyn_root) const;
   Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper);
 
   Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,

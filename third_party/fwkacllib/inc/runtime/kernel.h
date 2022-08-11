@@ -168,6 +168,19 @@ typedef enum tagRtDumpKind {
 
 /**
  * @ingroup rt_kernel
+ * @brief rt kernel type
+ */
+typedef enum rtKernelType {
+    KERNEL_TYPE_CCE = 0,
+    KERNEL_TYPE_FWK = 1,
+    KERNEL_TYPE_AICPU = 2,
+    KERNEL_TYPE_AICPU_CUSTOM = 4,
+    KERNEL_TYPE_HWTS = 10,
+    KERNEL_TYPE_RESERVED = 99,
+} rtKernelType_t;
+
+/**
+ * @ingroup rt_kernel
  * @brief report callback
  */
 typedef rtError_t (*rtKernelReportCallback)(rtStream_t stm, rtKernelInfo_t kernelInfo);
@@ -522,6 +535,23 @@ RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kern
 RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim,
                                               const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm,
                                               uint32_t flags);
+
+/**
+ * @ingroup rtAicpuKernelLaunchEx
+ * @brief launch cpu kernel to device  with dump identifier and kernelType
+ * @param [in] kernelType    aicpu kernel type
+ * @param [in] launchNames   names address for kernel launch
+ * @param [in] blockDim      block dimentions
+ * @param [in] argsInfo      argments address for kernel function
+ * @param [in] smDesc        shared memory description
+ * @param [in] stm           associated stream
+ * @param [in] flags         dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunchEx(uint32_t kernelType, const rtKernelLaunchNames_t *launchNames,
+                                        uint32_t blockDim, const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc,
+                                        rtStream_t stm, uint32_t flags);
 
 /**
  * @ingroup rt_kernel

@@ -64,5 +64,14 @@ GE_FUNC_VISIBILITY Status MallocSharedMemory(const TensorInfo &tensor_info, uint
 /// \param var_size [out] var_size memory_size of host variable.
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status GetVarBaseAddrAndSize(const std::string &var_name, uint64_t &base_addr, uint64_t &var_size);
+
+/*
+ * @brief
+ * @param [in]  session_id
+ * @param [out] var_size:session variables mem size
+ * @param [out] graphs_mem_info: graphs mem info, include key:graph_id; value: {feature_map_size, const_size}
+ */
+GE_FUNC_VISIBILITY Status GetSessionMemInfo(const uint64_t session_id, uint64_t &var_size,
+                                            std::map<uint32_t, std::vector<uint64_t>> &graphs_mem_info);
 }  // namespace ge
 #endif  // INC_FRAMEWORK_MEMORY_MEMORY_API_H_

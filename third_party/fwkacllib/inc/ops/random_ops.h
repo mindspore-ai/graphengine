@@ -528,32 +528,56 @@ REG_OP(DropOutGenMaskV3)
 
     
 /**
-*@brief Generate stateless random bit mask for dropout . \n
+* @brief Generate stateless random bit mask for dropout . \n
 
-*@par Inputs:
+* @par Inputs:
 include:
-*@li shape:The shape of the output tensor.
-*@li prob:0-D. Number of bit 1 . \n
-*@li seed:If either seed or seed2 are set to be non-zero, the random number
-*generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
-*@li seed2:A second seed to avoid seed collision . \n
+* @li shape:The shape of the output tensor.
+* @li prob:0-D. Number of bit 1 . \n
+* @li seed:Frist seed to avoid seed collision.
+* @li seed1:Second seed to avoid seed collision . \n
+* @li offset:Initial offset of random number . \n
 
-*@par Outputs:
+* @par Outputs:
 *y:Output (1-D) random number using uint data format . \n
 
-*@attention Constraints:
+* @attention Constraints:
 *The output is aligned with 128 bits
 
-*@see StatelessDropOutGenMask()
+* @see StatelessDropOutGenMask()
 */
 REG_OP(StatelessDropOutGenMask)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
     .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
     .INPUT(seed, TensorType({ DT_INT32, DT_INT64 }))
     .INPUT(seed1, TensorType({ DT_INT32, DT_INT64 }))
+    .OPTIONAL_INPUT(offset, TensorType({ DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_UINT8 }))
     .OP_END_FACTORY_REG(StatelessDropOutGenMask)
 
+/**
+* @brief Generate bernoulli distribution for tensor input . \n
+
+* @par Inputs:
+include:
+* @li shape:The shape of the output tensor. A Tensor of type int32, int64.
+* @li prob:0-D. Number of bit 1 . \n
+* @li seed:If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by arandom seed. Otherwise, it is seeded by the given seed.
+* @li offset:To avoid seed collision . \n
+
+* @par Outputs:
+* y:A Tensor. A Tensor of type int8, uint8, int16, uint16, 
+*  int32, uint32, int64, uint64, bool, float16, float, double, bf16. \n
+*/
+REG_OP(StatelessBernoulli)
+    .INPUT(shape, TensorType({ DT_INT32, DT_INT64}))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .INPUT(seed, TensorType({ DT_INT64 }))
+    .INPUT(offset, TensorType({ DT_INT64 }))
+    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,
+        DT_INT64, DT_UINT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .OP_END_FACTORY_REG(StatelessBernoulli)
 /**
 *@brief Generates values in an interval . \n
 

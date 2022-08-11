@@ -81,7 +81,8 @@ extern HcclResult HcclAllReduce(void *sendBuf, void *recvBuf, uint64_t count, Hc
  *
  * @param buf A pointer identifying the data address of the operator.
  * @param count An integer(u64) identifying the number of the data.
- * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param root An integer(u32) identifying the the root rank in the operator.
  * @param comm A pointer identifying the communication resource based on
  * @param stream A pointer identifying the stream information.
@@ -111,7 +112,8 @@ extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvC
  * @param sendBuf A pointer identifying the input data address of the operator.
  * @param recvBuf A pointer identifying the output data address of the operator.
  * @param sendCount An integer(u64) identifying the number of the input data.
- * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
  * @return HcclResult
@@ -149,7 +151,8 @@ extern HcclResult HcclBarrier(HcclComm comm, aclrtStream stream);
  *
  * @param sendBuff A pointer identifying the input data address of the operator.
  * @param count An integer(u64) identifying the number of the send data.
- * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param destRank An integer identifying the destination rank.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
@@ -162,7 +165,8 @@ extern HcclResult HcclSend(void *sendBuf, uint64_t count, HcclDataType dataType,
  *
  * @param recvBuff A pointer identifying the output data address of the operator.
  * @param count An integer(u64) identifying the number of the receive data.
- * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param srcRank An integer identifying the source rank.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
@@ -177,15 +181,15 @@ extern HcclResult HcclRecv(void *recvBuf, uint64_t count, HcclDataType dataType,
  * @param sendBuff A pointer identifying the input data address of the operator.
  * @param sendCounts Integer array, where entry i specifies the number of elements to send to rank i.
  * @param sdispls Integer array, where entry i specifies the displacement (offset from sendbuf, in units of sendtype)
- * from which to send data to rank i.
- * @param sendType Datatype of send buffer elements, must be one of the following types: int8, int32, int64, uint64,
- * float16, float32.
+from which to send data to rank i.
+ * @param sendType Datatype of send buffer elements, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param recvBuf A pointer identifying the output data address of the operator.
  * @param recvCounts Integer array, where entry j specifies the number of elements to receive from rank j.
  * @param rdispls Integer array, where entry j specifies the displacement (offset from recvbuf, in units of recvtype) to
- * which data from rank j should be written.
- * @param recvType Datatype of receive buffer elements, must be one of the following types: int8, int32, int64, uint64,
- * float16, float32.
+which data from rank j should be written.
+ * @param recvType Datatype of receive buffer elements, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
  * @return HcclResult
@@ -194,6 +198,23 @@ extern HcclResult HcclRecv(void *recvBuf, uint64_t count, HcclDataType dataType,
 extern HcclResult HcclAlltoAllV(const void *sendBuf, const void *sendCounts, const void *sdispls, HcclDataType sendType,
                                 const void *recvBuf, const void *recvCounts, const void *rdispls, HcclDataType recvType,
                                 HcclComm comm, aclrtStream stream);
+
+/**
+ * @brief Reduce operator.
+ *
+ * @param sendBuf A pointer identifying the input data address of the operator.
+ * @param recvBuf A pointer identifying the output data address of the operator.
+ * @param count An integer(u64) identifying the number of the output data.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, float16,
+ * float32.
+ * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
+ * @param root An integer(u32) identifying the the root rank in the operator.
+ * @param comm A pointer identifying the communication resource based on.
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult
+ */
+extern HcclResult HcclReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType, HcclReduceOp op,
+                             uint32_t root, HcclComm comm, aclrtStream stream);
 
 /**
  * @brief Destroy HCCL comm

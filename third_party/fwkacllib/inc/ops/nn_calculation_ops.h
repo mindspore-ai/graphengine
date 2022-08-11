@@ -28,7 +28,7 @@ namespace ge {
 * @brief Computes the gradients of depthwise convolution with respect to
 * the filter. \n
 * @par Inputs:
-* Three inputs include: 
+* Three inputs include:
 * @li input: 4D origin shape of input tensor [N, C, H, W] or [N, H, W, C],
 * support float16.
 * @li filter_size: A 4D tensor of type int32, int64, with shape [H, W, C, K]
@@ -52,8 +52,7 @@ namespace ge {
 
 * @par Outputs:
 * filter_grad: Gradient of the deep convolution relative to the filter with
-* shape [H, W, C, K]. Must be one of the following types: float16, float32,
-* double . \n
+* shape [H, W, C, K]. Must be one of the following types: float16. \n
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
@@ -350,7 +349,7 @@ REG_OP(BiasAddGrad)
 
 /**
 *@brief Computes the gradients of convolution with respect to the input.
-*@par Inputs:
+* @par Inputs:
  * Three inputs:
  * @li input_size: A const Tensor of type int32. Currently does not support
  * data tensor. An integer vector representing the shape of input, where
@@ -454,7 +453,7 @@ REG_OP(Conv2DBackpropInput)
 
 /**
 *@brief Computes the gradients of convolution with respect to the input.
-*@par Inputs:
+* @par Inputs:
  * Two inputs:
  * @li filter: A Tensor. Types is float16.
  * 4-D with shape [filter_height, filter_width, in_channels, out_channels]
@@ -501,7 +500,7 @@ REG_OP(Conv2DBackpropInputD)
 
 /**
 *@brief Computes the Deconvolution with respect to the input.
-*@par Inputs:
+* @par Inputs:
  * Two required inputs:
  * @li x: A Tensor of type float16 or int8. 4D with shape
  * [batch, out_channels, out_height, out_width]. Gradients with respect
@@ -1518,7 +1517,7 @@ REG_OP(Conv2DTranspose)
 
 /**
 *@brief Computes the transpose of convolution 2d with respect to the input.
-*@par Inputs:
+* @par Inputs:
  * Four inputs:
  * @li x: A Tensor of type float16, int8.
  * @li filter: A Tensor of type float16, int8. Must have the same type as "x".
@@ -1566,7 +1565,7 @@ REG_OP(Conv2DTransposeD)
 
 /**
 *@brief Computes the deformed convolution output with the expected input
-*@par Inputs:
+* @par Inputs:
  * Two inputs:
  * @li x: A Tensor of type float16,float32
  * @li offsets: A Tensor of type float16,float32.Deformation offset parameter.
@@ -1599,7 +1598,7 @@ REG_OP(DeformableOffsets)
 
 /**
 *@brief Computes the gradients of DeformableOffsets with respect to input and offsets
-*@par Inputs:
+* @par Inputs:
  * Three inputs:
  * @li grad: A Tensor of type float16,float32. gradients with respect to DeformableOffsets output
  * @li x: A Tensor of type float16,float32.
@@ -1636,7 +1635,7 @@ REG_OP(DeformableOffsetsGrad)
 
 /**
 *@brief Computes the deformed dilation output with the expected input
-*@par Inputs:
+* @par Inputs:
  * One inputs:
  * x: A Tensor of type int8, float16, float32
 *@par Attributes:
@@ -1656,7 +1655,7 @@ REG_OP(Dilation)
 
 /**
 *@brief Computes the post-cube processing output with the expected input
-*@par Inputs:
+* @par Inputs:
  * Ten inputs:
  * x1: A Tensor of type float16, bfloat16, float32, int32
  * x2: A Tensor of type float16, int8, int4

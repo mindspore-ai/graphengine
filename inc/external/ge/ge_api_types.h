@@ -369,6 +369,8 @@ const std::string PERFORMANCE_MODE = "ge.performance_mode";
 // shape_precise: Shape will not be generalized, use precise shape.
 const std::string SHAPE_GENERALIZED_BUILD_MODE = "ge.shape_generalized_build_mode";
 
+const std::string JIT_COMPILE = "ge.jit_compile";
+
 const std::string MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 
 const std::string OP_PRECISION_MODE = "ge.exec.op_precision_mode";

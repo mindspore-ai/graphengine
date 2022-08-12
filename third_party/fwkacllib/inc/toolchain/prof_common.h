@@ -152,7 +152,7 @@ struct MsprofGeProfInferData {
     uint8_t  reserve[MSPROF_GE_INFER_DATA_RESERVE_BYTES];
 };
 
-#define MSPROF_GE_TASK_DATA_RESERVE_BYTES 12
+constexpr int32_t MSPROF_GE_TASK_DATA_RESERVE_BYTES = 12;
 #define MSPROF_GE_OP_TYPE_LEN 56
 enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_AI_CORE = 0,

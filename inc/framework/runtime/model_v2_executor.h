@@ -28,10 +28,10 @@
 #include "subscriber/executor_subscribers_scheduler.h"
 
 namespace gert {
+enum class ExecutorState { kInit, kLoaded };
 enum SubExeGraphType { kInitExeGraph, kMainExeGraph, kDeInitExeGraph, kSubExeGraphTypeEnd };
-static constexpr char *kSubExeGraphTypeStrs[kSubExeGraphTypeEnd] = {
-    const_cast<char *>("Init"), const_cast<char *>("Main"), const_cast<char *>("DeInit")};
 inline const char *GetSubExeGraphTypeStr(SubExeGraphType type) {
+  constexpr const char *kSubExeGraphTypeStrs[kSubExeGraphTypeEnd] = {"Init", "Main", "DeInit"};
   return kSubExeGraphTypeStrs[type];
 }
 
@@ -74,6 +74,7 @@ class VISIBILITY_EXPORT ModelV2Executor {
   ModelDesc *model_desc_ = nullptr;
   rtStream_t default_stream_ = nullptr;
   ExecutorSubscribersScheduler subscribers_;
+  ExecutorState state_ = ExecutorState::kInit;
 };
 }  // namespace gert
 

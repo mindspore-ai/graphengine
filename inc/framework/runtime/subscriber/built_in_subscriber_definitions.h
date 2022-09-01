@@ -32,8 +32,7 @@ enum class BuiltInSubscriberType { kProfiling, kDumper, kNum };
 enum class ProfilingType {
   kHost,  // 打开Host侧调度的profiling
   kDevice,
-  kGeHost,       // 打开GE Host侧调度的profiling
-  kSingleOpReg,  // 单算子需要打开此开关开始register node name和kernel type
+  kGeHost,  // 打开GE Host侧调度的profiling
   kNum,
   kAll = kNum
 };

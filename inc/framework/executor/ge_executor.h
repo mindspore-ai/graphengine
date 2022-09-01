@@ -323,7 +323,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
 
   static Status ReleaseSingleOpResource(void *const stream);
 
-  static Status ClearCustomAicpuSo();
+  static Status ClearCustomAicpuSo(const uint32_t &device_id);
 
   static Status GetDeviceIdByModelId(const uint32_t model_id, uint32_t &device_id);
 

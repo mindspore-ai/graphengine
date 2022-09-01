@@ -99,8 +99,66 @@ RTS_API rtError_t rtCmoTaskLaunch(rtCmoTaskInfo_t *taskInfo, rtStream_t stm, uin
  * @return RT_ERROR_NONE for ok, others failed
  */
 RTS_API rtError_t rtBarrierTaskLaunch(rtBarrierTaskInfo_t *taskInfo, rtStream_t stm, uint32_t flag);
-#if defined(__cplusplus)
 
+/**
+ * @ingroup rt_stars
+ * @brief dvpp group handle.
+ */
+typedef void *rtDvppGrp_t;
+
+typedef struct tagDvppGrpRptInfo {
+    uint32_t deviceId;
+    uint32_t streamId;
+    uint32_t taskId;
+    uint8_t sqeType;
+    uint8_t cqeErrorCode;
+    uint8_t reserve[2];
+    uint32_t accErrorCode;
+} rtDvppGrpRptInfo_t;
+
+typedef void (*rtDvppGrpCallback)(rtDvppGrpRptInfo_t *rptInfo);
+
+/**
+ * @ingroup rt_stars
+ * @brief create dvpp group.
+ * @param [in] flags     group flag, reserved parameter
+ * @param [out] grp      group handle
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtDvppGroupCreate(rtDvppGrp_t *grp, uint32_t flags);
+
+/**
+ * @ingroup rt_stars
+ * @brief destroy dvpp group.
+ * @param [in] grp      group handle
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtDvppGroupDestory(rtDvppGrp_t grp);
+
+/**
+ * @ingroup rt_stars
+ * @brief create stream with grp handle
+ * @param [in|out] stm   created stream
+ * @param [in] priority   stream priority
+ * @param [in] flags  stream op flags
+ * @param [in] grp    grp handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtStreamCreateByGrp(rtStream_t *stm, int32_t priority, uint32_t flags, rtDvppGrp_t grp);
+
+/**
+ * @ingroup rt_stars
+ * @brief wait report by grp
+ * @param [in] grp              group handle
+ * @param [in] callBackFunc     callback
+ * @param [in] timeout          wait timeout config, ms, -1: wait forever
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtDvppWaitGroupReport(rtDvppGrp_t grp, rtDvppGrpCallback callBackFunc, int32_t timeout);
+
+#if defined(__cplusplus)
 }
 #endif
-#endif // CCE_RUNTIME_RT_STARS_H
+#endif  // CCE_RUNTIME_RT_STARS_H

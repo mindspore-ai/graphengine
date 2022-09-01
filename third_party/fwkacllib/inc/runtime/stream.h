@@ -103,6 +103,16 @@ RTS_API rtError_t rtStreamSynchronize(rtStream_t stm);
 
 /**
  * @ingroup dvrt_stream
+ * @brief wait stream to be complete and set timeout
+ * @param [in] stm   stream to wait
+ * @param [in] timeout   timeout value,the unit is milliseconds
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamSynchronizeWithTimeout(rtStream_t stm, int32_t timeout);
+
+/**
+ * @ingroup dvrt_stream
  * @brief queries an asynchronous stream for completion status
  * @param [in] stm   stream to query
  * @return RT_ERROR_NONE for complete
@@ -202,7 +212,7 @@ RTS_API rtError_t rtStreamSwitchN(void *ptr, uint32_t size, void *valuePtr, rtSt
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDebugRegisterForStream(rtStream_t stm, uint32_t flag, const void *addr,
-                                   uint32_t *streamId, uint32_t *taskId);
+                                           uint32_t *streamId, uint32_t *taskId);
 
 /*
  * @ingroup rt_model

@@ -374,6 +374,17 @@ RTS_API rtError_t rtMbufAlloc(rtMbufPtr_t *memBuf, uint64_t size);
 
 /**
 * @ingroup rt_mem_queue
+* @brief alloc buff
+* @param [out] memBuf: buff addr alloced
+* @param [in]  size: The amount of memory space requested
+* @param [in]  flag: Huge page flag(bit0~31: mem type, bit32~bit35: devid, bit36~63: resv)
+* @param [in]  grpId: group id
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufAllocEx(rtMbufPtr_t *memBuf, uint64_t size, uint64_t flag, int32_t grpId);
+
+/**
+* @ingroup rt_mem_queue
 * @brief free buff
 * @param [in] memBuf: buff addr to be freed
 * @return RT_ERROR_NONE for ok
@@ -417,6 +428,15 @@ RTS_API rtError_t rtMbufGetBuffSize(rtMbufPtr_t memBuf, uint64_t *totalSize);
 */
 RTS_API rtError_t rtMbufGetPrivInfo(rtMbufPtr_t memBuf,  void **priv, uint64_t *size);
 
+/**
+* @ingroup rt_mem_queue
+* @brief copy buf ref
+* @param [in] memBuf: src buff addr
+* @param [out] newMemBuf: des buff addr
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufCopyBufRef(rtMbufPtr_t memBuf, rtMbufPtr_t *newMemBuf);
+
 // mem group
 typedef struct {
     uint64_t maxMemSize; // max buf size in grp, in KB. = 0 means no limit
@@ -430,20 +450,26 @@ typedef struct {
     uint32_t rsv : 28;
 } rtMemGrpShareAttr_t;
 
-#define RT_MEM_GRP_QUERY_GROUPS_OF_PROCESS 1  // query process all grp
+#define RT_MEM_GRP_QUERY_GROUPS_OF_PROCESS 1 // query process all grp
+#define RT_MEM_GRP_QUERY_GROUP_ID 2 // query group id from name
+
+#define RT_MEM_GRP_NAME_LEN 32  // it must be same as driver define BUFF_GRP_NAME_LEN
 
 typedef struct {
     int32_t pid;
 } rtMemGrpQueryByProc_t; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
 
 typedef struct {
+    char grpName[RT_MEM_GRP_NAME_LEN];
+} rtMemGrpQueryGroupId_t; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+
+typedef struct {
     int32_t cmd;
     union {
         rtMemGrpQueryByProc_t grpQueryByProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+        rtMemGrpQueryGroupId_t grpQueryGroupId; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
     };
 } rtMemGrpQueryInput_t;
-
-#define RT_MEM_GRP_NAME_LEN 32  // it must be same as driver define BUFF_GRP_NAME_LEN
 
 typedef struct {
     char_t groupName[RT_MEM_GRP_NAME_LEN];  // group name
@@ -451,9 +477,16 @@ typedef struct {
 } rtMemGrpOfProc_t; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
 
 typedef struct {
-    rtMemGrpOfProc_t *groupsOfProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+    int32_t groupId; // group id
+} rtMemGrpQueryGroupIdInfo_t; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+
+typedef struct {
     size_t maxNum; // max number of result
     size_t resultNum; // if the number of results exceeds 'maxNum', only 'maxNum' results are filled in buffer
+    union {
+        rtMemGrpOfProc_t *groupsOfProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+        rtMemGrpQueryGroupIdInfo_t *groupIdInfo; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+    };
 } rtMemGrpQueryOutput_t;
 
 /**

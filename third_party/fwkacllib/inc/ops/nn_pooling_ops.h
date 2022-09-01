@@ -174,8 +174,8 @@ REG_OP(AvgPoolV2)
 /**
 * @brief Performs average pooling on the input. \n
 * @par Inputs:
-* x: A 5-D Tensor of shape [batch, depth, height, width, channels] and type
-* float16, float32, double. \n
+* @li x: A 5-D Tensor of shape [batch, depth, height, width, channels] and
+* type float16. \n
 
 * @par Attributes:
 * @li ksize: List of ints that has length 1, 3 or 5. The size of the window
@@ -201,8 +201,8 @@ REG_OP(AvgPoolV2)
 * Compatible with the TensorFlow operator AvgPool3D.
 */
 REG_OP(AvgPool3D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -216,9 +216,9 @@ REG_OP(AvgPool3D)
 /**
 * @brief Performs average pooling on the input.
 * @par Inputs:
-* @li x: A 5-D Tensor of shape [batch, depth, height, width, channels] and type float16, float32, double.
-* @li filter: An optional tensor of type float16, float32, double, fractal_z_3d layout.
-* @li multiplier: An optional tensor of float16, float32, double.
+* @li x: A 5-D Tensor of shape [batch, depth, height, width, channels] and type float16.
+* @li filter: An optional tensor of type float16, fractal_z_3d layout.
+* @li multiplier: An optional tensor of float16.
 
 * @par Attributes:
 * @li ksize: List of ints that has length 1, 3 or 5. The size of the window for each dimension of the input tensor.
@@ -239,10 +239,10 @@ REG_OP(AvgPool3D)
 * Compatible with the TensorFlow operator AvgPool3D.
 */
 REG_OP(AvgPool3DD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .OPTIONAL_INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .OPTIONAL_INPUT(multiplier, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OPTIONAL_INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OPTIONAL_INPUT(multiplier, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -256,7 +256,7 @@ REG_OP(AvgPool3DD)
 * @brief Computes AvgPool3DGrad function. \n
 * @par Inputs:
 * @li orig_input_shape: An NDHWC tensor of type int32.
-* @li grads: An NDHWC tensor of type float16, float32, or double. \n
+* @li grads: An NDHWC tensor of type float16. \n
 
 * @par Attributes:
 * @li ksize: List of ints that has length 5. The size of the window for
@@ -284,8 +284,8 @@ REG_OP(AvgPool3DD)
 
 REG_OP(AvgPool3DGrad)
     .INPUT(orig_input_shape, TensorType({DT_INT32}))
-    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .OUTPUT(output, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(output, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -299,7 +299,7 @@ REG_OP(AvgPool3DGrad)
 * @brief Performs average pooling on the input.
 * @par Inputs:
 * @li grads: An NDHWC tensor of type float16.
-* @li filter: An optional tensor of type float16, fractal_z_3d layout.
+* @li filter: An optional tensor of type float16.
 * @li multiplier: An optional tensor of float16.
 
 * @par Attributes:
@@ -867,8 +867,8 @@ REG_OP(MaxPoolGradGradWithArgmax)
 /**
 * @brief Computes avgpoograd function. \n
 * @par Inputs:
-* @li orig_input_shape: An NHWC tensor of type int32.
-* @li input_grad: An NHWC tensor of type float16, float32, or double. \n
+* @li orig_input_shape: A tensor of type int32.
+* @li input_grad: A tensor of type float16. \n
 
 * @par Attributes:
 * @li ksize: A required tuple or list, specifying the size of the window for
@@ -887,8 +887,8 @@ REG_OP(MaxPoolGradGradWithArgmax)
 */
 REG_OP(AvgPoolGrad)
     .INPUT(orig_input_shape, TensorType({DT_INT32}))
-    .INPUT(input_grad, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .OUTPUT(out_grad, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .INPUT(input_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(out_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
@@ -898,9 +898,9 @@ REG_OP(AvgPoolGrad)
 /**
 * @brief Computes gradients of average pooling function . \n
 * @par Inputs:
-* @input_grad: An NHWC tensor of type float16.
-* @mean_matrix: Assist matrix, an NHWC tensor of type float16.
-* @kernel_matrix: Assist matrix, an NHWC tensor of type float16.
+* @li input_grad: An NHWC tensor of type float16.
+* @li mean_matrix: Assist matrix, an NHWC tensor of type float16.
+* @li kernel_matrix: Assist matrix, an NHWC tensor of type float16.
 
 * @par Attributes:
 * @li orig_input_shape: A required Original input dimensions.
@@ -913,7 +913,7 @@ REG_OP(AvgPoolGrad)
 * @li data_format: An optional string. Defaults to "NHWC" . \n
 
 * @par Outputs:
-* @out_grad: A mutable tensor with the same shape and type as "orig_input".
+* @li out_grad: A mutable tensor with the same shape and type as "orig_input".
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use AvgPoolGrad instead.

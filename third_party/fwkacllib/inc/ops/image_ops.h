@@ -2039,24 +2039,24 @@ REG_OP(IMGWarpOffsets)
     .OP_END_FACTORY_REG(IMGWarpOffsets)
 
 /**
-*@brief This operation samples 3d input x by using interpolation based on flow field grid,
- which is usually gennerated by affine_grid.
+* @brief This operation samples 3d input x by using interpolation based on flow field grid,
+  which is usually gennerated by affine_grid.
 
-*@par Inputs:
-*@li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
-*@li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
+* @par Inputs:
+* @li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
+* @li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
 
-*@par Attributes:
-*@li interpolation_mode: An optional string specifying the interpolation method.
-*@li padding_mode: An optional string specifying the pad method.
-*@li align_corners: An optional bool. If "true", the centers of the corner
- pixels of the input and output tensors are aligned. Defaults to "false" .
+* @par Attributes:
+* @li interpolation_mode: An optional string specifying the interpolation method.
+* @li padding_mode: An optional string specifying the pad method.
+* @li align_corners: An optional bool. If "true", the centers of the corner
+  pixels of the input and output tensors are aligned. Defaults to "false" .
 
-*@par Outputs:
-*y: Returns 5-D Tensor with the same dtype as `x`.
+* @par Outputs:
+* y: Returns 5-D Tensor with the same dtype as `x`.
 
-*@par Third-party framework compatibility
-*Compatible with pytorch GridSampler3D operator.
+* @par Third-party framework compatibility
+* Compatible with pytorch GridSampler3D operator.
 */
 REG_OP(GridSampler3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

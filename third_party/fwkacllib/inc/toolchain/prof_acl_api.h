@@ -18,6 +18,8 @@
 #define PROF_TRAINING_TRACE         0x00000040ULL
 #define PROF_MSPROFTX               0x00000080ULL
 #define PROF_RUNTIME_API            0x00000100ULL
+#define PROF_TASK_FRAMEWORK         0x00000200ULL
+#define PROF_TASK_TSFW              0x00000400ULL
 
 // system profilinig switch
 #define PROF_CPU                    0x00010000ULL
@@ -52,6 +54,8 @@ constexpr uint64_t PROF_AICPU_MODEL = 0x4000000000000000ULL;
 #define PROF_TRAINING_TRACE_MASK         0x00000040ULL
 #define PROF_MSPROFTX_MASK               0x00000080ULL
 #define PROF_RUNTIME_API_MASK            0x00000100ULL
+#define PROF_TASK_FRAMEWORK_MASK         0x00000200ULL
+#define PROF_TASK_TSFW_MASK              0x00000400ULL
 
 // system profilinig mask
 #define PROF_CPU_MASK                    0x00010000ULL
@@ -102,7 +106,7 @@ extern "C" {
 
 MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
 
-typedef int32_t Status;
+using Status = int32_t;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig1;
 ///
 /// @ingroup AscendCL

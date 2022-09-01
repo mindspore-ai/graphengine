@@ -194,6 +194,39 @@ REG_OP(SigmoidCrossEntropyWithLogitsV2)
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsV2)
 
 /**
+* @brief Computes the sigmoid focal loss of "pred" and "target".
+
+* @par Inputs:
+* Three inputs, including:
+* @li pred: A 2-dimensional Tensor of type float16 or float32, specifying the predicted value.
+* @li target: A 1-dimensional Tensor of type int32, specifying the target value.
+* @li weight: A 1-dimensional Tensor, specifying the weight value. \n
+
+* @par Attributes:
+* @li gamma: An optional float, specifying the exponent of the modulating factor (1 - pt)
+* to balance easy/hard examples. Defaults to 2.0. 
+* @li alpha: An optional float, specifying the weighting factor in range (1, 0) to balance
+* the importance of positive/negative examples or less than 0 for ignore. Defaults to 0.25. 
+* @li reduction: A optional character string from "none", "mean", and "sum", specifying the
+* reduction type to be applied to the output. Defaults to "mean".  \n
+
+* @par Outputs:
+* loss: Sigmoid focal loss between the predicted value and target value. Has the same dimensions as "pred". \n
+
+* @par Third-party framework compatibility
+* Compatible with mmcv operator SigmoidFocalLoss.
+*/
+REG_OP(SigmoidFocalLoss)
+    .INPUT(pred, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(gamma, Float, 2.0)
+    .ATTR(alpha, Float, 0.25)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SigmoidFocalLoss)
+
+/**
 * @brief Computes the regression box of the RPN. It is a FasterRCNN operator .
 
 *@par Inputs:
@@ -1834,5 +1867,79 @@ REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
     .REQUIRED_ATTR(input_keep_prob, Float)
     .ATTR(axis, ListInt, {-1})
     .OP_END_FACTORY_REG(AxpyWithSoftmaxAndDropOutDoMask)
+
+/**
+* @brief MMCV Function: sigmoid_focal_loss_grad  . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li pred: the predicted tensor. The type support float16 and float32.
+* @li target: the target label Tensor. The type support Int32.
+* @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
+* @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
+*     shape of pred should be (B，D), B means batch size, D means the number of labels.
+*     shape of target should be (D, ).
+*     shape of weight should be (D, ) \n
+
+* @par Attributes:
+* @li alpha: A attribute is used to reweight the sample. The type is float . \n
+* @li gamma: A attribute is used to calculate the power of the probability.
+*     The type is float . \n
+* @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss. 
+                'sum' means computing the sum of the loss, 'none' means no reducing .\n
+
+* @par Outputs:
+* grad: A mutable Tensor. Has the same type and shape as "pred". \n
+
+* @par Third-party framework compatibility
+* Compatible with the MMCV operator SigmoidFocalLoss.
+*/
+REG_OP(SigmoidFocalLossGrad)
+    .INPUT(pred, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(alpha, Float, 0.25)
+    .ATTR(gamma, Float, 2.0)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SigmoidFocalLossGrad)
+
+/**
+* @brief MMCV Function: softmax_focal_loss_grad  . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li pred: the predicted tensor. The type support float16 and float32.
+* @li target: the target label Tensor. The type support Int32.
+* @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
+* @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
+*     shape of pred should be (B，D), B means batch size, D means the number of labels.
+*     shape of target should be (B, D).
+*     shape of weight should be (D, ) \n
+
+* @par Attributes:
+* @li alpha: A attribute is used to reweight the sample. The type is float . \n
+* @li gamma: A attribute is used to calculate the power of the probability.
+*     The type is float . \n
+* @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss. 
+                'sum' means computing the sum of the loss, 'none' means no reducing .\n
+
+* @par Outputs:
+* grad: A mutable Tensor. Has the same type and shape as "pred". \n
+
+* @par Third-party framework compatibility
+* Compatible with the MMCV operator SoftmaxFocalLossGrad.
+*/
+REG_OP(SoftmaxFocalLossGrad)
+    .INPUT(pred, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(alpha, Float, 0.25)
+    .ATTR(gamma, Float, 2.0)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SoftmaxFocalLossGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

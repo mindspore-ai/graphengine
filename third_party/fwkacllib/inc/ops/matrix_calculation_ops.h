@@ -210,10 +210,10 @@ REG_OP(SwinTransformerLnQKV)
 * float32, int32. Has format [ND, NHWC]. \n
 
 * @par Attributes:
-* @li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to
-* [K, M].
-* @li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to
-* [K, M]. \n
+* @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
+* [M, K] before multiplication.
+* @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
+* [K, N] before multiplication. \n
 
 * @par Outputs:
 * y: The result matrix Tensor. 2D. Must be one of the following types: float16,
@@ -246,9 +246,9 @@ REG_OP(MatMul)
 
 * @par Attributes:
 * @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
-* [M, K].
+* [M, K] before multiplication.
 * @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
-* [K, N].
+* [K, N] before multiplication.
 * @li offset_x: An optional integer for quantized MatMulV2.
 * The negative offset added to the input x1 for int8 type. Ensure offset_x
 * within the effective range of int8 [-128, 127]. Defaults to "0". \n
@@ -289,9 +289,9 @@ REG_OP(MatMulV2)
 
 * @par Attributes:
 * @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
-* [M, K].
+* [M, K] before multiplication.
 * @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
-* [K, N].
+* [K, N] before multiplication.
 * @li offset_x: An optional integer for quantized MatMulV2Compress.
 * The negative offset added to the input x1 for int8 type. Ensure offset_x
 * within the effective range of int8 [-128, 127]. Defaults to "0". \n
@@ -333,29 +333,20 @@ REG_OP(MatMulV2Compress)
 * @li c: A matrix Tensor. Must be one of the following types:float32, float16,
 * int8, int32. Has format ND.
 * @li alpha: A 1D Tensor. The shape of alpha is [1].Must be one of the
-* following types: float16, int32, float32, int8. Has format ND.
+* following types: float32, float16, int8, int32. Has format ND.
 * @li beta: A 1D Tensor. The shape of beta is [1]. Must be one of the following
-* types: float16, int32, float32, int8. Has format ND.\n
-* The format of a, b, c has restriction:\n
-* When type of a is int8 and type of c is int32, the format of a, b, c should
-* all be ND.\n
-* When type of a is int8 and type of c is float32, the format of a, b, c
-* should all be ND.\n
-* When type of a is float16 and type of c is float16, the format of a, b, c
-* should all be ND.\n
-* When type of a is float16 and type of c is float32, the format of a, b, c
-* should all be ND. \n
+* types: float32, float16, int8, int32. Has format ND. \n
 
 * @par Attributes:
 * Two attributes, including:
 * @li transpose_a: Optional. A bool. If True, changes the shape of "a" from
-* [M, K] to [K, M].
+* [K, M] to [M, K] before multiplication.
 * @li transpose_b: Optional. A bool. If True, changes the shape of "b" from
-* [K, N] to [N, K]. \n
+* [N, K] to [K, N] before multiplication. \n
 
 * @par Outputs:
-* y: The result matrix Tensor. Must be one of the following types: float16,
-* float32, int32, int8. Has format [ND], the format should be equal to a.
+* y: The result matrix Tensor. Must be one of the following types: float32,
+* float16, int8, int32. Has format [ND], the format should be equal to a.
 */
 
 REG_OP(GEMM)
@@ -379,10 +370,10 @@ REG_OP(GEMM)
 * float32, int32. 2D or higher. Has format [ND, NHWC]. \n
 
 * @par Attributes:
-* @li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K]
-* to [B, K, M].
-* @li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K]
-* to [B, K, M]. \n
+* @li adj_x1: A bool. If True, changes the shape of "x1" from [B, K, M]
+* to [B, M, K] before multiplication.
+* @li adj_x2: A bool. If True, changes the shape of "x2" from [B, N, K]
+* to [B, K, N] before multiplication. \n
 
 * @par Outputs:
 * y: The result matrix Tensor. 2D or higher. Must be one of the following
@@ -418,10 +409,10 @@ REG_OP(BatchMatMul)
 * int8, int4. Has format [ND, NHWC]. \n
 
 * @par Attributes:
-* @li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to
-* [B, K, M].
-* @li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K] to
-* [B, K, M]. \n
+* @li adj_x1: A bool. If True, changes the shape of "x1" from [B, K, M] to
+* [B, M, K] before multiplication.
+* @li adj_x2: A bool. If True, changes the shape of "x2" from [B, N, K] to
+* [B, K, N] before multiplication. \n
 
 * @par Outputs:
 * y: The result matrix Tensor. 2D or higher. Must be one of the following
@@ -784,7 +775,8 @@ REG_OP(TensorScatterUpdate)
 
 * @par Attributes:
 * @li axis: An optional attribute. Defaults to 0.
-* @li reduction: An optional attribute. Defaults to string "none" and can be "add" or "mul".
+* @li reduction: An optional attribute. Defaults to string "none" and can be
+* "add" or "mul". \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "data" . \n
@@ -1147,7 +1139,7 @@ REG_OP(DiagPart)
 * with a set of learned weights, and (optionally) adds biases. \n
 * @par Inputs:
 * Four inputs, including:
-* @li x: A Tensor of type float16, int8, int4, float32.
+* @li x: A Tensor of type float16, int8, int4.
 * @li w: A weight matrix of type float16, int8, int4, float32.
 * @li b: An optional Tensor of type float16, int32, float32.
 * @li offset_w: An optional Tensor of type int8, int4.
@@ -1175,11 +1167,11 @@ REG_OP(DiagPart)
 * Yes
 */
 REG_OP(FullyConnection)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4, DT_FLOAT32, DT_BF16}))
-    .INPUT(w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4, DT_FLOAT, DT_BF16}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT, DT_BF16}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(num_output, Int)
     .ATTR(transpose, Bool, false)
     .ATTR(axis, Int, 1)
@@ -1643,7 +1635,7 @@ REG_OP(Tril)
 * @par Inputs:
 * @li x: A list of Tensors. Must be one of the following types:  int32,
 * float16, float32. Tensors to be concatenated. All must have size 1 in
-*  the first dimension and same shape.It's a dynamic input. \n
+*  the first dimension and same shape. It's a dynamic input. \n
 
 * @par Attributes:
 * @li equation: The subscripts for the Einstein summation. \n
@@ -1658,7 +1650,7 @@ REG_OP(Tril)
 * Input N must be Int. \n
 
 * @par Third-party framework compatibility
-* Compatible with Pytorch einsum operator.
+* Compatible with Tensorflow 2.x einsum operator.
 */
 REG_OP(Einsum)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))

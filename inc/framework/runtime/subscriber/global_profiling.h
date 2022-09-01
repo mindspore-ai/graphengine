@@ -54,6 +54,11 @@ class GlobalProfiler {
 
 class VISIBILITY_EXPORT GlobalProfilingWrapper {
  public:
+  GlobalProfilingWrapper(const GlobalProfilingWrapper &) = delete;
+  GlobalProfilingWrapper(GlobalProfilingWrapper &&) = delete;
+  GlobalProfilingWrapper &operator=(const GlobalProfilingWrapper &) = delete;
+  GlobalProfilingWrapper &operator=(GlobalProfilingWrapper &&) = delete;
+
   static GlobalProfilingWrapper *GetInstance() {
     static GlobalProfilingWrapper global_prof_wrapper;
     return &global_prof_wrapper;

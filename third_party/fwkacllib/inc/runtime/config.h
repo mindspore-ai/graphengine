@@ -83,7 +83,8 @@ typedef enum tagRtPlatformType {
     PLATFORM_CLOUD_V2_910B2 = 11,
     PLATFORM_CLOUD_V2_910B3 = 12,
     PLATFORM_CLOUD_V2_910B4 = 13,
-    PLATFORM_END = 14,
+    PLATFORM_MDC_PG2 = 14,
+    PLATFORM_END = 15,
 } rtPlatformType_t;
 
 typedef enum tagRtCubeFracMKNFp16 {

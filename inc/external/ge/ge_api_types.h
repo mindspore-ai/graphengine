@@ -30,6 +30,8 @@ namespace ge {
 // Option key: graph run mode
 const char_t *const OPTION_GRAPH_RUN_MODE = "ge.graphRunMode";
 const char_t *const OPTION_DEVICE_TYPE = "ge.deviceType";
+// Option key: topo sorting mode
+const char *const OPTION_TOPO_SORTING_MODE = "ge.topoSortingMode";
 
 // Option key: ome init
 const char_t *const OPTION_EXEC_SESSION_ID = "ge.exec.sessionId";
@@ -129,6 +131,7 @@ const char_t *const MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 const char_t *const OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
+const char_t *const BUILD_GRAPH_ALREADY_INITIALIZED = "build_graph_already_initialized";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -293,6 +296,9 @@ const std::string FUSION_SWITCH_FILE = "ge.fusionSwitchFile";
 // Configure compression optimize file path
 const std::string COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 
+// Configure for amct
+const std::string BUILD_GRAPH_ALREADY_INITIALIZED = "build_graph_already_initialized";
+
 // Configure customize dtypes path
 const std::string CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 
@@ -394,7 +400,8 @@ const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
 const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
-
+// Topo sorting mode
+enum class TopoSortingMode { BFS = 0, DFS = 1 };
 // Input/Output tensor info
 struct InputTensorInfo {
   uint32_t data_type;         // data type
@@ -478,6 +485,8 @@ static const char_t *const MODIFY_MIXLIST = ge::MODIFY_MIXLIST.c_str();
 static const char_t *const OP_PRECISION_MODE = ge::OP_PRECISION_MODE.c_str();
 static const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 static const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
+static const char_t *const BUILD_GRAPH_ALREADY_INITIALIZED = "build_graph_already_initialized";
+static const char_t *const INPUT_DATA_NAMES = "input_data_names";
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -514,8 +523,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
-    INPUT_FP16_NODES, IS_INPUT_ADJUST_HW_LAYOUT, IS_OUTPUT_ADJUST_HW_LAYOUT, OUTPUT,
-    OUT_NODES,        ENABLE_SCOPE_FUSION_PASSES};
+    INPUT_FP16_NODES,           IS_INPUT_ADJUST_HW_LAYOUT, IS_OUTPUT_ADJUST_HW_LAYOUT, OUTPUT, OUT_NODES,
+    ENABLE_SCOPE_FUSION_PASSES, INPUT_DATA_NAMES};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,
@@ -540,7 +549,8 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               OP_COMPILER_CACHE_DIR,
                                               OP_COMPILER_CACHE_MODE,
                                               MODIFY_MIXLIST,
-                                              COMPRESSION_OPTIMIZE_CONF};
+                                              COMPRESSION_OPTIMIZE_CONF,
+                                              BUILD_GRAPH_ALREADY_INITIALIZED};
 #endif
 }  // namespace ir_option
 }  // namespace ge

@@ -99,8 +99,8 @@ Specifies the variance used for inference. Must be "None"
 if the operation is used for training . \n
 
 *@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. 
-Defaults to "0.0001".
+*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero.
+* Defaults to "0.0001".
 *@li data_format: An optional string, specifying the format of "x". Defaults to "NHWC".
 *@li is_training: An optional bool, specifying if the operation is used for training or inference. 
 Defaults to "True" . \n

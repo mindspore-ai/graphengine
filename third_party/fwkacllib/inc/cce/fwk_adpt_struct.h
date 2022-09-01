@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef FWK_ADPT_STRUCT_H__
-#define FWK_ADPT_STRUCT_H__
+#ifndef FWK_ADPT_STRUCT_H
+#define FWK_ADPT_STRUCT_H
 
 #include <cstdint>
 
@@ -112,7 +112,7 @@ struct StrFWKKernel {
 };
 #pragma pack(pop)
 
-typedef StrFWKKernel FWKOperateParam;
+using FWKOperateParam = StrFWKKernel;
 
 // Extent info ShapeAndType
 const uint32_t kMaxShapeDims = 8U;
@@ -154,4 +154,4 @@ struct AsyncWait {
 }  // end  namespace FWKAdapter
 }  // namespace aicpu
 
-#endif  // FWK_ADPT_STRUCT_H__
+#endif  // FWK_ADPT_STRUCT_H

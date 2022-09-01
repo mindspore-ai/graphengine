@@ -674,7 +674,7 @@ REG_OP(Conj)
 *@par Inputs:
 *The input x and weight must have the same type. Inputs include:
 *@li x: A Tensor dtype of float32.
-*@li target: A Tensor dtype of int32.
+*@li target: A Tensor dtype of int32 or int64.
 *@li weight: A Tensor dtype of float32 . \n
 
 *@par Attributes:
@@ -690,7 +690,7 @@ REG_OP(Conj)
 */
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT}))
-    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(target, TensorType({DT_INT32, DT_INT64}))
     .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
@@ -704,7 +704,7 @@ REG_OP(NLLLoss)
 *@par Inputs:
 *@li x:A Tensor dtype of float32.
 *@li y_grad:A Tensor dtype of float32.
-*@li target:A Tensor dtype of int32.
+*@li target:A Tensor dtype of int32, int64.
 *@li weight:A Tensor dtype of float32.
 *@li total_weight:A Tensor dtype of float32 . \n
 
@@ -721,7 +721,7 @@ REG_OP(NLLLoss)
 REG_OP(NLLLossGrad)
     .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(y_grad, TensorType({DT_FLOAT}))
-    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(target, TensorType({DT_INT32, DT_INT64}))
     .INPUT(weight, TensorType({DT_FLOAT}))
     .INPUT(total_weight, TensorType({DT_FLOAT}))
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))

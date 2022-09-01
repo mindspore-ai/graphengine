@@ -277,7 +277,7 @@ REG_OP(BN3DTrainingUpdate)
 *y: A tensor of type float16 or float32 for the normalized "x" . \n
 
 *@attention Constraints:
-*For Ascend 310, the result accuracy fails to reach 1/1000 due to the
+* For Ascend 310, the result accuracy fails to reach 1/1000 due to the
 * square root instruction.
 */
 REG_OP(BNInfer)
@@ -314,8 +314,8 @@ REG_OP(BNInfer)
 *@li batch_variance: A tensor of type float32, for the variance of "x" . \n
 
 *@attention Constraints:
-*This operator is used in conjunction with BNTrainingReduce.
-*For Ascend 310, the result accuracy fails to reach 1/1000 due to
+*@li This operator is used in conjunction with BNTrainingReduce.
+*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to
 * the square root instruction.
 */
 REG_OP(BNTrainingUpdateV2)

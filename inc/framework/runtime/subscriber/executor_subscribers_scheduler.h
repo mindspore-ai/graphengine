@@ -23,9 +23,6 @@
 #include "global_profiling.h"
 #include "framework/common/ge_visibility.h"
 namespace gert {
-namespace {
-constexpr size_t kInitSubscriberSize = 1UL;
-}
 class ModelV2Executor;
 class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
  public:
@@ -78,7 +75,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
     if (ins == nullptr) {
       return nullptr;
     }
-
+    constexpr size_t kInitSubscriberSize = 1UL;
     // profiler exists when ess init
     if (subscribers_.size() == kInitSubscriberSize) {
       enabled_ = true;

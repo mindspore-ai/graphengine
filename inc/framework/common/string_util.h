@@ -17,20 +17,6 @@
 #ifndef INC_FRAMEWORK_COMMON_STRING_UTIL_H_
 #define INC_FRAMEWORK_COMMON_STRING_UTIL_H_
 
-#if defined(_MSC_VER)
-#ifdef FUNC_VISIBILITY
-#define GE_FUNC_VISIBILITY _declspec(dllexport)
-#else
-#define GE_FUNC_VISIBILITY
-#endif
-#else
-#ifdef FUNC_VISIBILITY
-#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
-#else
-#define GE_FUNC_VISIBILITY
-#endif
-#endif
-
 #include <cctype>
 #include <securec.h>
 
@@ -40,6 +26,7 @@
 #include <string>
 #include <vector>
 #include "graph/types.h"
+#include "external/ge/ge_error_codes.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY StringUtils {

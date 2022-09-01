@@ -128,8 +128,8 @@ MSVP_PROF_API aclError aclprofStart(const aclprofConfig *profilerConfig);
  * @see aclprofDestroyConfig
  */
 MSVP_PROF_API aclprofConfig *aclprofCreateConfig(uint32_t *deviceIdList, uint32_t deviceNums,
-                                                 aclprofAicoreMetrics aicoreMetrics, aclprofAicoreEvents *aicoreEvents,
-                                                 uint64_t dataTypeConfig);
+                                                 aclprofAicoreMetrics aicoreMetrics,
+                                                 const aclprofAicoreEvents *aicoreEvents, uint64_t dataTypeConfig);
 
 /**
  * @ingroup AscendCL

@@ -39,12 +39,12 @@ enum class ccStatus_t {
 enum class ccKernelType {
   CCE_AI_CORE = 0, /* cce aicore */
   CCE_AI_CPU = 1,  /* cce aicpu */
-  TE = 2,          /* te operator*/
+  TE = 2,          /* te operator */
   CUSTOMIZED = 3,  /* customized operator */
-  TE_AI_CORE = 4,  /* te aicore operator*/
+  TE_AI_CORE = 4,  /* te aicore operator */
   TE_AI_CPU = 5,   /* te aicpu operator */
   AI_CPU = 6,      /* aicpu */
-  CUST_AI_CPU = 7, /* custom aicpu*/
+  CUST_AI_CPU = 7, /* custom aicpu */
   HOST_CPU = 8,    /* host cpu */
   INVALID = 10000  /* unknown kernel type */
 };

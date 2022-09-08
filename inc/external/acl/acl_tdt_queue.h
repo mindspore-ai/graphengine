@@ -53,6 +53,8 @@ typedef enum {
   ACL_TDT_QUEUE_ROUTE_QUERY_DST_ID_UINT32
 } acltdtQueueRouteQueryInfoParamType;
 
+typedef enum { ACL_TDT_NORMAL_MEM = 0, ACL_TDT_DVPP_MEM } acltdtAllocBufType;
+
 /**
  * @ingroup AscendCL
  * @brief create queue
@@ -256,6 +258,53 @@ ACL_FUNC_VISIBILITY aclError acltdtFreeBuf(acltdtBuf buf);
  * @see acltdtAllocBuf
  */
 ACL_FUNC_VISIBILITY aclError acltdtGetBufData(const acltdtBuf buf, void **dataPtr, size_t *size);
+
+/**
+ * @ingroup AscendCL
+ * @brief get private data buf address and size
+ *
+ * @param buf [IN] acltdtBuf
+ * @param dataPtr [IN/OUT] pointer to the user ptr
+ * @param size [IN] the current private data area size, less than or equal to 96B
+ * @param offset [IN] address offset, less than or equal to 96B
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtGetBufUserData
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufUserData(const acltdtBuf buf, void *dataPtr, size_t size, size_t offset);
+
+/**
+ * @ingroup AscendCL
+ * @brief set private data buf address and size
+ *
+ * @param buf [OUT] acltdtBuf
+ * @param dataPtr [IN] pointer to the user ptr
+ * @param size [IN] the current private data area size, less than or equal to 96B
+ * @param offset [IN] address offset, less than or equal to 96B
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtSetBufUserData
+ */
+ACL_FUNC_VISIBILITY aclError acltdtSetBufUserData(acltdtBuf buf, const void *dataPtr, size_t size, size_t offset);
+
+/**
+ * @ingroup AscendCL
+ * @brief copy buf ref
+ *
+ * @param buf [IN] acltdtBuf
+ * @param newBuf [OUT] Make a reference copy of the data area of buf and
+ *                     create a new buf header pointing to the same data area
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtCopyBufRef
+ */
+ACL_FUNC_VISIBILITY aclError acltdtCopyBufRef(const acltdtBuf buf, acltdtBuf *newBuf);
 
 /**
  * @ingroup AscendCL

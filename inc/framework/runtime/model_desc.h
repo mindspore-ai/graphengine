@@ -27,6 +27,10 @@
 namespace gert {
 class VISIBILITY_EXPORT ShapeRange {
  public:
+  ShapeRange() = default;
+  ShapeRange(const Shape &min_shape, const Shape &max_shape);
+  bool operator==(const ShapeRange &other) const;
+
   const Shape &GetMin() const;
   const Shape &GetMax() const;
   Shape &MutableMin();
@@ -75,6 +79,9 @@ class VISIBILITY_EXPORT ModelDesc {
 
   const ModelIoDesc *GetOutputDesc(size_t index) const;
   const ModelIoDesc *GetAllOutputsDesc(size_t &output_num) const;
+
+  size_t GetInputNum() const;
+  size_t GetOutputNum() const;
 
   ModelIoDesc *MutableInputDesc(size_t index);
   ModelIoDesc *MutableOutputDesc(size_t index);

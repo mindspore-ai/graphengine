@@ -418,7 +418,7 @@ REG_OP(DepthToSpace)
 *@li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
 *@li "crops" is a 4Dshape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom,
 *width = width_pad - crop_left - crop_right.
-*@li block_size > 2
+*@li block_size >= 2
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpace.

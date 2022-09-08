@@ -8,6 +8,9 @@
 #ifndef MSPROFILER_API_PROF_ACL_API_H_
 #define MSPROFILER_API_PROF_ACL_API_H_
 
+#include <cstdint>
+#include <cstddef>
+
 // DataTypeConfig
 #define PROF_ACL_API                0x00000001ULL
 #define PROF_TASK_TIME              0x00000002ULL
@@ -82,9 +85,6 @@ constexpr uint64_t PROF_AICPU_MODEL_MASK = 0x4000000000000000ULL;
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
-
-#include <cstdint>
-#include <cstddef>
 
 namespace Msprofiler {
 namespace Api {

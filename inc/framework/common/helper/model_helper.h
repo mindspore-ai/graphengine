@@ -49,6 +49,10 @@ class GE_FUNC_VISIBILITY ModelHelper {
     is_offline_ = val;
   }
 
+  void SetSharedWeightFlag(const bool val) {
+    is_shared_weight_ = val;
+  }
+
   bool GetModelType() const {
     return is_unknown_shape_model_;
   }
@@ -60,6 +64,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   bool is_assign_model_ = false;
   bool is_offline_ = true;
   bool is_unknown_shape_model_ = false;
+  bool is_shared_weight_ = false;
   ModelFileHeader *file_header_ = nullptr;
   GeModelPtr model_;
   GeRootModelPtr root_model_;

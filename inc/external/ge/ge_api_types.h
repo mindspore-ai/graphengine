@@ -395,9 +395,6 @@ const std::string RECOMPUTE = "ge.recompute";
 
 const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
 
-// 1: Complete graph resource evaluation(Inclusion graph fusion optimization)
-// 2: Simplified graph resource evaluation(No graph fusion optimization)
-const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 // Topo sorting mode
@@ -518,8 +515,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              SHAPE_GENERALIZED_BUILD_MODE,
                                                              MODIFY_MIXLIST,
                                                              CUSTOMIZE_DTYPES,
-                                                             BUILD_INNER_MODEL,
-                                                             EVALUATE_GRAPH_RESOURCE_MODE};
+                                                             BUILD_INNER_MODEL};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {

@@ -2444,5 +2444,34 @@ REG_OP(ExtractGlimpseV2)
     .ATTR(uniform_noise, Bool, true)
     .ATTR(noise, String, "uniform")
     .OP_END_FACTORY_REG(ExtractGlimpseV2)
+
+/**
+* @brief NormalizeV2 \n
+
+* @par Inputs:
+* @li x: A 4-D Tensor. Must be one of the following types: uint8, float16,
+*        float. Must set the format, supported format list ["NCHW, NHWC"].
+* @li mean: A 1-D float tensor of "C(channel)" elements
+* @li variance: A 1-D float tensor of "C(channel)" elements \n
+
+* @par Outputs:
+* @li y: A 4-D Tensor. Must be one of the following types: float16, float.
+*        Must set the format, supported format list ["NCHW, NHWC"]. \n
+
+* @par Attributes:
+* @li dtype: An Type attr, support type list [DT_FLOAT16, DT_FLOAT].
+*            Defaults to DT_FLOAT. \n
+
+* @par Third-party framework compatibility
+* Compatible with pytorch normalize operator.
+*/
+
+REG_OP(NormalizeV2)
+    .INPUT(x, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT}))
+    .INPUT(variance, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(NormalizeV2)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

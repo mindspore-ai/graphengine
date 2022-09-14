@@ -68,6 +68,8 @@ const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 
 const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
+const std::string kTaskTypeWriteBackData = "WRITE_BACK";
+const std::string kTaskTypeInvalidData = "INVALID";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
 const std::string kTaskTypeFftsPlus = "FFTS_PLUS";
 const std::string kEngineNameVectorCore = "VectorEngine";
@@ -381,5 +383,9 @@ struct ModelQueueParam {
   std::vector<uint32_t> input_queues;
   std::vector<uint32_t> output_queues;
 };
+
+// internal options
+// 1: Graph resource evaluation does not limit model memory size.
+const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

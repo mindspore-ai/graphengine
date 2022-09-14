@@ -32,6 +32,7 @@ extern "C" {
 #define RT_MEMORY_TS_4G (0x40U)    // Used for Ts memory(only 1951)
 #define RT_MEMORY_HOST (0x81U)     // Memory on host
 #define RT_MEMORY_SVM (0x90U)      // Memory for SVM
+#define RT_MEMORY_HOST_SVM (0x90U) // Memory for host SVM
 #define RT_MEMORY_RESERVED (0x100U)
 
 #define RT_MEMORY_L1 (0x1U << 16U)

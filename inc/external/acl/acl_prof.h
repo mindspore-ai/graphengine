@@ -64,7 +64,7 @@ typedef enum {
   ACL_SUBSCRIBE_OP = 0,
   ACL_SUBSCRIBE_SUBGRAPH = 1,
   ACL_SUBSCRIBE_OP_THREAD = 2,
-  ACL_SUBSCRIBE_NONE
+  ACL_SUBSCRIBE_NONE = 0xFF
 } aclprofSubscribeOpFlag;
 
 typedef enum { ACL_SUBSCRIBE_ATTRI_THREADID = 0, ACL_SUBSCRIBE_ATTRI_NONE } aclprofSubscribeOpAttri;

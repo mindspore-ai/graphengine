@@ -178,16 +178,16 @@
   }
 
 #define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)        \
-  {                                                        \
+  do {                                                     \
     GELOGE((_status), "[Check][InnerData]%s", (errormsg)); \
     REPORT_INNER_ERROR("E19999", "%s", (errormsg));        \
-  }
+  } while (false)
 
 #define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                             \
-  {                                                                                      \
+  do {                                                                                   \
     GELOGW("%s", (errormsg));                                                            \
     ErrorManager::GetInstance().ATCReportErrMessage("E10052", {"reason"}, {(errormsg)}); \
-  }
+  } while (false)
 
 #define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                   \
   do {                                                                                     \

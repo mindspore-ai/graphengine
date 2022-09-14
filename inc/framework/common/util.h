@@ -245,15 +245,12 @@ GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
   return ss.str();
 }
 
-///
 /// @ingroup: domi_common
 /// @brief: get length of file
 /// @param [in] input_file: path of file
 /// @return int64_t： File length. If the file length fails to be obtained, the value -1 is returned.
-///
 GE_FUNC_VISIBILITY extern int64_t GetFileLength(const std::string &input_file);
 
-///
 /// @ingroup domi_common
 /// @brief Reads all data from a binary file.
 /// @param [in] file_name  path of file
@@ -261,31 +258,23 @@ GE_FUNC_VISIBILITY extern int64_t GetFileLength(const std::string &input_file);
 /// @param [out] length  Output memory size
 /// @return false fail
 /// @return true success
-///
 GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char_t *const file_name, char_t **const buffer, int32_t &length);
 
-///
 /// @ingroup domi_common
 /// @brief Recursively Creating a Directory
 /// @param [in] directory_path  Path, which can be a multi-level directory.
 /// @return 0 success
 /// @return -1 fail
-///
 GE_FUNC_VISIBILITY extern int32_t CreateDirectory(const std::string &directory_path);
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the current time string.
 /// @return Time character string in the format ： %Y%m%d%H%M%S, eg: 20171011083555
-///
 GE_FUNC_VISIBILITY std::string CurrentTimeInStr();
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the absolute time (timestamp) of the current system.
 /// @return Timestamp, in microseconds (US)
-///
-///
 GE_FUNC_VISIBILITY uint64_t GetCurrentTimestamp();
 
 ///
@@ -296,15 +285,12 @@ GE_FUNC_VISIBILITY uint64_t GetCurrentTimestamp();
 ///
 GE_FUNC_VISIBILITY uint32_t GetCurrentSecondTimestap();
 
-///
 /// @ingroup domi_common
 /// @brief Absolute path for obtaining files.
 /// @param [in] path of input file
 /// @param [out] Absolute path of a file. If the absolute path cannot be obtained, an empty string is returned
-///
 GE_FUNC_VISIBILITY std::string RealPath(const char_t *path);
 
-///
 /// @ingroup domi_common
 /// @brief Check whether the specified input file path is valid.
 /// 1.  The specified path cannot be empty.
@@ -312,23 +298,18 @@ GE_FUNC_VISIBILITY std::string RealPath(const char_t *path);
 /// 3.  The file path exists and is readable.
 /// @param [in] file_path path of input file
 /// @param [out] result
-///
 GE_FUNC_VISIBILITY bool CheckInputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
-///
 /// @ingroup domi_common
 /// @brief Checks whether the specified output file path is valid.
 /// @param [in] file_path path of output file
 /// @param [out] result
-///
 GE_FUNC_VISIBILITY bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
-///
 /// @ingroup domi_common
 /// @brief Check whether the file path meets the whitelist verification requirements.
 /// @param [in] str file path
 /// @param [out] result
-///
 GE_FUNC_VISIBILITY bool ValidateStr(const std::string &file_path, const std::string &mode);
 
 GE_FUNC_VISIBILITY Status ConvertToInt32(const std::string &str, int32_t &val);

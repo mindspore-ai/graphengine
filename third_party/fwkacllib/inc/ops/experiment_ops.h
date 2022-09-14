@@ -293,6 +293,66 @@ REG_OP(AutoBatch)
     .ATTR(padding, Bool, false)
     .ATTR(slide_stride, Int, 0)
     .OP_END_FACTORY_REG(AutoBatch)
+
+/**
+* @brief YUVToRGB
+
+* @par Inputs:
+* @li x: A 4-D uint8 Tensor.
+*        Must set the format, supported format list ["NYUV"].
+* @li matrix: A 1-D float tensor of 2x3x3 elements
+
+* @par Outputs:
+* @li y: A 4-D uint8 Tensor.
+*        Must set the format, supported format list ["NCHW, NHWC"].
+
+* @par Attributes:
+* @li matrix_type: An Int attr, Defaults to 0.
+*                  support list [ 0: CSC_MATRIX_BT601_WIDE,
+*                                 1: CSC_MATRIX_BT601_NARROW,
+*                                 2: CSC_MATRIX_BT709_WIDE,
+*                                 3: CSC_MATRIX_BT709_NARROW,
+*                                 4: CSC_MATRIX_BT2020_WIDE,
+*                                 5: CSC_MATRIX_BT2020_NARROW,
+*                                 6: CSC_MATRIX_USR_DEFINE ]
+* @li rb_swap: An Int attr, Defaults to 0.
+*              support list [ 0: RGB, 1: BGR ]
+
+* @attention Constraints:
+* @li Only support in dvpp
+*/
+
+REG_OP(YUVToRGB)
+    .INPUT(x, TensorType({DT_UINT8}))
+    .OPTIONAL_INPUT(matrix, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .ATTR(matrix_type, Int, 0)
+    .ATTR(rb_swap, Int, 0)
+    .OP_END_FACTORY_REG(YUVToRGB)
+
+/**
+* @brief DecodeJpegPre
+
+* @par Inputs:
+* @li contents: A Tensor of type string. 0-D. The JPEG-encoded image.
+
+* @par Outputs:
+* @li dvpp_support: indicates if the dvpp support this jpeg image decode.
+
+* @par Attributes:
+* @li w_range: An required listInt contains width [min, max].
+* @li h_range: An required listInt contains height [min, max].
+
+* @attention Constraints:
+* @li Only support in dvpp
+*/
+
+REG_OP(DecodeJpegPre)
+    .INPUT(contents, TensorType({DT_STRING}))
+    .OUTPUT(dvpp_support, BOOL)
+    .REQUIRED_ATTR(w_range, ListInt)
+    .REQUIRED_ATTR(h_range, ListInt)
+    .OP_END_FACTORY_REG(DecodeJpegPre)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

@@ -2365,17 +2365,22 @@ REG_OP(SliceLastDim)
 *
 * @par Attributes:
 * @li begin_mask: A Tensor of type int32.
-*     A bitmask where a bit "i" being "1" means to ignore the begin 
+*     Developers can ignore this attribute.
+*     A bitmask where a bit "i" being "1" means to ignore the begin
 *     value and instead use the largest interval possible.
-* @li end_mask: A Tensor of type int32. 
+* @li end_mask: A Tensor of type int32.
+*     Developers can ignore this attribute.
 *     Analogous to "begin_mask".
-* @li ellipsis_mask: A Tensor of type int32. 
+* @li ellipsis_mask: A Tensor of type int32.
+*     Developers can ignore this attribute.
 *     A bitmask where bit "i" being "1" means the "i"th position
 *     is actually an ellipsis.
 * @li new_axis_mask: A Tensor of type int32.
-*     A bitmask where bit "i" being "1" means the "i"th 
+*     Developers can ignore this attribute.
+*     A bitmask where bit "i" being "1" means the "i"th
 *     specification creates a new shape 1 dimension.
-* @li shrink_axis_mask: A Tensor of type int32. 
+* @li shrink_axis_mask: A Tensor of type int32.
+*     Developers can ignore this attribute.
 *     A bitmask where bit "i" implies that the "i"th
 *     specification should shrink the dimensionality. \n
 *
@@ -2385,7 +2390,7 @@ REG_OP(SliceLastDim)
 * @attention Constraints:
 *
 * @par Third-party framework compatibility
-* Compatible with the TensorFlow operator StridedSliceV2.
+* Compatible with the onnx operator Slice.
 */
 REG_OP(StridedSliceV2)
     .INPUT(x, TensorType::BasicType())

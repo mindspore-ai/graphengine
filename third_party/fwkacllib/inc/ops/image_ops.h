@@ -1755,6 +1755,55 @@ REG_OP(Resize)
     .OP_END_FACTORY_REG(Resize)
 
 /**
+*@brief Calculate the resize_grad function.
+support resize_grad image tensor using nearest(1d) and linear(1d) and bicubic(2d) interpolation. \n
+
+* @par Inputs:
+* Input grads must be a 4-D tensor. Inputs include:
+* @li grads: A Tensor. Must be one of the following types: uint8, int8, int16,
+int32, int64, float16, float, double. 4-D with shape [batch, height, width, channels]
+or shape [batch, channels, height, width].
+* @li roi: A 1-D float Tensor. only takes effect when attr coordinate_transformation_mode
+is "tf_crop_and_resize"
+* @li scales: A 1-D float Tensor, the scale array along each dimension.
+* @li original_size: A 1-D int64 Tensor, The size of the output tensor. \n
+
+* @par Attributes:
+* @li coordinate_transformation_mode: String. Defaults to half_pixel. how to transform
+the coordinate in the resized tensor to the coordinate in the original tensor.
+other optional: pytorch_half_pixel, align_corners, asymmetric, tf_half_pixel_for_nn,
+tf_crop_and_resize.
+* @li cubic_coeff_a: Float. Defaults to -0.75, only used in cubic interpolation.
+other optional: -0.5
+* @li exclude_outside: Int. Defaults to 0, If set to 1, the weight of sampling
+locations outside the tensor will be set to 0 and the weight will be renormalized
+so that their sum is 1.0.
+* @li extrapolation_value: Float. Defaults to 0.0f. When coordinate_transformation_mode
+is "tf_crop_and_resize" and x_original is outside the range [0, length_original - 1],
+this value is used as the corresponding output value.
+* @li mode: String. Defaults to nearest. Three interpolation modes: nearest (default),
+linear and cubic.
+* @li nearest_mode: String. Defaults to round_prefer_floor. Four modes: round_prefer_floor,
+round_prefer_ceil, floor, ceil. Only used by nearest interpolation. \n
+
+*@par Outputs:
+*@li y: A Tensor with the same type of grads's, shape depends on grads and sizes. \n
+*/
+REG_OP(ResizeGrad)
+    .INPUT(grads, TensorType({OrdinaryType, DT_STRING}))
+    .OPTIONAL_INPUT(roi, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OPTIONAL_INPUT(scales, TensorType({DT_FLOAT}))
+    .INPUT(original_size, TensorType({DT_INT64, DT_INT32}))
+    .OUTPUT(y, TensorType({OrdinaryType, DT_STRING}))
+    .ATTR(coordinate_transformation_mode, String, "half_pixel")
+    .ATTR(cubic_coeff_a, Float, -0.75)
+    .ATTR(exclude_outside, Int, 0)
+    .ATTR(extrapolation_value, Float, 0.0)
+    .ATTR(mode, String, "nearest")
+    .ATTR(nearest_mode, String, "round_prefer_floor")
+    .OP_END_FACTORY_REG(ResizeGrad)
+
+/**
 *@brief Function parse image from string to int. \n
 
 *@par Inputs:

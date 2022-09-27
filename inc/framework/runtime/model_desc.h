@@ -52,6 +52,8 @@ class VISIBILITY_EXPORT ModelIoDesc {
   const Shape &GetOriginShape() const;
   const ShapeRange &GetOriginShapeRange() const;
   const ShapeRange &GetStorageShapeRange() const;
+  std::vector<std::pair<int64_t, int64_t>> GetOriginShapeRangeVector() const;
+  std::vector<std::pair<int64_t, int64_t>> GetStorageShapeRangeVector() const;
 
   void SetName(const char *name);
   void SetDataType(int32_t data_type);

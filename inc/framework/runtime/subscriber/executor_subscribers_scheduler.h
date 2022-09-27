@@ -16,29 +16,29 @@
 
 #ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBERS_SCHEDULER_H_
 #define AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBERS_SCHEDULER_H_
-#include <vector>
 #include <array>
-#include "executor_subscriber_guarder.h"
+#include <vector>
 #include "built_in_subscriber_definitions.h"
-#include "global_profiling.h"
+#include "executor_subscriber_guarder.h"
 #include "framework/common/ge_visibility.h"
+#include "global_profiling.h"
+#include "global_dumper.h"
+#include "graph/any_value.h"
 namespace gert {
-class ModelV2Executor;
 class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
  public:
   static void OnExecuteEvent(ExecutorSubscribersScheduler *ins, ExecutorEvent event, const void *node,
                              KernelStatus result);
 
   ExecutorSubscribersScheduler()
-      : executor_(nullptr),
-        enabled_(false),
+      : enabled_(false),
         built_in_subscribers_ptr_(),
         subscribers_(),
         subscriber_wrapper_({reinterpret_cast<::SubscriberFunc>(ExecutorSubscribersScheduler::OnExecuteEvent), this}) {}
 #ifdef ONLY_COMPILE_OPEN_SRC
   ~ExecutorSubscribersScheduler();
 #endif
-  void Init(ModelV2Executor *executor);
+  void Init(const SubscriberExtendInfo &extend_info);
   ExecutorSubscribersScheduler(const ExecutorSubscribersScheduler &) = delete;
   ExecutorSubscribersScheduler &operator=(const ExecutorSubscribersScheduler &) = delete;
   ExecutorSubscriber &GetSubscriber() {
@@ -47,13 +47,6 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
     } else {
       return subscriber_wrapper_;
     }
-  }
-
-  ModelV2Executor *GetModelV2Executor() {
-    return executor_;
-  }
-  const ModelV2Executor *GetModelV2Executor() const {
-    return executor_;
   }
 
   /**
@@ -75,7 +68,6 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
     if (ins == nullptr) {
       return nullptr;
     }
-    constexpr size_t kInitSubscriberSize = 1UL;
     // profiler exists when ess init
     if (subscribers_.size() == kInitSubscriberSize) {
       enabled_ = true;
@@ -90,7 +82,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
    * 为了易用性，在本类提供了获取内置subscriber的指针的接口。而自注册的subscriber将丢失此能力。
    * @param subscriber_type
    */
-  void AddBuiltIn(BuiltInSubscriberType subscriber_type, uint64_t enable_flag);
+  void AddBuiltIn(BuiltInSubscriberType subscriber_type, uint64_t enable_flag, const SubscriberExtendInfo &extend_info);
   void RemoveSubscriber(void *subscriber_ptr) {
     for (auto iter = subscribers_.begin(); iter != subscribers_.end(); ++iter) {
       if (iter->GetSubscriber().arg == subscriber_ptr) {
@@ -103,7 +95,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
         built_in_subscriber = nullptr;
       }
     }
-    if (subscribers_.empty()) {
+    if (subscribers_.size() == kInitSubscriberSize) {
       enabled_ = false;
     }
   }
@@ -119,7 +111,8 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
 
   bool IsEnable() const {
-    return enabled_ || GlobalProfilingWrapper::GetInstance()->GetEnableFlags();
+    return enabled_ || GlobalProfilingWrapper::GetInstance()->GetEnableFlags() ||
+           GlobalDumper::GetInstance()->GetEnableFlags();
   }
   void SetEnable(bool enable_flag) {
     enabled_ = enable_flag;
@@ -136,7 +129,6 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
 
  private:
-  ModelV2Executor *executor_{nullptr};
   bool enabled_{false};
   std::array<void *, static_cast<size_t>(BuiltInSubscriberType::kNum)> built_in_subscribers_ptr_;
   std::vector<ExecutorSubscriberGuarder> subscribers_;

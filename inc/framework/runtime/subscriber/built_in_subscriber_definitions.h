@@ -18,7 +18,12 @@
 #define AIR_CXX_INC_FRAMEWORK_RUNTIME_SUBSCRIBER_BUILT_IN_SUBSCRIBER_DEFINITIONS_H_
 #include <type_traits>
 #include <vector>
+#include "graph/gnode.h"
+#include "common/ge_types.h"
 #include "framework/common/ge_visibility.h"
+namespace ge {
+class GeRootModel;
+}
 namespace gert {
 constexpr size_t kProfilingDataCap = 10UL * 1024UL * 1024UL;
 constexpr size_t kInitSize = 10UL * 1024UL;
@@ -26,11 +31,12 @@ constexpr size_t kModelStrIdx = 0UL;
 constexpr size_t kExecuteStrIdx = 1UL;
 constexpr size_t kRegStartIdx = 2UL;
 constexpr size_t kDouble = 2UL;
+constexpr size_t kInitSubscriberSize = 2UL;
 
 enum class BuiltInSubscriberType { kProfiling, kDumper, kNum };
 
 enum class ProfilingType {
-  kHost,  // 打开Host侧调度的profiling
+  kCannHost,  // 打开Host侧调度的profiling
   kDevice,
   kGeHost,  // 打开GE Host侧调度的profiling
   kNum,
@@ -39,9 +45,16 @@ enum class ProfilingType {
 static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * 8,
               "The max num of profiling type must less than the width of uint64");
 
-enum class DumpType { kDataDump, kExceptionDump, kExceptionSave, kNum, kAll = kNum };
+enum class DumpType { kDataDump, kExceptionDump, kNum, kAll = kNum };
 static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * 8,
               "The max num of dumper type must less than the width of uint64");
+class ModelV2Executor;
+struct SubscriberExtendInfo {
+  ModelV2Executor *executor;
+  ge::ComputeGraphPtr exe_graph;
+  ge::ModelData model_data;
+  std::shared_ptr<ge::GeRootModel> root_model;
+};
 
 class VISIBILITY_EXPORT BuiltInSubscriberUtil {
  public:

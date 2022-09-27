@@ -1587,7 +1587,7 @@ REG_OP(UniqueConsecutive)
 /**
 * @brief Decodes a variant Tensor into a RaggedTensor. \n
 *
-* @par Input:  
+* @par Input:
 * @li encoded_ragged:  A Tensor of type variant. A variant Tensor containing encoded RaggedTensors. \n
 *
 * @par Outputs:
@@ -1596,9 +1596,9 @@ REG_OP(UniqueConsecutive)
 *               double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool. \n
 *
 * @par Attributes:
-* @li input_ragged_rank: An int that is >= -1. The ragged rank of each encoded RaggedTensor component in the input. 
+* @li input_ragged_rank: An int that is >= -1. The ragged rank of each encoded RaggedTensor component in the input.
 *         If set to -1, this is inferred as output_n - rank(encoded_ragged).
-* @li output_ragged_rank: An int that is >= 0. The expected ragged rank of the output RaggedTensor. 
+* @li output_ragged_rank: An int that is >= 0. The expected ragged rank of the output RaggedTensor.
 *          The following must hold: output_n = rank(encoded_ragged) + input_n.
 * @li Tvalues: The data type of output_dense_values.
 * @li Tsplits: The data type of output_nested_splits. An optional DType of "int32, int64". Defaults to `int64`. \n
@@ -1616,6 +1616,36 @@ REG_OP(RaggedTensorFromVariant)
     .ATTR(Tsplits, Type, DT_INT64)
     .OP_END_FACTORY_REG(RaggedTensorFromVariant)
 
+/**
+* @brief Return the unique elements of the input tensor with counts and sorted elements. \n
+
+* @par Inputs:
+* @li x: A tensor. Input "x" is a k-dimensional tensor. \n
+
+* @par Attributes:
+* @li return_inverse: An optional DType from: "bool". Defaults to False.
+* @li return_counts: An optional DType from: "bool". Defaults to False.
+* @li sorted: An optional DType from "bool". Defaults to True. \n
+
+* @par Outputs:
+* @li y: A Tensor. The output list of unique scalar elements. Has the same type as "x".
+* @li indices: A tensor of type DT_INT32, DT_INT64.
+*              Representing the indices for where elements in the original input map to in the output.
+* @li counts: A tensor of type DT_INT32, DT_INT64.
+              Representing the number of occurrences for each unique value or tensor. \n
+
+* @par Third-party framework compatibility
+* Compatible with Pytorch operator _unique2.
+*/
+REG_OP(UniqueWithCountsAndSorting)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(counts, TensorType({DT_INT32, DT_INT64}))
+    .ATTR(return_inverse, Bool, false)
+    .ATTR(return_counts, Bool, false)
+    .ATTR(sorted, Bool, true)
+    .OP_END_FACTORY_REG(UniqueWithCountsAndSorting)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

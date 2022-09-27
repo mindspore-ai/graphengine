@@ -26,6 +26,9 @@
 #include "exe_graph_resource_guard.h"
 #include "exe_graph_executor.h"
 #include "subscriber/executor_subscribers_scheduler.h"
+#include "common/ge_types.h"
+#include "gert_api.h"
+#include "mem_allocator.h"
 
 namespace gert {
 enum class ExecutorState { kInit, kLoaded };
@@ -35,13 +38,20 @@ inline const char *GetSubExeGraphTypeStr(SubExeGraphType type) {
   return kSubExeGraphTypeStrs[type];
 }
 
+enum class ExecuteArgIndex { kExternalAllocator = -2, kStream = -1, kEnd };
+
 struct ModelExecuteArg {
   rtStream_t stream;
+  ExternalAllocators *external_allocator;
+  ModelExecuteArg() : stream(nullptr), external_allocator(nullptr) {}
+  ModelExecuteArg(rtStream_t stream_, ExternalAllocators *external_allocator_ = nullptr)
+      : stream(stream_), external_allocator(external_allocator_) {}
 };
 static_assert(std::is_standard_layout<ModelExecuteArg>::value, "The class ModelExecuteArg must be a POD");
-
 class VISIBILITY_EXPORT ModelV2Executor {
  public:
+  static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph, const ge::ModelData &model_data,
+                                                 const std::shared_ptr<ge::GeRootModel> &root_model);
   static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph);
 
   ge::graphStatus Load();
@@ -52,8 +62,11 @@ class VISIBILITY_EXPORT ModelV2Executor {
 
   const ModelDesc &GetModelDesc() const;
   void SetModelDesc(ModelDesc *model_desc);
-  ExeGraphExecutor &GetMainExeGraphExecutor() {
-    return graphs_[kMainExeGraph];
+  ExeGraphExecutor *GetExeGraphExecutor(SubExeGraphType type) {
+    if (type >= kSubExeGraphTypeEnd) {
+      return nullptr;
+    }
+    return &graphs_[static_cast<size_t>(type)];
   }
   ExecutorSubscribersScheduler &GetSubscribers();
   const ExecutorSubscribersScheduler &GetSubscribers() const;

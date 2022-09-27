@@ -128,6 +128,8 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     }
   }
 
+  static uint64_t RegisterStringHash(const std::string &str);
+
  private:
   GlobalProfilingWrapper();
 

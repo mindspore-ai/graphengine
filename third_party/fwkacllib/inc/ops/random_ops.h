@@ -887,5 +887,67 @@ REG_OP(Geometric)
     .ATTR(seed, Int, 0)
     .OP_END_FACTORY_REG(Geometric)
 
+/**
+* @brief Returns a tensor where each row contains numsamples indices sampled from the multinomial distribution. \n
+
+* @par Inputs:
+* x:  A Tensor. Must be one of the following types: float16, float, double.
+* @li seed:If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by a random seed. Otherwise, it is seeded by the given seed.
+* @li offset:To avoid seed collision . \n
+
+* @par Attributes:
+* @li numsamples: An Required int, number of samples to draw.
+* @li replacement: An optional bool, whether to draw with replacement or not. Defaults to false. \n
+
+* @par Outputs:
+* y: A Tensor, with type int64 . \n
+
+* @par Third-party framework compatibility
+* @ Compatible with the Pytorch operator multinomial.
+*/
+REG_OP(MultinomialWithReplacement)
+    .INPUT(x, TensorType({ DT_FLOAT16,DT_FLOAT,DT_DOUBLE }))
+    .INPUT(seed, TensorType({ DT_INT64 }))
+    .INPUT(offset, TensorType({ DT_INT64 }))
+    .OUTPUT(y, TensorType({ DT_INT64 }))
+    .REQUIRED_ATTR(numsamples, Int)
+    .ATTR(replacement, Bool, false)
+    .OP_END_FACTORY_REG(MultinomialWithReplacement)
+
+/**
+* @brief Returns the random permutation of integers from 0 to n-1. \n
+
+* @par Inputs:
+* Inputs include:
+* @li n: A input scalar with type of int64.
+* @li seed:If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by a random seed. Otherwise, it is seeded by the given seed.
+* @li offset:To avoid seed collision. \n
+
+* @par Attributes:
+* @li layout: An optional int. Defaults to 0.
+* @li dtype: An optional Type. Defaults to int64. \n
+
+* @par Outputs:
+* @li y: A required Tensor. Must be one of the following types:
+* float16, float32, float64, int8, uint8, int16, int32, int64. \n
+
+* @attention Constraints:
+* The implementation for Randperm on Ascend uses AICPU, with bad performance.
+
+* @par Third-party framework compatibility
+* @li compatible with Pytorch Randperm operator.
+*/
+REG_OP(StatelessRandperm)
+    .INPUT(n, TensorType({DT_INT64}))
+    .INPUT(seed, TensorType({DT_INT64}))
+    .INPUT(offset, TensorType({DT_INT64}))
+    .OUTPUT(y, TensorType({DT_INT64, DT_INT32, DT_INT16,
+        DT_UINT8, DT_INT8, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(layout, Int, 0)
+    .ATTR(dtype, Type, DT_INT64)
+    .OP_END_FACTORY_REG(StatelessRandperm)
+
 }   // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

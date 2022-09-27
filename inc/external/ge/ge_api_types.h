@@ -50,6 +50,8 @@ const char_t *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char_t *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
 const char_t *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
 const char_t *const OPTION_EXEC_DUMP_MODE = "ge.exec.dumpMode";
+const char_t *const OPTION_EXEC_DUMP_DATA = "ge.exec.dumpData";
+const char_t *const OPTION_EXEC_DUMP_LAYER = "ge.exec.dumpLayer";
 const char_t *const OPTION_EXEC_ENABLE_DUMP_DEBUG = "ge.exec.enableDumpDebug";
 const char_t *const OPTION_EXEC_DUMP_DEBUG_MODE = "ge.exec.dumpDebugMode";
 const char_t *const OPTION_EXEC_ENABLE_INCRE_BUILD = "ge.exec.enableIncreBuild";
@@ -131,7 +133,7 @@ const char_t *const MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 const char_t *const OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
-const char_t *const BUILD_GRAPH_ALREADY_INITIALIZED = "build_graph_already_initialized";
+const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -296,11 +298,11 @@ const std::string FUSION_SWITCH_FILE = "ge.fusionSwitchFile";
 // Configure compression optimize file path
 const std::string COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 
-// Configure for amct
-const std::string BUILD_GRAPH_ALREADY_INITIALIZED = "build_graph_already_initialized";
-
 // Configure customize dtypes path
 const std::string CUSTOMIZE_DTYPES = "ge.customizeDtypes";
+
+// Configure switch for op debug config such as op memory detection
+const std::string OP_DEBUG_CONFIG = "op_debug_config";
 
 // Save original model
 const std::string SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
@@ -482,8 +484,8 @@ static const char_t *const MODIFY_MIXLIST = ge::MODIFY_MIXLIST.c_str();
 static const char_t *const OP_PRECISION_MODE = ge::OP_PRECISION_MODE.c_str();
 static const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 static const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
-static const char_t *const BUILD_GRAPH_ALREADY_INITIALIZED = "build_graph_already_initialized";
 static const char_t *const INPUT_DATA_NAMES = "input_data_names";
+static const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -515,7 +517,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              SHAPE_GENERALIZED_BUILD_MODE,
                                                              MODIFY_MIXLIST,
                                                              CUSTOMIZE_DTYPES,
-                                                             BUILD_INNER_MODEL};
+                                                             BUILD_INNER_MODEL,
+                                                             OP_DEBUG_CONFIG};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
@@ -546,7 +549,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               OP_COMPILER_CACHE_MODE,
                                               MODIFY_MIXLIST,
                                               COMPRESSION_OPTIMIZE_CONF,
-                                              BUILD_GRAPH_ALREADY_INITIALIZED};
+                                              OP_DEBUG_CONFIG};
 #endif
 }  // namespace ir_option
 }  // namespace ge

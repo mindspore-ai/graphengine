@@ -19,6 +19,7 @@
 #include "model_v2_executor.h"
 #include "common/ge_types.h"
 #include "common/ge_visibility.h"
+#include "mem_allocator.h"
 
 namespace gert {
 VISIBILITY_EXPORT
@@ -27,5 +28,11 @@ std::unique_ptr<ModelV2Executor> LoadExecutorFromFile(const char *model_path, ge
 VISIBILITY_EXPORT
 std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
                                                            ge::graphStatus &error_code);
+VISIBILITY_EXPORT
+ge::graphStatus IsDynamicModel(const char *model_path, bool &is_dynamic_model);
+
+VISIBILITY_EXPORT
+std::unique_ptr<ExternalAllocators> CreateSingleOpAllocator();
+
 }  // namespace gert
 #endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_

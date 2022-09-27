@@ -41,6 +41,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
+  static Status GetModelFileHead(const ge::ModelData &model_data, ModelFileHeader *&file_header);
   static void SetModelToGeModel(const GeModelPtr &ge_model, Model &model);
 
   GeModelPtr GetGeModel();

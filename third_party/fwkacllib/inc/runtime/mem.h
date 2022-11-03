@@ -29,7 +29,7 @@ extern "C" {
 #define RT_MEMORY_P2P_DDR (0x11U)  // DDR memory on other device
 #define RT_MEMORY_DDR_NC (0x20U)   // DDR memory of non-cache
 #define RT_MEMORY_TS (0x40U)       // Used for Ts memory
-#define RT_MEMORY_TS_4G (0x40U)    // Used for Ts memory(only 1951)
+#define RT_MEMORY_TS_4G (0x40U)    // Used for Ts memory(only 51)
 #define RT_MEMORY_HOST (0x81U)     // Memory on host
 #define RT_MEMORY_SVM (0x90U)      // Memory for SVM
 #define RT_MEMORY_HOST_SVM (0x90U) // Memory for host SVM
@@ -222,6 +222,7 @@ typedef struct {
  */
 RTS_API rtError_t rtMalloc(void **devPtr, uint64_t size, rtMemType_t type);
 
+RTS_API rtError_t rtMallocV2(void **devPtr, uint64_t size, rtMemType_t type, const uint16_t moduleId);
 /**
  * @ingroup dvrt_mem
  * @brief free device memory
@@ -241,6 +242,8 @@ RTS_API rtError_t rtFree(void *devPtr);
  */
 RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size);
 
+rtError_t rtDvppMallocV2(void **devPtr, uint64_t size, uint16_t moduleId);
+
 /**
  * @ingroup dvrt_mem
  * @brief alloc device memory for dvpp, support set flag
@@ -252,6 +255,8 @@ RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size);
  * @return others is error
  */
 RTS_API rtError_t rtDvppMallocWithFlag(void **devPtr, uint64_t size, uint32_t flag);
+
+RTS_API rtError_t rtDvppMallocWithFlagV2(void **devPtr, uint64_t size, uint32_t flag, const uint16_t moduleId);
 
 /**
  * @ingroup dvrt_mem
@@ -271,6 +276,8 @@ RTS_API rtError_t rtDvppFree(void *devPtr);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
+
+RTS_API rtError_t rtMallocHostV2(void **hostPtr, uint64_t size, uint16_t moduleId);
 
 /**
  * @ingroup dvrt_mem
@@ -314,6 +321,8 @@ RTS_API rtError_t rtFreeHostSharedMemory(rtFreeHostSharedMemoryIn *in);
  */
 RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag);
 
+RTS_API rtError_t rtMemAllocManagedV2(void **ptr, uint64_t size, uint32_t flag, uint16_t moduleId);
+
 /**
  * @ingroup dvrt_mem
  * @brief free managed memory
@@ -333,10 +342,12 @@ RTS_API rtError_t rtMemFreeManaged(void *ptr);
  */
 RTS_API rtError_t rtMallocCached(void **devPtr, uint64_t size, rtMemType_t type);
 
+RTS_API rtError_t rtMallocCachedV2(void **devPtr, uint64_t size, rtMemType_t type, uint16_t moduleId);
+
 /**
  * @ingroup dvrt_mem
  * @brief flush device mempory
- * @param [in] base   virtal base address
+ * @param [in] base   virtal base addr
  * @param [in] len    memory size
  * @return RT_ERROR_NONE for ok, errno for failed
  */
@@ -345,7 +356,7 @@ RTS_API rtError_t rtFlushCache(void *base, size_t len);
 /**
  * @ingroup dvrt_mem
  * @brief invalid device mempory
- * @param [in] base   virtal base address
+ * @param [in] base   virtal base addr
  * @param [in] len    memory size
  * @return RT_ERROR_NONE for ok, errno for failed
  */
@@ -399,15 +410,15 @@ RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, ui
  * @param [in] dst   destination address pointer
  * @param [in] Max length of destination address memory
  * @param [in] src   source address pointer
- * @param [in] count   the number of byte to copy
+ * @param [in] cnt   the number of byte to copy
  * @param [in] kind   memcpy type
- * @param [in] stream   asynchronized task stream
+ * @param [in] stm   asynchronized task stream
  * @param [in] qosCfg   asynchronized task qosCfg
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemcpyAsyncWithCfg(void *dst, uint64_t destMax, const void *src, uint64_t count,
-    rtMemcpyKind_t kind, rtStream_t stream, uint32_t qosCfg);
+RTS_API rtError_t rtMemcpyAsyncWithCfg(void *dst, uint64_t destMax, const void *src, uint64_t cnt,
+    rtMemcpyKind_t kind, rtStream_t stm, uint32_t qosCfg);
 
 typedef struct {
     uint32_t resv0;

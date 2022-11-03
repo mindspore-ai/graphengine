@@ -67,7 +67,10 @@ const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 // profiling data
 
 const std::string kTaskTypeAicore = "AI_CORE";
+const std::string kTaskTypeMixAic = "MIX_AIC";
+const std::string kTaskTypeMixAiv = "MIX_AIV";
 const std::string kTaskTypeAicpu = "AI_CPU";
+const std::string kTaskTypeDsa = "DSA";
 const std::string kTaskTypeWriteBackData = "WRITE_BACK";
 const std::string kTaskTypeInvalidData = "INVALID";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
@@ -81,8 +84,11 @@ const std::string kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
 const std::string kEngineNameAiCpu = "aicpu_ascend_kernel";
 const std::string kEngineNameAiCpuTf = "aicpu_tf_kernel";
 const std::string kEngineNameAiCore = "AIcoreEngine";
+const std::string kEngineNameDvpp = "dvpp_ops_kernel";
+const std::string kEngineNameDsa = "DSAEngine";
 const std::string kAtomicOpType = "DynamicAtomicAddrClean";
-
+const char_t *const kAICpuKernelLibName = "aicpu_kernel_lib_name";
+const char *const kPartiallySupported = "partially_supported";
 const std::string kShapeTypeStatic = "static";
 const std::string kShapeTypeDynamic = "dynamic";
 const std::string kAtomicPrefix = "_atomic";
@@ -387,5 +393,23 @@ struct ModelQueueParam {
 // internal options
 // 1: Graph resource evaluation does not limit model memory size.
 const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
+
+// 2: Enable graph parallel options
+const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
+
+// 3: Config all resource and device mesh
+const char_t *const RESOURCE_CONFIG_PATH = "ge.resourceConfigPath";
+
+// 4: Config graph parallel options path(should specific file name)
+const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
+
+// 5: auto recompute attribute
+const char_t *const RECOMPUTE = "ge.recompute";
+
+// 6: Topological Sorting Mode
+const char_t *const OPTION_TOPOSORTING_MODE = "ge.topoSortingMode";
+const std::set<std::string> ir_builder_suppported_options_inner = {
+    EVALUATE_GRAPH_RESOURCE_MODE, ENABLE_GRAPH_PARALLEL, RESOURCE_CONFIG_PATH, GRAPH_PARALLEL_OPTION_PATH, RECOMPUTE,
+    OPTION_TOPOSORTING_MODE};
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

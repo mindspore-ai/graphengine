@@ -35,6 +35,7 @@ extern "C" {
 #endif
 
 #define GE_MODULE_NAME static_cast<int32_t>(GE)
+#define GE_MODULE_NAME_U16 static_cast<uint16_t>(GE)
 
 // trace status of log
 enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
@@ -89,6 +90,9 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
   do {                                                                                                    \
     dlog_event((RUN_LOG_MASK | GE_MODULE_NAME), "%" PRIu64 " %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], \
                ##__VA_ARGS__);                                                                            \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {                                                         \
+      dlog_info(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+    }                                                                                                     \
   } while (false)
 
 #define GELOGT(VALUE, fmt, ...)                                                                              \

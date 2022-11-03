@@ -98,6 +98,12 @@ typedef enum aclrtGroupAttr {
   ACL_GROUP_GROUPID_INT
 } aclrtGroupAttr;
 
+typedef enum aclrtFloatOverflowMode {
+  ACL_RT_OVERFLOW_MODE_SATURATION = 0,
+  ACL_RT_OVERFLOW_MODE_INFNAN,
+  ACL_RT_OVERFLOW_MODE_UNDEF,
+} aclrtFloatOverflowMode;
+
 typedef struct tagRtGroupInfo aclrtGroupInfo;
 
 typedef struct rtExceptionInfo aclrtExceptionInfo;
@@ -867,6 +873,20 @@ ACL_FUNC_VISIBILITY aclError aclrtSynchronizeStream(aclrtStream stream);
 
 /**
  * @ingroup AscendCL
+ * @brief block the host until all tasks
+ * in the specified stream have completed
+ *
+ * @param  stream [IN]   the stream to wait
+ * @param  timeout [IN]  timeout value,the unit is milliseconds
+ * -1 means waiting indefinitely, 0 means check whether synchronization is complete immediately
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSynchronizeStreamWithTimeout(aclrtStream stream, int32_t timeout);
+
+/**
+ * @ingroup AscendCL
  * @brief Blocks the operation of the specified Stream until
  * the specified Event is completed.
  * Support for multiple streams waiting for the same event.
@@ -1034,6 +1054,48 @@ ACL_FUNC_VISIBILITY aclError aclrtGetMemInfo(aclrtMemAttr attr, size_t *free, si
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtSetOpWaitTimeout(uint32_t timeout);
+
+/**
+ * @ingroup AscendCL
+ * @brief enable or disable overflow switch on some stream
+ * @param stream [IN]   set overflow switch on this stream
+ * @param flag [IN]  0 : disable 1 : enable
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetStreamOverflowSwitch(aclrtStream stream, uint32_t flag);
+
+/**
+ * @ingroup AscendCL
+ * @brief get overflow switch on some stream
+ * @param stream [IN]   get overflow switch on this stream
+ * @param flag [OUT]  current overflow switch, 0 : disable others : enable
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtGetStreamOverflowSwitch(aclrtStream stream, uint32_t *flag);
+
+/**
+ * @ingroup AscendCL
+ * @brief set saturation mode
+ * @param mode [IN]   target saturation mode
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetDeviceSatMode(aclrtFloatOverflowMode mode);
+
+/**
+ * @ingroup AscendCL
+ * @brief get saturation mode
+ * @param mode [OUT]   get saturation mode
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtGetDeviceSatMode(aclrtFloatOverflowMode *mode);
 
 #ifdef __cplusplus
 }

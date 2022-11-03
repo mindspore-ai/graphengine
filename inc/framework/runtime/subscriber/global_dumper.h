@@ -15,7 +15,6 @@
  */
 #ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_GLOBAL_DUMPER_H_
 #define AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_GLOBAL_DUMPER_H_
-#include <vector>
 #include <mutex>
 
 #include "built_in_subscriber_definitions.h"
@@ -23,10 +22,17 @@
 #include "graph/compute_graph.h"
 #include "runtime/base.h"
 
+namespace ge {
+class ExceptionDumper;
+}
 namespace gert {
 // for global info for exception_dump and global switch
 class VISIBILITY_EXPORT GlobalDumper {
  public:
+  GlobalDumper(const GlobalDumper &) = delete;
+  GlobalDumper(GlobalDumper &&) = delete;
+  GlobalDumper &operator=(const GlobalDumper &) = delete;
+  GlobalDumper &operator==(GlobalDumper &&) = delete;
   static GlobalDumper *GetInstance() {
     static GlobalDumper global_dumper;
     return &global_dumper;
@@ -34,14 +40,9 @@ class VISIBILITY_EXPORT GlobalDumper {
 
   static void OnGlobalDumperSwitch(void *ins, uint64_t enable_flags);
 
-  void AddExceptionInfo(const rtExceptionInfo *exception_data) {
-    const std::lock_guard<std::mutex> lk(exception_infos_mutex_);
-    exception_infos_.emplace_back(*exception_data);
-  }
+  void AddExceptionInfo(const rtExceptionInfo *exception_data) const;
 
-  const std::vector<rtExceptionInfo> &GetExceptionInfos() const {
-    return exception_infos_;
-  }
+  ge::ExceptionDumper *MutableExceptionDumper() const;
 
   void SetEnableFlags(const uint64_t enable_flags) {
     enable_flags_ = enable_flags;
@@ -52,20 +53,12 @@ class VISIBILITY_EXPORT GlobalDumper {
   };
 
   bool IsEnable(DumpType dump_type) const {
-    return enable_flags_ & BuiltInSubscriberUtil::EnableBit<DumpType>(dump_type);
+    return static_cast<bool>(enable_flags_ & BuiltInSubscriberUtil::EnableBit<DumpType>(dump_type));
   }
 
  private:
   GlobalDumper();
-  GlobalDumper(const GlobalDumper &) = delete;
-  GlobalDumper(GlobalDumper &&) = delete;
-  GlobalDumper &operator=(const GlobalDumper &) = delete;
-  GlobalDumper &operator==(GlobalDumper &&) = delete;
-
- private:
   uint64_t enable_flags_{0UL};
-  std::vector<rtExceptionInfo> exception_infos_;
-  std::mutex exception_infos_mutex_;
 };
 }  // namespace gert
 #endif

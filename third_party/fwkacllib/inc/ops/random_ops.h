@@ -565,6 +565,7 @@ include:
 * @li seed:If seed is set to be -1, and offset is set to be 0, the random number
 * generator is seeded by arandom seed. Otherwise, it is seeded by the given seed.
 * @li offset:To avoid seed collision . \n
+* @li dtype: The type of the output.
 
 * @par Outputs:
 * y:A Tensor. A Tensor of type int8, uint8, int16, uint16, 
@@ -577,6 +578,7 @@ REG_OP(StatelessBernoulli)
     .INPUT(offset, TensorType({ DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,
         DT_INT64, DT_UINT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(StatelessBernoulli)
 /**
 *@brief Generates values in an interval . \n
@@ -949,5 +951,35 @@ REG_OP(StatelessRandperm)
     .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(StatelessRandperm)
 
+/*
+* @brief Generate random bool or uint1 mask for dropout v4 . \n
+
+* @par Inputs:
+ include:
+* @li shape:The shape of the output tensor.
+* @li prob:0-D. Prob of 1 . \n
+
+* @par Attributes:
+* @li seed:If either seed or seed2 are set to be non-zero, the random number
+* generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+* @li seed2:A second seed to avoid seed collision.
+* @li dtype:dtype of out put tensor, default is bool . \n
+
+* @par Outputs:
+* y:Output random number using bool or uint1 data format . \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+
+* @see DropOutGenMaskV4()
+*/
+REG_OP(DropOutGenMaskV4)
+    .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_BOOL, DT_UINT1 }))
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .ATTR(dtype, Type, DT_BOOL)
+    .OP_END_FACTORY_REG(DropOutGenMaskV4)
 }   // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

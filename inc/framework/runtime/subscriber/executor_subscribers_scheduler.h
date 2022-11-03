@@ -21,13 +21,13 @@
 #include "built_in_subscriber_definitions.h"
 #include "executor_subscriber_guarder.h"
 #include "framework/common/ge_visibility.h"
-#include "global_profiling.h"
+#include "global_profiler.h"
 #include "global_dumper.h"
 #include "graph/any_value.h"
 namespace gert {
 class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
  public:
-  static void OnExecuteEvent(ExecutorSubscribersScheduler *ins, ExecutorEvent event, const void *node,
+  static void OnExecuteEvent(const ExecutorSubscribersScheduler *ins, ExecutorEvent event, const void *node,
                              KernelStatus result);
 
   ExecutorSubscribersScheduler()
@@ -35,9 +35,6 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
         built_in_subscribers_ptr_(),
         subscribers_(),
         subscriber_wrapper_({reinterpret_cast<::SubscriberFunc>(ExecutorSubscribersScheduler::OnExecuteEvent), this}) {}
-#ifdef ONLY_COMPILE_OPEN_SRC
-  ~ExecutorSubscribersScheduler();
-#endif
   void Init(const SubscriberExtendInfo &extend_info);
   ExecutorSubscribersScheduler(const ExecutorSubscribersScheduler &) = delete;
   ExecutorSubscribersScheduler &operator=(const ExecutorSubscribersScheduler &) = delete;
@@ -83,7 +80,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
    * @param subscriber_type
    */
   void AddBuiltIn(BuiltInSubscriberType subscriber_type, uint64_t enable_flag, const SubscriberExtendInfo &extend_info);
-  void RemoveSubscriber(void *subscriber_ptr) {
+  void RemoveSubscriber(const void *subscriber_ptr) {
     for (auto iter = subscribers_.begin(); iter != subscribers_.end(); ++iter) {
       if (iter->GetSubscriber().arg == subscriber_ptr) {
         subscribers_.erase(iter);
@@ -111,8 +108,8 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
 
   bool IsEnable() const {
-    return enabled_ || GlobalProfilingWrapper::GetInstance()->GetEnableFlags() ||
-           GlobalDumper::GetInstance()->GetEnableFlags();
+    return enabled_ || static_cast<bool>(GlobalProfilingWrapper::GetInstance()->GetEnableFlags()) ||
+           static_cast<bool>(GlobalDumper::GetInstance()->GetEnableFlags());
   }
   void SetEnable(bool enable_flag) {
     enabled_ = enable_flag;

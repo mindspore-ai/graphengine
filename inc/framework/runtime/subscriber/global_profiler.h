@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_SUBSCRIBER_GLOBAL_PROFILING_H_
-#define AIR_CXX_INC_FRAMEWORK_RUNTIME_SUBSCRIBER_GLOBAL_PROFILING_H_
+#ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_SUBSCRIBER_GLOBAL_PROFILER_H_
+#define AIR_CXX_INC_FRAMEWORK_RUNTIME_SUBSCRIBER_GLOBAL_PROFILER_H_
 
 #include <algorithm>
 #include <memory>
@@ -77,7 +77,7 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     return global_profiler_.get();
   }
 
-  void SetEnableFlags(uint64_t enable_flags) {
+  void SetEnableFlags(const uint64_t enable_flags) {
     enable_flags_ = enable_flags;
   }
 

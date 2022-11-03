@@ -110,6 +110,16 @@
     }                                              \
   } while (false)
 
+// If expr is true, print info log and return the specified status
+#define GE_CHK_BOOL_RET_SPECIAL_STATUS(expr, _status, ...) \
+  do {                                                     \
+    const bool b = (expr);                                 \
+    if (b) {                                               \
+      GELOGI(__VA_ARGS__);                                 \
+      return (_status);                                    \
+    }                                                      \
+  } while (false)
+
 // If expr is not true, print the log and return the specified status
 #define GE_CHK_BOOL_RET_STATUS_NOLOG(expr, _status, ...) \
   do {                                                   \
@@ -141,13 +151,13 @@
 
 // If expr is not RT_ERROR_NONE, print the log and execute the exec_expr expression
 #define GE_CHK_RT_EXEC(expr, exec_expr)                                \
-  do {                                                                 \
+  {                                                                    \
     const rtError_t _rt_ret = (expr);                                  \
     if (_rt_ret != RT_ERROR_NONE) {                                    \
       GELOGE(ge::RT_FAILED, "Call rt api failed, ret: 0x%X", _rt_ret); \
       exec_expr;                                                       \
     }                                                                  \
-  } while (false)
+  }
 
 // If expr is not RT_ERROR_NONE, print the log and return
 #define GE_CHK_RT_RET(expr)                                                   \

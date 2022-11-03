@@ -167,6 +167,56 @@ REG_OP(CropAndResize)
     .OP_END_FACTORY_REG(CropAndResize)
 
 /**
+* @brief Extracts crops from the input image tensor and resizes them. Extracts
+crops from the input image tensor and resizes them using bilinear sampling or
+nearest neighbor sampling to a common output size specified by crop_size . \n
+
+* @par Inputs:
+* Input x must be a 4-D tensor. Inputs include:
+* @li x: A Tensor. Must be one of the following types:uint8, uint16, int8,
+         int16, int32, int64, float16, float, double. A 4-D tensor of shape
+         [batch, image_height, image_width, depth]. The format must be NHWC.
+* @li boxes: A Tensor. Must be the float types.
+             A 2-D tensor of shape [num_boxes, 4].
+* @li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with
+                 int32 values in [0, batch).
+* @li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements,
+                 crop_size = [crop_height, crop_width].
+                 All cropped image patches are resized to this size . \n
+
+* @par Attributes:
+* @li extrapolation_value: An optional float. Defaults to 0. Value used for
+                           extrapolation, when applicable.
+* @li method: An optional string from: '"bilinear", "nearest"'. Defaults to
+              "bilinear". Currently two sampling methods are supported: Bilinear
+              and NearestNeighbor .
+* @li dtype: An Type attr, support type list [uint8, float16, float].
+             Defaults to DT_FLOAT . \n
+
+* @par Outputs:
+* y: A Tensor. Must be one of the following types: uint8, float16, float.
+     The format must be NHWC. \n
+
+* @attention Constraints:
+* Input images must be a 4-D tensor . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow CropAndResize operator.
+*/
+
+REG_OP(CropAndResizeV2)
+    .INPUT(x, TensorType({DT_UINT8, DT_UINT16, DT_INT8, \
+        DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(box_index, TensorType({DT_INT32}))
+    .INPUT(crop_size, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(extrapolation_value, Float, 0)
+    .ATTR(method, String, "bilinear")
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(CropAndResizeV2)
+
+/**
 *@brief Extracts crops from the input image tensor and resizes them.
 * Extracts crops from the input image tensor and resizes them using bilinear sampling or
 * nearest neighbor sampling to a common output size specified by crop_size . \n
@@ -2393,6 +2443,50 @@ REG_OP(EncodeJpegVariableQuality)
     .INPUT(quality, TensorType({DT_INT32}))
     .OUTPUT(contents, TensorType({DT_STRING}))
     .OP_END_FACTORY_REG(EncodeJpegVariableQuality)
+
+/**
+* @brief Select top 'pre_nms_topn' scoring boxes, decodes them with respect to anchors, applies non-maximal suppression
+* on overlapping boxes with higher than 'nms_threshold' intersection-over-union (IoU) value, discarding boxes where
+* shorter side is less than 'min_size'. \n
+
+* @par Inputs:
+* scores: 4-D tensor with shape of [num_images, height, width, num_anchors], containing the scores of the boxes for
+* given anchors, can be unsorted. Must be one of the following types: float32 . \n
+* bbox_deltas: 4-D tensor with shape of [num_images, height, width, 4 * num_anchors], encoding boxes with respect to
+* each anchor. Coordinates are given in the form [dy, dx, dh, dw]. Must be one of the following types: float32.. \n
+* image_info: 2-D tensor with shape of [num_images, 5], containing image information Height, Width, Scale. Must be one
+* of the following types: float32. \n
+* anchors: 3-D tensor with shape of [height, width, 4 * num_anchors], describing the anchor boxes. Boxes are formatted
+* in the form [y1, x1, y2, x2]. Must be one of the following types: float32. \n
+* nms_threshold: A scalar of type float32, non-maximal suppression threshold. \n
+* pre_nms_topn: A scalar of type int32, number of top scoring boxes to be used as input. \n
+* min_size: A scalar of type float32, Any boxes that has a smaller size than min_size will be discarded. \n
+
+* @par Attributes:
+* post_nms_topn: An optional float. Maximum number of rois in the output. Defaults to be 300. \n
+
+* @par Outputs:
+* @li rois: 3-D tensor with shape of [num_images, post_nms_topn, 4], padded by 0 if less than 'post_nms_topn'. Must be
+* one of the following types: float32 . \n
+* @li rois_probabilities: 2-D tensor with shape of [num_images, post_nms_topn], probability of each roi in 'rois'
+* padded by 0 if needed, sorted by scores. Must be one of the following types: float32. \n
+
+* @attention Constraints:+
+* Only supports 2864 input boxes at one time.\n
+
+*/
+REG_OP(GenerateBoundingBoxProposals)
+    .INPUT(scores, TensorType({DT_FLOAT}))
+    .INPUT(bbox_deltas, TensorType({DT_FLOAT}))
+    .INPUT(image_info, TensorType({DT_FLOAT}))
+    .INPUT(anchors, TensorType({DT_FLOAT}))
+    .INPUT(nms_threshold, TensorType({DT_FLOAT}))
+    .INPUT(pre_nms_topn, TensorType({DT_INT32}))
+    .INPUT(min_size, TensorType({DT_FLOAT}))
+    .OUTPUT(rois, TensorType({DT_FLOAT}))
+    .OUTPUT(rois_probabilities, TensorType({DT_FLOAT}))
+    .ATTR(post_nms_topn, Int, 300)
+    .OP_END_FACTORY_REG(GenerateBoundingBoxProposals)
 
 /**
 * @brief image to transforms. \n

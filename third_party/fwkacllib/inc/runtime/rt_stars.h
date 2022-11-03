@@ -23,6 +23,17 @@ extern "C" {
  */
 RTS_API rtError_t rtStarsTaskLaunch(const void *taskSqe, uint32_t sqeLen, rtStream_t stm);
 
+/**
+ * @ingroup rt_stars
+ * @brief launch stars task.
+ * used for send star sqe directly.
+ * @param [in] taskSqe     stars task sqe
+ * @param [in] sqeLen      stars task sqe length
+ * @param [in] stm         associated stream
+ * @param [in] flag        dump flag
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtStarsTaskLaunchWithFlag(const void *taskSqe, uint32_t sqeLen, rtStream_t stm, uint32_t flag);
 
 /**
  * @ingroup rt_stars

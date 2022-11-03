@@ -13,26 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AIR_CXX_BLOCK_H
-#define AIR_CXX_BLOCK_H
-#include "exe_graph/runtime/tensor_data.h"
 
-namespace gert {
-namespace memory {
-class Block {
+#ifndef AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_
+#define AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_
+
+#include <map>
+#include "framework/common/ge_inner_error_codes.h"
+#include "graph/compute_graph.h"
+
+namespace ge {
+class GraphDeploymentOptimizer {
  public:
-  // todo use TensorAddress
-  // todo 需要考虑虚函数对性能的影响
-  virtual const void *Addr() const = 0;
-  virtual void *MutableAddr() = 0;
-  virtual size_t GetSize() const = 0;
-  virtual size_t AddCount() = 0;
-  virtual size_t SubCount() = 0;
-  virtual size_t GetCount() const = 0;
-  virtual TensorData ToTensorData() = 0;
-  virtual void Free() = 0;
-  virtual ~Block() = default;
+  static Status OptimizeForAutoDeploy(const ComputeGraphPtr &compute_graph, ComputeGraphPtr &optimized_graph);
 };
-}  // namespace memory
-}  // namespace gert
-#endif  // AIR_CXX_BLOCK_H
+}  // namespace ge
+
+#endif  // AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_

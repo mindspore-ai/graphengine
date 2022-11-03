@@ -1,23 +1,8 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * @file base.h
- * @brief HCOM data type definition 
- * 
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ * Description: HCOM data type definition
+ * Author: ligang
+ * Create: 2019-05-24
  */
 
 #ifndef HCCL_BASE_H_
@@ -139,22 +124,12 @@ typedef void *rtModel_t;
 
 struct HcomOperation {
     std::string hcclType;
-    void *inputPtr;
-    void *outputPtr;
-    u64 count;
-    HcclDataType dataType;
-    HcclReduceOp opType;
-    u32 root;
-
-    HcomOperation()
-    {
-        inputPtr = nullptr;
-        outputPtr = nullptr;
-        count = 0;
-        dataType = HCCL_DATA_TYPE_RESERVED;
-        opType = HCCL_REDUCE_RESERVED;
-        root = 0;
-    }
+    void *inputPtr{nullptr};
+    void *outputPtr{nullptr};
+    u64 count{0};
+    HcclDataType dataType{HCCL_DATA_TYPE_RESERVED};
+    HcclReduceOp opType{HCCL_REDUCE_RESERVED};
+    u32 root{0};
 };
 
 struct HcomRemoteAccessAddrInfo {
@@ -165,15 +140,24 @@ struct HcomRemoteAccessAddrInfo {
 };
 
 struct HcomAllToAllVParams {
-    void *sendbuf;  // device mem
-    void *sendcounts;  // device mem;  Type: uint_64
-    void *sdispls;  // device mem;  Type: uint_64
-    HcclDataType sendtype;
-    void *recvbuf;  // device mem
-    void *recvcounts;  // device mem;  Type: uint_64 
-    void *rdispls;  // device mem;  Type: uint_64
-    HcclDataType recvtype;
-    const char *group;  // not used now
+    void *sendbuf{nullptr};     // device mem
+    void *sendcounts{nullptr};  // device mem;  Type: uint_64
+    void *sdispls{nullptr};     // device mem;  Type: uint_64
+    HcclDataType sendtype{HCCL_DATA_TYPE_RESERVED};
+    void *recvbuf{nullptr};  // device mem
+    void *recvcounts{nullptr};  // device mem;  Type: uint_64 
+    void *rdispls{nullptr};  // device mem;  Type: uint_64
+    HcclDataType recvtype{HCCL_DATA_TYPE_RESERVED};
+    const char *group{nullptr};  // not used now
+};
+
+struct HcomAllToAllVCParams {
+    void *sendbuf{nullptr};     // device mem
+    HcclDataType sendtype{HCCL_DATA_TYPE_RESERVED};
+    void *recvbuf{nullptr};  // device mem
+    HcclDataType recvtype{HCCL_DATA_TYPE_RESERVED};
+    void *sendcountmatrix{nullptr};  // device mem;  Type: uint_64
+    const char *group{nullptr};  // not used now
 };
 
 struct HcomGatherAllToAllVParams {

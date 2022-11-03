@@ -222,12 +222,10 @@ namespace ge {
  */
 constexpr int32_t OM_PROTO_VERSION = 2;
 
-///
 /// @ingroup domi_common
 /// @brief onverts Vector of a number to a string.
 /// @param [in] v  Vector of a number
 /// @return string
-///
 template <typename T>
 GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
   bool first = true;
@@ -277,12 +275,9 @@ GE_FUNC_VISIBILITY std::string CurrentTimeInStr();
 /// @return Timestamp, in microseconds (US)
 GE_FUNC_VISIBILITY uint64_t GetCurrentTimestamp();
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the absolute time (timestamp) of the current system.
 /// @return Timestamp, in seconds (US)
-///
-///
 GE_FUNC_VISIBILITY uint32_t GetCurrentSecondTimestap();
 
 /// @ingroup domi_common

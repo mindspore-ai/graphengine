@@ -69,7 +69,7 @@ class ProcessNodeEngine {
     return SUCCESS;
   }
 
-  virtual Status ParallelPartition(const ComputeGraphPtr &compute_graph) {
+  virtual Status ParallelPartition(ComputeGraphPtr &compute_graph) {
     (void)compute_graph;
     return NOT_CHANGED;
   }

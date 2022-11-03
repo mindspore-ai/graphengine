@@ -402,6 +402,16 @@ RTS_API rtError_t rtMbufSetDataLen(rtMbufPtr_t memBuf, uint64_t len);
 
 /**
 * @ingroup rt_mem_queue
+* @brief set Data len of Mbuf
+* @param [in] memBuf: Mbuf addr
+* @param [out] len: data len
+* @return   RT_ERROR_NONE for success, others for fail
+*/
+RTS_API rtError_t rtMbufGetDataLen(rtMbufPtr_t memBuf, uint64_t *len);
+
+
+/**
+* @ingroup rt_mem_queue
 * @brief get Data addr of Mbuf
 * @param [in] memBuf: Mbuf addr
 * @param [out] buf: Mbuf data addr
@@ -436,6 +446,34 @@ RTS_API rtError_t rtMbufGetPrivInfo(rtMbufPtr_t memBuf,  void **priv, uint64_t *
 * @return RT_ERROR_NONE for ok
 */
 RTS_API rtError_t rtMbufCopyBufRef(rtMbufPtr_t memBuf, rtMbufPtr_t *newMemBuf);
+
+/**
+* @ingroup rt_mem_queue
+* @brief append mbuf to mbuf chain
+* @param [inout] memBufChainHead, the mbuf chain head
+* @param [in] memBuf, the mbuf to append
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufChainAppend(rtMbufPtr_t memBufChainHead, rtMbufPtr_t memBuf);
+
+/**
+* @ingroup rt_mem_queue
+* @brief get mbuf num in mbuf chain
+* @param [in] memBufChainHead, the mbuf chain head
+* @param [out] num, the mbuf chain size
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufChainGetMbufNum(rtMbufPtr_t memBufChainHead, uint32_t *num);
+
+/**
+* @ingroup rt_mem_queue
+* @brief get mbuf in mbuf chain
+* @param [in] mbufChainHead, the mbuf chain head
+* @param [in] index, the mbuf index which to get in chain
+* @param [out] mbuf, the mbuf to get
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufChainGetMbuf(rtMbufPtr_t memBufChainHead, uint32_t index, rtMbufPtr_t *memBuf);
 
 // mem group
 typedef struct {

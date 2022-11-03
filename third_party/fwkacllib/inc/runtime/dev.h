@@ -79,8 +79,13 @@ typedef enum tagRtDeviceModuleType {
     RT_MODULE_TYPE_AICORE,      /**< AI CORE info*/
     RT_MODULE_TYPE_TSCPU,       /**< tscpu info*/
     RT_MODULE_TYPE_PCIE,        /**< PCIE info*/
-    RT_MODULE_TYPE_VECTOR_CORE, /**< VECTOR CORE info*/
+    RT_MODULE_TYPE_VECTOR_CORE  /**< VECTOR CORE info*/
 } rtDeviceModuleType_t;
+
+typedef enum tagRtPhyDeviceInfoType {
+    RT_PHY_INFO_TYPE_CHIPTYPE = 0,
+    RT_PHY_INFO_TYPE_MASTER_ID
+} rtPhyDeviceInfoType_t;
 
 typedef enum tagRtMemRequestFeature {
     MEM_REQUEST_FEATURE_DEFAULT = 0,
@@ -147,6 +152,18 @@ RTS_API rtError_t rtGetDeviceIDs(uint32_t *devices, uint32_t len);
  * @return RT_ERROR_DRV_ERR for error
  */
 RTS_API rtError_t rtGetDeviceInfo(uint32_t deviceId, int32_t moduleType, int32_t infoType, int64_t *val);
+
+/**
+* @ingroup dvrt_dev
+* @brief get phy device infomation.
+* @param [int] phyId        the physic Id
+* @param [int] moduleType   module type
+* @param [int] infoType     info type
+* @param [out] val          the device info
+* @return RT_ERROR_NONE for ok
+* @return RT_ERROR_DRV_ERR for error
+*/
+RTS_API rtError_t rtGetPhyDeviceInfo(uint32_t phyId, int32_t moduleType, int32_t infoType, int64_t *val);
 
 /**
  * @ingroup dvrt_dev

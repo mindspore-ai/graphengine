@@ -36,17 +36,17 @@ constexpr size_t kInitSubscriberSize = 2UL;
 enum class BuiltInSubscriberType { kProfiling, kDumper, kNum };
 
 enum class ProfilingType {
-  kCannHost,  // 打开Host侧调度的profiling
-  kDevice,
-  kGeHost,  // 打开GE Host侧调度的profiling
-  kNum,
+  kCannHost = 0,  // 打开Host侧调度的profiling
+  kDevice = 1,
+  kGeHost = 2,  // 打开GE Host侧调度的profiling
+  kNum = 3,
   kAll = kNum
 };
-static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * 8,
+static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),
               "The max num of profiling type must less than the width of uint64");
 
-enum class DumpType { kDataDump, kExceptionDump, kNum, kAll = kNum };
-static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * 8,
+enum class DumpType { kDataDump = 0, kExceptionDump = 1, kNum = 2, kAll = kNum };
+static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),
               "The max num of dumper type must less than the width of uint64");
 class ModelV2Executor;
 struct SubscriberExtendInfo {
@@ -70,7 +70,7 @@ class VISIBILITY_EXPORT BuiltInSubscriberUtil {
                                     int>::type = 0>
   static uint64_t BuildEnableFlags(const std::vector<T> &enable_types) {
     uint64_t flag = 0UL;
-    for (auto et : enable_types) {
+    for (const auto &et : enable_types) {
       if (et == T::kAll) {
         return EnableBit(T::kNum) - 1UL;
       }

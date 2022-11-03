@@ -261,10 +261,10 @@ REG_OP(GatherV2D)
 */
 REG_OP(GatherElements)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
-    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64,DT_BOOL}))
     .INPUT(index, TensorType({DT_INT32,DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
-    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64,DT_BOOL}))
     .ATTR(dim, Int, 0)
     .OP_END_FACTORY_REG(GatherElements)
 
@@ -2366,7 +2366,7 @@ REG_OP(SliceLastDim)
 * @par Attributes:
 * @li begin_mask: A Tensor of type int32.
 *     Developers can ignore this attribute.
-*     A bitmask where a bit "i" being "1" means to ignore the begin
+*     A bitmask where a bit "i" being "1" means to ignore the begin 
 *     value and instead use the largest interval possible.
 * @li end_mask: A Tensor of type int32.
 *     Developers can ignore this attribute.
@@ -2377,7 +2377,7 @@ REG_OP(SliceLastDim)
 *     is actually an ellipsis.
 * @li new_axis_mask: A Tensor of type int32.
 *     Developers can ignore this attribute.
-*     A bitmask where bit "i" being "1" means the "i"th
+*     A bitmask where bit "i" being "1" means the "i"th 
 *     specification creates a new shape 1 dimension.
 * @li shrink_axis_mask: A Tensor of type int32.
 *     Developers can ignore this attribute.

@@ -36,9 +36,9 @@
                               (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid))) << 17U) |   \
                               (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid))) << 12U) |   \
                               (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));         \
-  const ErrorNoRegisterar g_errorno_##name((name), (desc));
+  const ErrorNoRegisterar g_errorno_##name((name), (desc))
 
-#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc));
+#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc))
 
 namespace ge {
 class GE_FUNC_VISIBILITY StatusFactory {

@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <cstdint>
+#include <cstdlib>
 #include "common/ge_visibility.h"
 
 namespace gert {

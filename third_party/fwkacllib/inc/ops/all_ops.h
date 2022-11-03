@@ -65,6 +65,7 @@
 #include "resource_variable_ops.h"
 #include "rnn.h"
 #include "rpn_ops.h"
+#include "randomdsa_ops.h"
 #include "save_ops.h"
 #include "selection_ops.h"
 #include "set_ops.h"

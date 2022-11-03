@@ -2944,9 +2944,9 @@ REG_OP(AdamApplyOne)
 
 *@par Outputs:
 *Three outputs, including:
-* @li output0: A Tensor. Must be one of the following types: float16, float32.
-* @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32. \n
+* @li input1: A Tensor. Must be one of the following types: float16, float32.
+* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input3: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
@@ -2963,9 +2963,9 @@ REG_OP(AdamApplyOneWithDecayAssign)
     .INPUT(mul3_x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(mul4_x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output0, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(AdamApplyOneWithDecayAssign)
 
 /**
@@ -2986,9 +2986,9 @@ REG_OP(AdamApplyOneWithDecayAssign)
 
 *@par Outputs:
 *Three outputs, including:
-* @li output0: A Tensor. Must be one of the following types: float16, float32.
-* @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32. \n
+* @li input1: A Tensor. Must be one of the following types: float16, float32.
+* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input3: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
@@ -3004,9 +3004,9 @@ REG_OP(AdamApplyOneAssign)
     .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(mul3_x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output0, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(AdamApplyOneAssign)
 
 /**
@@ -3383,17 +3383,20 @@ REG_OP(Muls)
 
 *@par Inputs:
 *One input, including:
-*x: A Tensor. Must be one of the following types:float32, float16, int64, int32, int16, bool.
+*x: A Tensor. Must be one of the following types:double, float32, float16, int64, int32, int16, bool.
 
 *@par Outputs:
 *y: A Tensor. Has the same type and shape as "x1". \n
+
+*@par Attributes:
+*value: A scale. Must be float. \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator fills.
 */
 REG_OP(Fills)
-     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT64, DT_INT32, DT_INT16, DT_BOOL}))
-     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT64, DT_INT32, DT_INT16, DT_BOOL}))
+     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT64, DT_INT32, DT_INT16, DT_BOOL}))
+     .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT64, DT_INT32, DT_INT16, DT_BOOL}))
      .REQUIRED_ATTR(value, Float)
      .OP_END_FACTORY_REG(Fills)
 
@@ -4032,6 +4035,31 @@ REG_OP(Dawsn)
     .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(Dawsn)
+
+/**
+* @brief The operator casts the elements of a given input tensor (the first input)
+* to the same data type as the elements of the second input tensor. \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li x:A Tensor. Must be one of the following types:
+        float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, double,
+        complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16, bool, string.  \n
+* @li target:A Tensor. Must be one of the following types:
+        float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, double,
+        complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16, bool, string.  \n
+
+* @par Outputs:
+* y:A Tensor with same shape as x, and data type is specified by target.
+
+* @par Third-party framework compatibility
+* Compatible with the onnx operator CastLike.
+*/
+REG_OP(CastLike)
+    .INPUT(x, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .INPUT(target, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .OP_END_FACTORY_REG(CastLike)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_

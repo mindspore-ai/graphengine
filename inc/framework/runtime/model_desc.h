@@ -43,7 +43,7 @@ class VISIBILITY_EXPORT ShapeRange {
 
 class VISIBILITY_EXPORT ModelIoDesc {
  public:
-  const char *GetName() const;
+  const ge::char_t *GetName() const;
   int32_t GetDataType() const;
   ge::Format GetStorageFormat() const;
   ge::Format GetOriginFormat() const;
@@ -55,7 +55,7 @@ class VISIBILITY_EXPORT ModelIoDesc {
   std::vector<std::pair<int64_t, int64_t>> GetOriginShapeRangeVector() const;
   std::vector<std::pair<int64_t, int64_t>> GetStorageShapeRangeVector() const;
 
-  void SetName(const char *name);
+  void SetName(const ge::char_t *name);
   void SetDataType(int32_t data_type);
   void SetStorageFormat(ge::Format format);
   void SetOriginFormat(ge::Format format);
@@ -65,7 +65,7 @@ class VISIBILITY_EXPORT ModelIoDesc {
   ShapeRange &MutableStorageShapeRange();
 
  private:
-  const char *name_;
+  const ge::char_t *name_;
   int32_t data_type_;
   StorageFormat format_;
   StorageShape shape_;
@@ -100,6 +100,7 @@ class VISIBILITY_EXPORT ModelDesc {
   size_t output_num_;
   ContinuousVector model_io_descs_;
 };
+static_assert(std::is_trivial<ModelDesc>::value, "The class ModelDesc must be a POD");
 }  // namespace gert
 
 #endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_MODEL_DESC_H_

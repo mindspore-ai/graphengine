@@ -46,6 +46,7 @@ enum class ccKernelType {
   AI_CPU = 6,      /* aicpu */
   CUST_AI_CPU = 7, /* custom aicpu */
   HOST_CPU = 8,    /* host cpu */
+  DVPP = 9,        /* dvpp */
   INVALID = 10000  /* unknown kernel type */
 };
 

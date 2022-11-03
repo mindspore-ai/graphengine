@@ -34,10 +34,10 @@ class VISIBILITY_EXPORT ExeGraphExecutor {
   /**
    * 设置图执行的输入/输出，需要注意的是，使用者需要自己保证inputs/outputs刷新完全！！！
    */
-  ge::graphStatus SpecifyInputs(void **inputs, size_t start, size_t num);
-  ge::graphStatus SpecifyOutputs(void **outputs, size_t num);
-  ge::graphStatus Execute();
-  ge::graphStatus Execute(ExecutorSubscriber *callback);
+  ge::graphStatus SpecifyInputs(void *const *inputs, size_t start, size_t num) const;
+  ge::graphStatus SpecifyOutputs(void *const *outputs, size_t num) const;
+  ge::graphStatus Execute() const;
+  ge::graphStatus Execute(ExecutorSubscriber *callback) const;
 
   const void *GetExecutionData() const {
     return execution_data_;

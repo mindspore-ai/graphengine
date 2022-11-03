@@ -209,6 +209,7 @@ enum {
     OP,
     UDF,
     HICAID,
+    TSYNC,
     INVLID_MOUDLE_ID
 };
 

@@ -109,8 +109,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
                             Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type) const;
   Status BuildOriginalGraphInfo(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                                 const std::vector<GeTensor> &outputs, const std::string &model_file_name,
-                                bool is_offline, int32_t compile_flag, GraphStage graph_stage, Graph &graph,
-                                ComputeGraphPtr &compute_graph, bool &fuzz_compile_flag,
+                                bool is_offline, GraphStage graph_stage, Graph &graph, ComputeGraphPtr &compute_graph,
                                 std::vector<std::pair<std::string, std::string>> &inputs_name_type);
 
  private:
@@ -125,7 +124,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
   Status CheckForSingleOp(const OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                           const std::vector<GeTensor> &outputs) const;
   Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph) const;
-  Status ResetAiCpuToDynamicShape(const ComputeGraphPtr &graph);
+  Status ResetAiCpuToDynamicShape(const ComputeGraphPtr &graph) const;
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
@@ -133,9 +132,13 @@ class GE_FUNC_VISIBILITY GeGenerator {
                                      const std::vector<GeTensor> &outputs,
                                      const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
                                      std::vector<ge::NamedAttrs> &generalized_build_attrs) const;
+  void AddExcludeEnginesOption(const OpDescPtr &op_desc, std::map<std::string, std::string> &graph_options) const;
+  void AddShapeGeneralizedOption(std::map<std::string, std::string> &graph_options);
+  void SetFuzzCompile(const std::vector<GeTensor> &inputs, int32_t compile_flag);
+  bool IsFuzzCompileEnable();
+  void ConvertOpInfosToOptions(const OpDescPtr &op_desc);
 
   class Impl;
-
   std::shared_ptr<Impl> impl_;
 };
 }  // namespace ge

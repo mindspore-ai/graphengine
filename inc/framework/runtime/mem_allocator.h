@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AIR_CXX_MEM_ALLOCATOR_H
-#define AIR_CXX_MEM_ALLOCATOR_H
+#ifndef AIR_MEM_ALLOCATOR_H
+#define AIR_MEM_ALLOCATOR_H
+
+#include "exe_graph/runtime/tensor_data.h"
 #include "block.h"
 #include "exe_graph/runtime/allocator.h"
 
@@ -24,11 +26,18 @@ struct MemAllocator {
   virtual Block *Malloc(size_t size) = 0;
   virtual ~MemAllocator() = default;
 };
+
+struct MemSynchronizer {
+  MemSynchronizer() = default;
+  virtual ~MemSynchronizer() = default;
+  // Wait until the memory is actually freed after task completed
+  virtual void Synchronize() const = 0;
+};
 }  // namespace memory
 
 struct ExternalAllocators {
  public:
-  memory::MemAllocator *GetAllocator(size_t placement, size_t usage);
+  memory::MemAllocator *GetAllocator(TensorPlacement placement, size_t usage);
   ge::Status SetAllocator(size_t placement, size_t usage, std::unique_ptr<memory::MemAllocator> allocator);
 
  private:

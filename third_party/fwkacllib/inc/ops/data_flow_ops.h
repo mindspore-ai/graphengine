@@ -2576,5 +2576,177 @@ REG_OP(FlowFunc)
     .ATTR(output_shapes, ListListInt, {})
     .REQUIRED_ATTR(output_types, ListType)
     .OP_END_FACTORY_REG(FlowFunc)
+
+/**
+* @brief ouputs a tensor copy from the tensor at 'position' in input_sequence. \n
+
+* @par Inputs:
+* @li handle: the handle of sequence.
+* @li index: position of the tensor in the sequence. negative value means
+* counting position from back, accepted range in [-n, n - 1],
+* where n is the number of tensors in sequence,
+* it must be a scalar(tensor of empty shape), it is scalar. \n
+
+* @par Outputs:
+* @li y: output tensor at the specified position in the input sequence. \n
+*/
+REG_OP(SequenceAt)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .INPUT(index, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, DT_INT16, \
+        DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, DT_COMPLEX64, \
+        DT_COMPLEX128}))
+    .OP_END_FACTORY_REG(SequenceAt)
+
+/**
+* @brief constrct a tensor sequence cotaining 'input' tensors,
+* all tensors in 'inputs' must have the same data type. \n
+
+* @par Inputs:
+* @li inputs: A list of input tensor objects. It's a dynamic input. \n
+
+* @par Outputs:
+* @li handle: Sequence enclosing the input tensors. \n
+*/
+REG_OP(SequenceConstruct)
+    .DYNAMIC_INPUT(inputs, TensorType({DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, \
+        DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, DT_COMPLEX64, \
+        DT_COMPLEX128}))
+    .OUTPUT(handle, TensorType({DT_RESOURCE}))
+    .OP_END_FACTORY_REG(SequenceConstruct)
+
+/**
+* @brief construct an empty tensor sequence, with given data type. \n
+
+* @par Outputs:
+* @li handle: empty sequence. \n
+
+* @par Attributes:
+* @li dtype: the data type of the tensors in the output sequence,
+* the default value is float. \n
+*/
+REG_OP(SequenceEmpty)
+    .OUTPUT(handle, TensorType({DT_RESOURCE}))
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(SequenceEmpty)
+
+/**
+* @brief ouputs a tensor sequence that remove the tensor at 'position' from input_sequence. \n
+
+* @par Inputs:
+* @li handle: the handle of sequence.
+* @li index: position of the tensor in the sequence. negative value means
+* counting position from back, accepted range in [-n, n - 1],
+* where n is the number of tensors in sequence,
+* it must be a scalar(tensor of empty shape), it is scalar. \n
+
+* @par Outputs:
+* @li handle_y: the handle of the sequence that has the tensor
+* at the specified position removed. \n
+*/
+REG_OP(SequenceErase)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .OPTIONAL_INPUT(index, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(handle_y, TensorType({DT_RESOURCE}))
+    .OP_END_FACTORY_REG(SequenceErase)
+
+/**
+* @brief ouputs a tensor sequence that insert tensor into sequence at 'position',
+* tensor must have the same data type as input_sequence. \n
+
+* @par Inputs:
+* @li handle: the handle of sequence.
+* @li value: tensor to be inserted into the input sequence. \n
+* @li index: position of the tensor in the sequence. negative value means
+* counting position from back, accepted range in [-n, n - 1],
+* where n is the number of tensors in sequence,
+* it must be a scalar(tensor of empty shape), it is scalar. \n
+
+* @par Outputs:
+* @li handle_y: output sequence that contains the inserted tensor
+* at the given positon. \n
+*/
+REG_OP(SequenceInsert)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .INPUT(value, TensorType({DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, \
+        DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, DT_COMPLEX64, \
+        DT_COMPLEX128}))
+    .OPTIONAL_INPUT(index, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(handle_y, TensorType({DT_RESOURCE}))
+    .OP_END_FACTORY_REG(SequenceInsert)
+
+/**
+* @brief produces a scalar(tensor of empty shape) containing the number
+* of tensors in input_sequence. \n
+
+* @par Inputs:
+* @li handle: the handle of sequence. \n
+
+* @par Outputs:
+* @li length: length of input sequence, it must be a scalar (tensor of empty shape) \n
+*/
+REG_OP(SequenceLength)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .OUTPUT(length, TensorType({DT_INT64}))
+    .OP_END_FACTORY_REG(SequenceLength)
+
+/**
+* @brief split a tensor into a sequence of tensors, along the specified axis,
+* length of the parts can be specified using argument 'split'. \n
+
+* @par Inputs:
+* @li x: the tensor to split. \n
+* @li split: length of each output, it cat be either a scalar or 1-D tensor,
+* all value must be >= 0. if split is a scalar, then input will be split into
+* equally sized chunks, last chunk will be smaller if input size along the given
+* axis is not divisible by split, otherwise the tensor is split into size(split)
+* chunks, with lengths of the parts on axis specified in split. in the scenario,
+* the sum of entries in split must be equal to the dimision size of input tensor
+* on axis \n
+
+* @par Outputs:
+* @li handle: one or more outputs forming a sequence of tensor after spliting. \n
+
+* @par Attributes:
+* @li axis: which axis to split on, a negative value means counting dimensions from
+* the back, accepted range is [-rank, rank - 1].
+* @li keep_dims: keep the split dimension or not, default 1,which means we keep split
+* dimension,if input 'split' is specified, this attribute is ignored.
+*/
+REG_OP(SplitToSequence)
+    .INPUT(x, TensorType({DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, \
+        DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, DT_COMPLEX64, \
+        DT_COMPLEX128}))
+    .OPTIONAL_INPUT(split, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(handle, TensorType({DT_RESOURCE}))
+    .ATTR(axis, Int, 0)
+    .ATTR(keepdims, Bool, true)
+    .OP_END_FACTORY_REG(SplitToSequence)
+
+/**
+* @brief concatenate a sequence of tensors into a single tensor, all input tensors must
+* have the same shape, except for the dimension size of the axis to concatenate on. by default
+* new_axis is 0, the behavior is similar to numpy.concatenate. when new_axis is 1, the behavior
+* is similar to numpy.stack. \n
+
+* @par Inputs:
+* @li handle: sequence of tensors for concatenation. \n
+
+* @par Outputs:
+* @li y: concatenated tensor. \n
+
+* @par Attributes:
+* @li axis: which axis to concat on, accepted range in [-r, r - 1], where r is the rank of input
+* tensor, when new_axis is 1,accepted range is [-r - 1, r]
+* @li new_axis: insert and concatnate on a new axis or not. default 0 means do not insert new axis.
+*/
+REG_OP(ConcatFromSequence)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .OUTPUT(y, TensorType({DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, \
+        DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, DT_COMPLEX64, \
+        DT_COMPLEX128}))
+    .REQUIRED_ATTR(axis, Int)
+    .ATTR(new_axis, Int, 0)
+    .OP_END_FACTORY_REG(ConcatFromSequence)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

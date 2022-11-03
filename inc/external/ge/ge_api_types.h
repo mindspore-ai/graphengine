@@ -30,9 +30,6 @@ namespace ge {
 // Option key: graph run mode
 const char_t *const OPTION_GRAPH_RUN_MODE = "ge.graphRunMode";
 const char_t *const OPTION_DEVICE_TYPE = "ge.deviceType";
-// Option key: topo sorting mode
-const char *const OPTION_TOPO_SORTING_MODE = "ge.topoSortingMode";
-
 // Option key: ome init
 const char_t *const OPTION_EXEC_SESSION_ID = "ge.exec.sessionId";
 const char_t *const OPTION_EXEC_DEVICE_ID = "ge.exec.deviceId";
@@ -43,6 +40,9 @@ const char_t *const OPTION_EXEC_RANK_ID = "ge.exec.rankId";
 const char_t *const OPTION_EXEC_POD_NAME = "ge.exec.podName";
 const char_t *const OPTION_EXEC_DEPLOY_MODE = "ge.exec.deployMode";
 const char_t *const OPTION_EXEC_RANK_TABLE_FILE = "ge.exec.rankTableFile";
+const char_t *const OPTION_EXEC_RANK_TABLE = "ge.exec.rankTable";
+const char_t *const OPTION_EXEC_HCOM_GROUPLIST = "ge.exec.hcomGrouplist";
+const char_t *const OPTION_EXEC_HCOM_RANK_MAPPING = "ge.exec.hcomRankMapping";
 const char_t *const GE_AICPU_FLAG = "ge.aicpuFlag";
 const char_t *const OPTION_EXEC_EXTERN_PLUGIN_PATH = "ge.soLoadPath";
 // Dump flag and para
@@ -82,9 +82,12 @@ const char_t *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
 const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyMemory";
 
 const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
+const std::string ATOMIC_CLEAN_POLICY_SUB = "atomic_clean_policy";
 
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
+const char_t *const OPTION_EXEC_MODEL_DEPLOY_MODE = "ge.exec.modelDeployMode";
+const char_t *const OPTION_EXEC_MODEL_DEPLOY_DEVICELIST = "ge.exec.modelDeployDevicelist";
 
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
@@ -134,6 +137,8 @@ const char_t *const OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
+const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
+const char_t *const ATOMIC_CLEAN_POLICY_SUB = "atomic_clean_policy";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -389,18 +394,8 @@ const std::string OP_EXECUTE_TIMEOUT = "ge.exec.opExecuteTimeout";
 
 const char_t *const FILE_CONSTANT_PATH = "ge.exec.value_bins";
 
-const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
-
-const char_t *const RESOURCE_CONFIG_PATH = "ge.resourceConfigPath";
-
-const std::string RECOMPUTE = "ge.recompute";
-
-const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
-
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
-// Topo sorting mode
-enum class TopoSortingMode { BFS = 0, DFS = 1 };
 // Input/Output tensor info
 struct InputTensorInfo {
   uint32_t data_type;         // data type
@@ -486,6 +481,8 @@ static const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 static const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 static const char_t *const INPUT_DATA_NAMES = "input_data_names";
 static const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
+static const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
+static const char_t *const ATOMIC_CLEAN_POLICY_SUB = "atomic_clean_policy";
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -518,7 +515,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              MODIFY_MIXLIST,
                                                              CUSTOMIZE_DTYPES,
                                                              BUILD_INNER_MODEL,
-                                                             OP_DEBUG_CONFIG};
+                                                             OP_DEBUG_CONFIG,
+                                                             EXCLUDE_ENGINES};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {

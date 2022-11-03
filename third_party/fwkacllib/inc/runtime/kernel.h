@@ -19,7 +19,7 @@ extern "C" {
  * @brief shared memory data control
  */
 typedef struct tagRtSmData {
-    uint64_t L2_mirror_addr;          // preload or swap source address
+    uint64_t L2_mirror_addr;          // preload or swap source addr
     uint32_t L2_data_section_size;    // every data size
     uint8_t L2_preload;               // 1 - preload from mirrorAddr, 0 - no preload
     uint8_t modified;                 // 1 - data will be modified by kernel, 0 - no modified
@@ -377,7 +377,7 @@ RTS_API rtError_t rtQueryFunctionRegistered(const char_t *stubName);
  * @brief config data dump
  * @param [in] dumpSizePerBlock  dump size
  * @param [in] blockDim   block dimentions
- * @param [in] dumpBaseAddr   dump base address
+ * @param [in] dumpBaseAddr   dump base addr
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -577,15 +577,26 @@ RTS_API rtError_t rtDatadumpInfoLoad(const void *dumpInfo, uint32_t length);
 
 /**
  * @ingroup rt_kernel
+ * @brief load dump info to aicpu
+ * @param [in] dumpInfo   dump info
+ * @param [in] length     length of  dump info
+ * @param [in] flag       RT_KERNEL_DEFAULT or RT_KERNEL_CUSTOM_AICPU
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDatadumpInfoLoadWithFlag(const void *dumpInfo, const uint32_t length, const uint32_t flag);
+
+/**
+ * @ingroup rt_kernel
  * @brief launch npu get float status task
- * @param [in] outputAddr   pointer to op output addr
+ * @param [in] outputAddrPtr   pointer to op output addr
  * @param [in] outputSize   op output size
  * @param [in] checkMode   check mode
  * @param [in] stm   associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNpuGetFloatStatus(void *outputAddr, uint64_t outputSize, uint32_t checkMode, rtStream_t stm);
+RTS_API rtError_t rtNpuGetFloatStatus(void *outputAddrPtr, uint64_t outputSize, uint32_t checkMode, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel

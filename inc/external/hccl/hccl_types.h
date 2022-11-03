@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * @file hccl_types.h
- * @brief HCCL data type definition
- *
- */
-
 #ifndef HCCL_TYPES_H_
 #define HCCL_TYPES_H_
 

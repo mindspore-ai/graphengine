@@ -27,6 +27,10 @@ extern "C" {
 #define ACL_TDT_QUEUE_PERMISSION_DEQUEUE 2
 #define ACL_TDT_QUEUE_PERMISSION_ENQUEUE 4
 
+#define ACL_TDT_QUEUE_ROUTE_UNBIND 0
+#define ACL_TDT_QUEUE_ROUTE_BIND 1
+#define ACL_TDT_QUEUE_ROUTE_BIND_ABNORMAL 2
+
 typedef void *acltdtBuf;
 typedef struct tagMemQueueAttr acltdtQueueAttr;
 typedef struct acltdtQueueRouteList acltdtQueueRouteList;
@@ -43,8 +47,9 @@ typedef enum {
 
 typedef enum {
   ACL_TDT_QUEUE_ROUTE_QUERY_SRC = 0,
-  ACL_TDT_QUEUE_ROUTE_QUERY_DST,
-  ACL_TDT_QUEUE_ROUTE_QUERY_SRC_AND_DST
+  ACL_TDT_QUEUE_ROUTE_QUERY_DST = 1,
+  ACL_TDT_QUEUE_ROUTE_QUERY_SRC_AND_DST = 2,
+  ACL_TDT_QUEUE_ROUTE_QUERY_ABNORMAL = 100
 } acltdtQueueRouteQueryMode;
 
 typedef enum {
@@ -258,6 +263,76 @@ ACL_FUNC_VISIBILITY aclError acltdtFreeBuf(acltdtBuf buf);
  * @see acltdtAllocBuf
  */
 ACL_FUNC_VISIBILITY aclError acltdtGetBufData(const acltdtBuf buf, void **dataPtr, size_t *size);
+
+/**
+ * @ingroup AscendCL
+ * @brief set data buf effective len
+ *
+ * @param buf [IN] acltdtBuf
+ * @param len [IN] set effective len to data buf which must be smaller than size acquired by acltdtGetBufData
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtGetBufData acltdtGetBufDataLen
+ */
+ACL_FUNC_VISIBILITY aclError acltdtSetBufDataLen(acltdtBuf buf, size_t len);
+
+/**
+ * @ingroup AscendCL
+ * @brief get data buf effective len
+ *
+ * @param buf [IN] acltdtBuf
+ * @param len [OUT] get effective len which is set by acltdtSetBufDataLen
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtSetBufDataLen
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufDataLen(acltdtBuf buf, size_t *len);
+
+/**
+ * @ingroup AscendCL
+ * @brief append acltdtBuf to acltdtBuf chain
+ *
+ * @param headBuf [IN] acltdtBuf chain head
+ * @param buf [IN] acltdtBuf will be appended
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ */
+ACL_FUNC_VISIBILITY aclError acltdtAppendBufChain(acltdtBuf headBuf, acltdtBuf buf);
+
+/**
+ * @ingroup AscendCL
+ * @brief get acltdtBuf chain total size
+ *
+ * @param headBuf [IN] acltdtBuf chain head
+ * @param num [OUT] acltdtBuf chain total size
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtAppendBufChain
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufChainNum(acltdtBuf headBuf, uint32_t *num);
+
+/**
+ * @ingroup AscendCL
+ * @brief get acltdtBuf from acltdtBuf chain by index
+ *
+ * @param headBuf [IN] acltdtBuf chain head
+ * @param index [IN] the index which is smaller than num acquired from acltdtGetBufChainNum
+ * @param buf [OUT] the acltdtBuf from acltdtBuf on index
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtAppendBufChain acltdtGetBufChainNum
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufFromChain(acltdtBuf headBuf, uint32_t index, acltdtBuf *buf);
 
 /**
  * @ingroup AscendCL

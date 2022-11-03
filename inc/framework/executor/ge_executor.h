@@ -236,7 +236,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
   /// @return: 0 for success / others for fail
   ///
   Status LoadModelWithQ(uint32_t &model_id, const std::shared_ptr<GeRootModel> &root_model,
-                        const ModelQueueParam &model_queue_param);
+                        const ModelQueueParam &model_queue_param) const;
 
   ///
   /// @ingroup ge

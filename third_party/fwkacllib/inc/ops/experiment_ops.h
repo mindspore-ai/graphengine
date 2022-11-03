@@ -219,6 +219,40 @@ REG_OP(Index)
     .OP_END_FACTORY_REG(Index)
 
 /**
+* @brief According to the index number of indexes, replace the value
+* corresponding to X with the value.
+
+* @par Inputs:
+* Five inputs, including:
+* @li x: A ND Tensor.
+* @li value: A Tensor of the same type as "x".
+* @li indexed_sizes: A 1D Tensor of int64 with shape (N). Sizes for each one of the indexed data.
+* @li indexed_strides: A 1D Tensor of int64 with shape (N). Strides for each one of the indexed data.
+* @li indices: Dynamic input. A Tensor of the indices.
+
+* @par Attributes:
+* @li accumulate: Does it support self accumulation. Defaults to false.
+
+* @par Outputs:
+* @li x: A Tensor.
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator index_put.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(IndexPutV2)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(value, TensorType::BasicType())
+    .INPUT(indexed_sizes, TensorType({DT_INT64}))
+    .INPUT(indexed_strides, TensorType({DT_INT64}))
+    .DYNAMIC_INPUT(indices, TensorType({DT_INT64}))
+    .OUTPUT(x, TensorType::BasicType())
+    .ATTR(accumulate, Bool, false)
+    .OP_END_FACTORY_REG(IndexPutV2)
+
+/**
 * @brief Performs average pooling on the input. Used in the combination of conv + avgpoolupdate to replace avgpool
 * @par Inputs:
 * x1: Output of upstream Conv2d. A tensor of type float16, float32.
@@ -374,6 +408,86 @@ REG_OP(DecodeJpegPre)
     .REQUIRED_ATTR(w_range, ListInt)
     .REQUIRED_ATTR(h_range, ListInt)
     .OP_END_FACTORY_REG(DecodeJpegPre)
+
+/**
+* @brief init PartitionMap table. \n
+
+* @par Inputs:
+* @li ps_num: A Tensor, dtype is uint32. 0-D. indicates ps number.
+* @li ps_ids: A Tensor, dtype is uint32. 1-D. indicates the id of ps. \n
+
+* @par Attributes:
+* @li partition_num: A Int, indicates the number of partition. \n
+*/
+REG_OP(InitPartitionMap)
+    .INPUT(ps_num, TensorType({DT_UINT32}))
+    .INPUT(ps_ids, TensorType({DT_UINT32}))
+    .ATTR(partition_num, Int, 65537)
+    .OP_END_FACTORY_REG(InitPartitionMap)
+
+/**
+* @brief uninit PartitionMap table. \n
+*/
+REG_OP(UninitPartitionMap)
+    .OP_END_FACTORY_REG(UninitPartitionMap)
+
+/**
+* @brief init Embedding hashtable. \n
+
+* @par Inputs:
+* @li table_id: A Tensor, dtype is uint32. 0-D. indicates the id of hashtable. \n
+
+* @par Attributes:
+* @li bucket_size: A Int. \n
+*/
+REG_OP(InitEmbeddingHashmap)
+    .INPUT(table_id, TensorType({DT_UINT32}))
+    .ATTR(bucket_size, Int, 0)
+    .OP_END_FACTORY_REG(InitEmbeddingHashmap)
+
+/**
+* @brief embedding hsahtable data import. \n
+
+* @par Inputs:
+* @li file_path: A Tensor, dtype is string. 0-D. indicates embedding filepath.
+* @li file_name: A Tensor, dtype is string. 0-D. indicates embedding filename.
+* @li ps_id: A Tensor, dtype is uint32. 0-D. indicates the id of ps.
+* @li table_id: A Tensor, dtype is uint32. 0-D. indicates the id of hashtable.
+* @li embedding_dim: A Tensor, dtype is uint32. 0-D. indicates the hashtable value number. \n
+*/
+REG_OP(EmbeddingTableImport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(file_name, TensorType({DT_STRING}))
+    .INPUT(ps_id, TensorType({DT_UINT32}))
+    .INPUT(table_id, TensorType({DT_UINT32}))
+    .INPUT(embedding_dim, TensorType({DT_UINT32}))
+    .OP_END_FACTORY_REG(EmbeddingTableImport)
+
+/**
+* @brief embedding hsahtable data lookup. \n
+
+* @par Inputs:
+* @li table_id: A Tensor, dtype is uint32. 0-D. indicates the id of hashtable.
+* @li keys: A Tensor, dtype is uint32. 1-D. indicates the hashtable key. \n
+
+* @par Outputs:
+* @li values: indicates the hashtable value. \n
+*/
+REG_OP(EmbeddingTableFind)
+    .INPUT(table_id, TensorType({DT_UINT32}))
+    .INPUT(keys, TensorType({DT_UINT64}))
+    .OUTPUT(values, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(EmbeddingTableFind)
+
+/**
+* @brief uninit embedding hsahtable. \n
+
+* @par Inputs:
+* @li table_id: A Tensor, dtype is uint32. 0-D. indicates the id of hashtable. \n
+*/
+REG_OP(UninitEmbeddingHashmap)
+    .INPUT(table_id, TensorType({DT_UINT32}))
+    .OP_END_FACTORY_REG(UninitEmbeddingHashmap)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

@@ -60,7 +60,7 @@
 // Get error code description
 #define GE_GET_ERRORNO_STR(value) ge::StatusFactory::Instance()->GetErrDesc(value)
 
-#define RT_ERROR_TO_GE_STATUS(RT_ERROR) static_cast<Status>(RT_ERROR)
+#define RT_ERROR_TO_GE_STATUS(RT_ERROR) static_cast<ge::Status>(RT_ERROR)
 
 namespace ge {
 // System ID
@@ -231,6 +231,7 @@ GE_ERRORNO_ENGINE(GE_ENG_MEMTYPE_ERROR, 2, "Memory type HBM is necessary when en
 // Optimize errocode
 GE_ERRORNO_GRAPH(TO_BE_DELETED, 63, "The node of the graph to be deleted.");  // 1343242303
 GE_ERRORNO_GRAPH(NOT_CHANGED, 64, "The node of the graph no changed.");       // 1343242304
+GE_ERRORNO_GRAPH(SUSPEND, 65, "The optimize operation is suspended.");        // 1343242305
 
 // Ops module error code definition
 GE_ERRORNO_OPS(GE_OPS_KERNEL_STORE_INIT_FAILED, 0, "Failed to initialize OpsKernelInfoStore.");  // 1343250432

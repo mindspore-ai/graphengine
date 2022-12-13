@@ -25,6 +25,7 @@
 #include "common/model/ge_root_model.h"
 #include "framework/common/types.h"
 #include "graph/model.h"
+#include "common/util/platform_info.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY ModelHelper {
@@ -33,7 +34,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   ~ModelHelper();
 
   Status SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param, const std::string &output_file,
-                       ge::ModelBufferData &model) const;
+                       ge::ModelBufferData &model, bool need_check_os_cpu = false) const;
   Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, const size_t mode_index,
                          const bool is_dyn_root) const;
   Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
@@ -60,6 +61,15 @@ class GE_FUNC_VISIBILITY ModelHelper {
 
   Status GetBaseNameFromFileName(const std::string &file_name, std::string &base_name) const;
   Status GetModelNameFromMergedGraphName(const ComputeGraphPtr &compute_graph, std::string &model_name) const;
+
+  // for soft sync op
+  Status HandleDeviceInfo(fe::PlatFormInfos &platform_infos) const;
+  Status GetPlatformInfo(int32_t device_id, const std::string &soc_version, fe::PlatformInfo &platform_info,
+                         int32_t &virtual_type) const;
+  Status SetPlatformInfos(const std::string &soc_version, const fe::PlatformInfo &platform_info,
+                          fe::PlatFormInfos &platform_infos) const;
+
+  Status CheckOsCpuInfoAndOppVersion();
 
  private:
   bool is_assign_model_ = false;
@@ -101,7 +111,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status SaveModelTaskDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                           Buffer &task_buffer, const size_t model_index = 0U) const;
   Status SaveModelHeader(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                         const size_t model_num = 1U) const;
+                         const size_t model_num = 1U, bool need_check_os_cpu = false) const;
   Status SaveAllModelPartiton(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                               Buffer &model_buffer, Buffer &task_buffer, const size_t model_index = 0U) const;
 };

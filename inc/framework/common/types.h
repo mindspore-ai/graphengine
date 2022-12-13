@@ -307,7 +307,7 @@ REGISTER_OPTYPE_DECLARE(GETNEXT, "GetNext");
 REGISTER_OPTYPE_DECLARE(ITERATOR, "Iterator");
 REGISTER_OPTYPE_DECLARE(ITERATORV2, "IteratorV2");
 REGISTER_OPTYPE_DECLARE(INITDATA, "InitData");
-REGISTER_OPTYPE_DECLARE(TRANSSHAPE, "TransShape")
+REGISTER_OPTYPE_DECLARE(TRANSSHAPE, "TransShape");
 REGISTER_OPTYPE_DECLARE(REFIDENTITY, "RefIdentity");
 REGISTER_OPTYPE_DECLARE(BITCAST, "Bitcast");
 REGISTER_OPTYPE_DECLARE(GATHERSHAPES, "GatherShapes");
@@ -413,6 +413,9 @@ REGISTER_OPTYPE_DECLARE(HCOMREMOTEWRITE, "HcomRemoteWrite");
 REGISTER_OPTYPE_DECLARE(HCOMREMOTESCATTERWRITE, "HcomRemoteScatterWrite");
 REGISTER_OPTYPE_DECLARE(HCOMALLTOALLV, "HcomAllToAllV");
 REGISTER_OPTYPE_DECLARE(HCOMGATHERALLTOALLV, "HcomGatherAllToAllV");
+REGISTER_OPTYPE_DECLARE(HCOMALLTOALLVC, "HcomAllToAllVC");
+REGISTER_OPTYPE_DECLARE(HCOMALLTOALL, "HcomAllToAll");
+REGISTER_OPTYPE_DECLARE(HCOMREMOTELOOKUP, "HcomRemoteLookup");
 
 REGISTER_OPTYPE_DECLARE(VARASSIGN, "VarAssign");
 REGISTER_OPTYPE_DECLARE(VARISINITIALIZEDOP, "VarIsInitializedOp");
@@ -517,6 +520,12 @@ REGISTER_OPTYPE_DECLARE(STACKPUSH, "StackPush");
 REGISTER_OPTYPE_DECLARE(STACKPOP, "StackPop");
 REGISTER_OPTYPE_DECLARE(STACKCLOSE, "StackClose");
 
+REGISTER_OPTYPE_DECLARE(EMBEDDINGTABLEFIND, "EmbeddingTableFind");
+
+// Data flow
+REGISTER_OPTYPE_DECLARE(FLOWNODE, "FlowNode");
+REGISTER_OPTYPE_DECLARE(FLOWFUNC, "FlowFunc");
+
 // @brief encryption type of the model file
 enum ModelEncryptType {
   UNENCRYPTED,  // not encrypted
@@ -569,7 +578,7 @@ constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64U;
 ///
 /// @brief length of the reserved field in the model file header
 ///
-constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75U;
+constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 63U;
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DATA_TYPE;
@@ -626,6 +635,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_N
 
 constexpr uint32_t PLATFORM_VERSION_LEN = 20U;
 
+enum class OsCpuInfoCheckTyep : uint8_t { NO_CHECK, NEED_CHECK };
+
 // Definition of the file header of the model file
 struct ModelFileHeader {
   uint32_t magic = MODEL_FILE_MAGIC_NUM;                // magic number of DOMI
@@ -645,7 +656,10 @@ struct ModelFileHeader {
   uint32_t model_num = 0U;
   uint8_t platform_version[PLATFORM_VERSION_LEN] = {0U};
   uint8_t platform_type = {0U};
-  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 75
+  uint8_t padd[3] = {0};  // For initializing aligned memory
+  uint64_t model_length = 0UL;
+  uint8_t need_check_os_cpu_info = static_cast<uint8_t>(OsCpuInfoCheckTyep::NO_CHECK);
+  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 64
 };
 
 constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0U;
@@ -656,10 +670,25 @@ constexpr uint32_t PARTITION_SIZE = 5U;
 
 enum ModelPartitionType { MODEL_DEF = 0, WEIGHTS_DATA, TASK_INFO, TBE_KERNELS, CUST_AICPU_KERNELS };
 
-struct ModelPartitionMemInfo {
+struct TinyModelPartitionMemInfo {
   ModelPartitionType type;
   uint32_t mem_offset;
   uint32_t mem_size;
+};
+
+struct TinyModelPartitionTable {
+  uint32_t num;
+  TinyModelPartitionMemInfo partition[0];
+};
+
+inline uint64_t SizeOfTinyModelPartitionTable(const TinyModelPartitionTable &table) {
+  return sizeof(TinyModelPartitionTable) + (sizeof(TinyModelPartitionMemInfo) * static_cast<uint64_t>(table.num));
+}
+
+struct ModelPartitionMemInfo {
+  ModelPartitionType type;
+  uint64_t mem_offset;
+  uint64_t mem_size;
 };
 
 struct ModelPartitionTable {

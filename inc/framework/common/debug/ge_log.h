@@ -97,9 +97,8 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
 
 #define GELOGT(VALUE, fmt, ...)                                                                              \
   do {                                                                                                       \
-    TraceStatus stat = (VALUE);                                                                              \
     const char_t *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                             \
-    const int32_t idx = static_cast<int32_t>(stat);                                                          \
+    const int32_t idx = static_cast<int32_t>(VALUE);                                                         \
     char_t *k = const_cast<char_t *>("status");                                                              \
     char_t *v = const_cast<char_t *>(TraceStatStr[idx]);                                                     \
     KeyValue kv = {k, v};                                                                                    \

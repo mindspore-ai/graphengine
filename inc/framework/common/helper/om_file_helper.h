@@ -28,13 +28,13 @@ namespace ge {
 struct ModelPartition {
   ModelPartitionType type;
   const uint8_t *data = nullptr;
-  uint32_t size = 0U;
+  uint64_t size = 0UL;
 };
 
 struct OmFileContext {
   std::vector<ModelPartition> partition_datas_;
   std::vector<char_t> partition_table_;
-  uint32_t model_data_len_ = 0U;
+  uint64_t model_data_len_ = 0UL;
 };
 
 struct SaveParam {
@@ -54,6 +54,11 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
 
   Status Init(uint8_t *const model_data, const uint32_t model_data_size, const uint32_t model_num);
 
+  Status Init(uint8_t *const model_data, const uint64_t model_data_size, const ModelFileHeader *file_header = nullptr);
+
+  Status Init(uint8_t *const model_data, const uint64_t model_data_size, const uint32_t model_num,
+              const ModelFileHeader *file_header = nullptr);
+
   Status GetModelPartition(const ModelPartitionType type, ModelPartition &partition);
 
   Status GetModelPartition(const ModelPartitionType type, ModelPartition &partition, const size_t model_index) const;
@@ -63,10 +68,11 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
   std::vector<OmFileContext> model_contexts_;
 
  private:
-  Status LoadModelPartitionTable(uint8_t *const model_data, const uint32_t model_data_size, const size_t model_index,
-                                 size_t &mem_offset);
+  Status LoadModelPartitionTable(uint8_t *const model_data, const uint64_t model_data_size, const size_t model_index,
+                                 size_t &mem_offset, const ModelFileHeader *file_header = nullptr);
 
-  Status LoadModelPartitionTable(uint8_t *const model_data, const uint32_t model_data_size, const uint32_t model_num);
+  Status LoadModelPartitionTable(uint8_t *const model_data, const uint64_t model_data_size, const uint32_t model_num,
+                                 const ModelFileHeader *file_header = nullptr);
 
   bool is_inited_{false};
 };
@@ -77,7 +83,7 @@ class GE_FUNC_VISIBILITY OmFileSaveHelper {
     return model_header_;
   }
 
-  uint32_t GetModelDataSize() const;
+  uint64_t GetModelDataSize() const;
 
   ModelPartitionTable *GetPartitionTable();
 

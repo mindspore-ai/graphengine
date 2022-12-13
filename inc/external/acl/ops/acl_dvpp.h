@@ -163,7 +163,8 @@ enum acldvppChannelDescParamType {
   ACL_DVPP_MODE_UINT32,
   ACL_DVPP_CHANNEL_ID_UINT64,
   ACL_DVPP_CHANNEL_HEIGHT_UINT32,
-  ACL_DVPP_CHANNEL_WIDTH_UINT32
+  ACL_DVPP_CHANNEL_WIDTH_UINT32,
+  ACL_DVPP_JPEGD_PRECISION_MODE_ENUM
 };
 
 enum aclvdecChannelDescParamType {
@@ -189,6 +190,9 @@ enum acldvppCscMatrix {
   ACL_DVPP_CSC_MATRIX_BT2020_WIDE,
   ACL_DVPP_CSC_MATRIX_BT2020_NARROW
 };
+
+// Jpeg precision mode
+enum acldvppJpegdPrecisionMode { ACL_YUVOUT_ALIGN_DOWN = 0, ACL_YUVOUT_ALIGN_UP = 1, ACL_YUVOUT_ALIGN_DOWN_COMPAT = 2 };
 
 /**
  * @ingroup AscendCL

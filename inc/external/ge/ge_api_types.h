@@ -83,11 +83,36 @@ const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyM
 
 const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const std::string ATOMIC_CLEAN_POLICY_SUB = "atomic_clean_policy";
+const std::string MEMORY_OPTIMIZATION_POLICY = "ge.exec.memoryOptimizationPolicy";
 
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
 const char_t *const OPTION_EXEC_MODEL_DEPLOY_MODE = "ge.exec.modelDeployMode";
 const char_t *const OPTION_EXEC_MODEL_DEPLOY_DEVICELIST = "ge.exec.modelDeployDevicelist";
+
+const std::string OPTION_EXEC_CM_CHIEF_IP = "ge.cmChiefIp";
+const std::string OPTION_EXEC_CM_CHIEF_PORT = "ge.cmChiefPort";
+const std::string OPTION_EXEC_CM_CHIEF_DEVICE = "ge.cmChiefWorkerDevice";
+const std::string OPTION_EXEC_CM_WORKER_IP = "ge.cmWorkerIp";
+const std::string OPTION_EXEC_CM_WORKER_SIZE = "ge.cmWorkerSize";
+
+const std::string OPTION_EXEC_STREAM_SYNC_TIMEOUT = "stream_sync_timeout";
+const std::string OPTION_EXEC_EVENT_SYNC_TIMEOUT = "event_sync_timeout";
+
+// Option key: embedding service
+const char_t *const OPTION_EXEC_PS_ID = "ge.exec.psId";
+const char_t *const OPTION_EXEC_CLUSTER_SPEC = "ge.exec.clusterSpec";
+const char_t *const OPTION_EXEC_RANK_TABLE_ADDR = "ge.exec.rankTableAddr";
+const char_t *const OPTION_EXEC_ROLE_TABLE_ADDR = "ge.exec.roleTableAddr";
+const char_t *const OPTION_EXEC_RANK_TABLE_LEN = "ge.exec.rankTableLen";
+const char_t *const OPTION_EXEC_ROLE_TABLE_LEN = "ge.exec.roleTableLen";
+const char_t *const OPTION_EXECUTE_TIMES = "ge.execute_times";
+const char_t *const OPTION_MAX_KEY_NUM = "ge.max_num";
+const char_t *const OPTION_EMBEDDING_DIM = "ge.embedding_dim";
+
+// Option key: host env os & cpu
+const char_t *const OPTION_HOST_ENV_OS = "ge.host_env_os";
+const char_t *const OPTION_HOST_ENV_CPU = "ge.host_env_cpu";
 
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
@@ -139,6 +164,8 @@ const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
 const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const char_t *const ATOMIC_CLEAN_POLICY_SUB = "atomic_clean_policy";
+static const char_t *const EXTERNAL_WEIGHT = "ge.externalWeight";
+static const char_t *const DETERMINISTIC = "ge.deterministic";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -282,6 +309,9 @@ const std::string EXCLUDE_ENGINES = "ge.exec.exclude_engines";
 // Configure AICORE NUM
 const std::string AICORE_NUM = "ge.aicoreNum";
 
+// Configure Hardware info
+const std::string HARDWARE_INFO = "ge.hardwareInfo";
+
 // Configure L1FUSION
 const std::string L1_FUSION = "ge.l1Fusion";
 
@@ -394,6 +424,12 @@ const std::string OP_EXECUTE_TIMEOUT = "ge.exec.opExecuteTimeout";
 
 const char_t *const FILE_CONSTANT_PATH = "ge.exec.value_bins";
 
+// Configure whether convert const to fileconstant and save weight to file.
+// Its value should be "0" or "1", default value is "0".
+const std::string EXTERNAL_WEIGHT = "ge.externalWeight";
+
+const std::string DETERMINISTIC = "ge.deterministic";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 // Input/Output tensor info
@@ -483,6 +519,8 @@ static const char_t *const INPUT_DATA_NAMES = "input_data_names";
 static const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
 static const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 static const char_t *const ATOMIC_CLEAN_POLICY_SUB = "atomic_clean_policy";
+static const char_t *const EXTERNAL_WEIGHT = ge::EXTERNAL_WEIGHT.c_str();
+static const char_t *const DETERMINISTIC = ge::DETERMINISTIC.c_str();
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -516,7 +554,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              CUSTOMIZE_DTYPES,
                                                              BUILD_INNER_MODEL,
                                                              OP_DEBUG_CONFIG,
-                                                             EXCLUDE_ENGINES};
+                                                             EXCLUDE_ENGINES,
+                                                             EXTERNAL_WEIGHT};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
@@ -547,7 +586,8 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               OP_COMPILER_CACHE_MODE,
                                               MODIFY_MIXLIST,
                                               COMPRESSION_OPTIMIZE_CONF,
-                                              OP_DEBUG_CONFIG};
+                                              OP_DEBUG_CONFIG,
+                                              DETERMINISTIC};
 #endif
 }  // namespace ir_option
 }  // namespace ge

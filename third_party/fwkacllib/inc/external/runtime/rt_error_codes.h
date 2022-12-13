@@ -108,6 +108,7 @@ static const int32_t ACL_ERROR_RT_AICORE_TRAP_WRITE_OVERFLOW      = 507043; // a
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_READ_OVERFLOW  = 507044; // aiv trap read overflow
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_WRITE_OVERFLOW = 507045; // aiv trap write overflow
 static const int32_t ACL_ERROR_RT_STREAM_SYNC_TIMEOUT        = 507046; // stream sync time out
+static const int32_t ACL_ERROR_RT_EVENT_SYNC_TIMEOUT         = 507047; // event sync time out
 
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR         = 507899; // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR       = 507900; // aicpu internal error

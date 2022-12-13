@@ -548,6 +548,9 @@ REG_OP(Snapshot)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator GuaranteeConst.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GuaranteeConst)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -985,7 +988,7 @@ REG_OP(PlaceholderWithDefault)
 *x: A tensor must have numeric type. \n
 
 *@par Attributes:
-*dtype: An optional int32 or int64. The output data type. Defaults to int32. \n
+*dtype: Same as the input data type. The output data type. Defaults to int32. \n
 
 *@par Outputs:
 *y: A tensor must have numeric type. \n
@@ -1462,6 +1465,9 @@ REG_OP(NonZeroWithValueShape)
 
 * @par Third-party framework compatibility
 * Compatible with the ONNX operator Expand.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 
 REG_OP(ExpandD)

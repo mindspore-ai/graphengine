@@ -321,6 +321,52 @@ REG_OP(HcomAllToAllV)
     .OP_END_FACTORY_REG(HcomAllToAllV)
 
 /**
+ * @brief All ranks send the same amount of data to each other, and receive the same amount of data from each other.
+ * @par Inputs:
+ * @li x: A tensor. Must be one of the following types: float32, int32, int8, int16, float16,
+  int64, uint64, uint8, uint16, uint32, float64.
+ * @par Outputs:
+ * @li y: A Tensor. Has the same type as "x".
+ * @par Attributes:
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+ * @attention all ranks participating in the op should be full-mesh networking
+  using the RDMA.
+ */
+REG_OP(HcomAllToAll)
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .REQUIRED_ATTR(group, String)
+    .OP_END_FACTORY_REG(HcomAllToAll)
+
+/**
+ * @brief All ranks send different amount of data to, and receive different
+  amount of data from, all ranks.
+ * @par Inputs:
+ * Two inputs, including:
+ * @li send_data: A tensor. the memory to send.
+ * @li send_count_matrix: A two dimensional matrix, where entry [i][j] specifies
+ * the number of elements in the send_data that rank i to rank j.
+ * @par Outputs:
+ * recv_data: A Tensor  has same element type as send_data.
+ * @par Attributes:
+ * @li rank: A required integer identifying the self rank.
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+ */
+REG_OP(HcomAllToAllVC)
+    .INPUT(send_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .INPUT(send_count_matrix, TensorType({DT_INT64})) // [ranksize, ranksize]
+    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .REQUIRED_ATTR(rank, Int)
+    .REQUIRED_ATTR(group, String)
+    .OP_END_FACTORY_REG(HcomAllToAllVC)
+
+/**
  * @brief All ranks send different amount of data to, and receive different
   amount of data from, all ranks. And concat all data descripting by addrinfo
   togather into output gathered.
@@ -362,5 +408,27 @@ REG_OP(HcomGatherAllToAllV)
     .REQUIRED_ATTR(addr_length, Int)
     .OP_END_FACTORY_REG(HcomGatherAllToAllV)
 
+/**
+ * @brief Find and get the corresponding value from the corresponding ps according to the keys
+ * @par Inputs:
+ * @li kyes: A tensor. Must be int64 type,
+ * @li table_id: int32.
+ * @par Outputs:
+ * @li values: A Tensor. Must be float32 type.
+ * @par Attributes:
+ * @li tag: A required integer identifying the hccl operator tag.
+ * @li insert_flag: Indicates whether lookup supports new value.
+ * @li max_num: keys max num.
+ * @li embedding_dim: Apply memory usage for output or infer shape.
+ */
+REG_OP(HcomRemoteLookup)
+    .INPUT(keys, TensorType({DT_INT64}))
+    .INPUT(table_id, Int)
+    .OUTPUT(values, TensorType({DT_FP32}))
+    .REQUIRED_ATTR(tag, Int)
+    .REQUIRED_ATTR(insert_flag, Int)
+    .REQUIRED_ATTR(max_num, Int)
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .OP_END_FACTORY_REG(HcomRemoteLookup)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_

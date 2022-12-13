@@ -261,7 +261,46 @@ REG_OP(SyncBatchNormBackwardElemt)
     .INPUT(mean_dy_xmu, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(grad_input, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SyncBatchNormBackwardElemt)
-    
+
+/**
+* @brief After the sum(total_sum) and the square sum(total_square_sum) are separately calculated on each device,
+* a total mean(batch_mean) and reciprocal of standard deviation(batch_invstd) are returned,
+* running_mean and running_var are updated.
+
+* @par Inputs:
+* include:
+* @li total_sum: A Tensor. The sum of each device. Must be one of the following types: float16, float32.
+* @li total_square_sum: A Tensor. The square sum of each device. Must be one of the following types: float16, float32.
+* @li sample_count: A Tensor. Number of data for each device. Must be one of the following types: int32.
+* @li mean: A Tensor. Runtime mean. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Runtime variance. Must be one of the following types: float16, float32.  \n
+
+* @par Attributes:
+* Two Attributes, including:
+* @li momentum: A optional float. Defaults to 0.1. \n
+* @li eps: An optional float. Defaults to 0.00001. \n
+
+* @par Outputs:
+* include:
+* @li batch_mean: A Tensor. Total mean of this batch. Must be one of the following types: float16, float32.
+* @li batch_invstd: A Tensor. General statistics. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Updated Runtime mean. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Updated Runtime variance. Must be one of the following types: float16, float32. \n
+*/
+REG_OP(SyncBatchNormGatherStats)
+    .INPUT(total_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(total_square_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(sample_count, TensorType({DT_INT32}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(batch_invstd, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(momentum, Float, 0.1)
+    .ATTR(eps, Float, 0.00001)
+    .OP_END_FACTORY_REG(SyncBatchNormGatherStats)
+
 /**
 *@brief Performs batch normalization . \n
 

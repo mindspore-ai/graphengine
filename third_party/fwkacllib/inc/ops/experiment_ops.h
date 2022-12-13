@@ -472,11 +472,15 @@ REG_OP(EmbeddingTableImport)
 
 * @par Outputs:
 * @li values: indicates the hashtable value. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int. indicates the hashtable value number. \n
 */
 REG_OP(EmbeddingTableFind)
     .INPUT(table_id, TensorType({DT_UINT32}))
     .INPUT(keys, TensorType({DT_UINT64}))
     .OUTPUT(values, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(embedding_dim, Int)
     .OP_END_FACTORY_REG(EmbeddingTableFind)
 
 /**
@@ -488,6 +492,78 @@ REG_OP(EmbeddingTableFind)
 REG_OP(UninitEmbeddingHashmap)
     .INPUT(table_id, TensorType({DT_UINT32}))
     .OP_END_FACTORY_REG(UninitEmbeddingHashmap)
+
+/**
+* @brief Computes the output as scale * (x + bias) if x+bias > 0 and scale * negative_slope * (x+bias) 
+* if x+bias <= 0 . \n
+
+* @par Inputs:
+* Two input:
+* x: A Tensor. Must be one of the following types: float32, float16, double.
+* bias: A Tensor. Must be one of the following types: float32, float16, double.
+*
+* @par Attributes:
+* negative_slope: A float32. Defaults to "0.2".
+* sacle: A float32. Defaults to "2**0.5".
+*
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+* @par Third-party framework compatibility
+* Compatible with the mmcv operator FusedBiasLeakyrelu.
+*/
+REG_OP(FusedBiasLeakyRelu)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
+    .INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
+    .ATTR(negative_slope, Float, 0.2)
+    .ATTR(scale, Float, 1.414213562373)
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(FusedBiasLeakyRelu)
+
+/**
+* @brief Computes the output as scale * gradients if features > 0 and 
+* negative_slope * gradients * scale if features <= 0 . \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li y_grad: A Tensor. Must be one of the following types: float16, float32, double.
+* @li features: A Tensor. Has the same type as "gradients" . \n
+
+* @par Attributes:
+* negative_slope: A float32. Defaults to "0.2" . \n
+* scale : A float32. Defaults to "2**0.5"
+
+* @par Outputs:
+* x_grad: A Tensor. Has the same type as "y_grad" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the MMCV operator FusedBiasLeakyReluGrad.
+*/
+REG_OP(FusedBiasLeakyReluGrad)
+    .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(negative_slope, Float, 0.2)
+    .ATTR(scale, Float, 1.414213562373)
+    .OUTPUT(x_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(FusedBiasLeakyReluGrad)
+
+/**
+* @brief find an optimal n for shift-n. \n
+
+* @par Inputs:
+* @li x: A Tensor. indicates the output of quantizable layers.
+* @li scale_d: A Tensor, one number. indicates the scale of data.
+* @li scale_w: A Tensor, must be one number or the same size as dim-C when x is NHWC/NCHW.
+*              indicates the scale of weight. \n
+
+* @par Outputs:
+* @li n: A Tensor, has the same shape as scale_w. indicates the optimal n. \n
+*/
+REG_OP(SearchN)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(scale_d, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(scale_w, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(n, TensorType({DT_INT8}))
+    .OP_END_FACTORY_REG(SearchN)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

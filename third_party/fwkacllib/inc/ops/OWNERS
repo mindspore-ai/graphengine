@@ -1,5 +1,5 @@
 approvers:
-- zhoujian25
+- horming
 - qiaohairong
 reviewers:
 - chen-kang30
@@ -47,5 +47,10 @@ reviewers:
 - lin-wei32
 - wangjiangben_hw
 - clinglai
+- lilianlin-hw
+- zhuyiming52
+- yaoguangxiu
+- zhao_zhixuan
+- jayshu
 options:
   no_parent_owners: true

@@ -948,7 +948,7 @@ REG_OP(DropOutDoMask)
 *     float16, float32
 * @li mask: A mutable Tensor. Must met all of the following rules:
 *     shape of mask should be 1D.
-*     dtype of mask should be uint8.
+*     dtype of mask should be uint8 or bool.
 *     value of shape should met the following algorithm:
 *     value = (size(x) + 128 - 1) // 128 * 128
 * @li keep_prob: A mutable Tensor. Must met all of the following rules:
@@ -962,7 +962,7 @@ REG_OP(DropOutDoMask)
 */
 REG_OP(DropOutDoMaskV3)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(mask, TensorType({DT_UINT8, DT_BOOL}))
     .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(DropOutDoMaskV3)
@@ -978,7 +978,7 @@ REG_OP(DropOutDoMaskV3)
 *     float16, float32
 * @li mask: A mutable Tensor. Must met all of the following rules:
 *     shape of mask should be 1D.
-*     dtype of mask should be uint8.
+*     dtype of mask should be uint8 or bool.
 *     value of shape should met the following algorithm:
 *     value = (size(x) + 128 - 1) // 128 * 128
 *@par Attributes:
@@ -993,7 +993,7 @@ REG_OP(DropOutDoMaskV3)
 */
 REG_OP(DropOutDoMaskV3D)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(mask, TensorType({DT_UINT8, DT_BOOL}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(keep_prob, Float)
     .OP_END_FACTORY_REG(DropOutDoMaskV3D)
@@ -1659,7 +1659,7 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
 /**
  * @brief Calculate the PoissonNllLoss function. 
- *        target∼Poisson(input)loss(input,target)=input−target∗log(input)+log(target!) \n
+ *        target follow distribution of Poisson(input)loss(input,target) = input - target * log(input) + log(target!) \n
 
  * @par Inputs:
  * Two inputs, including:
@@ -1911,7 +1911,7 @@ REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
 * @li target: the target label Tensor. The type support Int32.
 * @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
 * @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
-*     shape of pred should be (B，D), B means batch size, D means the number of labels.
+*     shape of pred should be (B, D), B means batch size, D means the number of labels.
 *     shape of target should be (D, ).
 *     shape of weight should be (D, ) \n
 
@@ -1948,7 +1948,7 @@ REG_OP(SigmoidFocalLossGrad)
 * @li target: the target label Tensor. The type support Int32.
 * @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
 * @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
-*     shape of pred should be (B，D), B means batch size, D means the number of labels.
+*     shape of pred should be (B, D), B means batch size, D means the number of labels.
 *     shape of target should be (B, D).
 *     shape of weight should be (D, ) \n
 

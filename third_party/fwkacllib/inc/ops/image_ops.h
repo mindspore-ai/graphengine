@@ -1297,7 +1297,9 @@ REG_OP(DecodeBmp)
 *@li acceptable_fraction: An optional float. Defaults to 1. The minimum required
 fraction of lines before a truncated input is accepted.
 *@li dct_method: An optional string. Defaults to "". string specifying a hint
-*about the algorithm used for decompression. \n
+*about the algorithm used for decompression. 
+*@li dst_img_format: An optional string. Defaults to "HWC". string specifying a format
+* of the output. \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.
@@ -1312,6 +1314,7 @@ REG_OP(DecodeAndCropJpeg)
     .ATTR(try_recover_truncated, Bool, false)
     .ATTR(acceptable_fraction, Float, 1.0)
     .ATTR(dct_method, String, "")
+    .ATTR(dst_img_format, String, "HWC")
     .OP_END_FACTORY_REG(DecodeAndCropJpeg)
 
 /**
@@ -1699,6 +1702,9 @@ REG_OP(IMGWarpResize)
 
 *@par Outputs:
 *y: A Tensor dtype of float16, float32, should be same shape and type as x.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(SpatialTransformerD)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
@@ -1864,8 +1870,12 @@ REG_OP(ResizeGrad)
 *@li ratio: An optional int. Defaults to 1. Downscaling ratio.
 *@li fancy_upscaling: An optional bool. Defaults to True. If true use a slower but nicer upscaling of the chroma planes
 *@li try_recover_truncated: An optional bool. Defaults to False. If true try to recover an image from truncated input.
-*@li acceptable_fraction: An optional float. Defaults to 1. The minimum required fraction of lines before a truncated input is accepted.
-*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used for decompression. \n
+*@li acceptable_fraction: An optional float. Defaults to 1. 
+* The minimum required fraction of lines before a truncated input is accepted.
+*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used 
+* for decompression.
+*@li dst_img_format: An optional string. Defaults to "HWC". string specifying a format
+* of the output. \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.
@@ -1879,6 +1889,7 @@ REG_OP(DecodeJpeg)
     .ATTR(try_recover_truncated, Bool, false)
     .ATTR(acceptable_fraction, Float, 1.0)
     .ATTR(dct_method, String, "")
+    .ATTR(dst_img_format, String, "HWC")
     .OP_END_FACTORY_REG(DecodeJpeg)
 
 /**
@@ -1927,6 +1938,9 @@ REG_OP(DenseImageWarp)
 *@par Outputs:
 *y: A Tensor with the same type of x's,
     shape depends on x and sizes. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(ResizeD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -2589,13 +2603,31 @@ REG_OP(ExtractGlimpseV2)
     .OP_END_FACTORY_REG(ExtractGlimpseV2)
 
 /**
+* @brief ImgToTensor: Convert image to tensor \n
+
+* @par Inputs:
+* @li image: A 4-D Tensor. type support uint8, format support NCHW or NHWC\n
+
+* @par Outputs:
+* @li y: A 4-D Tensor. type support float, format support NCHW \n
+
+* @par Third-party framework compatibility
+* Compatible with pytorch ToTensor operator.
+*/
+
+REG_OP(ImgToTensor)
+    .INPUT(x, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(ImgToTensor)
+
+/**
 * @brief NormalizeV2 \n
 
 * @par Inputs:
 * @li x: A 4-D Tensor. Must be one of the following types: uint8, float16,
 *        float. Must set the format, supported format list ["NCHW, NHWC"].
-* @li mean: A 1-D float tensor of "C(channel)" elements
-* @li variance: A 1-D float tensor of "C(channel)" elements \n
+* @li mean: A 4-D float tensor. value of "C(channel)" is same to x
+* @li variance: A 4-D float tensor. value of "C(channel)" is same to x \n
 
 * @par Outputs:
 * @li y: A 4-D Tensor. Must be one of the following types: float16, float.
@@ -2616,5 +2648,35 @@ REG_OP(NormalizeV2)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(NormalizeV2)
+
+/**
+* @brief Applies a affine transformation to an image. \n
+
+* @par Inputs:
+* @li x: An NCHW tensor of type float32 or float32.
+* @li matrix: transformation matrix, format ND , shape must be (2, 3), type must be float32. \n
+
+* @par Attributes:
+* @li out_height: A required int32, specifying the height of the output image.
+* Must be greater than "0".
+* @li out_width: A required int32, specifying the width of the output image.
+* Must be greater than "0".
+* @li interpolation_mode: Interpolation mode, only support "bilinear" and "nearest", default "bilinear".
+* @li padding_mode: padding mode, only support "zeros", "border" and "reflection", default "zeros". \n
+
+* @par Outputs:
+* y: output tensor, format NCHW, type must be float32.
+*/
+REG_OP(WarpAffine)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(matrix, TensorType({ DT_FLOAT }))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(out_height, Int)
+    .REQUIRED_ATTR(out_width, Int)
+    .ATTR(interpolation_mode, String, "bilinear")
+    .ATTR(padding_mode, String, "const")
+    .ATTR(padding_value, Int, 0)
+    .OP_END_FACTORY_REG(WarpAffine)
 }  // namespace ge
+
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

@@ -3907,6 +3907,9 @@ REG_OP(ArgMaxGrad)
 * exp:
 * var.shape=[2,3,4,5], dim=2, the shape of indices and updates should be [2,3,5]
 * not support the shape of indices and updates is [2,3,2,5] like pytorch operator scatter. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(ArgMaxGradD)
     .INPUT(var, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))

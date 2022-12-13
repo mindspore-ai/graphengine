@@ -210,6 +210,7 @@ enum {
     UDF,
     HICAID,
     TSYNC,
+    AUDIO,
     INVLID_MOUDLE_ID
 };
 

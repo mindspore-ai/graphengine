@@ -204,15 +204,15 @@
     }                            \
   } while (false)
 
-#define GE_FREE_RT_LOG(addr)                                        \
-  do {                                                              \
-    if ((addr) != nullptr) {                                        \
-      const rtError_t error = rtFree(addr);                         \
-      if (error != RT_ERROR_NONE) {                                 \
-        GELOGE(RT_FAILED, "Call rtFree failed, error: %#x", error); \
-      }                                                             \
-      (addr) = nullptr;                                             \
-    }                                                               \
+#define GE_FREE_RT_LOG(addr)                                            \
+  do {                                                                  \
+    if ((addr) != nullptr) {                                            \
+      const rtError_t error = rtFree(addr);                             \
+      if (error != RT_ERROR_NONE) {                                     \
+        GELOGE(ge::RT_FAILED, "Call rtFree failed, error: %#x", error); \
+      }                                                                 \
+      (addr) = nullptr;                                                 \
+    }                                                                   \
   } while (false)
 
 namespace ge {

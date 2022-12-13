@@ -88,7 +88,9 @@ const std::string kEngineNameDvpp = "dvpp_ops_kernel";
 const std::string kEngineNameDsa = "DSAEngine";
 const std::string kAtomicOpType = "DynamicAtomicAddrClean";
 const char_t *const kAICpuKernelLibName = "aicpu_kernel_lib_name";
-const char *const kPartiallySupported = "partially_supported";
+const char_t *const kPartiallySupported = "partially_supported";
+const std::string kFFTSAiCoreLowerFunc = "ffts_ai_core_lower_func";
+const std::string kFFTSGraphLowerFunc = "ffts_graph_lower_func";
 const std::string kShapeTypeStatic = "static";
 const std::string kShapeTypeDynamic = "dynamic";
 const std::string kAtomicPrefix = "_atomic";
@@ -97,7 +99,7 @@ constexpr uint64_t kInferSessionId = 0U;
 constexpr uint64_t kReleaseFlag = 1U;
 constexpr uint32_t kInvalidModelId = 0xFFFFFFFFU;
 constexpr size_t kNumTaskWithAtomicAddrCleanTask = 2U;
-constexpr uint32_t INVALID_MODEL_ID = 0xFFFFFFFFUL;
+constexpr uint32_t INVALID_MODEL_ID = 0xFFFFFFFFU;
 
 // dynamic execute mode
 const char_t *const kLazyRecompile = "lazy_recompile";
@@ -243,10 +245,11 @@ struct AippConfigInfo {
 // The structure of offline Modeldata
 struct ModelData {
   void *model_data = nullptr;  // Model binary data start addr
-  uint32_t model_len = 0U;     // Model binary data length
+  uint64_t model_len = 0UL;    // Model binary data length
   int32_t priority = 0;        // Model priority
   std::string key;             // Key path for encrypt model, Empty for unencrypt
   std::string om_name;         // om file name, used for data dump
+  std::string om_path;         // om file path, used for concatenating file constant path
 };
 
 struct ModelParam {
@@ -338,7 +341,7 @@ struct TaskDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
-  uint32_t context_id = 0xFFFFFFFFUL;
+  uint32_t context_id = 0xFFFFFFFFU;
 };
 
 struct OpDescInfo {
@@ -408,6 +411,7 @@ const char_t *const RECOMPUTE = "ge.recompute";
 
 // 6: Topological Sorting Mode
 const char_t *const OPTION_TOPOSORTING_MODE = "ge.topoSortingMode";
+
 const std::set<std::string> ir_builder_suppported_options_inner = {
     EVALUATE_GRAPH_RESOURCE_MODE, ENABLE_GRAPH_PARALLEL, RESOURCE_CONFIG_PATH, GRAPH_PARALLEL_OPTION_PATH, RECOMPUTE,
     OPTION_TOPOSORTING_MODE};

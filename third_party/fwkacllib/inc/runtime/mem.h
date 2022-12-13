@@ -217,10 +217,11 @@ typedef struct {
  * @param [in|out] devPtr   memory pointer
  * @param [in] size   memory size
  * @param [in] type   memory type
+ * @param [in] moduleid alloc memory module id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMalloc(void **devPtr, uint64_t size, rtMemType_t type);
+RTS_API rtError_t rtMalloc(void **devPtr, uint64_t size, rtMemType_t type, const uint16_t moduleId);
 
 RTS_API rtError_t rtMallocV2(void **devPtr, uint64_t size, rtMemType_t type, const uint16_t moduleId);
 /**
@@ -237,10 +238,11 @@ RTS_API rtError_t rtFree(void *devPtr);
  * @brief alloc device memory for dvpp
  * @param [in|out] devPtr   memory pointer
  * @param [in] size   memory size
+ * @param [in] moduleid alloc memory module id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size);
+RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size, const uint16_t moduleId);
 
 rtError_t rtDvppMallocV2(void **devPtr, uint64_t size, uint16_t moduleId);
 
@@ -250,11 +252,12 @@ rtError_t rtDvppMallocV2(void **devPtr, uint64_t size, uint16_t moduleId);
  * @param [in|out] devPtr   memory pointer
  * @param [in] size   memory size
  * @param [in] flag   mem flag, can use mem attribute set read only.
+ * @param [in] moduleid alloc memory module id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return others is error
  */
-RTS_API rtError_t rtDvppMallocWithFlag(void **devPtr, uint64_t size, uint32_t flag);
+RTS_API rtError_t rtDvppMallocWithFlag(void **devPtr, uint64_t size, uint32_t flag, const uint16_t moduleId);
 
 RTS_API rtError_t rtDvppMallocWithFlagV2(void **devPtr, uint64_t size, uint32_t flag, const uint16_t moduleId);
 
@@ -272,10 +275,11 @@ RTS_API rtError_t rtDvppFree(void *devPtr);
  * @brief alloc host memory
  * @param [in|out] hostPtr   memory pointer
  * @param [in] size   memory size
+ * @param [in] moduleid alloc memory module id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
+RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size, const uint16_t moduleId);
 
 RTS_API rtError_t rtMallocHostV2(void **hostPtr, uint64_t size, uint16_t moduleId);
 
@@ -316,10 +320,11 @@ RTS_API rtError_t rtFreeHostSharedMemory(rtFreeHostSharedMemoryIn *in);
  * @param [in|out] ptr   memory pointer
  * @param [in] size   memory size
  * @param [in] flag   reserved, set to 0.
+ * @param [in] moduleid alloc memory module id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag);
+RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag, const uint16_t moduleId);
 
 RTS_API rtError_t rtMemAllocManagedV2(void **ptr, uint64_t size, uint32_t flag, uint16_t moduleId);
 
@@ -338,9 +343,10 @@ RTS_API rtError_t rtMemFreeManaged(void *ptr);
  * @param [in| devPtr   memory pointer
  * @param [in] size     memory size
  * @param [in] type     memory type
+ * @param [in] moduleid alloc memory module id
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtMallocCached(void **devPtr, uint64_t size, rtMemType_t type);
+RTS_API rtError_t rtMallocCached(void **devPtr, uint64_t size, rtMemType_t type, const uint16_t moduleId);
 
 RTS_API rtError_t rtMallocCachedV2(void **devPtr, uint64_t size, rtMemType_t type, uint16_t moduleId);
 

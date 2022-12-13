@@ -103,6 +103,17 @@ RTS_API rtError_t rtEventSynchronize(rtEvent_t evt);
 
 /**
  * @ingroup dvrt_event
+ * @brief wait event to be complete
+ * @param [in] evt   event to wait
+ * @param [in] timeout event wait timeout
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_EVENT_SYNC_TIMEOUT for timeout
+ */
+RTS_API rtError_t rtEventSynchronizeWithTimeout(rtEvent_t evt, const int32_t timeout);
+
+/**
+ * @ingroup dvrt_event
  * @brief Queries an event's status
  * @param [in] evt   event to query
  * @return RT_ERROR_NONE for complete

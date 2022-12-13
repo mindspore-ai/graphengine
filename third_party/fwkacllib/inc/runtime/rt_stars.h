@@ -169,6 +169,44 @@ RTS_API rtError_t rtStreamCreateByGrp(rtStream_t *stm, int32_t priority, uint32_
  */
 RTS_API rtError_t rtDvppWaitGroupReport(rtDvppGrp_t grp, rtDvppGrpCallback callBackFunc, int32_t timeout);
 
+/*
+ * @ingroup dvrt_stream
+ * @brief set stream geOpTag
+ * @param [in] stm: stream handle
+ * @param [in] geOpTag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetStreamTag(rtStream_t stm, uint32_t geOpTag);
+
+// general ctrl type
+typedef enum tagGeneralCtrlType {
+    RT_GNL_CTRL_TYPE_MEMCPY_ASYNC_CFG = 0,
+    RT_GNL_CTRL_TYPE_REDUCE_ASYNC_CFG = 1,
+    RT_GNL_CTRL_TYPE_FFTS_PLUS_FLAG = 2,
+    RT_GNL_CTRL_TYPE_FFTS_PLUS = 3,
+    RT_GNL_CTRL_TYPE_NPU_GET_FLOAT_STATUS = 4,
+    RT_GNL_CTRL_TYPE_NPU_CLEAR_FLOAT_STATUS = 5,
+    RT_GNL_CTRL_TYPE_STARS_TSK = 6,
+    RT_GNL_CTRL_TYPE_CDQ_EN_QU = 7,
+    RT_GNL_CTRL_TYPE_CDQ_EN_QU_PTR = 8,
+    RT_GNL_CTRL_TYPE_CMO_TSK = 9,
+    RT_GNL_CTRL_TYPE_BARRIER_TSK = 10,
+    RT_GNL_CTRL_TYPE_STARS_TSK_FLAG = 11,
+    RT_GNL_CTRL_TYPE_SET_STREAM_TAG = 12,
+    RT_GNL_CTRL_TYPE_MAX = 13,
+} rtGeneralCtrlType_t;
+
+/**
+ * @ingroup rt_stars
+ * @brief gerneral ctrl if
+ * @param [in] ctl              ctl input
+ * @param [in] num              ctl input num
+ * @param [in] type             ctl type
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtGeneralCtrl(uintptr_t *ctrl, uint32_t num, uint32_t type);
+
 #if defined(__cplusplus)
 }
 #endif

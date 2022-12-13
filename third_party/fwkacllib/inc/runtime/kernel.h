@@ -156,6 +156,21 @@ typedef struct tagRtArgsEx {
     uint8_t reserved[4];
 } rtArgsEx_t;
 
+typedef struct tagRtAicpuArgsEx {
+    void *args; // args host mem addr
+    rtHostInputInfo_t *hostInputInfoPtr; // nullptr means no host mem input
+    rtHostInputInfo_t *kernelOffsetInfoPtr; // KernelOffsetInfo, it is different for CCE Kernel and fwk kernel
+    uint32_t argsSize;
+    uint16_t hostInputInfoNum; // hostInputInfo num
+    uint16_t kernelOffsetInfoNum; // KernelOffsetInfo num
+    uint16_t soNameAddrOffset; // just for CCE Kernel, default value is 0xffff for FWK kernel
+    uint16_t kernelNameAddrOffset; // just for CCE Kernel, default value is 0xffff for FWK kernel
+    bool isNoNeedH2DCopy; // is no need host to device copy: 0 means need H2D copy,
+                               // other means doesn't need H2D copy.
+    uint8_t reserved[3];
+} rtAicpuArgsEx_t;
+
+
 /**
  * @ingroup rt_KernelConfigDump
  * @brief device dump type
@@ -540,7 +555,7 @@ RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launc
  * @ingroup rtAicpuKernelLaunchEx
  * @brief launch cpu kernel to device  with dump identifier and kernelType
  * @param [in] kernelType    aicpu kernel type
- * @param [in] launchNames   names address for kernel launch
+ * @param [in] soName        address of op name
  * @param [in] blockDim      block dimentions
  * @param [in] argsInfo      argments address for kernel function
  * @param [in] smDesc        shared memory description
@@ -552,6 +567,23 @@ RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launc
 RTS_API rtError_t rtAicpuKernelLaunchEx(uint32_t kernelType, const rtKernelLaunchNames_t *launchNames,
                                         uint32_t blockDim, const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc,
                                         rtStream_t stm, uint32_t flags);
+/**
+ * @ingroup rtAicpuKernelLaunchExWithArgs
+ * @brief launch cpu kernel to device  with dump identifier and kernelType
+ * @param [in] kernelType    aicpu kernel type
+ * @param [in] op Name        address of op name
+ * @param [in] blockDim      block dimentions
+ * @param [in] argsInfo      argments address for kernel function
+ * @param [in] smDesc        shared memory description
+ * @param [in] stm           associated stream
+ * @param [in] flags         dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunchExWithArgs(const uint32_t kernelType, const char_t * const opName,
+                                                const uint32_t blockDim, const rtAicpuArgsEx_t *argsInfo,
+                                                rtSmDesc_t * const smDesc, const rtStream_t stm,
+                                                const uint32_t flags);
 
 /**
  * @ingroup rt_kernel

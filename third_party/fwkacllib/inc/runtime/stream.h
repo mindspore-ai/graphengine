@@ -29,7 +29,7 @@ extern "C" {
 #define RT_STREAM_PRIMARY_FIRST_DEFAULT (0x80U)
 #define RT_STREAM_OVERFLOW (0x100U)
 #define RT_STREAM_FAST_LAUNCH (0x200U)
-
+#define RT_STREAM_FAST_SYNC   (0x400U)
 /**
  * @ingroup stream_type
  * @brief stream type
@@ -252,6 +252,16 @@ RTS_API rtError_t rtSetStreamOverflowSwitch(rtStream_t stm, uint32_t flags);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetStreamOverflowSwitch(rtStream_t stm, uint32_t *flags);
+
+/*
+ * @ingroup dvrt_stream
+ * @brief get stream geOpTag
+ * @param [in] stm: stream handle
+ * @param [out] geOpTag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetStreamTag(rtStream_t stm, uint32_t *geOpTag);
 
 #if defined(__cplusplus)
 }

@@ -553,6 +553,9 @@ REG_OP(UnsortedSegmentSum)
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator logspaced. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(LogSpaceD)
     .INPUT(assist, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -2426,6 +2429,9 @@ REG_OP(StridedSliceV2)
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator IndexFill. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(IndexFillD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -2720,6 +2726,29 @@ REG_OP(SearchSorted)
     .ATTR(dtype, Type, DT_INT64)
     .ATTR(right, Bool, false)
     .OP_END_FACTORY_REG(SearchSorted)
+
+/**
+* @brief Repeat elements of input with copies of data along a specified dimension.
+* @par Inputs:
+* Two input:
+* input_x: A Tensor with any format. Support BasicType.
+* repeats: A Tensor with dim = 1 or a Scalar. Support BasicType. \n
+
+* @par Attributes:
+* @li axis: An optional int32, specifying the axis to repeat. Defaults to 1000.
+
+* @par Outputs:
+* output_y: A Tensor, which is the same dtype as input_x.Support BasicType. \n
+
+* @attention Constraints:
+* @li "axis" must be within the rank of the input tensor.
+*/
+REG_OP(RepeatInterleave)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(repeats, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(axis, Int, 1000)
+    .OP_END_FACTORY_REG(RepeatInterleave)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

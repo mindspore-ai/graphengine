@@ -48,7 +48,7 @@ REG_OP(DSAGenBitMask)
     .INPUT(count, TensorType({DT_INT64}))
     .INPUT(seed, TensorType({DT_UINT64}))
     .INPUT(dropout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .OUTPUT(out, TensorType({DT_UINT8}))
+    .OUTPUT(out, TensorType({DT_UINT1, DT_UINT8}))
     .ATTR(random_algorithm, String, "Philox")
     .OP_END_FACTORY_REG(DSAGenBitMask)
 

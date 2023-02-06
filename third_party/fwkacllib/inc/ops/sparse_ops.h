@@ -103,26 +103,27 @@ REG_OP(SparseReorder)
     .OP_END_FACTORY_REG(SparseReorder)
 
 /**
-*@brief Reshapes a SparseTensor to represent values in a new dense shape . \n
+* @brief Reshapes a SparseTensor to represent values in a new dense shape . \n
 
-*@par Inputs:
-* @li indices: A matrix Tensor of type int64. 2D. The indices of the SparseTensor.
-* @li shape: A vector Tensor of type int64. 1D. The shape of the SparseTensor.
-* @li new_shape: A 1D Tensor of type int64. The requested new dense shape . \n
+* @par Inputs:
+* The input of int32 support only static input
+* @li indices: A matrix Tensor of type int64 or type int32. 2D. The indices of the SparseTensor.
+* @li shape: A vector Tensor of type int64 or type int32. 1D. The shape of the SparseTensor.
+* @li new_shape: A 1D Tensor of type int64 or type int32. The requested new dense shape . \n
 
-*@par Outputs:
-*@li y_indices: A Tensor of type int64. The indices of the new dense shape.
-*@li y_shape: A Tensor of type int64. The shape of the new dense shape . \n
+* @par Outputs:
+* @li y_indices: A Tensor of type int64. The indices of the new dense shape.
+* @li y_shape: A Tensor of type int64. The shape of the new dense shape . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseReshape.
 */
 REG_OP(SparseReshape)
-    .INPUT(indices, TensorType({DT_INT64}))
-    .INPUT(shape, TensorType({DT_INT64}))
-    .INPUT(new_shape, TensorType({DT_INT64}))
-    .OUTPUT(y_indices, TensorType({DT_INT64}))
-    .OUTPUT(y_shape, TensorType({DT_INT64}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(new_shape, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y_indices, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y_shape, TensorType({DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(SparseReshape)
 
 /**

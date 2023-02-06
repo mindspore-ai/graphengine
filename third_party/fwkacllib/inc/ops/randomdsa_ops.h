@@ -30,17 +30,19 @@ namespace ge {
 * @brief Generate DSA random bit mask for dropout. \n
 
 * @par Inputs:
-include:
-* @li count:The shape of the input tensor.
+* @li count:The shape of the input tensor. Must be int64.
 * @li seed:If seed is set to be non-zero, the random number
-* generator is seeded by the given seed. Otherwise, it is seeded by a random seed
-* @li dropout:0-D. Number of bit 1 . \n
+* generator is seeded by the given seed. Otherwise, it is seeded by a random seed. Must be int64.
+* @li dropout:0-D. Number of bit 1. Must be one of the following dtypes:float16, float32, bf16.\n
 
 * @par Attributes:
-* @li random_algorithm:The default value is "Philox". \n
+* @li random_algorithm:The default value is "Philox".
+* @li output_dtype:The dtype of output. The default value is "uint1". \n
 
 * @par Outputs:
-* y:Output (1-D) random number using uint data format . \n
+* y:If the dtype of y is uint8, output (1-D) random number using uint8 data format. Else if the dtype of y is uint1,
+* output random number with the shape of count using uint1 data format.
+* Must be one of the following types:uint1, uint8.\n
 
 * @see DSAGenBitMask()
 */
@@ -48,8 +50,9 @@ REG_OP(DSAGenBitMask)
     .INPUT(count, TensorType({DT_INT64}))
     .INPUT(seed, TensorType({DT_UINT64}))
     .INPUT(dropout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .OUTPUT(out, TensorType({DT_UINT8}))
+    .OUTPUT(out, TensorType({DT_UINT1, DT_UINT8}))
     .ATTR(random_algorithm, String, "Philox")
+    .ATTR(output_dtype, String, "uint8")
     .OP_END_FACTORY_REG(DSAGenBitMask)
 
 /**

@@ -154,19 +154,18 @@ REG_OP(TileD)
 *     indices = [[0, 0], [1, 1]]
 *      x = [['a', 'b'], ['c', 'd']]
 *      output = ['a', 'd']
+* When the impl_mode is set as "support out of bound index", if the indices data is out of bound,
+* the corresponding results will be set as 0. Otherwise, an aic_error will occur.
 
 * @par Inputs:
-* @li x: A Tensor of type BasicType.
-* @li indices: A Tensor of type IndexNumberType . \n
+* @li x: A Tensor. Must be one of the following types: float32, float64, int32,
+*     uint8, int16, int8, int64, qint8, quint8, qint32, qint16, quint16,
+*     uint16, complex128, float16, uint32, uint64, complex64, complex128.
+* @li indices: A Tensor of type int32 or int64.
 
 * @par Outputs:
-* y: A Tensor of type BasicType.
-* @see GatherNd()
+* y: A Tensor. Has the same type as "x".
 
-* @attention Constraints:
-* @li "x" is one of the following types: float16, float32, double, int32,
-*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
-*     complex128, uint32, uint64 . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator GatherNd.
@@ -178,22 +177,23 @@ REG_OP(GatherNd)
     .OP_END_FACTORY_REG(GatherNd)
 
 /**
-* @brief Gather slices from "x" according to "indices" by corresponding axis .
+* @brief Gather slices from "x" according to "indices" by corresponding axis, produces a output tensor
+* with shape(x.shape[:axis]+indices.shape[batch:]+x.shape[axis+1:]). When the impl_mode is set
+* as "support out of bound index", if the indices data is out of bound, the corresponding results
+* will be set as 0. Otherwise, an aic_error will occur.
 
 * @par Inputs:
-* Three inputs, including:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32,
 *     uint8, int16, int8, int64, qint8, quint8, qint32, qint16, quint16,
 *     uint16, complex128, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64.
-* @li axis: A Tensor of type as int32 or int64,
-*     Must be in the range [-rank(input_tensor), rank(input_tensor)) .
+* @li axis: A Tensor of type as int32 or int64. Must be in the range [-rank(input_tensor), rank(input_tensor)).
 
 * @par Attributes:
 * batch_dims: An optional int. Defaults to 0.
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x" .
+* y: A Tensor. Has the same type as "x".
 
 * @attention Constraints:
 * Value in indices must be in range [0, x.shape[axis])
@@ -211,22 +211,21 @@ REG_OP(GatherV2)
     .OP_END_FACTORY_REG(GatherV2)
 
 /**
-* @brief Gather slices from "x" according to "indices" by corresponding axis . \n
+* @brief Gather slices from "x" according to "indices" by corresponding axis, produces a output tensor
+* with shape(x.shape[:axis]+indices.shape[batch:]+x.shape[axis+1:]). When the impl_mode is set
+* as "support out of bound index", if the indices data is out of bound, the corresponding results
+* will be set as 0. Otherwise, an aic_error will occur.
 
 * @par Inputs:
-* Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float32, float16, int32, uint32, int8, uint8,
 *     int16, uint16, int64, uint64.
-* @li indices: A Tensor of type int32 or int64 . \n
+* @li indices: A Tensor of type int32 or int64.
 
 * @par Attributes:
-* axis: A int32 specifying the axis to gather from . \n
+* axis: A int32/int64 specifying the axis to gather from.
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x" . \n
-
-* @attention Constraints:
-
+* y: A Tensor. Has the same type as "x".
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator GatherV2.
@@ -244,42 +243,49 @@ REG_OP(GatherV2D)
     .OP_END_FACTORY_REG(GatherV2D)
 
 /**
-* @Gathers values along an axis specified by dim . \n
+* @brief Gather slices from "x" according to "indices" by corresponding dim, produces a output tensor
+* with shape(x.shape[:dim]+indices.shape[batch:]+x.shape[dim+1:]). When the impl_mode is set
+* as "support out of bound index", if the indices data is out of bound, the corresponding results
+* will be set as 0. Otherwise, an aic_error will occur.
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
-* @li index: A Tensor. Must be one of the following types: int64 . \n
+* @li index: A Tensor. Must be one of the following types: int32, int64.
 
 * @par Attributes:
-* dim: the axis along which to index . \n
+* dim: the axis along which to index, int32 or int64.
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x" . \n
+* y: A Tensor. Has the same type as "x".
 
 * @par Third-party framework compatibility
 * Compatible with the PyTorch operator Gather.
 */
 REG_OP(GatherElements)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
-    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64,DT_BOOL}))
     .INPUT(index, TensorType({DT_INT32,DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
-    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64,DT_BOOL}))
     .ATTR(dim, Int, 0)
     .OP_END_FACTORY_REG(GatherElements)
 
 /**
-* @Gathers values along an axis specified by dim . \n
+* @brief Gather slices from "x" according to "indices" by corresponding dim, produces a output tensor
+* with shape(x.shape[:dim]+indices.shape[batch:]+x.shape[dim+1:]). When the impl_mode is set
+* as "support out of bound index", if the indices data is out of bound, the corresponding results
+* will be set as 0. Otherwise, an aic_error will occur.
 
 * @par Inputs:
-* @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
-*     int64, uint16, float16, uint32, uint64, bool.
-* @li dim: A Tensor. Must be one of the following types: int32, int64.
-* @li index: A Tensor. Must be one of the following types: int32, int64 . \n
+* @li x: A Tensor. Must be one of the following types: int8, uint8, int16, uint16, int32, uint32, int64,
+* uint64, bool, float16, float32, double.
+* @li index: A Tensor. Must be one of the following types: int32, int64.
 
+* @par Attributes:
+* dim: the axis along which to index, int32 or int64.
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x" . \n
+* y: A Tensor. Has the same type as "x".
 
 * @par Third-party framework compatibility
 * Compatible with the PyTorch operator Gather.
@@ -511,16 +517,24 @@ REG_OP(StridedSliceGrad)
 
 /**
 * @brief Computes the sum along segments of a tensor . \n
-
+    Computes a tensor such that (output[i] = sum_{j...} x[j...] where \n
+    the sum is over tuples j... such that segment_ids[j...] == i.If the sum \n
+    is empty for a given segment ID i, output[i] = 0
+    for example:x = [[0,1,2],[3,4,5],[6,7,8]] , segment_ids = [0,0,4] num_segments = 5
+    output[0] = [3, 5, 7]
+    output[1] = [0, 0, 0]
+    output[2] = [0, 0, 0]
+    output[3] = [0, 0, 0]
+    output[4] = [0, 0, 0]
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor of type NumberType.
-* @li segment_ids: A Tensor of type IndexNumberType, whose shape is a prefix
-* of "x.shape".
-* @li num_segments: A Tensor of type IndexNumberType . \n
+* @li x: A Tensor of type DOUBLE,FLOAT,FLOAT16,INT16,INT32,INT64,INT8,UINT16,UINT32,UINT64,UINT8,COMPLEX64,COMPLEX128
+* @li segment_ids: A Tensor of type INT32,INT64.whose shape is a prefix
+* of "x.shape"
+* @li num_segments: A Tensor of type INT32,INT64
 
 * @par Outputs:
-* y: A Tensor of type NumberType . \n
+* y: type is the same as x type . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator UnsortedSegmentSum.
@@ -553,6 +567,9 @@ REG_OP(UnsortedSegmentSum)
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator logspaced. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(LogSpaceD)
     .INPUT(assist, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1962,8 +1979,10 @@ REG_OP(ProposalD)
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(PassThrough)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16,
+                          DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16,
+                           DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
     .ATTR(stride, Int, 2)
     .ATTR(reverse, Bool, false)
     .OP_END_FACTORY_REG(PassThrough)
@@ -2426,6 +2445,9 @@ REG_OP(StridedSliceV2)
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator IndexFill. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(IndexFillD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -2720,6 +2742,29 @@ REG_OP(SearchSorted)
     .ATTR(dtype, Type, DT_INT64)
     .ATTR(right, Bool, false)
     .OP_END_FACTORY_REG(SearchSorted)
+
+/**
+* @brief Repeat elements of input with copies of data along a specified dimension.
+* @par Inputs:
+* Two input:
+* input_x: A Tensor with any format. Support BasicType.
+* repeats: A Tensor with dim = 1 or a Scalar. Support BasicType. \n
+
+* @par Attributes:
+* @li axis: An optional int32, specifying the axis to repeat. Defaults to 1000.
+
+* @par Outputs:
+* output_y: A Tensor, which is the same dtype as input_x.Support BasicType. \n
+
+* @attention Constraints:
+* @li "axis" must be within the rank of the input tensor.
+*/
+REG_OP(RepeatInterleave)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(repeats, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(axis, Int, 1000)
+    .OP_END_FACTORY_REG(RepeatInterleave)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

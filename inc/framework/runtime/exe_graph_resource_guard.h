@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <cstdint>
+#include <cstdlib>
 #include "common/ge_visibility.h"
 
 namespace gert {
@@ -65,5 +66,5 @@ class VISIBILITY_EXPORT ResourceGuard {
   std::unique_ptr<uint8_t[]> watchers_array_guarder_;
   std::unique_ptr<void, decltype(&free)> ready_queue_guarder_{nullptr, nullptr};
 };
-}  // namespace gert
+}
 #endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_EXE_GRAPH_RESOURCE_GUARD_H_

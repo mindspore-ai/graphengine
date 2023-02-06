@@ -211,7 +211,7 @@ REG_OP(SigmoidCrossEntropyWithLogitsV2)
 * reduction type to be applied to the output. Defaults to "mean".  \n
 
 * @par Outputs:
-* loss: Sigmoid focal loss between the predicted value and target value. Has the same dimensions as "pred". \n
+* y: Sigmoid focal loss between the predicted value and target value. Has the same dimensions as "pred". \n
 
 * @par Third-party framework compatibility
 * Compatible with mmcv operator SigmoidFocalLoss.
@@ -220,11 +220,45 @@ REG_OP(SigmoidFocalLoss)
     .INPUT(pred, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(target, TensorType({DT_INT32}))
     .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
     .ATTR(gamma, Float, 2.0)
     .ATTR(alpha, Float, 0.25)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidFocalLoss)
+
+/**
+* @brief Computes the softmax focal loss of "pred" and "target".
+
+* @par Inputs:
+* Three inputs, including:
+* @li pred: A 2-dimensional Tensor of type float16 or float32, specifying the predicted value.
+* @li target: A 1-dimensional Tensor of type int32, specifying the target value.
+* @li weight: A 1-dimensional Tensor, specifying the weight value on class_wise. \n
+
+* @par Attributes:
+* @li gamma: An optional float, specifying the exponent of the modulating factor (1 - pt)
+* to balance easy/hard examples. Defaults to 2.0. 
+* @li alpha: An optional float, specifying the weighting factor in range (1, 0) to balance
+* the importance of positive/negative examples or less than 0 for ignore. Defaults to 0.25. 
+* @li reduction: A optional character string from "none", "mean", and "sum", specifying the
+* reduction type to be applied to the output. Defaults to "mean".  reduction only support
+* "none" currently for matching mmcv.\n
+
+* @par Outputs:
+* y: Softmax focal loss between the predicted value and target value. Has the same dimensions as "pred". \n
+
+* @par Third-party framework compatibility
+* Compatible with mmcv operator SoftmaxFocalLoss.
+*/
+REG_OP(SoftmaxFocalLoss)
+    .INPUT(pred, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(gamma, Float, 2.0)
+    .ATTR(alpha, Float, 0.25)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SoftmaxFocalLoss)
 
 /**
 * @brief Computes the regression box of the RPN. It is a FasterRCNN operator .
@@ -849,7 +883,7 @@ REG_OP(LayerNormBetaGammaBackpropV2)
 *  @li variance: A Tensor. Must be one of the following types: float16, float32.
 *  @li mean: A Tensor. Must be one of the following types: float16, float32.
 *  @li gamma: A Tensor. Must be one of the following types: float16, float32.
-*  @li mask: A Tensor. Must be one of the following types: uint8.\n
+*  @li mask: A Tensor. Must be one of the following types: uint8, bool.\n
 
 * @par Outputs:
 * Four outputs, including:
@@ -867,7 +901,7 @@ REG_OP(LNDropoutGrad)
     .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(mask, TensorType({DT_UINT8, DT_BOOL}))
     .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(pd_x_dropout, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -885,10 +919,10 @@ REG_OP(LNDropoutGrad)
 * @li x: A mutable Tensor. Must be one of the following types:
 *     float16, float32
 * @li mask: A mutable Tensor. Must met all of the following rules:
-*     shape of mask should be 1D.
-*     dtype of mask should be uint8.
-*     value of shape should met the following algorithm:
-*     value = (size(x) + 128 - 1) // 128 * 128 //8
+*     dtype of mask should be uint8 or uint1.
+*     if data type of mask is uint8, shape of mask should be 1D. value of shape should met the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128 // 8
+*     if data type of mask is uint1, shape of mask should be same to x.
 * @li keep_prob: A mutable Tensor. Must met all of the following rules:
 *     shape of "keep_prob" should be (1,) or [1,].
 *     Has the same type as "x" . \n
@@ -898,7 +932,7 @@ REG_OP(LNDropoutGrad)
 */
 REG_OP(DropOutDoMask)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(mask, TensorType({DT_UINT8, DT_UINT1}))
     .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(DropOutDoMask)
@@ -914,7 +948,7 @@ REG_OP(DropOutDoMask)
 *     float16, float32
 * @li mask: A mutable Tensor. Must met all of the following rules:
 *     shape of mask should be 1D.
-*     dtype of mask should be uint8.
+*     dtype of mask should be uint8 or bool.
 *     value of shape should met the following algorithm:
 *     value = (size(x) + 128 - 1) // 128 * 128
 * @li keep_prob: A mutable Tensor. Must met all of the following rules:
@@ -928,7 +962,7 @@ REG_OP(DropOutDoMask)
 */
 REG_OP(DropOutDoMaskV3)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(mask, TensorType({DT_UINT8, DT_BOOL}))
     .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(DropOutDoMaskV3)
@@ -944,7 +978,7 @@ REG_OP(DropOutDoMaskV3)
 *     float16, float32
 * @li mask: A mutable Tensor. Must met all of the following rules:
 *     shape of mask should be 1D.
-*     dtype of mask should be uint8.
+*     dtype of mask should be uint8 or bool.
 *     value of shape should met the following algorithm:
 *     value = (size(x) + 128 - 1) // 128 * 128
 *@par Attributes:
@@ -959,7 +993,7 @@ REG_OP(DropOutDoMaskV3)
 */
 REG_OP(DropOutDoMaskV3D)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(mask, TensorType({DT_UINT8, DT_BOOL}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(keep_prob, Float)
     .OP_END_FACTORY_REG(DropOutDoMaskV3D)
@@ -1625,7 +1659,7 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
 /**
  * @brief Calculate the PoissonNllLoss function. 
- *        target∼Poisson(input)loss(input,target)=input−target∗log(input)+log(target!) \n
+ *        target follow distribution of Poisson(input)loss(input,target) = input - target * log(input) + log(target!) \n
 
  * @par Inputs:
  * Two inputs, including:
@@ -1877,7 +1911,7 @@ REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
 * @li target: the target label Tensor. The type support Int32.
 * @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
 * @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
-*     shape of pred should be (B，D), B means batch size, D means the number of labels.
+*     shape of pred should be (B, D), B means batch size, D means the number of labels.
 *     shape of target should be (D, ).
 *     shape of weight should be (D, ) \n
 
@@ -1914,7 +1948,7 @@ REG_OP(SigmoidFocalLossGrad)
 * @li target: the target label Tensor. The type support Int32.
 * @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
 * @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
-*     shape of pred should be (B，D), B means batch size, D means the number of labels.
+*     shape of pred should be (B, D), B means batch size, D means the number of labels.
 *     shape of target should be (B, D).
 *     shape of weight should be (D, ) \n
 

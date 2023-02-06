@@ -29,16 +29,16 @@
 #endif
 
 // Code compose(4 byte), runtime: 2 bit,  type: 2 bit,   level: 3 bit,  sysid: 8 bit, modid: 5 bit, value: 12 bit
-#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                                \
+#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                               \
   constexpr ge::Status name = (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime))) << 30U) | \
                               (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(type))) << 28U) |    \
                               (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(level))) << 25U) |   \
                               (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid))) << 17U) |   \
                               (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid))) << 12U) |   \
-                              (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));         \
-  const ErrorNoRegisterar g_errorno_##name((name), (desc));
+                              (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));        \
+  const ErrorNoRegisterar g_errorno_##name((name), (desc))
 
-#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc));
+#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc))
 
 namespace ge {
 class GE_FUNC_VISIBILITY StatusFactory {

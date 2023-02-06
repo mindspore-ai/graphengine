@@ -43,7 +43,8 @@
 #define DECLARE_ERRORNO_OME(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OME, name, value)
 #define DECLARE_ERRORNO_CALIBRATION(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_CALIBRATION, name, value)
 
-#define DEF_ERRORNO(name, desc) const bool g_##name##_errorno = StatusFactory::Instance()->RegisterErrorNo(name, desc)
+#define DEF_ERRORNO(name, desc) \
+  const bool g_##name##_errorno = StatusFactory::Instance()->RegisterErrorNo(name, desc)
 
 // Interface for Obtaining Error Code Description
 #define GET_ERRORNO_STR(value) domi::StatusFactory::Instance()->GetErrDesc(value)

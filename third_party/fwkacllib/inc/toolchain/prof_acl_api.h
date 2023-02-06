@@ -16,73 +16,75 @@
 #include <cstddef>
 
 // DataTypeConfig
-constexpr uint64_t PROF_ACL_API = 0x00000001ULL;
-constexpr uint64_t PROF_TASK_TIME = 0x00000002ULL;
-constexpr uint64_t PROF_AICORE_METRICS = 0x00000004ULL;
-constexpr uint64_t PROF_AICPU_TRACE = 0x00000008ULL;
-constexpr uint64_t PROF_L2CACHE = 0x00000010ULL;
-constexpr uint64_t PROF_HCCL_TRACE = 0x00000020ULL;
+constexpr uint64_t PROF_ACL_API        = 0x00000001ULL;
+constexpr uint64_t PROF_TASK_TIME      = 0x00000002ULL; // dynamic profiling hwts log
+constexpr uint64_t PROF_AICORE_METRICS = 0x00000004ULL; // dynamic profiling hwts profile
+constexpr uint64_t PROF_AICPU_TRACE    = 0x00000008ULL;
+constexpr uint64_t PROF_L2CACHE        = 0x00000010ULL;
+constexpr uint64_t PROF_HCCL_TRACE     = 0x00000020ULL;
 constexpr uint64_t PROF_TRAINING_TRACE = 0x00000040ULL;
-constexpr uint64_t PROF_MSPROFTX = 0x00000080ULL;
-constexpr uint64_t PROF_RUNTIME_API = 0x00000100ULL;
+constexpr uint64_t PROF_MSPROFTX       = 0x00000080ULL;
+constexpr uint64_t PROF_RUNTIME_API    = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK = 0x00000200ULL;
-constexpr uint64_t PROF_TASK_TSFW = 0x00000400ULL;
+constexpr uint64_t PROF_TASK_TSFW      = 0x00000400ULL;
 
 // system profilinig switch
-constexpr uint64_t PROF_CPU = 0x00010000ULL;
-constexpr uint64_t PROF_HARDWARE_MEMORY = 0x00020000ULL;
-constexpr uint64_t PROF_IO = 0x00040000ULL;
-constexpr uint64_t PROF_INTER_CONNECTION = 0x00080000ULL;
-constexpr uint64_t PROF_DVPP = 0x00100000ULL;
-constexpr uint64_t PROF_SYS_AICORE_SAMPLE = 0x00200000ULL;
-constexpr uint64_t PROF_AIVECTORCORE_SAMPLE = 0x00400000ULL;
+constexpr uint64_t PROF_CPU                  = 0x00010000ULL;
+constexpr uint64_t PROF_HARDWARE_MEMORY      = 0x00020000ULL;
+constexpr uint64_t PROF_IO                   = 0x00040000ULL;
+constexpr uint64_t PROF_INTER_CONNECTION     = 0x00080000ULL;
+constexpr uint64_t PROF_DVPP                 = 0x00100000ULL;
+constexpr uint64_t PROF_SYS_AICORE_SAMPLE    = 0x00200000ULL;
+constexpr uint64_t PROF_AIVECTORCORE_SAMPLE  = 0x00400000ULL;
+constexpr uint64_t PROF_INSTR                = 0x00800000ULL;
 
-constexpr uint64_t PROF_MODEL_EXECUTE = 0x0000001000000ULL;
-constexpr uint64_t PROF_RUNTIME_TRACE = 0x0000004000000ULL;
-constexpr uint64_t PROF_SCHEDULE_TIMELINE = 0x0000008000000ULL;
-constexpr uint64_t PROF_SCHEDULE_TRACE = 0x0000010000000ULL;
+constexpr uint64_t PROF_MODEL_EXECUTE        = 0x0000001000000ULL;
+constexpr uint64_t PROF_RUNTIME_TRACE        = 0x0000004000000ULL;
+constexpr uint64_t PROF_SCHEDULE_TIMELINE    = 0x0000008000000ULL;
+constexpr uint64_t PROF_SCHEDULE_TRACE       = 0x0000010000000ULL;
 constexpr uint64_t PROF_AIVECTORCORE_METRICS = 0x0000020000000ULL;
-constexpr uint64_t PROF_SUBTASK_TIME = 0x0000040000000ULL;
-constexpr uint64_t PROF_OP_DETAIL = 0x0000080000000ULL;
+constexpr uint64_t PROF_SUBTASK_TIME         = 0x0000040000000ULL;
+constexpr uint64_t PROF_OP_DETAIL            = 0x0000080000000ULL;
 
-constexpr uint64_t PROF_AICPU_MODEL = 0x4000000000000000ULL;
-constexpr uint64_t PROF_MODEL_LOAD = 0x8000000000000000ULL;
+constexpr uint64_t PROF_AICPU_MODEL          = 0x4000000000000000ULL;
+constexpr uint64_t PROF_MODEL_LOAD           = 0x8000000000000000ULL;
 
 constexpr uint64_t PROF_TASK_TRACE = (PROF_MODEL_EXECUTE | PROF_RUNTIME_TRACE | PROF_TRAINING_TRACE |
                                       PROF_HCCL_TRACE | PROF_TASK_TIME);
 
 // DataTypeConfig MASK
-constexpr uint64_t PROF_ACL_API_MASK = 0x00000001ULL;
-constexpr uint64_t PROF_TASK_TIME_MASK = 0x00000002ULL;
+constexpr uint64_t PROF_ACL_API_MASK        = 0x00000001ULL;
+constexpr uint64_t PROF_TASK_TIME_MASK      = 0x00000002ULL;
 constexpr uint64_t PROF_AICORE_METRICS_MASK = 0x00000004ULL;
-constexpr uint64_t PROF_AICPU_TRACE_MASK = 0x00000008ULL;
-constexpr uint64_t PROF_L2CACHE_MASK = 0x00000010ULL;
-constexpr uint64_t PROF_HCCL_TRACE_MASK = 0x00000020ULL;
+constexpr uint64_t PROF_AICPU_TRACE_MASK    = 0x00000008ULL;
+constexpr uint64_t PROF_L2CACHE_MASK        = 0x00000010ULL;
+constexpr uint64_t PROF_HCCL_TRACE_MASK     = 0x00000020ULL;
 constexpr uint64_t PROF_TRAINING_TRACE_MASK = 0x00000040ULL;
-constexpr uint64_t PROF_MSPROFTX_MASK = 0x00000080ULL;
-constexpr uint64_t PROF_RUNTIME_API_MASK = 0x00000100ULL;
+constexpr uint64_t PROF_MSPROFTX_MASK       = 0x00000080ULL;
+constexpr uint64_t PROF_RUNTIME_API_MASK    = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK_MASK = 0x00000200ULL;
-constexpr uint64_t PROF_TASK_TSFW_MASK = 0x00000400ULL;
+constexpr uint64_t PROF_TASK_TSFW_MASK      = 0x00000400ULL;
 
 // system profilinig mask
-constexpr uint64_t PROF_CPU_MASK = 0x00010000ULL;
-constexpr uint64_t PROF_HARDWARE_MEMORY_MASK = 0x00020000ULL;
-constexpr uint64_t PROF_IO_MASK = 0x00040000ULL;
-constexpr uint64_t PROF_INTER_CONNECTION_MASK = 0x00080000ULL;
-constexpr uint64_t PROF_DVPP_MASK = 0x00100000ULL;
-constexpr uint64_t PROF_SYS_AICORE_SAMPLE_MASK = 0x00200000ULL;
-constexpr uint64_t PROF_AIVECTORCORE_SAMPLE_MASK = 0x00400000ULL;
+constexpr uint64_t PROF_CPU_MASK                  = 0x00010000ULL;
+constexpr uint64_t PROF_HARDWARE_MEMORY_MASK      = 0x00020000ULL;
+constexpr uint64_t PROF_IO_MASK                   = 0x00040000ULL;
+constexpr uint64_t PROF_INTER_CONNECTION_MASK     = 0x00080000ULL;
+constexpr uint64_t PROF_DVPP_MASK                 = 0x00100000ULL;
+constexpr uint64_t PROF_SYS_AICORE_SAMPLE_MASK    = 0x00200000ULL;
+constexpr uint64_t PROF_AIVECTORCORE_SAMPLE_MASK  = 0x00400000ULL;
+constexpr uint64_t PROF_INSTR_MASK                = 0x00800000ULL;
 
-constexpr uint64_t PROF_MODEL_EXECUTE_MASK = 0x0000001000000ULL;
-constexpr uint64_t PROF_RUNTIME_TRACE_MASK = 0x0000004000000ULL;
-constexpr uint64_t PROF_SCHEDULE_TIMELINE_MASK = 0x0000008000000ULL;
-constexpr uint64_t PROF_SCHEDULE_TRACE_MASK = 0x0000010000000ULL;
+constexpr uint64_t PROF_MODEL_EXECUTE_MASK        = 0x0000001000000ULL;
+constexpr uint64_t PROF_RUNTIME_TRACE_MASK        = 0x0000004000000ULL;
+constexpr uint64_t PROF_SCHEDULE_TIMELINE_MASK    = 0x0000008000000ULL;
+constexpr uint64_t PROF_SCHEDULE_TRACE_MASK       = 0x0000010000000ULL;
 constexpr uint64_t PROF_AIVECTORCORE_METRICS_MASK = 0x0000020000000ULL;
-constexpr uint64_t PROF_SUBTASK_TIME_MASK = 0x0000040000000ULL;
-constexpr uint64_t PROF_OP_DETAIL_MASK = 0x0000080000000ULL;
+constexpr uint64_t PROF_SUBTASK_TIME_MASK         = 0x0000040000000ULL;
+constexpr uint64_t PROF_OP_DETAIL_MASK            = 0x0000080000000ULL;
 
-constexpr uint64_t PROF_AICPU_MODEL_MASK = 0x4000000000000000ULL;
-constexpr uint64_t PROF_MODEL_LOAD_MASK = 0x8000000000000000ULL;
+constexpr uint64_t PROF_AICPU_MODEL_MASK          = 0x4000000000000000ULL;
+constexpr uint64_t PROF_MODEL_LOAD_MASK           = 0x8000000000000000ULL;
 
 #if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)

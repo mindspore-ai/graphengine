@@ -242,17 +242,27 @@ REG_OP(Flatten)
     .OP_END_FACTORY_REG(Flatten)
 
 /**
-*@brief Permutes and crops the input tensor . \n
+* @brief Permutes data from batch into blocks of spatial data and then prunes them.
+* The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
+* And then prunes the height and width dimensions. \n
 
-*@par Inputs:
-* Three inputs, including:
-*@li x: A 5D Tensor of type float16 or int8 or uint8.
-*@li block_shape: A 1D list or tuple of int32 or int64.
-*@li crops: A 2D list or tuple of int32 or int64. Specifies the amount to
-*crop from start and end dimensions after permutation . \n
+* @par Inputs:
+* @li x: A N-D tensor, Must be one of the following types:
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* @li crops: A 2D tensor with shape [M, 2], support int32 or int64. \n
 
-*@par Outputs:
-*y: A Tensor has the same type as input "x" . \n
+* @par Attributes:
+* block_size: Must be one of the following types: `int32`, `int64`. \n
+
+* @par Outputs:
+* y: A N-D tensor, the same type as "x". \n
+
+* @attention Constraints:
+* @li If N is 4 and M is 2:
+* @li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
+* @li "y" is a 4D shape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom,
+* width = width_pad - crop_left - crop_right.
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpaceND.
@@ -265,22 +275,29 @@ REG_OP(BatchToSpaceND)
     .OP_END_FACTORY_REG(BatchToSpaceND)
 
 /**
-*@brief Permutes and crops the input tensor . \n
+* @brief Permutes data from batch into blocks of spatial data and then prunes them.
+* The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
+* And then prunes the height and width dimensions. \n
 
-*@par Inputs:
-* One input:
-*x: A 5D Tensor of type float16 or int8 or uint8. \n
+* @par Inputs:
+* @li x: A N-D tensor, Must be one of the following types: float16, float32. \n
 
-*@par Attributes:
-*@li block_shape: A required 1D list or tuple of int32 or int64.
-*@li crops: A required 2D list or tuple of int32 or int64. Specifies the amount to crop
-* from the start and end dimensions after permutation . \n
+* @par Attributes:
+* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li crops: Must be one of the following types: int32, int64.
+* 2D list with non negative integer of shape [M, 2]. It specifies how many
+* elements are clipped from the intermediate result of spatial dimension . \n
 
-*@par Outputs:
-*y: A Tensor has the same type as input "x".
+* @par Outputs:
+* y: A N-D tensor, the same type as "x". \n
 
+* @attention Constraints:
+* @li If N is 4 and M is 2:
+* @li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
+* @li "y" is a 4D shape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom,
+* width = width_pad - crop_left - crop_right.
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpaceND.
 *
 * @par Restrictions:
@@ -294,18 +311,23 @@ REG_OP(BatchToSpaceNDD)
     .OP_END_FACTORY_REG(BatchToSpaceNDD)
 
 /**
-*@brief Pads and permutes the input tensor . \n
+* @brief Zeros-pads and then permutes blocks of spatial data into batch.
+* The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
+* After zeros-pads the height and width dimensions. \n
 
-*@par Inputs:
-* Three inputs, including:
-*@li x: A 5D Tensor of type float16 or float32.
-*@li block_shape: A 1D list or tuple of int32 or int64.
-*@li paddings: A 2D list or tuple of int32 or int64. Specifies the padding for the start and end dimensions after permutation . \n
+* @par Inputs:
+* @li x: A N-D tensor, Must be one of the following types:
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* @li paddings: A 2D tensor with shape [M, 2], support int32 or int64. \n
 
-*@par Outputs:
-*y: A Tensor has the same type as input "x" . \n
+* @par Attributes:
+* block_size: Must be one of the following types: `int32`, `int64`. \n
 
-*@par Third-party framework compatibility
+* @par Outputs:
+* y: A N-D tensor, the same type as "x". \n
+
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatchND.
 */
 REG_OP(SpaceToBatchND)
@@ -316,20 +338,23 @@ REG_OP(SpaceToBatchND)
     .OP_END_FACTORY_REG(SpaceToBatchND)
 
 /**
-*@brief Pads and permutes the input tensor . \n
+* @brief Zeros-pads and then permutes blocks of spatial data into batch.
+* The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
+* After zeros-pads the height and width dimensions. \n
 
-*@par Inputs:
-* One input:
-*x: A 5D Tensor of type float16 or float32. \n
+* @par Inputs:
+* @li x: A N-D tensor, Must be one of the following types: float16, float32. \n
 
-*@par Attributes:
-*@li block_shape: A required 1D list or tuple of int32 or int64.
-*@li paddings: A required 2D list or tuple of int32 or int64. Specifies the padding for the start and end dimensions after permutation . \n
+* @par Attributes:
+* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li paddings: Must be one of the following types: int32, int64. \n
+* 2D list with non negative integer of shape [M, 2]. It specifies how many
+* elements are padded from the intermediate result of spatial dimension . \n
 
-*@par Outputs:
-*y: A Tensor has the same type as input "x" . \n
+* @par Outputs:
+* y: A N-D tensor, the same type as "x". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatchND.
 *
 * @par Restrictions:
@@ -398,29 +423,28 @@ REG_OP(DepthToSpace)
   .OP_END_FACTORY_REG(DepthToSpace)
 
 /**
-*@brief Permutes data into spatial data blocks and then prunes them . \n
+* @brief Permutes data from batch into blocks of spatial data and then prunes them.
+* The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
+* And then prunes the height and width dimensions. \n
 
-*@par Inputs:
-*@li x: A 4D Tensor with format. Must set the format, supported format list ["NCHW, NHWC"]
-*@li crops: A 1D list or tuple of int32 or int64 . \n
+* @par Inputs:
+* @li x: A 4D tensor, Must be one of the following types:
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* @li crops: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
-*Must be one of the following types: float16, float32
+* @par Attributes:
+* block_size: Must be one of the following types: `int32`, `int64`. \n
 
-*@par Attributes:
-*block_size: A required int8, int16, int32, or int64. No default value . \n
+* @par Outputs:
+* y: A 4D tensor, the same type as "x". \n
 
-*@par Outputs:
-*y: A 4D Tensor with format NHWC,
+* @attention Constraints:
+* @li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
+* @li "y" is a 4D shape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom,
+* width = width_pad - crop_left - crop_right.
 
-* of type float16 or float32 . \n
-
-*@attention Constraints:
-*@li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
-*@li "crops" is a 4Dshape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom,
-*width = width_pad - crop_left - crop_right.
-*@li block_size >= 2
-
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpace.
 */
 REG_OP(BatchToSpace)
@@ -431,31 +455,28 @@ REG_OP(BatchToSpace)
     .OP_END_FACTORY_REG(BatchToSpace)
 
 /**
-*@brief Rearrange the batch (permutes) data into spatial data blocks, and then crop them . \n
+* @brief Permutes data from batch into blocks of spatial data and then prunes them.
+* The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
+* And then prunes the height and width dimensions. \n
 
-*@par Inputs:
-* One input:
-*x: An Tensor of shape [batch*block_size*block_size, height_pad/block_size, width_pad/block_size, depth].
-*The batch size of the input tensor must be divisible by (block size * block size).
-*Must be one of the following types:  float16, float32, double, int64, int32, uint8, uint16, uint32, uint64,
-*int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32 . \n
+* @par Inputs:
+* @li x: A 4D tensor, Must be one of the following types: float16, float32. \n
 
-*@par Attributes:
-*@li block_size: Must be one of the following types: `int32`, `int64`.
-*@li crops: An Tensor. Must be one of the following types: int32, Int64.
-*2D tensor with non negative integer of shape [2, 2]. It specifies how many
-*elements are clipped from the intermediate result of spatial dimension . \n
+* @par Attributes:
+* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li crops: Must be one of the following types: int32, int64.
+* 2D list with non negative integer of shape [2, 2]. It specifies how many
+* elements are clipped from the intermediate result of spatial dimension . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: A 4D tensor, the same type as "x". \n
 
-*@attention Constraints:
-*@li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
-*@li "crops" is a 2D tensor of non-negative integers with shape (2, 2).
-*@li block_size > 2
+* @attention Constraints:
+* @li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
+* @li "y" is a 4D shape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom,
+* width = width_pad - crop_left - crop_right.
 
-
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpace.
 *
 * @par Restrictions:
@@ -469,23 +490,23 @@ REG_OP(BatchToSpaceD)
     .OP_END_FACTORY_REG(BatchToSpaceD)
 
 /**
-*@brief Outputs a copy of the input tensor where values from the "height" and
-* "width" dimensions are padded and rearranged to the "batch" dimension . \n
+* @brief Zeros-pads and then permutes blocks of spatial data into batch.
+* The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
+* After zeros-pads the height and width dimensions. \n
 
-*@par Inputs:
-* Two inputs, including:
-*@li x: An 4D Tensor. Must be one of the following types:
+* @par Inputs:
+* @li x: A 4D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
-* Must set the format, supported format list ["NCHW, NHWC"]
-*@li paddings: A 2D tensor of type int, specifying the input . \n
+* @li paddings: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
-*@par Attributes:
-*block_size: A required int, specifying the input block size . \n
+* @par Attributes:
+* block_size: Must be one of the following types: `int32`, `int64`. \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as input "x".
-*@par Third-party framework compatibility
+* @par Outputs:
+* y: A 4D tensor, the same type as "x". \n
+
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatch.
 */
 REG_OP(SpaceToBatch)
@@ -496,20 +517,24 @@ REG_OP(SpaceToBatch)
     .OP_END_FACTORY_REG(SpaceToBatch)
 
 /**
-*@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are padded and rearranged to the "batch" dimension . \n
+* @brief Zeros-pads and then permutes blocks of spatial data into batch.
+* The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
+* After zeros-pads the height and width dimensions. \n
 
-*@par Inputs:
-*x: An NHWC Tensor. Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* @par Inputs:
+* @li x: A 4D tensor, Must be one of the following types: float16, float32. \n
 
+* @par Attributes:
+* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li paddings: Must be one of the following types: int32, int64. \n
+* 2D list with non negative integer of shape [2, 2]. It specifies how many
+* elements are padded from the intermediate result of spatial dimension . \n
 
-*@par Attributes:
-*@li block_size: A required int, specifying the input block size.
-*@li paddings: A 2D tensor. All data types are supported . \n
+* @par Outputs:
+* y: A 4D tensor, the same type as "x". \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as input "x".
-*@par Third-party framework compatibility
-*@ Compatible with the TensorFlow operator SpaceToBatch.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator SpaceToBatch.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatch instead.
@@ -544,6 +569,7 @@ REG_OP(SpaceToBatchD)
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Unpack.
 */
+
 REG_OP(Unpack)
     .INPUT(x, TensorType::BasicType())
     .DYNAMIC_OUTPUT(y, TensorType::BasicType())

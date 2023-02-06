@@ -45,27 +45,27 @@
 
 // new ge marco
 // Encapsulate common resource releases
-#define GE_MAKE_GUARD_RTMEM(var)  \
-  GE_MAKE_GUARD(var, [&] {        \
-    if ((var) != nullptr) {       \
-      GE_CHK_RT(rtFreeHost(var)); \
-    }                             \
+#define GE_MAKE_GUARD_RTMEM(var)        \
+  GE_MAKE_GUARD(var, [&] {              \
+    if ((var) != nullptr) {             \
+      GE_CHK_RT(rtFreeHost(var));       \
+    }                                   \
   })
 
-#define GE_MAKE_GUARD_RTSTREAM(var)    \
-  GE_MAKE_GUARD(var, [&] {             \
-    if ((var) != nullptr) {            \
-      GE_CHK_RT(rtStreamDestroy(var)); \
-    }                                  \
+#define GE_MAKE_GUARD_RTSTREAM(var)     \
+  GE_MAKE_GUARD(var, [&] {              \
+    if ((var) != nullptr) {             \
+      GE_CHK_RT(rtStreamDestroy(var));  \
+    }                                   \
   })
 
 // For propagating errors when calling a function.
-#define GE_RETURN_IF_ERROR(expr)           \
-  do {                                     \
-    const ge::Status _chk_status = (expr); \
-    if (_chk_status != ge::SUCCESS) {      \
-      return _chk_status;                  \
-    }                                      \
+#define GE_RETURN_IF_ERROR(expr)            \
+  do {                                      \
+    const ge::Status _chk_status = (expr);  \
+    if (_chk_status != ge::SUCCESS) {       \
+      return _chk_status;                   \
+    }                                       \
   } while (false)
 
 #define GE_RETURN_WITH_LOG_IF_ERROR(expr, ...) \
@@ -199,7 +199,7 @@
 #define GE_DELETE_NEW_ARRAY(var) \
   do {                           \
     if ((var) != nullptr) {      \
-      delete[](var);             \
+      delete[] (var);            \
       (var) = nullptr;           \
     }                            \
   } while (false)
@@ -209,7 +209,7 @@
     if ((addr) != nullptr) {                                        \
       const rtError_t error = rtFree(addr);                         \
       if (error != RT_ERROR_NONE) {                                 \
-        GELOGE(RT_FAILED, "Call rtFree failed, error: %#x", error); \
+        GELOGE(ge::RT_FAILED, "Call rtFree failed, error: %#x", error); \
       }                                                             \
       (addr) = nullptr;                                             \
     }                                                               \
@@ -222,12 +222,10 @@ namespace ge {
  */
 constexpr int32_t OM_PROTO_VERSION = 2;
 
-///
 /// @ingroup domi_common
 /// @brief onverts Vector of a number to a string.
 /// @param [in] v  Vector of a number
 /// @return string
-///
 template <typename T>
 GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
   bool first = true;
@@ -277,12 +275,9 @@ GE_FUNC_VISIBILITY std::string CurrentTimeInStr();
 /// @return Timestamp, in microseconds (US)
 GE_FUNC_VISIBILITY uint64_t GetCurrentTimestamp();
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the absolute time (timestamp) of the current system.
 /// @return Timestamp, in seconds (US)
-///
-///
 GE_FUNC_VISIBILITY uint32_t GetCurrentSecondTimestap();
 
 /// @ingroup domi_common

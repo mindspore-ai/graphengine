@@ -19,7 +19,7 @@ extern "C" {
  * @brief shared memory data control
  */
 typedef struct tagRtSmData {
-    uint64_t L2_mirror_addr;          // preload or swap source address
+    uint64_t L2_mirror_addr;          // preload or swap source addr
     uint32_t L2_data_section_size;    // every data size
     uint8_t L2_preload;               // 1 - preload from mirrorAddr, 0 - no preload
     uint8_t modified;                 // 1 - data will be modified by kernel, 0 - no modified
@@ -155,6 +155,57 @@ typedef struct tagRtArgsEx {
                                     // others means doesn't need H2D copy.
     uint8_t reserved[4];
 } rtArgsEx_t;
+
+typedef struct tagRtAicpuArgsEx {
+    void *args; // args host mem addr
+    rtHostInputInfo_t *hostInputInfoPtr; // nullptr means no host mem input
+    rtHostInputInfo_t *kernelOffsetInfoPtr; // KernelOffsetInfo, it is different for CCE Kernel and fwk kernel
+    uint32_t argsSize;
+    uint16_t hostInputInfoNum; // hostInputInfo num
+    uint16_t kernelOffsetInfoNum; // KernelOffsetInfo num
+    uint16_t soNameAddrOffset; // just for CCE Kernel, default value is 0xffff for FWK kernel
+    uint16_t kernelNameAddrOffset; // just for CCE Kernel, default value is 0xffff for FWK kernel
+    bool isNoNeedH2DCopy; // is no need host to device copy: 0 means need H2D copy,
+                               // other means doesn't need H2D copy.
+    uint8_t reserved[3];
+} rtAicpuArgsEx_t;
+
+
+typedef struct tagRtDvppTaskDesc {
+    uint16_t dvppSqeType; // only support vpc jpege jpegd, will be checked in runtime api_error (use isDvppTask)
+    uint16_t ptrMode : 1; // use bit0
+    uint16_t aicpuTaskPos : 15; // rtsq max dep is 1024
+    uint32_t cmdBufferSize;
+    uint64_t argsAddr;
+    uint32_t argsSize;
+} rtDvppTaskDesc_t;
+
+typedef struct tagRtAicpuTaskDesc {
+    rtKernelLaunchNames_t kernelLaunchNames;
+    uint16_t blockDim;
+    uint16_t isUnderstudyOp : 1; // dvpp op exist, set 1; otherwise set 0
+    uint16_t resverved : 15;
+    rtArgsEx_t argsInfo;
+} rtAicpuTaskDesc_t;
+
+typedef enum tagRtMultipleTaskType {
+    RT_MULTIPLE_TASK_TYPE_DVPP = 0,
+    RT_MULTIPLE_TASK_TYPE_AICPU = 1,
+    RT_MULTIPLE_TASK_TYPE_MAX
+} rtMultipleTaskType_t;
+
+typedef struct tagRtTaskDesc {
+    rtMultipleTaskType_t type; // only support AICPU or DVPP, will be checked in runtime api_error.
+    union {
+        rtDvppTaskDesc_t dvppTaskDesc;
+        rtAicpuTaskDesc_t aicpuTaskDesc;
+    } u;
+} rtTaskDesc_t;
+
+typedef struct tagRtMultipleTaskInfo {
+    uint32_t taskNum;
+    rtTaskDesc_t *taskDesc; // must memset0 after new obj
+} rtMultipleTaskInfo_t;
 
 /**
  * @ingroup rt_KernelConfigDump
@@ -377,7 +428,7 @@ RTS_API rtError_t rtQueryFunctionRegistered(const char_t *stubName);
  * @brief config data dump
  * @param [in] dumpSizePerBlock  dump size
  * @param [in] blockDim   block dimentions
- * @param [in] dumpBaseAddr   dump base address
+ * @param [in] dumpBaseAddr   dump base addr
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -540,7 +591,7 @@ RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launc
  * @ingroup rtAicpuKernelLaunchEx
  * @brief launch cpu kernel to device  with dump identifier and kernelType
  * @param [in] kernelType    aicpu kernel type
- * @param [in] launchNames   names address for kernel launch
+ * @param [in] soName        address of op name
  * @param [in] blockDim      block dimentions
  * @param [in] argsInfo      argments address for kernel function
  * @param [in] smDesc        shared memory description
@@ -552,6 +603,23 @@ RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launc
 RTS_API rtError_t rtAicpuKernelLaunchEx(uint32_t kernelType, const rtKernelLaunchNames_t *launchNames,
                                         uint32_t blockDim, const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc,
                                         rtStream_t stm, uint32_t flags);
+/**
+ * @ingroup rtAicpuKernelLaunchExWithArgs
+ * @brief launch cpu kernel to device  with dump identifier and kernelType
+ * @param [in] kernelType    aicpu kernel type
+ * @param [in] op Name        address of op name
+ * @param [in] blockDim      block dimentions
+ * @param [in] argsInfo      argments address for kernel function
+ * @param [in] smDesc        shared memory description
+ * @param [in] stm           associated stream
+ * @param [in] flags         dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunchExWithArgs(const uint32_t kernelType, const char_t * const opName,
+                                                const uint32_t blockDim, const rtAicpuArgsEx_t *argsInfo,
+                                                rtSmDesc_t * const smDesc, const rtStream_t stm,
+                                                const uint32_t flags);
 
 /**
  * @ingroup rt_kernel
@@ -577,15 +645,26 @@ RTS_API rtError_t rtDatadumpInfoLoad(const void *dumpInfo, uint32_t length);
 
 /**
  * @ingroup rt_kernel
+ * @brief load dump info to aicpu
+ * @param [in] dumpInfo   dump info
+ * @param [in] length     length of  dump info
+ * @param [in] flag       RT_KERNEL_DEFAULT or RT_KERNEL_CUSTOM_AICPU
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDatadumpInfoLoadWithFlag(const void *dumpInfo, const uint32_t length, const uint32_t flag);
+
+/**
+ * @ingroup rt_kernel
  * @brief launch npu get float status task
- * @param [in] outputAddr   pointer to op output addr
+ * @param [in] outputAddrPtr  pointer to op output addr
  * @param [in] outputSize   op output size
  * @param [in] checkMode   check mode
  * @param [in] stm   associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNpuGetFloatStatus(void *outputAddr, uint64_t outputSize, uint32_t checkMode, rtStream_t stm);
+RTS_API rtError_t rtNpuGetFloatStatus(void *outputAddrPtr, uint64_t outputSize, uint32_t checkMode, rtStream_t stm);
 
 /**
  * @ingroup rt_kernel

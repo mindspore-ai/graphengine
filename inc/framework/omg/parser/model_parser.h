@@ -27,12 +27,13 @@
 #include "graph/op_desc.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/graph_utils_ex.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
-    const google::protobuf::Message *root_proto, const std::string &graph)>;
+  const google::protobuf::Message *root_proto, const std::string &graph)>;
 
 using GetGraphCallbackV2 = std::function<std::string(const std::string &subgraph_name)>;
 
@@ -96,7 +97,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return Others failed
    */
   virtual Status ParseProtoWithSubgraph(const google::protobuf::Message *proto, GetGraphCallback callback,
-                                        ge::ComputeGraphPtr &graph) = 0;
+                                              ge::ComputeGraphPtr &graph) = 0;
   /**
    * @ingroup domi_omg
    * @brief Convert model files to JSON format
@@ -106,9 +107,9 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return Others failed
    */
   virtual Status ToJson(const char *model_file, const char *json_file) {
-    (void)model_file;
-    (void)json_file;
-    return SUCCESS;
+   (void)model_file;
+   (void)json_file;
+   return SUCCESS;
   }
 
   /*
@@ -145,7 +146,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return Others failed
    */
   virtual Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
-                                        ge::ComputeGraphPtr &graph) {
+                                              ge::ComputeGraphPtr &graph) {
     (void)serialized_proto;
     (void)callback;
     (void)graph;
@@ -161,7 +162,7 @@ class GE_FUNC_VISIBILITY ModelParser {
     return SUCCESS;
   }
 
-  virtual void Clear(){};
+  virtual void Clear() {};
 };
 }  // namespace domi
 

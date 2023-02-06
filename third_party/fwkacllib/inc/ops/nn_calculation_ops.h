@@ -1060,34 +1060,54 @@ REG_OP(Conv3D)
 /**
 *@brief Computes the gradients of convolution 3d with respect to the input.
 *@par Inputs:
- * @li input_size: A Tensor of type int32. An integer vector
- *  representing the shape of input, where input is a 5-D tensor
- * [batch, depth, height, width, channels] or
- * [batch, channels, depth, height, width].
- * @li filter: A Tensor. Must be one of the following types: float16.
- * @li out_backprop: A Tensor. Must have the same type as filter.
- * 5-D with shape [batch, depth, out_height, out_width, out_channels]
- * or [batch, out_channels, depth, out_height, out_width]. Gradients with
- * respect to the output of the convolution. \n
-
+ * @li input_size: A 1-D Tensor of type int32 or int64.
+ * The tensor representing the shape of feature map (the input of the convolution),
+ * where feature map is a 5-D tensor.
+ * The order of integers in the tensor is determined by feature map format,
+ * and integers represent the length of each dimension of feature map.
+ * The axes sequence that can be entered are as follows:
+ * [batch, in_depth, in_height, in_width, in_channels] or
+ * [batch, in_channels, in_depth, in_height, in_width].
+ * The in_height and in_width must be in [1, 4096].
+ * @li filter: A 5-D Tensor. Must be one of the following types: float16, float32, double. 
+ * The format of the filter tensor must be one of the followings:
+ * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
+ * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
+ * The length of filter_height axis and filter_width axis must be in [1, 255].
+ * @li out_backprop: A 5-D Tensor. Must have the same type as filter.
+ * The format of the out_backprop tensor must be one of the followings:
+ * [batch, out_depth, out_height, out_width, out_channels] or
+ * [batch, out_channels, out_depth, out_height, out_width].
+ * The length of out_height axis and out_width axis must be in [1, 4096].
+ * Gradients with respect to the "output" of the convolution.
 *@par Attributes:
- * @li strides: Required. A list of 5 integers. Specifies the stride of the
- *  sliding window for each dimension of "out_backprop".
- * The N and C dimensions must be 1. Has the same format as "out_backprop".
- * @li pads: Required. A list of 6 integers.
- * Supports only padding along the D, H and W dimensions in sequence of head,
- * tail, top, bottom, left and right.
- * @li dilations: Optional. A tuple/list of 5 integers, The dilation factor
- *  for each dimension of the input.
- * The N, C and D dimensions must be 1. Has the same format as "out_backprop".
- * @li groups: Optional. Number of blocked connections from input channels
- *  to output channels.
- * @li data_format: Optional. An string from: "NDHWC", "NCDHW".
- * Defaults to "NDHWC". Specify the data format of the input and output data. \n
-
+ * @li strides: Required. A list of 5 integers. Specifies the stride of the sliding window
+ * for each dimension of feature map. The strides have the same axes sequence as feature map:
+ * [batch, stride_depth, stride_height, stride_width, channels] or
+ * [batch, channels, stride_depth, stride_height, stride_width].
+ * The stride_depth(D), stride_height(H) and stride_width(W) must be in [1, 63],
+ * and H*W not larger than 256.
+ * The batch(N) and channels(C) dimensions must be 1.
+ * @li pads: Required. A list of 6 integers. Specifies the pads factor of
+ * feature map in each directions. Supports only pads along the depth(D),
+ * height(H) and width(W) dimensions.
+ * The pads sequence is as follows: [front, tail, top, bottom, left, right].
+ * Modes "SAME" and "VAILD" padding can be achieved with appropriate values of each direction in pads.
+ * @li dilations: Optional. Defaults to [1, 1, 1, 1, 1].
+ * A tuple/list of 5 integers, The dilation factor for each dimension of filter.
+ * The dilations has the same axes sequence as filter:
+ * [out_channels, in_channels/groups, depth, dilation_height, dilation_width] or
+ * [depth, dilation_height, dilation_width, in_channels/groups, out_channels].
+ * The batch(N), in_channels/groups(C) and depth(D) dimensions must be 1.
+ * @li groups: Optional. Default to 1.
+ * Number of blocked connections from in_channels to out_channels.
+ * @li data_format: Optional. Defaults to "NDHWC". A string from: "NDHWC", "NCDHW".
+ * The correspondence is as follows: batch(N), depth(D), height(H), width(W), channels(C).
+ * Specify the data format of the feature map, out_backprop and output.
 *@par Outputs:
- * y: A Tensor. Has same format as "input_size". \n
-
+ * y: A Tensor. It has the same format as feature map and out_backprop.
+ * The type is float16, float32 or double.
+ * The gradients of feature map.
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv3d_backprop_input
 */
@@ -1105,37 +1125,56 @@ REG_OP(Conv3DBackpropInput)
 
 /**
 *@brief Computes the gradients of convolution 3d with respect to the input.
-
 *@par Inputs:
- * @li filter: A Tensor whose type is float16. The format of filter is NCDHW,
- * NDHWC or DHWCN.
- * @li out_backprop: A Tensor. Must have the same type as filter. The format is
- * NDHWC or NCDHW. \n
-
+ * @li filter: A 5-D Tensor. The type is float16. 
+ * The format of the filter tensor must be one of the followings:
+ * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
+ * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
+ * The length of filter_height axis and filter_width axis must be in [1, 255].
+ * @li out_backprop: A 5-D Tensor. The type is float16. 
+ * The format of the out_backprop tensor must be one of the followings:
+ * [batch, out_depth, out_height, out_width, out_channels] or
+ * [batch, out_channels, out_depth, out_height, out_width].
+ * The length of out_height axis and out_width axis must be in [1, 4096].
+ * Gradients with respect to the "output" of the convolution.
 *@par Attributes:
- * @li input_size: Required. A tuple/list of type int32, int64. An integer vector
- * representing the shape of input, where input is a 5-D tensor
- * [batch, depth, height, width, channels] or
- * [batch, channels, depth, height, width].
+ * @li input_size: Required. An integer vector representing the shape of
+ * feature map (the input of the convolution), where feature map is a 5-D tensor.
+ * The order of integers in the vector is determined by feature map format,
+ * and integers represents the length of each dimension of feature map.
+ * The axes sequence that can be entered are as follows:
+ * [batch, in_depth, in_height, in_width, in_channels] or
+ * [batch, in_channels, in_depth, in_height, in_width].
+ * The in_height and in_width must be in [1, 4096].
  * @li strides: Required. A list of 5 integers. Specifies the stride of the sliding window
- * for each dimension of "out_backprop".
- * The N and C dimensions must be 1. Has the same format as "out_backprop".
- * @li pads: Required. A list of 6 integers. Supports only padding along the D, H and W
- * dimensions in sequence of head, tail, top, bottom, left and right.
- * @li dilations: Optional. A tuple/list of 5 integers, The dilation factor for each
- * dimension of input.
- * The N, C and D dimensions must be 1. Has the same format as "out_backprop".
- * @li groups: Optional. Number of blocked connections from input channels to output
- * channels.
- * @li data_format: Optional. An string from: "NDHWC", "NCDHW".
- * Defaults to "NDHWC". Specify the data format of the input and output data. \n
-
+ * for each dimension of feature map. The strides has the same axes sequence as feature map:
+ * [batch, stride_depth, stride_height, stride_width, channels] or
+ * [batch, channels, stride_depth, stride_height, stride_width].
+ * The stride_depth(D), stride_height(H) and stride_width(W) must be in [1, 63],
+ * and H*W not larger than 256.
+ * The batch(N) and channels(C) dimensions must be 1.
+ * @li pads: Required. A list of 6 integers. Specifies the pads factor of
+ * feature map in each directions. Supports only pads along the depth(D),
+ * height(H) and width(W) dimensions.
+ * The pads sequence is as follows: [front, tail, top, bottom, left, right].
+ * Modes "SAME" and "VAILD" padding can be achieved with appropriate values of each direction in pads.
+ * @li dilations: Optional. Defaults to [1, 1, 1, 1, 1].
+ * A tuple/list of 5 integers, The dilation factor for each dimension of filter.
+ * The dilations has the same axes sequence as filter:
+ * [out_channels, in_channels/groups, depth, dilation_height, dilation_width] or
+ * [depth, dilation_height, dilation_width, in_channels/groups, out_channels].
+ * The batch(N), in_channels/groups(C) and depth(D) dimensions must be 1.
+ * @li groups: Optional. Default to 1.
+ * Number of blocked connections from in_channels to out_channels.
+ * @li data_format: Optional. Defaults to "NDHWC". An string from: "NDHWC", "NCDHW".
+ * The correspondence is as follows: batch(N), depth(D), height(H), width(W), channels(C).
+ * Specify the data format of the feature map, out_backprop and output.
 *@par Outputs:
- * y: A Tensor. Has the same type and data format as "out_backprop". \n
-
+ * y: A Tensor. Type is float16 or float32.
+ * The tensor has the same format as out_backprop and feature map.
+ * The gradients of feature map.
 *@par Third-party framework compatibility
- * Compatible with Tensorflow's conv3d_backprop_input. \n
-
+ * Compatible with Tensorflow's conv3d_backprop_input.
 *@par Restrictions:
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv3DBackpropInput instead.
 */

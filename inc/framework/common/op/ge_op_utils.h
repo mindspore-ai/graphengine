@@ -72,7 +72,8 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @return enum of tagCCAippInputFormat
   ///
 
-  static Status ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr, domi::AippOpParams &aipp_params);
+  static Status ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr,
+                                  domi::AippOpParams &aipp_params);
   template <typename T>
   static void SliceData(const std::vector<char_t *> &input, const int64_t chunk_size, std::vector<char_t *> &output,
                         const int64_t begin, const int64_t out_dim, const int64_t stride);
@@ -81,9 +82,10 @@ class GE_FUNC_VISIBILITY OpUtils {
                                   const std::vector<char_t *> &chunk_output, GeTensor *const output);
   template <typename T>
   static Status SetOutputSliceDataByDataType(void *const data, const int64_t data_size,
-                                             const std::vector<int64_t> &input_dims, const std::vector<int64_t> &begin,
-                                             const std::vector<int64_t> &output_dims, ge::GeTensor *const output,
-                                             const std::vector<int64_t> &stride);
+                                             const std::vector<int64_t> &input_dims,
+                                             const std::vector<int64_t> &begin,
+                                             const std::vector<int64_t> &output_dims,
+                                             ge::GeTensor *const output, const std::vector<int64_t> &stride);
   static Status SetOutputSliceData(void *const data, const int64_t data_size, const int32_t data_type,
                                    const std::vector<int64_t> &input_dims, const std::vector<int64_t> &begin,
                                    const std::vector<int64_t> &output_dims, GeTensor *const output,

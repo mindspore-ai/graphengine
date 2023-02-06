@@ -27,33 +27,44 @@ extern "C" {
 #define ACL_TDT_QUEUE_PERMISSION_DEQUEUE 2
 #define ACL_TDT_QUEUE_PERMISSION_ENQUEUE 4
 
+#define ACL_TDT_QUEUE_ROUTE_UNBIND 0
+#define ACL_TDT_QUEUE_ROUTE_BIND 1
+#define ACL_TDT_QUEUE_ROUTE_BIND_ABNORMAL 2
+
 typedef void *acltdtBuf;
 typedef struct tagMemQueueAttr acltdtQueueAttr;
 typedef struct acltdtQueueRouteList acltdtQueueRouteList;
 typedef struct acltdtQueueRouteQueryInfo acltdtQueueRouteQueryInfo;
 typedef struct acltdtQueueRoute acltdtQueueRoute;
 
-typedef enum { ACL_TDT_QUEUE_NAME_PTR = 0, ACL_TDT_QUEUE_DEPTH_UINT32 } acltdtQueueAttrType;
+typedef enum {
+    ACL_TDT_QUEUE_NAME_PTR = 0,
+    ACL_TDT_QUEUE_DEPTH_UINT32
+} acltdtQueueAttrType;
 
 typedef enum {
-  ACL_TDT_QUEUE_ROUTE_SRC_UINT32 = 0,
-  ACL_TDT_QUEUE_ROUTE_DST_UINT32,
-  ACL_TDT_QUEUE_ROUTE_STATUS_INT32
+    ACL_TDT_QUEUE_ROUTE_SRC_UINT32 = 0,
+    ACL_TDT_QUEUE_ROUTE_DST_UINT32,
+    ACL_TDT_QUEUE_ROUTE_STATUS_INT32
 } acltdtQueueRouteParamType;
 
 typedef enum {
-  ACL_TDT_QUEUE_ROUTE_QUERY_SRC = 0,
-  ACL_TDT_QUEUE_ROUTE_QUERY_DST,
-  ACL_TDT_QUEUE_ROUTE_QUERY_SRC_AND_DST
+    ACL_TDT_QUEUE_ROUTE_QUERY_SRC = 0,
+    ACL_TDT_QUEUE_ROUTE_QUERY_DST = 1,
+    ACL_TDT_QUEUE_ROUTE_QUERY_SRC_AND_DST = 2,
+    ACL_TDT_QUEUE_ROUTE_QUERY_ABNORMAL = 100
 } acltdtQueueRouteQueryMode;
 
 typedef enum {
-  ACL_TDT_QUEUE_ROUTE_QUERY_MODE_ENUM = 0,
-  ACL_TDT_QUEUE_ROUTE_QUERY_SRC_ID_UINT32,
-  ACL_TDT_QUEUE_ROUTE_QUERY_DST_ID_UINT32
+    ACL_TDT_QUEUE_ROUTE_QUERY_MODE_ENUM = 0,
+    ACL_TDT_QUEUE_ROUTE_QUERY_SRC_ID_UINT32,
+    ACL_TDT_QUEUE_ROUTE_QUERY_DST_ID_UINT32
 } acltdtQueueRouteQueryInfoParamType;
 
-typedef enum { ACL_TDT_NORMAL_MEM = 0, ACL_TDT_DVPP_MEM } acltdtAllocBufType;
+typedef enum {
+    ACL_TDT_NORMAL_MEM = 0,
+    ACL_TDT_DVPP_MEM
+} acltdtAllocBufType;
 
 /**
  * @ingroup AscendCL
@@ -128,8 +139,8 @@ ACL_FUNC_VISIBILITY aclError acltdtDequeue(uint32_t qid, acltdtBuf *buf, int32_t
  *
  * @see acltdtDequeueData
  */
-ACL_FUNC_VISIBILITY aclError acltdtEnqueueData(uint32_t qid, const void *data, size_t dataSize, const void *userData,
-                                               size_t userDataSize, int32_t timeout, uint32_t rsv);
+ACL_FUNC_VISIBILITY aclError acltdtEnqueueData(uint32_t qid, const void *data, size_t dataSize,
+    const void *userData, size_t userDataSize, int32_t timeout, uint32_t rsv);
 
 /**
  * @ingroup AscendCL
@@ -148,7 +159,7 @@ ACL_FUNC_VISIBILITY aclError acltdtEnqueueData(uint32_t qid, const void *data, s
  * @see acltdtEnqueueData
  */
 ACL_FUNC_VISIBILITY aclError acltdtDequeueData(uint32_t qid, void *data, size_t dataSize, size_t *retDataSize,
-                                               void *userData, size_t userDataSize, int32_t timeout);
+    void *userData, size_t userDataSize, int32_t timeout);
 
 /**
  * @ingroup AscendCL
@@ -261,6 +272,76 @@ ACL_FUNC_VISIBILITY aclError acltdtGetBufData(const acltdtBuf buf, void **dataPt
 
 /**
  * @ingroup AscendCL
+ * @brief set data buf effective len
+ *
+ * @param buf [IN] acltdtBuf
+ * @param len [IN] set effective len to data buf which must be smaller than size acquired by acltdtGetBufData
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtGetBufData acltdtGetBufDataLen
+ */
+ACL_FUNC_VISIBILITY aclError acltdtSetBufDataLen(acltdtBuf buf, size_t len);
+
+/**
+ * @ingroup AscendCL
+ * @brief get data buf effective len
+ *
+ * @param buf [IN] acltdtBuf
+ * @param len [OUT] get effective len which is set by acltdtSetBufDataLen
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtSetBufDataLen
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufDataLen(acltdtBuf buf, size_t *len);
+
+/**
+ * @ingroup AscendCL
+ * @brief append acltdtBuf to acltdtBuf chain
+ *
+ * @param headBuf [IN] acltdtBuf chain head
+ * @param buf [IN] acltdtBuf will be appended
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ */
+ACL_FUNC_VISIBILITY aclError acltdtAppendBufChain(acltdtBuf headBuf, acltdtBuf buf);
+
+/**
+ * @ingroup AscendCL
+ * @brief get acltdtBuf chain total size
+ *
+ * @param headBuf [IN] acltdtBuf chain head
+ * @param num [OUT] acltdtBuf chain total size
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtAppendBufChain
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufChainNum(acltdtBuf headBuf, uint32_t *num);
+
+/**
+ * @ingroup AscendCL
+ * @brief get acltdtBuf from acltdtBuf chain by index
+ *
+ * @param headBuf [IN] acltdtBuf chain head
+ * @param index [IN] the index which is smaller than num acquired from acltdtGetBufChainNum
+ * @param buf [OUT] the acltdtBuf from acltdtBuf on index
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acltdtAppendBufChain acltdtGetBufChainNum
+ */
+ACL_FUNC_VISIBILITY aclError acltdtGetBufFromChain(acltdtBuf headBuf, uint32_t index, acltdtBuf *buf);
+
+/**
+ * @ingroup AscendCL
  * @brief get private data buf address and size
  *
  * @param buf [IN] acltdtBuf
@@ -343,7 +424,9 @@ ACL_FUNC_VISIBILITY aclError acltdtDestroyQueueAttr(const acltdtQueueAttr *attr)
  *
  * @see acltdtCreateQueueAttr
  */
-ACL_FUNC_VISIBILITY aclError acltdtSetQueueAttr(acltdtQueueAttr *attr, acltdtQueueAttrType type, size_t len,
+ACL_FUNC_VISIBILITY aclError acltdtSetQueueAttr(acltdtQueueAttr *attr,
+                                                acltdtQueueAttrType type,
+                                                size_t len,
                                                 const void *param);
 
 /**
@@ -361,8 +444,11 @@ ACL_FUNC_VISIBILITY aclError acltdtSetQueueAttr(acltdtQueueAttr *attr, acltdtQue
  *
  * @see acltdtCreateQueueAttr
  */
-ACL_FUNC_VISIBILITY aclError acltdtGetQueueAttr(const acltdtQueueAttr *attr, acltdtQueueAttrType type, size_t len,
-                                                size_t *paramRetSize, void *param);
+ACL_FUNC_VISIBILITY aclError acltdtGetQueueAttr(const acltdtQueueAttr *attr,
+                                                acltdtQueueAttrType type,
+                                                size_t len,
+                                                size_t *paramRetSize,
+                                                void *param);
 
 /**
  * @ingroup AscendCL
@@ -376,7 +462,7 @@ ACL_FUNC_VISIBILITY aclError acltdtGetQueueAttr(const acltdtQueueAttr *attr, acl
  *
  * @see acltdtDestroyQueueRoute
  */
-ACL_FUNC_VISIBILITY acltdtQueueRoute *acltdtCreateQueueRoute(uint32_t srcId, uint32_t dstId);
+ACL_FUNC_VISIBILITY acltdtQueueRoute* acltdtCreateQueueRoute(uint32_t srcId, uint32_t dstId);
 
 /**
  * @ingroup AscendCL
@@ -406,8 +492,11 @@ ACL_FUNC_VISIBILITY aclError acltdtDestroyQueueRoute(const acltdtQueueRoute *rou
  *
  * @see acltdtCreateQueueRoute
  */
-ACL_FUNC_VISIBILITY aclError acltdtGetQueueRouteParam(const acltdtQueueRoute *route, acltdtQueueRouteParamType type,
-                                                      size_t len, size_t *paramRetSize, void *param);
+ACL_FUNC_VISIBILITY aclError acltdtGetQueueRouteParam(const acltdtQueueRoute *route,
+                                                      acltdtQueueRouteParamType type,
+                                                      size_t len,
+                                                      size_t *paramRetSize,
+                                                      void *param);
 
 /**
  * @ingroup AscendCL
@@ -418,7 +507,7 @@ ACL_FUNC_VISIBILITY aclError acltdtGetQueueRouteParam(const acltdtQueueRoute *ro
  *
  * @see acltdtDestroyQueueRouteList
  */
-ACL_FUNC_VISIBILITY acltdtQueueRouteList *acltdtCreateQueueRouteList();
+ACL_FUNC_VISIBILITY acltdtQueueRouteList* acltdtCreateQueueRouteList();
 
 /**
  * @ingroup AscendCL
@@ -462,7 +551,8 @@ ACL_FUNC_VISIBILITY aclError acltdtAddQueueRoute(acltdtQueueRouteList *routeList
  * @see acltdtCreateQueueRouteList | acltdtCreateQueueRoute
  *
  */
-ACL_FUNC_VISIBILITY aclError acltdtGetQueueRoute(const acltdtQueueRouteList *routeList, size_t index,
+ACL_FUNC_VISIBILITY aclError acltdtGetQueueRoute(const acltdtQueueRouteList *routeList,
+                                                 size_t index,
                                                  acltdtQueueRoute *route);
 
 /**
@@ -485,7 +575,7 @@ ACL_FUNC_VISIBILITY size_t acltdtGetQueueRouteNum(const acltdtQueueRouteList *ro
  *
  * @see acltdtDestroyQueueRouteQueryInfo
  */
-ACL_FUNC_VISIBILITY acltdtQueueRouteQueryInfo *acltdtCreateQueueRouteQueryInfo();
+ACL_FUNC_VISIBILITY  acltdtQueueRouteQueryInfo* acltdtCreateQueueRouteQueryInfo();
 
 /**
  * @ingroup AscendCL
@@ -515,11 +605,13 @@ ACL_FUNC_VISIBILITY aclError acltdtDestroyQueueRouteQueryInfo(const acltdtQueueR
  * @see acltdtCreateQueueRouteQueryInfo
  */
 ACL_FUNC_VISIBILITY aclError acltdtSetQueueRouteQueryInfo(acltdtQueueRouteQueryInfo *param,
-                                                          acltdtQueueRouteQueryInfoParamType type, size_t len,
+                                                          acltdtQueueRouteQueryInfoParamType type,
+                                                          size_t len,
                                                           const void *value);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // INC_EXTERNAL_ACL_ACL_TDT_QUEUE_H_
+#endif // INC_EXTERNAL_ACL_ACL_TDT_QUEUE_H_

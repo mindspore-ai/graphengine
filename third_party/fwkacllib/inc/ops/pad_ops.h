@@ -25,23 +25,23 @@
 namespace ge {
 
 /**
-*@brief Creates a tensor filled with a scalar value.
+* @brief Creates a tensor filled with a scalar value.
 * This operation creates a tensor of shape "dims" and fills it with "value".
 *
-*@par Inputs:
-*@li dims: A 1D tensor of types int32 or int64. Represents the shape of the output tensor . \n
+* @par Inputs:
+* @li dims: A 1D tensor of types int32 or int64. Represents the shape of the output tensor . \n
 
-*@li value: A 0D scalar. Specifies the value to fill the returned tensor.
+* @li value: A 0D scalar. Specifies the value to fill the returned tensor.
 *    Must be one of the following types:
 *    float16, float32, double, int32, uint8, int16, int8, complex64, int64, bool, 
 *    qint8, quint8, qint32, qint16, quint16, uint16, complex128, uint32, uint64, .
 *
-*@par Outputs:
+* @par Outputs:
 * y: A tensor. Has the same type as "value".
 *
-*@par Third-party framework compatibility
-*@li Compatible with the TensorFlow operator Fill.
-*@li Compatible with the Caffe operator Filler.
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator Fill.
+* @li Compatible with the Caffe operator Filler.
 *
 */
 REG_OP(Fill)
@@ -57,19 +57,19 @@ REG_OP(Fill)
     .OP_END_FACTORY_REG(Fill)
 
 /**
-*@brief Creates a tensor filled with a scalar value.
+* @brief Creates a tensor filled with a scalar value.
 * This operation creates a tensor of shape "dims" and fills it with "value".
 *
-*@par Inputs:
+* @par Inputs:
 * value: A 0D scalar for the value to fill the returned tensor. Must be one of
 *    the following types:
 *    float16, float32, uint8, int8, int16, int32, int64, quint8, qint8, qint32
 *
-*@par Attributes:
+* @par Attributes:
 * dims: A tensor. Must be one of the following types:"int32"
 *     1-D. Represents the shape of the output tensor.
 *
-*@par Outputs:
+* @par Outputs:
 * y: A tensor. Has the same type as "value".
 *
 * @par Restrictions:
@@ -86,23 +86,23 @@ REG_OP(FillD)
     .OP_END_FACTORY_REG(FillD)
 
 /**
-*@brief Broadcasts an array for a compatible shape.
+* @brief Broadcasts an array for a compatible shape.
 *  Broadcasting is the process of making arrays to have compatible shapes
 *  for arithmetic operations. Two shapes are compatible if for each
 *  dimension pair they are either equal or one of them is one. When trying
 *  to broadcast a Tensor to a shape, it starts with the trailing dimensions,
 *  and works its way forward.
 *
-*@par Inputs:
-*@li x: A tensor.
-*@li shape: A tensor of type int32.
+* @par Inputs:
+* @li x: A tensor.
+* @li shape: A tensor of type int32.
 *     A 1D tensor of type int32, for the shape of the desired output.
 *
-*@par Outputs:
+* @par Outputs:
 * y: A tensor. Has the same type as "x".
 *
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator BroadcastTo.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator BroadcastTo.
 *
 */
 REG_OP(BroadcastTo)
@@ -112,25 +112,25 @@ REG_OP(BroadcastTo)
     .OP_END_FACTORY_REG(BroadcastTo)
 
 /**
-*@brief Broadcasts an array for a compatible shape.
+* @brief Broadcasts an array for a compatible shape.
 *  Broadcasting is the process of making arrays to have compatible shapes
 *  for arithmetic operations. Two shapes are compatible if for each
 *  dimension pair they are either equal or one of them is one. When trying
 *  to broadcast a Tensor to a shape, it starts with the trailing dimensions,
 *  and works its way forward.
 *
-*@par Inputs:
+* @par Inputs:
 * x: A tensor. A tensor to broadcast.
 *
-*@par Attributes:
+* @par Attributes:
 * shape: A tensor of type int32.
 *     A 1D tensor of type int32, for the shape of the desired output.
 *
-*@par Outputs:
+* @par Outputs:
 * y: A tensor. Has the same type as "x".
 *
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator BroadcastTo.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator BroadcastTo.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use BroadcastTo instead.
@@ -142,19 +142,19 @@ REG_OP(BroadcastToD)
     .OP_END_FACTORY_REG(BroadcastToD)
 
 /**
-*@brief Pads a tensor . \n
+* @brief Pads a tensor . \n
 
-*@par Inputs:
-*Two inputs, including:
+* @par Inputs:
+* Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li paddings: A Tensor of type int32 or int64 . \n
 
-*@par Outputs:
-*y: A Tensor of the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor of the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
 */
 REG_OP(Pad)
@@ -164,22 +164,22 @@ REG_OP(Pad)
     .OP_END_FACTORY_REG(Pad)
 
 /**
-*@brief Pads a tensor . \n
+* @brief Pads a tensor . \n
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
 
-*@par Attributes:
-*paddings: An optional "vector<vector<int>>". Defaults to "{}".
+* @par Attributes:
+* paddings: An optional "vector<vector<int>>". Defaults to "{}".
 *     For each dimension D of input, paddings[D, 0] indicates how many
 *     values to add before the contents of tensor in that dimension,
 *     and paddings[D, 1] indicates how many values to add after the
 *     contents of tensor in that dimension . \n
 
-*@par Outputs:
-*y: A Tensor of the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor of the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
 *
 * @par Restrictions:
@@ -192,20 +192,20 @@ REG_OP(PadD)
     .OP_END_FACTORY_REG(PadD)
 
 /**
-*@brief Pads a tensor . \n
+* @brief Pads a tensor . \n
 
-*@par Inputs:
-*Three inputs, including:
+* @par Inputs:
+* Three inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li constant_values: A Tensor. Must have the same type as input.
 * @li paddings: A Tensor of type int32 or int64 . \n
 
-*@par Outputs:
-*y: A Tensor of the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor of the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
 */
 REG_OP(PadV2)
@@ -216,24 +216,27 @@ REG_OP(PadV2)
     .OP_END_FACTORY_REG(PadV2)
 
 /**
-*@brief Pads a tensor . \n
+* @brief Pads a tensor . \n
 
-*@par Inputs:
-*@li x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
-*@li constant_values: A Tensor. Must have the same type as input.
+* @par Inputs:
+* @li x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
+* @li constant_values: A Tensor. Must have the same type as input.
 
-*@par Attributes:
-*paddings: A required Attribute.
+* @par Attributes:
+* paddings: A required Attribute.
 *     For each dimension D of input, paddings[D, 0] indicates how many
 *     values to add before the contents of tensor in that dimension,
 *     and paddings[D, 1] indicates how many values to add after the
 *     contents of tensor in that dimension . \n
 
-*@par Outputs:
-*y: A Tensor of the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor of the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with TensorFlow operator PadV2.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(PadV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -243,27 +246,27 @@ REG_OP(PadV2D)
     .OP_END_FACTORY_REG(PadV2D)
 
 /**
-*@brief Pads a tensor.
+* @brief Pads a tensor.
 
-*@par Inputs:
-*Two inputs, including:
+* @par Inputs:
+* Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li paddings: A Tensor of type int32 or int64.
 * @li constant_values: A optional Tensor of int32 or int64
 
-*@par Attributes:
+* @par Attributes:
 * @li mode: An optional string, Defaults to "constant", indicates paddings mode,
 *     support "constant", "reflect", "edge"
 * @li paddings_contiguous: An optional bool value, Defaults to true.
 *     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
 *     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
 
-*@par Outputs:
-*y: A Tensor of the same type as "x".
+* @par Outputs:
+* y: A Tensor of the same type as "x".
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with ONNX operator Pad.
 */
 REG_OP(PadV3)
@@ -276,26 +279,26 @@ REG_OP(PadV3)
     .OP_END_FACTORY_REG(PadV3)
 	
  /**
-*@brief Cal the grad of Pads.
+* @brief Cal the grad of Pads.
 
-*@par Inputs:
-*Two inputs, including:
+* @par Inputs:
+* Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li paddings: A Tensor of type int32 or int64.
 
-*@par Attributes:
+* @par Attributes:
 * @li mode: An optional string, Defaults to "reflect", indicates paddings mode,
 *     support "reflect", "edge"
 * @li paddings_contiguous: An optional bool value, Defaults to true.
 *     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
 *     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
 
-*@par Outputs:
-*y: A Tensor of the same type as "x".
+* @par Outputs:
+* y: A Tensor of the same type as "x".
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with ONNX operator PadGrad.
 */
 
@@ -308,12 +311,12 @@ REG_OP(PadV3Grad)
     .OP_END_FACTORY_REG(PadV3Grad)
 
   /**
-  *@brief Pads a tensor.
+  * @brief Pads a tensor.
 
-  *@par Inputs:
-  *x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
+  * @par Inputs:
+  * x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
 
-  *@par Attributes:
+  * @par Attributes:
   * @li paddings: An required "vector<vector<int>>".
   *     For each dimension D of input, paddings[D, 0] indicates how many
   *     values to add before the contents of tensor in that dimension,
@@ -326,10 +329,10 @@ REG_OP(PadV3Grad)
   *     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
   *     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
 
-  *@par Outputs:
-  *y: A Tensor of the same type as "x".
+  * @par Outputs:
+  * y: A Tensor of the same type as "x".
 
-  *@par Third-party framework compatibility:
+  * @par Third-party framework compatibility:
   * Compatible with ONNX operator Pad.
 
   * @par Restrictions:
@@ -345,21 +348,21 @@ REG_OP(PadV3Grad)
       .OP_END_FACTORY_REG(PadV3D)
 
 /**
-*@brief Create a diagonal tensor
+* @brief Create a diagonal tensor
 
-*@par Inputs:
-*Two inputs, including:
+* @par Inputs:
+* Two inputs, including:
 * @li x: A mutable Tensor. Must be one of the following types:
 *     float16, float32, int32 . \n
 
 * @li assist: A mutable Tensor with rank k is at most 1,
 *     Has the same type as "x" . \n
 
-*@par Outputs:
-*y: A mutable Tensor. Has the same type as "x" . \n
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x" . \n
 
-*@see Diag()
-*@par Third-party framework compatibility
+* @see Diag()
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
 *
 * @par Restrictions:
@@ -372,19 +375,19 @@ REG_OP(DiagD)
     .OP_END_FACTORY_REG(DiagD)
 
 /**
-*@brief Create a diagonal tensor
+* @brief Create a diagonal tensor
 
-*@par Inputs:
-*One input, include:
+* @par Inputs:
+* One input, include:
 * x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
 *     following types:
 *     float16, float32, double, int32, int64, complex64, complex128 . \n
 
-*@par Outputs:
-*y: A mutable Tensor. Has the same type as "x" . \n
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x" . \n
 
-*@see DiagD()
-*@par Third-party framework compatibility
+* @see DiagD()
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
 */
 REG_OP(Diag)
@@ -395,16 +398,16 @@ REG_OP(Diag)
     .OP_END_FACTORY_REG(Diag)
 
 /**
-*@brief Ascend Padding, pad the last dimension of input
+* @brief Ascend Padding, pad the last dimension of input
 
-*@par Inputs:
-*One input, include:
-*x: Tensor which last dimension must be 1. For example: [624000, 1] . \n
+* @par Inputs:
+* One input, include:
+* x: Tensor which last dimension must be 1. For example: [624000, 1] . \n
 
-*@par Outputs:
-*y: Padding the last dimension of x to padDimSize, [624000, padDimSize] . \n
+* @par Outputs:
+* y: Padding the last dimension of x to padDimSize, [624000, padDimSize] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
 */
 REG_OP(AscendPadding)
@@ -415,19 +418,19 @@ REG_OP(AscendPadding)
 
 
 /**
-*@brief EmbeddingRankId, traverse the index calculation server and its position in the server . \n
+* @brief EmbeddingRankId, traverse the index calculation server and its position in the server . \n
 
-*@par Restrictions:
-*Warning:THIS FUNCTION IS DEPRECATED. Please do not use. \n
+* @par Restrictions:
+* Warning:THIS FUNCTION IS DEPRECATED. Please do not use. \n
 
-*@par Inputs:
-*One input, include:
-*addr_table: Tensor which last dimension must be 3. For example: [8, 3].
-*index: Tensor  For example: [640000].
-*@par Outputs:
-*rank_id: Tensor the first dimension of index to Size, [size, 3].
+* @par Inputs:
+* One input, include:
+* addr_table: Tensor which last dimension must be 3. For example: [8, 3].
+* index: Tensor  For example: [640000].
+* @par Outputs:
+* rank_id: Tensor the first dimension of index to Size, [size, 3].
  Tensor which last dimension must be 3.For example: [640000, 3]
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
 */
 REG_OP(EmbeddingRankId)
@@ -439,23 +442,23 @@ REG_OP(EmbeddingRankId)
     .OP_END_FACTORY_REG(EmbeddingRankId)
 
 /**
-*@brief EmbeddingLocalIndex, Sort statistics index according to rank_id \n
+* @brief EmbeddingLocalIndex, Sort statistics index according to rank_id \n
 
-*@par Inputs:
+* @par Inputs:
 * @li addr_table: A 2D tensor which last dimension must be 3.
 * @li index: A tensor with data type int32, int64, uint32, uint64.
 
-*@par Attributes:
+* @par Attributes:
 * @li row_memory: The size of Embedding vector in a row, the default is 320.
 * @li mode: String type, currently there are two options: 'mod' and 'order'
 
-*@par Outputs:
+* @par Outputs:
 * @li local_idx:Index on each server.
 * @li nums:The number of local_idx found on each server.
 * @li recover_idx:The sorted local_idx element is at the position corresponding
 * to the original input index.
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
 */
 REG_OP(EmbeddingLocalIndex)
@@ -503,6 +506,9 @@ REG_OP(FillV2)
 
 * @par Third-party framework compatibility
 * Compatible with the ONNX operator ConstantOfShape.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(FillV2D)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64}))

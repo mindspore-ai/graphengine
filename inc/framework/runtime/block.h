@@ -22,6 +22,7 @@ namespace memory {
 class Block {
  public:
   // todo use TensorAddress
+  // todo 需要考虑虚函数对性能的影响
   virtual const void *Addr() const = 0;
   virtual void *MutableAddr() = 0;
   virtual size_t GetSize() const = 0;
@@ -32,6 +33,6 @@ class Block {
   virtual void Free() = 0;
   virtual ~Block() = default;
 };
-}  // namespace memory
-}  // namespace gert
+}
+}
 #endif  // AIR_CXX_BLOCK_H

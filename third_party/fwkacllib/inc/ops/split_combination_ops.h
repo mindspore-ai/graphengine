@@ -24,56 +24,65 @@
 
 namespace ge {
 /**
-*@brief Splits a tensor along dimension "split_dim" into "num_split" smaller tensors . \n
+* @brief Splits a tensor along dimension "split_dim" into "num_split" smaller tensors . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: An ND Tensor.
-*Must be one of the types:float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
-*@li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
+* @li x: An ND Tensor.
+* Must be one of the types:float16, float32, double, int64, int32, uint8,
+  uint16, uint32, uint64, int8, int16, bool, complex64, complex128, qint8,
+  quint8, qint16, quint16, qint32.
+* @li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
 
-*@par Attributes:
-*num_split: A required int32. Specifies the number of output tensors. No default value . \n
+* @par Attributes:
+* @li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
-*@par Outputs:
-*y: Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
+* @par Outputs:
+* @li y: Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li "num_split" is greater than or equals to 1.
-*@li "num_split" is divisible by the size of dimension "split_dim".
-*@li "split_dim" is in the range [-len(x.shape), (x.shape)-1] . \n
+* @attention Constraints:
+* @li "num_split" is greater than or equals to 1.
+* @li "num_split" is divisible by the size of dimension "split_dim".
+* @li "split_dim" is in the range [-len(x.shape), (x.shape)-1] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Split.
 */
 REG_OP(Split)
     .INPUT(split_dim, TensorType({DT_INT32}))
-    .INPUT(x, TensorType::BasicType())
-    .DYNAMIC_OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
+                          DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
+                          DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
+                          DT_BF16,       DT_BOOL}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
+                                   DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
+                                   DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
+                                   DT_BF16,       DT_BOOL}))
     .REQUIRED_ATTR(num_split, Int)
     .OP_END_FACTORY_REG(Split)
 
 /**
-*@brief Splits a tensor along dimension "split_dim" into "num_split" smaller tensors . \n
+* @brief Splits a tensor along dimension "split_dim" into "num_split" smaller tensors . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*: An ND Tensor.
-*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
+* @li x:An ND Tensor.
+* Must be one of the following types: float16, float32, int32, int8, int16,
+  int64, uint8, uint16, uint32, uint64, bool.\n
 
-*@par Attributes:
-*@li split_dim: A required int32. Specifies the dimension along which to split. No default value.
-*@li num_split: A required int32. Specifies the number of output tensors. No default value . \n
+* @par Attributes:
+* @li split_dim: A required int32. Specifies the dimension along which to split. No default value.
+* @li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
-*@par Outputs:
-*y:Dynamic output. A list of output tensors. Has the same type and format as "x" . \n
+* @par Outputs:
+* @li y:Dynamic output. A list of output tensors. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li "num_split" is greater than or equals to 1.
-*@li "num_split" is divisible by the size of dimension "split_dim".
-*@li "split_dim" is in the range [-len(x.shape), (x.shape)-1] . \n
+* @attention Constraints:
+* @li "num_split" is greater than or equals to 1.
+* @li "num_split" is divisible by the size of dimension "split_dim".
+* @li "split_dim" is in the range [-len(x.shape), (x.shape)-1] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Split.
 
 * @par Restrictions:
@@ -81,68 +90,82 @@ REG_OP(Split)
 */
 REG_OP(SplitD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                    DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16}))
+                                    DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
     .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                             DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16}))
+                                             DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
     .REQUIRED_ATTR(split_dim, Int)
     .REQUIRED_ATTR(num_split, Int)
     .OP_END_FACTORY_REG(SplitD)
 
 /**
-*@brief Splits a tensor along dimension "split_dim" into "num_split" smaller tensors according to "size_splits" . \n
+* @brief Splits a tensor along dimension "split_dim" into "num_split"
+  smaller tensors according to "size_splits" . \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li x: An ND Tensor.
-*Must be one of the types:float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
-*@li size_splits: Must be one of the types:int32, int64. Specifies a list containing the sizes of each output tensor along the split dimension.
-*@li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
+* @li x: An ND Tensor.
+* Must be one of the types:float16, float32, double, int64, int32, uint8,
+  uint16, uint32, uint64, int8, int16, bool, complex64, complex128, qint8,
+  quint8, qint16, quint16, qint32. \n
+* @li size_splits: Must be one of the types:int32, int64. Specifies a list
+  containing the sizes of each output tensor along the split dimension.
+* @li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
 
-*@par Attributes:
-*num_split: A required int32. Specifies the number of output tensors. No default value . \n
+* @par Attributes:
+* @li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
-*@par Outputs:
-*y:  Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
+* @par Outputs:
+* @li y:  Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li Each element in "size_splits" is greater than or equal to 1.
-*@li "size_splits" and "num_split" have the same length.
-*@li The elements in "size_splits" sum to the size of dimension "split_dim" . \n
+* @attention Constraints:
+* @li Each element in "size_splits" is greater than or equal to 1.
+* @li "size_splits" and "num_split" have the same length.
+* @li The elements in "size_splits" sum to the size of dimension "split_dim" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SplitV.
 */
 REG_OP(SplitV)
-    .INPUT(x, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
+                          DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
+                          DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
+                          DT_BF16,       DT_BOOL}))
     .INPUT(size_splits, TensorType::IndexNumberType())
     .INPUT(split_dim, TensorType({DT_INT32}))
-    .DYNAMIC_OUTPUT(y, TensorType::BasicType())
+    .DYNAMIC_OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
+                                   DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
+                                   DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
+                                   DT_BF16,       DT_BOOL}))
     .REQUIRED_ATTR(num_split, Int)
     .OP_END_FACTORY_REG(SplitV)
 
 /**
-*@brief Splits a tensor along dimension "split_dim" into "num_split" smaller tensors according to "size_splits" . \n
+* @brief Splits a tensor along dimension "split_dim" into "num_split"
+  smaller tensors according to "size_splits". \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-* x: An ND Tensor.
-*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
+* @li x: An ND Tensor.
+* Must be one of the following types: float16, float32, int32, int8, int16,
+  int64, uint8, uint16, uint32, uint64, bool. \n
 
-*@par Attributes:
-*@li size_splits: A required list of int32. Specifies a list containing the sizes of each output tensor along the split dimension.
-*@li split_dim: A required int32. Specifies the dimension along which to split. No default value.
-*@li num_split: A required int32. Specifies the number of output tensors. No default value . \n
+* @par Attributes:
+* @li size_splits: A required list of int32. Specifies a list containing
+  the sizes of each output tensor along the split dimension.
+* @li split_dim: A required int32. Specifies the dimension along which to split. No default value.
+* @li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
-*@par Outputs:
-*y: Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
+* @par Outputs:
+* @li y: Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li Each element in "size_splits" is greater than or equal to 1.
-*@li "size_splits" and "num_split" have the same length.
-Under the caffe framework, the conversion of slice_point through the cut point to cut segment is mapped to size_splits.
-*@li The elements in "size_splits" sum to the size of dimension "split_dim".
-Under the caffe framework,size_splits or axis transformat to split_dim.Only one can effect.
-*@par Third-party framework compatibility
+* @attention Constraints:
+* @li Each element in "size_splits" is greater than or equal to 1.
+* @li "size_splits" and "num_split" have the same length.
+ Under the caffe framework, the conversion of slice_point through
+ the cut point to cut segment is mapped to size_splits.
+* @li The elements in "size_splits" sum to the size of dimension "split_dim".
+ Under the caffe framework,size_splits or axis transformat to split_dim.Only one can effect.
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SplitV.
 
 * @par Restrictions:
@@ -150,9 +173,9 @@ Under the caffe framework,size_splits or axis transformat to split_dim.Only one 
 */
 REG_OP(SplitVD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                    DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16}))
+                                    DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
     .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                             DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16}))
+                                             DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
     .REQUIRED_ATTR(size_splits, ListInt)
     .REQUIRED_ATTR(split_dim, Int)
     .REQUIRED_ATTR(num_split, Int)

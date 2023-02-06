@@ -17,6 +17,10 @@ extern "C" {
 #pragma pack(push)
 #pragma pack (1)
 
+// context desc addr type
+#define RT_FFTS_PLUS_CTX_DESC_ADDR_TYPE_HOST   (0x0U)
+#define RT_FFTS_PLUS_CTX_DESC_ADDR_TYPE_DEVICE (0x1U)
+
 typedef struct tagFftsPlusDumpInfo {
     const void *loadDumpInfo;
     const void *unloadDumpInfo;
@@ -24,12 +28,12 @@ typedef struct tagFftsPlusDumpInfo {
     uint32_t unloadDumpInfolen;
 } rtFftsPlusDumpInfo_t;
 
-
 typedef struct tagFftsPlusTaskInfo {
     const rtFftsPlusSqe_t *fftsPlusSqe;
-    const void *descBuf;           // include total context
-    size_t      descBufLen;        // the length of descBuf
+    const void *descBuf;                   // include total context
+    size_t      descBufLen;                // the length of descBuf
     rtFftsPlusDumpInfo_t fftsPlusDumpInfo; // used only in the dynamic shape
+    uint32_t descAddrType;                 // 0:host addr 1:device addr
 } rtFftsPlusTaskInfo_t;
 
 #pragma pack(pop)

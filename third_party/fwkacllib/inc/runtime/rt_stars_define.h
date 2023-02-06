@@ -95,7 +95,8 @@ typedef struct tagFftsPlusSqe {
     uint16_t fftsType : 3;
     uint16_t reserved1 : 9;
     uint16_t wrrRatio : 4;
-    uint16_t reserved2;
+    uint16_t dsaSqId : 11;
+    uint16_t reserved2 : 5;
     // 12-15 bytes
     uint16_t sqeIndex;
     uint8_t  kernelCredit;

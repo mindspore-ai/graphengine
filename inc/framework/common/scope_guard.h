@@ -43,16 +43,13 @@ class GE_FUNC_VISIBILITY ScopeGuard {
       if (on_exit_scope_ != nullptr) {
         try {
           on_exit_scope_();
-        } catch (std::bad_function_call &) {
-        } catch (...) {
-        }
+        } catch (std::bad_function_call &) { }
+          catch (...) { }
       }
     }
   }
 
-  void Dismiss() {
-    dismissed_ = true;
-  }
+  void Dismiss() { dismissed_ = true; }
 
  private:
   std::function<void()> on_exit_scope_;

@@ -307,7 +307,7 @@ REGISTER_OPTYPE_DECLARE(GETNEXT, "GetNext");
 REGISTER_OPTYPE_DECLARE(ITERATOR, "Iterator");
 REGISTER_OPTYPE_DECLARE(ITERATORV2, "IteratorV2");
 REGISTER_OPTYPE_DECLARE(INITDATA, "InitData");
-REGISTER_OPTYPE_DECLARE(TRANSSHAPE, "TransShape")
+REGISTER_OPTYPE_DECLARE(TRANSSHAPE, "TransShape");
 REGISTER_OPTYPE_DECLARE(REFIDENTITY, "RefIdentity");
 REGISTER_OPTYPE_DECLARE(BITCAST, "Bitcast");
 REGISTER_OPTYPE_DECLARE(GATHERSHAPES, "GatherShapes");
@@ -413,6 +413,11 @@ REGISTER_OPTYPE_DECLARE(HCOMREMOTEWRITE, "HcomRemoteWrite");
 REGISTER_OPTYPE_DECLARE(HCOMREMOTESCATTERWRITE, "HcomRemoteScatterWrite");
 REGISTER_OPTYPE_DECLARE(HCOMALLTOALLV, "HcomAllToAllV");
 REGISTER_OPTYPE_DECLARE(HCOMGATHERALLTOALLV, "HcomGatherAllToAllV");
+REGISTER_OPTYPE_DECLARE(HCOMALLTOALLVC, "HcomAllToAllVC");
+REGISTER_OPTYPE_DECLARE(HCOMALLTOALL, "HcomAllToAll");
+REGISTER_OPTYPE_DECLARE(HCOMREMOTELOOKUP, "HcomRemoteLookup");
+REGISTER_OPTYPE_DECLARE(HCOMCOLLREMOTELOOKUP, "HcomCollRemoteLookup");
+REGISTER_OPTYPE_DECLARE(HCOMCOLLREMOTEUPDATE, "HcomCollRemoteUpdate");
 
 REGISTER_OPTYPE_DECLARE(VARASSIGN, "VarAssign");
 REGISTER_OPTYPE_DECLARE(VARISINITIALIZEDOP, "VarIsInitializedOp");
@@ -443,6 +448,7 @@ REGISTER_OPTYPE_DECLARE(LABELSWITCH, "LabelSwitch");
 REGISTER_OPTYPE_DECLARE(LABELSWITCHBYINDEX, "LabelSwitchByIndex");
 
 REGISTER_OPTYPE_DECLARE(ATOMICADDRCLEAN, "AtomicAddrClean");
+REGISTER_OPTYPE_DECLARE(MEMSET, "MemSet");
 
 REGISTER_OPTYPE_DECLARE(ABS_GRAD, "AbsGrad");
 REGISTER_OPTYPE_DECLARE(ACCUMULATE_N_V2, "AccumulateNV2");
@@ -517,6 +523,23 @@ REGISTER_OPTYPE_DECLARE(STACKPUSH, "StackPush");
 REGISTER_OPTYPE_DECLARE(STACKPOP, "StackPop");
 REGISTER_OPTYPE_DECLARE(STACKCLOSE, "StackClose");
 
+REGISTER_OPTYPE_DECLARE(EMBEDDING_TABLE_FIND, "EmbeddingTableFind");
+REGISTER_OPTYPE_DECLARE(EMBEDDING_TABLE_FIND_AND_INIT, "EmbeddingTableFindAndInit");
+REGISTER_OPTYPE_DECLARE(EMBEDDING_APPLY_ADAM, "EmbeddingApplyAdam");
+REGISTER_OPTYPE_DECLARE(EMBEDDING_APPLY_ADA_GRAD, "EmbeddingApplyAdaGrad");
+REGISTER_OPTYPE_DECLARE(TABLE_TO_RESOURCE, "TableToResource");
+// Data flow
+REGISTER_OPTYPE_DECLARE(FLOWNODE, "FlowNode");
+REGISTER_OPTYPE_DECLARE(FLOWFUNC, "FlowFunc");
+
+// Dsa
+const char_t *const DSAGENBITMASK = "DSAGenBitMask";
+const char_t *const DSARANDOMTRUNCATEDNORMAL = "DSARandomTruncatedNormal";
+const char_t *const DSARANDOMNORMAL = "DSARandomNormal";
+const char_t *const DSARANDOMUNIFORM = "DSARandomUniform";
+
+const std::set<std::string> kFixedAddrNodeTypes = {DSAGENBITMASK, DSARANDOMNORMAL, DSARANDOMTRUNCATEDNORMAL,
+                                                   DSARANDOMUNIFORM};
 // @brief encryption type of the model file
 enum ModelEncryptType {
   UNENCRYPTED,  // not encrypted
@@ -569,7 +592,7 @@ constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64U;
 ///
 /// @brief length of the reserved field in the model file header
 ///
-constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 75U;
+constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 63U;
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DATA_TYPE;
@@ -619,6 +642,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_N
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_ASSIGNADD;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_FLOWCTRL_LOOP_ASSIGN;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_ATOMIC_ADDR_CLEAN;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_NAME_ATOMIC_MEMSET;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t TRUE_STREAM_ID;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t STREAM_SWITCH_INPUT_NUM;
 
@@ -626,17 +650,22 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string NODE_N
 
 constexpr uint32_t PLATFORM_VERSION_LEN = 20U;
 
+enum class OsCpuInfoCheckTyep :uint8_t {
+  NO_CHECK,
+  NEED_CHECK
+};
+
 // Definition of the file header of the model file
 struct ModelFileHeader {
-  uint32_t magic = MODEL_FILE_MAGIC_NUM;                // magic number of DOMI
-  uint32_t headsize = MODEL_FILE_HEAD_LEN;              // length of the model header. The value is fixed at 256
-  uint32_t version = MODEL_VERSION;                     // version 1.0
+  uint32_t magic = MODEL_FILE_MAGIC_NUM;               // magic number of DOMI
+  uint32_t headsize = MODEL_FILE_HEAD_LEN;             // length of the model header. The value is fixed at 256
+  uint32_t version = MODEL_VERSION;                    // version 1.0
   uint8_t checksum[MODEL_FILE_CHECKSUM_LENGTH] = {0U};  // signature
   uint32_t length = 0U;  // Ciphertext length. In the non-encryption model, the length is the plaintext length.
   // whether encrypted 0:not encrypt, 1:encrypt
   uint8_t is_encrypt = static_cast<uint8_t>(ModelEncryptType::UNENCRYPTED);
-  uint8_t is_checksum = static_cast<uint8_t>(ModelCheckType::CHECK);  // whether to check the checksum
-  uint8_t modeltype = 0U;                                  // 0：IR model 1：standard model 2: OM Tiny model
+  uint8_t is_checksum = static_cast<uint8_t>(ModelCheckType::CHECK);            // whether to check the checksum
+  uint8_t modeltype = 0U;                                  // 0:IR model 1:standard model 2:OM Tiny model 3:flow model
   uint8_t genmode = 0U;                                    // 0：offline generate 1：online generate
   uint8_t name[MODEL_NAME_LENGTH] = {0U};                  // Model name, which contains 32 characters
   uint32_t ops = 0U;                                       // Computing power (Kops)
@@ -645,7 +674,10 @@ struct ModelFileHeader {
   uint32_t model_num = 0U;
   uint8_t platform_version[PLATFORM_VERSION_LEN] = {0U};
   uint8_t platform_type = {0U};
-  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 75
+  uint8_t padd[3] = {0};  // For initializing aligned memory
+  uint64_t model_length = 0UL;
+  uint8_t need_check_os_cpu_info = static_cast<uint8_t>(OsCpuInfoCheckTyep::NO_CHECK);
+  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 64
 };
 
 constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0U;
@@ -654,12 +686,38 @@ constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1U;
 // number of partitions in the current model
 constexpr uint32_t PARTITION_SIZE = 5U;
 
-enum ModelPartitionType { MODEL_DEF = 0, WEIGHTS_DATA, TASK_INFO, TBE_KERNELS, CUST_AICPU_KERNELS };
+constexpr uint8_t MODEL_TYPE_FLOW_MODEL = 3;
 
-struct ModelPartitionMemInfo {
+enum ModelPartitionType {
+  MODEL_DEF = 0,
+  WEIGHTS_DATA = 1,
+  TASK_INFO = 2,
+  TBE_KERNELS = 3,
+  CUST_AICPU_KERNELS = 4,
+  SO_BINS = 5,
+  FLOW_MODEL = 6,
+  FLOW_SUBMODEL = 7
+};
+
+struct TinyModelPartitionMemInfo {
   ModelPartitionType type;
   uint32_t mem_offset;
   uint32_t mem_size;
+};
+
+struct TinyModelPartitionTable {
+  uint32_t num;
+  TinyModelPartitionMemInfo partition[0];
+};
+
+inline uint64_t SizeOfTinyModelPartitionTable(const TinyModelPartitionTable &table) {
+  return sizeof(TinyModelPartitionTable) + (sizeof(TinyModelPartitionMemInfo) * static_cast<uint64_t>(table.num));
+}
+
+struct ModelPartitionMemInfo {
+  ModelPartitionType type;
+  uint64_t mem_offset;
+  uint64_t mem_size;
 };
 
 struct ModelPartitionTable {

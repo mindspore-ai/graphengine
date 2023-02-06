@@ -36,14 +36,14 @@ class GeRootModel;
 struct RunModelData {
   uint32_t index;  // Data index
   uint32_t modelId;
-  std::vector<DataBuffer> blobs;        // All input/output data buffer
-  uint32_t timestamp;                   // Data creation time
-  uint32_t timeout;                     // Processing timeout
-  uint64_t request_id = 0UL;            // Request ID
-  uint64_t dynamic_batch_size = 0UL;    // Dynamic batch size scene, set dynamic size, not supported by default:0
-  uint64_t dynamic_image_height = 0UL;  // Dynamic image size scene, set image height, not supported by default:0
-  uint64_t dynamic_image_width = 0UL;   // Dynamic image size scene, set image width, not supported by default:0
-  std::vector<uint64_t> dynamic_dims;   // Dynamic dims scene, set dynamic dims, not supported by default:empty
+  std::vector<DataBuffer> blobs;       // All input/output data buffer
+  uint32_t timestamp;                  // Data creation time
+  uint32_t timeout;                    // Processing timeout
+  uint64_t request_id = 0UL;             // Request ID
+  uint64_t dynamic_batch_size = 0UL;     // Dynamic batch size scene, set dynamic size, not supported by default:0
+  uint64_t dynamic_image_height = 0UL;   // Dynamic image size scene, set image height, not supported by default:0
+  uint64_t dynamic_image_width = 0UL;    // Dynamic image size scene, set image width, not supported by default:0
+  std::vector<uint64_t> dynamic_dims;  // Dynamic dims scene, set dynamic dims, not supported by default:empty
 };
 
 class GE_FUNC_VISIBILITY GeExecutor {
@@ -151,7 +151,8 @@ class GE_FUNC_VISIBILITY GeExecutor {
   /// @param [out] user_designate_shape_order
   /// @return execute result
   ///
-  Status GetUserDesignateShapeOrder(const uint32_t model_id, std::vector<std::string> &user_designate_shape_order);
+  Status GetUserDesignateShapeOrder(const uint32_t model_id,
+                                    std::vector<std::string> &user_designate_shape_order);
 
   Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
@@ -212,8 +213,8 @@ class GE_FUNC_VISIBILITY GeExecutor {
   /// @param [out] uint32_t &model_id: Corresponding identification after model loading
   /// @return SUCCESS handle successfully / others handle failed
   ///
-  Status LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *const dev_ptr, const size_t mem_size,
-                           void *const weight_ptr, const size_t weight_size);
+  Status LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *const dev_ptr,
+                           const size_t mem_size, void *const weight_ptr, const size_t weight_size);
 
   ///
   /// @ingroup ge
@@ -235,8 +236,9 @@ class GE_FUNC_VISIBILITY GeExecutor {
   /// @param [in] model_queue_param: params and queue ids and create from user.
   /// @return: 0 for success / others for fail
   ///
-  Status LoadModelWithQ(uint32_t &model_id, const std::shared_ptr<GeRootModel> &root_model,
-                        const ModelQueueParam &model_queue_param);
+  Status LoadModelWithQ(uint32_t &model_id,
+                        const std::shared_ptr<GeRootModel> &root_model,
+                        const ModelQueueParam &model_queue_param) const;
 
   ///
   /// @ingroup ge

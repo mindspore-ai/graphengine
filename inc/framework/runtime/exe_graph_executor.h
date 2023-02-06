@@ -22,8 +22,11 @@
 #include "exe_graph_resource_guard.h"
 #include "subscriber/executor_subscriber_c.h"
 namespace gert {
+enum SubExeGraphType { kInitExeGraph, kMainExeGraph, kDeInitExeGraph, kSubExeGraphTypeEnd };
 class VISIBILITY_EXPORT ExeGraphExecutor {
  public:
+  using ExecuteFunc = UINT32 (*)(void *);
+  using ExecuteWithCallbackFunc = UINT32 (*)(int32_t, void *, ExecutorSubscriber *);
   ge::graphStatus Load() const {
     return ge::GRAPH_SUCCESS;
   }
@@ -34,22 +37,26 @@ class VISIBILITY_EXPORT ExeGraphExecutor {
   /**
    * 设置图执行的输入/输出，需要注意的是，使用者需要自己保证inputs/outputs刷新完全！！！
    */
-  ge::graphStatus SpecifyInputs(void **inputs, size_t start, size_t num);
-  ge::graphStatus SpecifyOutputs(void **outputs, size_t num);
-  ge::graphStatus Execute();
-  ge::graphStatus Execute(ExecutorSubscriber *callback);
+  ge::graphStatus SpecifyInputs(void *const *inputs, size_t start, size_t num) const;
+  ge::graphStatus SpecifyOutputs(void *const *outputs, size_t num) const;
+  ge::graphStatus Execute() const;
+  ge::graphStatus Execute(SubExeGraphType sub_graph_type, ExecutorSubscriber *callback) const;
 
   const void *GetExecutionData() const {
     return execution_data_;
   }
+  void *SetExecutionData(std::unique_ptr<uint8_t[]> execution_data);
+
+  void SetExecuteFunc(ExecuteFunc execute_func, ExecuteWithCallbackFunc callback_func);
 
   ResourceGuard &GetResourceGuard();
-  void *SetExecutionData(std::unique_ptr<uint8_t[]> execution_data);
 
  private:
   friend class ModelV2ExecutorTestHelper;
 
   void *execution_data_{nullptr};
+  ExecuteFunc execute_func_{nullptr};
+  ExecuteWithCallbackFunc execute_with_callback_func_{nullptr};
   ResourceGuard resource_guard_;
 };
 }  // namespace gert

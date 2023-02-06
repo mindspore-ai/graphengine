@@ -548,6 +548,9 @@ REG_OP(Snapshot)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator GuaranteeConst.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GuaranteeConst)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -717,8 +720,8 @@ REG_OP(ExpandDims)
 */
 
 REG_OP(Unsqueeze)
-    .INPUT(x, TensorType({DT_FLOAT32, DT_INT32, DT_UINT8, DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT32, DT_INT32, DT_UINT8, DT_BOOL}))
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
     .ATTR(axes, ListInt, {})
     .OP_END_FACTORY_REG(Unsqueeze)
 
@@ -791,11 +794,9 @@ REG_OP(UnsqueezeV3)
 *@li Compatible with the Caffe operator Reshape.
 */
 REG_OP(Reshape)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
-        DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .INPUT(x, TensorType::ALL())
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
-        DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .OUTPUT(y, TensorType::ALL())
     .ATTR(axis, Int, 0)
     .ATTR(num_axes, Int, -1)
     .OP_END_FACTORY_REG(Reshape)
@@ -985,7 +986,7 @@ REG_OP(PlaceholderWithDefault)
 *x: A tensor must have numeric type. \n
 
 *@par Attributes:
-*dtype: An optional int32 or int64. The output data type. Defaults to int32. \n
+*dtype: Same as the input data type. The output data type. Defaults to int32. \n
 
 *@par Outputs:
 *y: A tensor must have numeric type. \n
@@ -1462,6 +1463,9 @@ REG_OP(NonZeroWithValueShape)
 
 * @par Third-party framework compatibility
 * Compatible with the ONNX operator Expand.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 
 REG_OP(ExpandD)

@@ -23,6 +23,50 @@
 #include "graph/profiler.h"
 #include "external/ge/ge_api_types.h"
 #include "toolchain/prof_callback.h"
+namespace gert {
+namespace profiling {
+enum {
+  // ACL Interface
+  kAclCreateTensorDesc,
+  kAclSetTensorFormat,
+  kAclSetTensorPlacement,
+  kAclSetTensorShape,
+  kAclSetTensorDescName,
+  kAclCreateDataBuffer,
+  kAclRtMalloc,
+  kAclRtFree,
+  kAclRtMemcpyAsync,
+  kAclRtMemcpy,
+  kAclRtSynchronizeStream,
+  kAclRtStreamWaitEvent,
+  kAclRtSynchronizeDevice,
+  kAclRtDestoryEvent,
+  kAclRtRecordEvent,
+  kAclRtSynchronizeEvent,
+  kAclRtCreateEventWithFlag,
+  kAclRtEventWaitStatus,
+  kAclRtEventRecordedStatus,
+  kAclRtQueryEventStatus,
+  kAclCompileAndExecute,
+  kAclCompileAndExecuteV2,
+  // ACL Internal
+  kAclMatchOpModel,
+  kAclMatchStaticOpModel,
+  kAclMatchDynamicOpModel,
+  kAclExecuteAsync,
+  kAclLoadSingleOp,
+  kAclBuildOpModel,
+  kStaticSingleOpExecute,
+  kStaticSingleOpKernelLaunch,
+  kModel,
+  kExecute,
+  // Default
+  kUnknownName,
+  kProfilingIndexEnd
+};
+}
+}  // namespace gert
+
 namespace ge {
 namespace profiling {
 enum {
@@ -171,7 +215,6 @@ class ProfilingContext {
   }
 
   void Init();
-
  private:
   void UpdateHashByStr(const std::string &str, const uint64_t hash);
 

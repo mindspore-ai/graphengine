@@ -33,7 +33,7 @@ enum class ccStatus_t {
   CC_STATUS_RUNTIME_ERROR = 6,   /**< runtime error */
   CC_STATUS_NOT_SUPPORTED = 7,   /**< unsupport error */
   CC_STATUS_INVALID_VALUE = 7,   /**< invalid value error for blas*/
-  CC_STATUS_RESERVED = 8,        /**< just for check */
+  CC_STATUS_RESERVED      = 8,   /**< just for check */
 };
 
 enum class ccKernelType {
@@ -46,6 +46,7 @@ enum class ccKernelType {
   AI_CPU = 6,      /* aicpu */
   CUST_AI_CPU = 7, /* custom aicpu */
   HOST_CPU = 8,    /* host cpu */
+  DVPP = 9,        /* dvpp */
   INVALID = 10000  /* unknown kernel type */
 };
 
@@ -68,7 +69,11 @@ using ccOpContext = struct tagOpContext {
   uint64_t l2ctrlSize;
 };
 
-enum class tagOpTensorFormat { OP_TENSOR_FORMAT_NC1HWC0 = 0, OP_TENSOR_FORMAT_ND, OP_TENSOR_FORMAT_RESERVED };
+enum class tagOpTensorFormat {
+  OP_TENSOR_FORMAT_NC1HWC0 = 0,
+  OP_TENSOR_FORMAT_ND,
+  OP_TENSOR_FORMAT_RESERVED
+};
 
 enum class tagOpDataType {
   OP_DATA_FLOAT = 0,            /**< float type */

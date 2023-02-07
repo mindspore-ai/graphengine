@@ -59,18 +59,18 @@ class ProcessNodeEngine {
   virtual void SetImpl(ProcessNodeEngineImplPtr impl) = 0;
 
   virtual Status AddGraph(const ComputeGraphPtr &compute_graph, const std::map<std::string, std::string> &options) {
-    (void)compute_graph;
-    (void)options;
+    (void) compute_graph;
+    (void) options;
     return SUCCESS;
   }
 
   virtual Status RemoveGraph(const uint32_t graph_id) {
-    (void)graph_id;
+    (void) graph_id;
     return SUCCESS;
   }
 
-  virtual Status ParallelPartition(const ComputeGraphPtr &compute_graph) {
-    (void)compute_graph;
+  virtual Status ParallelPartition(ComputeGraphPtr &compute_graph) {
+    (void) compute_graph;
     return NOT_CHANGED;
   }
 

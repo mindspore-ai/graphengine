@@ -237,12 +237,15 @@ REG_OP(AvgPool3D)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPool3D.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(AvgPool3DD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OPTIONAL_INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OPTIONAL_INPUT(multiplier, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -326,6 +329,9 @@ REG_OP(AvgPool3DGrad)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPool3DGradD.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(AvgPool3DGradD)
     .INPUT(grads, TensorType({DT_FLOAT16}))
@@ -994,6 +1000,9 @@ REG_OP(AvgPoolV2Grad)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPoolGrad.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(AvgPoolV2GradD)
     .INPUT(input_grad, TensorType({DT_FLOAT16}))

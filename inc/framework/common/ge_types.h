@@ -44,12 +44,18 @@ enum FrameworkType {
   ONNX = 5,
 };
 
-enum class GraphStage : int64_t { GRAPH_STAGE_FUZZ = 0, GRAPH_STAGE_RESERVED };
+enum class GraphStage : int64_t {
+  GRAPH_STAGE_FUZZ = 0,
+  GRAPH_STAGE_RESERVED
+};
 
 const char_t *const kGraphDumpStage = "DumpStage";
 
-const std::map<std::string, std::string> kFwkTypeToStr = {
-    {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
+const std::map<std::string, std::string> kFwkTypeToStr = {{"0", "Caffe"},
+                                                          {"1", "MindSpore"},
+                                                          {"3", "TensorFlow"},
+                                                          {"4", "Android_NN"},
+                                                          {"5", "Onnx"}};
 
 enum OpEngineType {
   ENGINE_SYS = 0,  // default engine
@@ -67,7 +73,10 @@ const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 // profiling data
 
 const std::string kTaskTypeAicore = "AI_CORE";
+const std::string kTaskTypeMixAic = "MIX_AIC";
+const std::string kTaskTypeMixAiv = "MIX_AIV";
 const std::string kTaskTypeAicpu = "AI_CPU";
+const std::string kTaskTypeDsa = "DSA";
 const std::string kTaskTypeWriteBackData = "WRITE_BACK";
 const std::string kTaskTypeInvalidData = "INVALID";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
@@ -81,8 +90,19 @@ const std::string kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
 const std::string kEngineNameAiCpu = "aicpu_ascend_kernel";
 const std::string kEngineNameAiCpuTf = "aicpu_tf_kernel";
 const std::string kEngineNameAiCore = "AIcoreEngine";
+const std::string kEngineNameDvpp = "dvpp_ops_kernel";
+const std::string kEngineNameDsa = "DSAEngine";
 const std::string kAtomicOpType = "DynamicAtomicAddrClean";
-
+const char_t *const kAICpuKernelLibName = "aicpu_kernel_lib_name";
+const char_t *const kPartiallySupported = "partially_supported";
+// runtime2.0 lowering func
+const std::string kFFTSAiCoreLowerFunc = "ffts_ai_core_lower_func";
+const std::string kFFTSGraphLowerFunc = "ffts_graph_lower_func";
+const std::string kFFTSMixL2LowerFunc = "ffts_mix_l2_lower_func";
+// runtime2.0 calculate func
+const std::string kFFTSMixL2CalcFunc = "ffts_mix_l2_calc_func";
+const std::string kInputTensorIndexs = "input_tensor_indexs";
+const std::string kOutputTensorIndexs = "output_tensor_indexs";
 const std::string kShapeTypeStatic = "static";
 const std::string kShapeTypeDynamic = "dynamic";
 const std::string kAtomicPrefix = "_atomic";
@@ -91,12 +111,29 @@ constexpr uint64_t kInferSessionId = 0U;
 constexpr uint64_t kReleaseFlag = 1U;
 constexpr uint32_t kInvalidModelId = 0xFFFFFFFFU;
 constexpr size_t kNumTaskWithAtomicAddrCleanTask = 2U;
-constexpr uint32_t INVALID_MODEL_ID = 0xFFFFFFFFUL;
+constexpr uint32_t INVALID_MODEL_ID = 0xFFFFFFFFU;
 
 // dynamic execute mode
 const char_t *const kLazyRecompile = "lazy_recompile";
+const char_t *const kIsCopyOuputAddr = "1";
 
 constexpr size_t kMaxHostMemInputLen = 128U;  // 64 aligned
+
+// memory policy
+const std::string kBalanceMode = "BalanceMode";
+const std::string kMemoryPriority = "MemoryPriority";
+const std::set<std::string> kValidValues = {"", kBalanceMode, kMemoryPriority};
+
+const uint32_t kManualThread = 0U;
+const uint32_t kAutoThread = 1U;
+
+// ffts plus
+constexpr size_t kDSASetInputAddr = 0U;
+constexpr size_t kDSAOutputAddrSize = 1U;
+constexpr size_t kDSAWorkspaceAddrSize = 2U;
+constexpr size_t kDSAInputAddrSize = 3U;
+constexpr size_t kDSAArgsInputAddrSize = 4U;
+constexpr size_t k32Bits = 32U;
 
 // Data cache, including data address and length
 struct DataBuffer {
@@ -106,8 +143,9 @@ struct DataBuffer {
   uint32_t placement = 0U;
 
   DataBuffer(void *const data_in, const uint64_t data_len, const bool is_support_mem_share = false,
-             const uint32_t data_placement = 0U)
-      : data(data_in), length(data_len), isDataSupportMemShare(is_support_mem_share), placement(data_placement) {}
+             const uint32_t data_placement = 0U) : data(data_in), length(data_len),
+                                                   isDataSupportMemShare(is_support_mem_share),
+                                                   placement(data_placement) {}
 
   DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false), placement(0U) {}
 };
@@ -237,10 +275,11 @@ struct AippConfigInfo {
 // The structure of offline Modeldata
 struct ModelData {
   void *model_data = nullptr;  // Model binary data start addr
-  uint32_t model_len = 0U;     // Model binary data length
+  uint64_t model_len = 0UL;     // Model binary data length
   int32_t priority = 0;        // Model priority
   std::string key;             // Key path for encrypt model, Empty for unencrypt
   std::string om_name;         // om file name, used for data dump
+  std::string om_path;         // om file path, used for concatenating file constant path
 };
 
 struct ModelParam {
@@ -260,7 +299,7 @@ struct ModelParam {
 struct ModelInfo {
   uint32_t version = 0U;
   std::string name;
-  bool is_encrypt = false;  //  0:unencrypt, 1:encrypt
+  bool is_encrypt = false; //  0:unencrypt, 1:encrypt
   std::vector<ShapeDescription> input_desc;
   std::vector<ShapeDescription> output_desc;
   uint8_t reserved[3] = {0U};  // 3-byte reserved field
@@ -272,7 +311,7 @@ class GE_FUNC_VISIBILITY ModelListener {
   virtual ~ModelListener() {}
   ModelListener() = default;
   ModelListener(const ModelListener &) = delete;
-  ModelListener &operator=(const ModelListener &) = delete;
+  ModelListener& operator=(const ModelListener &) = delete;
   ///
   /// @brief Asynchronous callback interface
   /// @param [in] model_id   Model ID of the callback
@@ -286,13 +325,9 @@ class GE_FUNC_VISIBILITY ModelListener {
     (void)callback;
   }
 
-  virtual uint32_t GetResultCode() {
-    return 0U;
-  };
+  virtual uint32_t GetResultCode() { return 0U; };
 
-  virtual Status ResetResult() {
-    return SUCCESS;
-  };
+  virtual Status ResetResult() { return SUCCESS; };
 };
 
 // OMM configuration item
@@ -332,7 +367,7 @@ struct TaskDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
-  uint32_t context_id = 0xFFFFFFFFUL;
+  uint32_t context_id = 0xFFFFFFFFU;
 };
 
 struct OpDescInfo {
@@ -348,6 +383,8 @@ struct OpDescInfo {
   uint32_t tiling_key = 0U;
   uintptr_t args = 0U;
   std::string tiling_data;
+  bool is_mem_log;
+  std::vector<void *> space_addrs;
   std::string node_info;
   std::vector<int64_t> workspace_bytes;
   std::vector<Format> input_format;
@@ -387,5 +424,31 @@ struct ModelQueueParam {
 // internal options
 // 1: Graph resource evaluation does not limit model memory size.
 const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
+
+// 2: Enable graph parallel options
+const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
+
+// 3: Config all resource and device mesh
+const char_t *const RESOURCE_CONFIG_PATH = "ge.resourceConfigPath";
+
+// 4: Config graph parallel options path(should specific file name)
+const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
+
+// 5: auto recompute attribute
+const char_t *const RECOMPUTE = "ge.recompute";
+
+// 6: Topological Sorting Mode
+const char_t *const OPTION_TOPOSORTING_MODE = "ge.topoSortingMode";
+
+const char_t *const OPTION_EXEC_RANK_TABLE = "ge.exec.rankTable";
+const char_t *const OPTION_EXEC_HCOM_GROUPLIST = "ge.exec.hcomGrouplist";
+const char_t *const OPTION_EXEC_HCOM_RANK_MAPPING = "ge.exec.hcomRankMapping";
+
+const std::set<std::string> ir_builder_suppported_options_inner = {EVALUATE_GRAPH_RESOURCE_MODE,
+                                                                   ENABLE_GRAPH_PARALLEL,
+                                                                   RESOURCE_CONFIG_PATH,
+                                                                   GRAPH_PARALLEL_OPTION_PATH,
+                                                                   RECOMPUTE,
+                                                                   OPTION_TOPOSORTING_MODE};
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

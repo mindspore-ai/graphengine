@@ -55,7 +55,7 @@ class GE_FUNC_VISIBILITY DNNEngine {
   }
   virtual ~DNNEngine() = default;
   Status Initialize(const std::map<std::string, std::string> &options) const {
-    (void)options;
+   (void)options;
     return SUCCESS;
   }
   Status Finalize() const {

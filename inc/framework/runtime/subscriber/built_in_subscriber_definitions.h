@@ -21,32 +21,42 @@
 #include "graph/gnode.h"
 #include "common/ge_types.h"
 #include "framework/common/ge_visibility.h"
+#include "exe_graph/runtime/kernel_run_context.h"
+#include "graph/anchor.h"
 namespace ge {
 class GeRootModel;
 }
 namespace gert {
 constexpr size_t kProfilingDataCap = 10UL * 1024UL * 1024UL;
 constexpr size_t kInitSize = 10UL * 1024UL;
-constexpr size_t kModelStrIdx = 0UL;
-constexpr size_t kExecuteStrIdx = 1UL;
-constexpr size_t kRegStartIdx = 2UL;
 constexpr size_t kDouble = 2UL;
-constexpr size_t kInitSubscriberSize = 2UL;
-
-enum class BuiltInSubscriberType { kProfiling, kDumper, kNum };
+using EquivalentDataAnchorsPtr = std::map<ge::Anchor *, ge::Anchor *> *;
+using SymbolsToValuePtr = std::unordered_map<ge::Anchor *, AsyncAnyValue *> *;
+enum class BuiltInSubscriberType {
+  kGeProfiling,
+  kCannProfiling,
+  kDumper,
+  kTracer,
+  kNum
+};
 
 enum class ProfilingType {
-  kCannHost,  // 打开Host侧调度的profiling
-  kDevice,
-  kGeHost,  // 打开GE Host侧调度的profiling
-  kNum,
+  kCannHost = 0,  // 打开Host侧调度的profiling
+  kDevice = 1,
+  kGeHost = 2,       // 打开GE Host侧调度的profiling
+  kNum = 3,
   kAll = kNum
 };
-static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * 8,
+static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),
               "The max num of profiling type must less than the width of uint64");
 
-enum class DumpType { kDataDump, kExceptionDump, kNum, kAll = kNum };
-static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * 8,
+enum class DumpType {
+  kDataDump = 0,
+  kExceptionDump = 1,
+  kNum = 2,
+  kAll = kNum
+};
+static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),
               "The max num of dumper type must less than the width of uint64");
 class ModelV2Executor;
 struct SubscriberExtendInfo {
@@ -70,7 +80,7 @@ class VISIBILITY_EXPORT BuiltInSubscriberUtil {
                                     int>::type = 0>
   static uint64_t BuildEnableFlags(const std::vector<T> &enable_types) {
     uint64_t flag = 0UL;
-    for (auto et : enable_types) {
+    for (const auto &et : enable_types) {
       if (et == T::kAll) {
         return EnableBit(T::kNum) - 1UL;
       }

@@ -98,12 +98,30 @@ typedef enum tagRtFloatOverflowMode {
     RT_OVERFLOW_MODE_UNDEF,
 } rtFloatOverflowMode_t;
 
+typedef enum tagRtExceptionExpandType {
+    RT_EXCEPTION_INVALID = 0,
+    RT_EXCEPTION_FFTS_PLUS,
+} rtExceptionExpandType_t;
+
+typedef struct rtFftsPlusExDetailInfo {
+    uint16_t contextId;
+    uint16_t threadId;
+} rtFftsPlusExDetailInfo_t;
+
+typedef struct rtExceptionExpandInfo {
+    rtExceptionExpandType_t type;
+    union {
+        rtFftsPlusExDetailInfo_t fftsPlusInfo;
+    } u;
+} rtExceptionExpandInfo_t;
+
 typedef struct rtExceptionInfo {
     uint32_t taskid;
     uint32_t streamid;
     uint32_t tid;
     uint32_t deviceid;
     uint32_t retcode;
+    rtExceptionExpandInfo_t expandInfo;
 } rtExceptionInfo_t;
 
 typedef void (*rtErrorCallback)(rtExceptionType);
@@ -465,6 +483,15 @@ RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtGetMaxModelNum(uint32_t *maxModelCount);
+
+/**
+ * @ingroup dvrt_base
+ * @brief set stream mode
+ * @param [in] stm  stream needed to be set mode
+ * @param [in] stmMode mode
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtStreamSetMode(rtStream_t stm, const uint64_t stmMode);
 #if defined(__cplusplus)
 }
 #endif

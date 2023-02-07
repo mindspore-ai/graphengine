@@ -261,11 +261,11 @@ sorted and can be repeated . \n
 
 REG_OP(SparseSegmentSum)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(segment_ids, TensorType({DT_INT32}))
+        DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
+        DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(SparseSegmentSum)
 
 /**
@@ -287,10 +287,10 @@ sorted and can be repeated . \n
 */
 
 REG_OP(SparseSegmentMean)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(segment_ids, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
     .OP_END_FACTORY_REG(SparseSegmentMean)
 
 /**
@@ -315,11 +315,11 @@ SparseSegmentMean op . \n
 */
 
 REG_OP(SparseSegmentMeanGrad)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(segment_ids, TensorType({DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
     .INPUT(output_dim0, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
     .OP_END_FACTORY_REG(SparseSegmentMeanGrad)
 
 /**

@@ -21,36 +21,34 @@
 #include "built_in_subscriber_definitions.h"
 #include "executor_subscriber_guarder.h"
 #include "framework/common/ge_visibility.h"
-#include "global_profiling.h"
+#include "global_profiler.h"
 #include "global_dumper.h"
+#include "global_tracer.h"
 #include "graph/any_value.h"
+#include "framework/runtime/exe_graph_executor.h"
+#include "common/util/mem_utils.h"
+
 namespace gert {
 class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
  public:
-  static void OnExecuteEvent(ExecutorSubscribersScheduler *ins, ExecutorEvent event, const void *node,
-                             KernelStatus result);
+  static void OnExecuteEvent(SubExeGraphType sub_exe_graph_type, const ExecutorSubscribersScheduler *ins,
+                             ExecutorEvent event, const void *node, KernelStatus result);
 
   ExecutorSubscribersScheduler()
       : enabled_(false),
         built_in_subscribers_ptr_(),
-        subscribers_(),
+        sub_exe_graph_subscribers_(),
+        subscribers_holder_(),
         subscriber_wrapper_({reinterpret_cast<::SubscriberFunc>(ExecutorSubscribersScheduler::OnExecuteEvent), this}) {}
-#ifdef ONLY_COMPILE_OPEN_SRC
-  ~ExecutorSubscribersScheduler();
-#endif
   void Init(const SubscriberExtendInfo &extend_info);
   ExecutorSubscribersScheduler(const ExecutorSubscribersScheduler &) = delete;
   ExecutorSubscribersScheduler &operator=(const ExecutorSubscribersScheduler &) = delete;
   ExecutorSubscriber &GetSubscriber() {
-    if (subscribers_.size() == 1UL) {
-      return subscribers_[0].GetSubscriber();
-    } else {
-      return subscriber_wrapper_;
-    }
+    return subscriber_wrapper_;
   }
 
   /**
-   * 设置订阅者，订阅者需要实现一个static方法，原型为：
+   * 为所有子图类型设置订阅者，订阅者需要实现一个static方法，原型为：
    * ```c++
    * static void OnExecuteEvent(T *void_arg, ExecutorEvent event, const void *node, KernelStatus result);
    * ```
@@ -64,15 +62,37 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
    */
   template <typename T, typename... Args>
   T *AddSubscriber(Args... args) {
-    auto ins = new (std::nothrow) T(args...);
+    auto ins = AddSubscriberGuarder<T>(args...);
     if (ins == nullptr) {
       return nullptr;
     }
-    // profiler exists when ess init
-    if (subscribers_.size() == kInitSubscriberSize) {
-      enabled_ = true;
+    for (size_t i = 0U; i < kSubExeGraphTypeEnd; ++i) {
+      sub_exe_graph_subscribers_[i].emplace_back(subscribers_holder_[subscribers_holder_.size() - 1U]);
     }
-    subscribers_.emplace_back(reinterpret_cast<::SubscriberFunc>(T::OnExecuteEvent), ins, ObjectDeleter<T>);
+    return ins;
+  }
+
+  /**
+   * 为指定子图类型设置订阅者，订阅者需要实现一个static方法，原型为：
+   * ```c++
+   * static void OnExecuteEvent(T *void_arg, ExecutorEvent event, const void *node, KernelStatus result);
+   * ```
+   *
+   * 默认情况下，subscribers处于disable状态，在添加首个subscriber时，自动将状态切换到enable状态。
+   *
+   * @tparam T 订阅者类型
+   * @param sub_exe_graph_type 子图类型
+   * @tparam Args 订阅者初始化参数类型
+   * @param args 订阅者初始化参数
+   * @return 添加的subscriber指针，注意subscriber所有权归`ExecutorSubscribersScheduler`所有，外部使用者不可以释放此指针
+   */
+  template <typename T, typename... Args>
+  T *AddSubscriber(SubExeGraphType sub_exe_graph_type, Args... args) {
+    auto ins = AddSubscriberGuarder<T>(args...);
+    if (ins == nullptr) {
+      return nullptr;
+    }
+    sub_exe_graph_subscribers_[sub_exe_graph_type].emplace_back(subscribers_holder_[subscribers_holder_.size() - 1U]);
     return ins;
   }
 
@@ -83,10 +103,11 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
    * @param subscriber_type
    */
   void AddBuiltIn(BuiltInSubscriberType subscriber_type, uint64_t enable_flag, const SubscriberExtendInfo &extend_info);
-  void RemoveSubscriber(void *subscriber_ptr) {
-    for (auto iter = subscribers_.begin(); iter != subscribers_.end(); ++iter) {
-      if (iter->GetSubscriber().arg == subscriber_ptr) {
-        subscribers_.erase(iter);
+  void RemoveSubscriber(const void *subscriber_ptr) {
+    for (auto iter = subscribers_holder_.begin(); iter != subscribers_holder_.end(); ++iter) {
+      if ((*iter)->GetSubscriber().arg == subscriber_ptr) {
+        RemoveFromSubExeGraphSubscribers(subscriber_ptr);
+        subscribers_holder_.erase(iter);
         break;
       }
     }
@@ -95,7 +116,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
         built_in_subscriber = nullptr;
       }
     }
-    if (subscribers_.size() == kInitSubscriberSize) {
+    if (subscribers_holder_.size() == static_cast<size_t>(BuiltInSubscriberType::kNum)) {
       enabled_ = false;
     }
   }
@@ -111,27 +132,61 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
 
   bool IsEnable() const {
-    return enabled_ || GlobalProfilingWrapper::GetInstance()->GetEnableFlags() ||
-           GlobalDumper::GetInstance()->GetEnableFlags();
+    return enabled_ || static_cast<bool>(GlobalProfilingWrapper::GetInstance()->GetEnableFlags()) ||
+           static_cast<bool>(GlobalDumper::GetInstance()->GetEnableFlags()) ||
+           static_cast<bool>(GlobalTracer::GetInstance()->GetEnableFlags());
   }
   void SetEnable(bool enable_flag) {
     enabled_ = enable_flag;
   }
   void Clear() {
-    subscribers_.clear();
+    subscribers_holder_.clear();
     for (auto &built_in_subscriber : built_in_subscribers_ptr_) {
       built_in_subscriber = nullptr;
+    }
+    for (auto &subscribers_vec : sub_exe_graph_subscribers_) {
+      subscribers_vec.clear();
     }
     enabled_ = false;
   }
   size_t GetSize() const {
-    return subscribers_.size();
+    return subscribers_holder_.size();
   }
-
+ private:
+  template <typename T, typename... Args>
+  T *AddSubscriberGuarder(Args... args) {
+    auto ins = new (std::nothrow) T(args...);
+    if (ins == nullptr) {
+      return nullptr;
+    }
+    // profiler exists when ess init
+    if (subscribers_holder_.size() == static_cast<size_t>(BuiltInSubscriberType::kNum)) {
+      enabled_ = true;
+    }
+    auto guarder = ge::MakeShared<ExecutorSubscriberGuarder>(reinterpret_cast<::SubscriberFunc>(T::OnExecuteEvent),
+                                                         ins, ObjectDeleter<T>);
+    if (guarder == nullptr) {
+      delete ins;
+      return nullptr;
+    }
+    subscribers_holder_.emplace_back(guarder);
+    return ins;
+  }
+  void RemoveFromSubExeGraphSubscribers(const void *subscriber_ptr) {
+    for (auto &subscribers_vec : sub_exe_graph_subscribers_) {
+      for (auto iter = subscribers_vec.begin(); iter != subscribers_vec.end(); ++iter) {
+        if (subscriber_ptr == (*iter)->GetSubscriber().arg) {
+          subscribers_vec.erase(iter);
+          return;
+        }
+      }
+    }
+  }
  private:
   bool enabled_{false};
   std::array<void *, static_cast<size_t>(BuiltInSubscriberType::kNum)> built_in_subscribers_ptr_;
-  std::vector<ExecutorSubscriberGuarder> subscribers_;
+  std::array<std::vector<ExecutorSubscriberGuarderPtr>, kSubExeGraphTypeEnd> sub_exe_graph_subscribers_;
+  std::vector<ExecutorSubscriberGuarderPtr> subscribers_holder_;
   ExecutorSubscriber subscriber_wrapper_;
 };
 }  // namespace gert

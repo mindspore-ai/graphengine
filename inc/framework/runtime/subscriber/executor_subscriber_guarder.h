@@ -72,5 +72,6 @@ class VISIBILITY_EXPORT ExecutorSubscriberGuarder {
   ExecutorSubscriber subscriber_{nullptr, nullptr};
   ArgDeleter arg_deleter_{nullptr};
 };
+using ExecutorSubscriberGuarderPtr = std::shared_ptr<ExecutorSubscriberGuarder>;
 }  // namespace gert
 #endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBER_GUARDER_H_

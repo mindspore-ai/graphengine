@@ -29,8 +29,8 @@
 #include "graph/node.h"
 
 using domi::DOMI_TENSOR_ND;
-using domi::DOMI_TENSOR_RESERVED;
 using domi::domiTensorFormat_t;
+using domi::DOMI_TENSOR_RESERVED;
 using std::unordered_map;
 
 namespace ge {

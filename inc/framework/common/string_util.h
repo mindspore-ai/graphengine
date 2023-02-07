@@ -35,18 +35,19 @@ class GE_FUNC_VISIBILITY StringUtils {
 #if __cplusplus >= 201103L
     (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](const int32_t c) { return std::isspace(c) == 0; }));
 #else
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                                          std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))));
 #endif
     return s;
   }
   // lint -esym(551,*)
-  static std::string &Rtrim(std::string &s) { /*lint !e618*/
+  static std::string &Rtrim(std::string &s) {  /*lint !e618*/
 #if __cplusplus >= 201103L
-    (void)s.erase(std::find_if(s.rbegin(), s.rend(), [](const int32_t c) { return std::isspace(c) == 0; }).base(),
-                  s.end());
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(),
+                               [](const int32_t c) { return std::isspace(c) == 0; }).base(), s.end());
 #else
-    (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))).base(),
-                  s.end());
+    (void)s.erase(std::find_if(s.rbegin(), s.rend(),
+                               std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))).base(), s.end());
 #endif
     return s;
   }
@@ -57,9 +58,7 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] string to be trimmed
   ///  @return string after trim
   ///
-  static std::string &Trim(std::string &s) {
-    return Ltrim(Rtrim(s));
-  }
+  static std::string &Trim(std::string &s) { return Ltrim(Rtrim(s)); }
 
   ///
   ///  @ingroup domi_common
@@ -149,7 +148,7 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] ... format Filling Content
   ///  @return formatted string
   ///
-  static std::string FormatString(const char_t *const format, ...) {
+  static std::string FormatString(const char_t * const format, ...) {
     const uint32_t MAX_BUFFER_LEN = 1024U;  // the stack memory plint check result must be less than 1024
     va_list args;
     va_start(args, format);

@@ -143,6 +143,17 @@ GE_FUNC_VISIBILITY graphStatus aclgrphGenerateForOp(const AscendString &op_type,
                                                     const std::vector<TensorDesc> &outputs, Graph &graph);
 
 /**
+ * @ingroup AscendCL
+ * @brief create single op graphs
+ *
+ * @param json_path[IN] the path of singleop json file
+ * @param graphs[OUT] the graphs
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+GE_FUNC_VISIBILITY graphStatus aclgrphGenerateForOp(const AscendString &json_path, std::vector<Graph> &graphs);
+
+/**
  * @name  aclgrphSetOpAttr
  * @brief set attribute for operators in the configuration file
  * @param graph      [IN/OUT] compute graph

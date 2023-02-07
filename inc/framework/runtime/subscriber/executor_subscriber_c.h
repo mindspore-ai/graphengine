@@ -20,9 +20,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef enum { kExecuteStart, kExecuteEnd, kModelStart, kModelEnd, kExecuteEventEnd } ExecutorEvent;
+typedef enum {
+  kExecuteStart,
+  kExecuteEnd,
+  kModelStart,
+  kModelEnd,
+  kExecuteEventEnd
+} ExecutorEvent;
 
-typedef void (*SubscriberFunc)(void *arg, ExecutorEvent event, const void *node, KernelStatus result);
+typedef void (*SubscriberFunc)(int type, void *arg, ExecutorEvent event, const void *node, KernelStatus result);
 typedef struct {
   SubscriberFunc callback;
   void *arg;

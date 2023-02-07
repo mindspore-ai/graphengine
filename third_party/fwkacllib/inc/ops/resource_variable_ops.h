@@ -27,12 +27,12 @@
 namespace ge {
 
 /**
-*@brief Creates a handle to a Variable resource. \n
+* @brief Creates a handle to a Variable resource. \n
 
-*@par Outputs:
-*y:A Tensor of type resource. \n
+* @par Outputs:
+* y:A Tensor of type resource. \n
 
-*@par Attributes:
+* @par Attributes:
 * @li container: optional, string. the container this 
 variable is placed in.
 * @li shared_name: optional, string.the name by which
@@ -40,7 +40,10 @@ variable is placed in.
 * @li dtype: required, type. the output of type.
 * @li shape: optional, ListInt. the output of shape. \n
 
-*@see VarHandleOp.
+* @see VarHandleOp.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(VarHandleOp)
@@ -52,16 +55,16 @@ REG_OP(VarHandleOp)
     .OP_END_FACTORY_REG(VarHandleOp)
 
 /**
-*@brief Assigns a new value to a variable. \n
+* @brief Assigns a new value to a variable. \n
 
-*@par Inputs:
-*@li resource:Handle to the resource in which to store the variable.
-*@li value:The value to set the new tensor to use. \n
+* @par Inputs:
+* @li resource:Handle to the resource in which to store the variable.
+* @li value:The value to set the new tensor to use. \n
 
-*@par Attributes:
+* @par Attributes:
 * dtype: required, type. \n
 
-*@see AssignVariableOp.
+* @see AssignVariableOp.
 */
 
 REG_OP(AssignVariableOp)
@@ -72,16 +75,16 @@ REG_OP(AssignVariableOp)
     .OP_END_FACTORY_REG(AssignVariableOp)
 
 /**
-*@brief Adds a value to the current value of a variable. \n
+* @brief Adds a value to the current value of a variable. \n
 
-*@par Inputs:
-*@li resource:Handle to the resource in which to store the variable.
-*@li value:The value by which the variable will be incremented. \n
+* @par Inputs:
+* @li resource:Handle to the resource in which to store the variable.
+* @li value:The value by which the variable will be incremented. \n
 
-*@par Attributes:
+* @par Attributes:
 * dtype: required, type. \n
 
-*@see AssignAddVariableOp.
+* @see AssignAddVariableOp.
 */
 
 REG_OP(AssignAddVariableOp)
@@ -92,16 +95,16 @@ REG_OP(AssignAddVariableOp)
     .OP_END_FACTORY_REG(AssignAddVariableOp)
 
 /**
-*@brief Subtracts a value to the current value of a variable. \n
+* @brief Subtracts a value to the current value of a variable. \n
 
-*@par Inputs:
-*@li resource:Handle to the resource in which to store the variable.
-*@li value:The value by which the variable will be incremented. \n
+* @par Inputs:
+* @li resource:Handle to the resource in which to store the variable.
+* @li value:The value by which the variable will be incremented. \n
 
-*@par Attributes:
+* @par Attributes:
 * dtype: required, type. \n
 
-*@see AssignSubVariableOp.
+* @see AssignSubVariableOp.
 */
 
 REG_OP(AssignSubVariableOp)

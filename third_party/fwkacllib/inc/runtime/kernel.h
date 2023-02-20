@@ -9,6 +9,7 @@
 
 #include "base.h"
 #include "stream.h"
+#include "rt_stars_define.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -170,14 +171,10 @@ typedef struct tagRtAicpuArgsEx {
     uint8_t reserved[3];
 } rtAicpuArgsEx_t;
 
-
 typedef struct tagRtDvppTaskDesc {
-    uint16_t dvppSqeType; // only support vpc jpege jpegd, will be checked in runtime api_error (use isDvppTask)
-    uint16_t ptrMode : 1; // use bit0
-    uint16_t aicpuTaskPos : 15; // rtsq max dep is 1024
-    uint32_t cmdBufferSize;
-    uint64_t argsAddr;
-    uint32_t argsSize;
+    rtStarsCommonSqe_t sqe;
+    uint16_t aicpuTaskPos ; // rtsq max dep is 1024
+    uint16_t reserved;
 } rtDvppTaskDesc_t;
 
 typedef struct tagRtAicpuTaskDesc {

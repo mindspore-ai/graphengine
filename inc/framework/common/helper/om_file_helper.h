@@ -68,7 +68,7 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
 
   const std::vector<ModelPartition> &GetModelPartitions(const size_t model_index) const;
 
-  bool IsPartitionTableNumValid(uint32_t partition_num, uint32_t increase_partition_num);
+  bool IsPartitionTableNumValid(const uint32_t partition_num, const uint32_t increase_partition_num) const;
 
   OmFileContext context_;
 

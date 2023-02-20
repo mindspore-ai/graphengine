@@ -75,6 +75,28 @@ T Ceil(const T n1, const T n2) {
   }
   return (n2 != 0) ? (((n1 - 1) / n2) + 1) : 0;
 }
+
+inline int64_t Measure(int64_t x, int64_t y) {
+  int64_t z = y;
+  if (y == 0) {
+    return -1;
+  }
+  while ((x % y) != 0) {
+    z = x % y;
+    x = y;
+    y = z;
+  }
+  return z;
+}
+
+// least common multiple
+inline int64_t Lcm(const int64_t a, const int64_t b) {
+  if (b == 0) {
+    return -1;
+  }
+  const int64_t temp = (a * b) / (Measure(a, b));
+  return temp;
+}
 }  // namespace formats
 }  // namespace ge
 #endif  // GE_COMMON_FORMATS_UTILS_FORMATS_TRANS_UTILS_H_

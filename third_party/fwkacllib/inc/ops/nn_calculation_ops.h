@@ -753,6 +753,9 @@ REG_OP(Conv2DBackpropFilterD)
 | Tensor    | x       | filter  | bias    | y       |\n
 | :-------: | :-----: | :-----: | :-----: | :-----: |\n
 | Data Type | float16 | float16 | float16 | float16 |\n
+|           | float16 | float16 | float16 | float32 |\n
+|           | bfloat16| bfloat16| float16 | bfloat16|\n
+|           | bfloat16| bfloat16| float16 | float32 |\n
 |           | float32 | float32 | float32 | float32 |\n
 |           | int8    | int8    | int32   | int32   |\n
 | Format    | NCHW    | NCHW    | ND      | NCHW    |\n

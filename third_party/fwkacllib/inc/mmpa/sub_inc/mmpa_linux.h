@@ -145,8 +145,8 @@ typedef struct {
 } mmTimezone;
 
 typedef struct {
-    LONG tv_sec;
-    LONG tv_usec;
+    INT64 tv_sec;
+    INT64 tv_usec;
 } mmTimeval;
 
 typedef struct {

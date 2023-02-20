@@ -122,28 +122,29 @@ REG_OP(CheckValid)
     .OP_END_FACTORY_REG(CheckValid)
 
 /**
-*@brief Computes the intersection over union (iou) or the intersection over
+* @brief Computes the intersection over union (iou) or the intersection over
 * foreground (iof) based on the ground-truth and predicted regions . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* @li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
 * shape (N, 4). "N" indicates the number of bounding boxes, and the value
 * "4" refers to "x0", "x1", "y0", and "y1".
-*@li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* @li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
 * with shape (M, 4). "M" indicates the number of ground truth boxes, and
 * the value "4" refers to "x0", "x1", "y0", and "y1" . \n
 
-*@par Attributes:
-*@li mode: Computation mode, a character string with the value range of [iou, iof]
-*@li eps: An optional float, prevent division by 0, default value is 1.0 . \n
+* @par Attributes:
+* @li mode: Computation mode, a character string with the value range of [iou, iof].
+* @li eps: An optional float, prevent division by 0, default value is 1.0 . 
+* @li aligned: A bool value, if aligned is true, calculate the ious between each aligned pair of bboxes and gtboxes. \n
 
-*@par Outputs:
-*overlap: A 2D Tensor of type float16 or float32 with shape [M, N], specifying
+* @par Outputs:
+* overlap: A 2D Tensor of type float16 or float32 with shape [M, N] or [M, 1], specifying
 * the IoU or IoF ratio . \n
 
-*@attention Constraints:
-* Only computation of float16 data is supported. To avoid overflow, the input
+* @attention Constraints:
+* Computation of float16 and float32 data are supported. To avoid overflow, the input
 * length and width are scaled by 0.2 internally.
 */
 REG_OP(Iou)
@@ -152,32 +153,33 @@ REG_OP(Iou)
     .OUTPUT(overlap, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(mode, String, "iou")
     .ATTR(eps, Float, 1.0)
+    .ATTR(aligned, Bool, false)
     .OP_END_FACTORY_REG(Iou)
 
 /**
-*@brief First calculate the minimum closure area of the two boxes, IoU,
+* @brief First calculate the minimum closure area of the two boxes, IoU,
 * the proportion of the closed area that does not belong to the two boxes in the closure area,
 * and finally subtract this proportion from IoU to get GIoU . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* @li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
 * shape (N, 4). "N" indicates the number of bounding boxes, and the value
 * "4" refers to [x1, y1, x2, y2] or [x, y, w, h].
-*@li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* @li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
 * with shape (M, 4). "M" indicates the number of ground truth boxes, and
 * the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] . \n
 
-*@par Attributes:
-*@li trans: An optional bool, true for 'xywh', false for 'xyxy'.
-*@li is_cross: An optional bool, control whether the output shape is [M, N] or [1, N]
-*@li mode: Computation mode, a character string with the value range of [iou, iof] . \n
+* @par Attributes:
+* @li trans: An optional bool, true for 'xywh', false for 'xyxy'.
+* @li is_cross: An optional bool, control whether the output shape is [M, N] or [1, N]
+* @li mode: Computation mode, a character string with the value range of [iou, iof] . \n
 
-*@par Outputs:
+* @par Outputs:
 * overlap: A 2D Tensor of type float16 or float32 with shape [M, N] or [1, N],
 * specifying the IoU or IoF ratio . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * Only computation of float16 data is supported. To avoid overflow, the input
 * length and width are scaled by 0.2 internally.
 */
@@ -191,27 +193,27 @@ REG_OP(GIoU)
     .OP_END_FACTORY_REG(GIoU)
 
 /**
-*@brief Performs the backpropagation of ROIAlign for training scenarios . \n
+* @brief Performs the backpropagation of ROIAlign for training scenarios . \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li ydiff: A 5HD gradient input of type float32.
-*@li rois: ROI position. A 2D Tensor of float32 with shape (N, 5). "N" indicates the number of ROIs,
-the value "5" indicates the indexes of images where the ROIs are located, "x0", "x1", "y0", and "y1".
-*@li rois_n: An optional input, specifying the number of valid ROIs. This parameter is reserved . \n
+* @li ydiff: A 5HD gradient input of type float32.
+* @li rois: ROI position. A 2D Tensor of float32 with shape (N, 5). "N" indicates the number of ROIs,
+* the value "5" indicates the indexes of images where the ROIs are located, "x0", "x1", "y0", and "y1".
+* @li rois_n: An optional input, specifying the number of valid ROIs. This parameter is reserved . \n
 
-*@par Attributes:
-*@li xdiff_shape: A required list of 4 ints, obtained based on the shape of "features" of ROIAlign.
-*@li pooled_width: A required attribute of type int, specifying the W dimension.
-*@li pooled_height: A required attribute of type int, specifying the H dimension.
-*@li spatial_scale: A required attribute of type float, specifying the scaling ratio of "features" to the original image.
-*@li sample_num: An optional attribute of type int, specifying the horizontal and vertical
-sampling frequency of each output. If this attribute is set to "0", the sampling frequency is
-equal to the rounded up value of "rois", which is a floating point number. Defaults to "2" .
-*@li roi_end_mode: An optional attribute of type int, specifying the align mode .\n
+* @par Attributes:
+* @li xdiff_shape: A required list of 4 ints, obtained based on the shape of "features" of ROIAlign.
+* @li pooled_width: A required attribute of type int, specifying the W dimension.
+* @li pooled_height: A required attribute of type int, specifying the H dimension.
+* @li spatial_scale: A required attribute of type float, specifying the scaling ratio of "features" to the original image.
+* @li sample_num: An optional attribute of type int, specifying the horizontal and vertical
+* sampling frequency of each output. If this attribute is set to "0", the sampling frequency is
+* equal to the rounded up value of "rois", which is a floating point number. Defaults to "2" .
+* @li roi_end_mode: An optional attribute of type int, specifying the align mode .\n
 
-*@par Outputs:
-*xdiff: Gradient added to input "features". Has the same 5HD shape as input "features".
+* @par Outputs:
+* xdiff: Gradient added to input "features". Has the same 5HD shape as input "features".
 */
 REG_OP(ROIAlignGrad)
     .INPUT(ydiff, TensorType({DT_FLOAT}))
@@ -227,27 +229,27 @@ REG_OP(ROIAlignGrad)
     .OP_END_FACTORY_REG(ROIAlignGrad)
 
 /**
-*@brief Obtains the ROI feature matrix from the feature map. It is a customized FasterRcnn operator . \n
+* @brief Obtains the ROI feature matrix from the feature map. It is a customized FasterRcnn operator . \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li features: A 5HD Tensor of type float32 or float16.
-*@li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
-the value "5" indicates the indexes of images where the ROIs are located,
+* @li features: A 5HD Tensor of type float32 or float16.
+* @li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
+* the value "5" indicates the indexes of images where the ROIs are located,
 * "x0", "y0", "x1", and "y1".
-*@li rois_n: An optional input of type int32, specifying the number of valid ROIs. This parameter is reserved . \n
+* @li rois_n: An optional input of type int32, specifying the number of valid ROIs. This parameter is reserved . \n
 
-*@par Attributes:
-*@li spatial_scale: A required attribute of type float32, specifying the scaling ratio of "features" to the original image.
-*@li pooled_height: A required attribute of type int32, specifying the H dimension.
-*@li pooled_width: A required attribute of type int32, specifying the W dimension.
-*@li sample_num: An optional attribute of type int32, specifying the horizontal and vertical sampling frequency of each output. If this attribute is set to "0",
+* @par Attributes:
+* @li spatial_scale: A required attribute of type float32, specifying the scaling ratio of "features" to the original image.
+* @li pooled_height: A required attribute of type int32, specifying the H dimension.
+* @li pooled_width: A required attribute of type int32, specifying the W dimension.
+* @li sample_num: An optional attribute of type int32, specifying the horizontal and vertical sampling frequency of each output. If this attribute is set to "0",
 * the sampling frequency is equal to the rounded up value of "rois", which is a floating point number. Defaults to "2".
-*@li roi_end_mode: An optional attribute of type int32. Defaults to "1" . \n
+* @li roi_end_mode: An optional attribute of type int32. Defaults to "1" . \n
 
-*@par Outputs:
+* @par Outputs:
 * output: Outputs the feature sample of each ROI position. The format is 5HD Tensor of type float32 or float16.
-The axis N is the number of input ROIs. Axes H, W, and C are consistent
+* The axis N is the number of input ROIs. Axes H, W, and C are consistent
 * with the values of "pooled_height",
 * "pooled_width", and "features", respectively.
 */

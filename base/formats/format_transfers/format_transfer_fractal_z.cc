@@ -30,23 +30,6 @@ namespace ge {
 namespace formats {
 namespace {
 constexpr int64_t kDim = 1;
-static int64_t Measure(int64_t x, int64_t y) {
-  int64_t z = y;
-  while ((x % y) != 0) {
-    z = x % y;
-    x = y;
-    y = z;
-  }
-  return z;
-}
-// least common multiple
-static int64_t Lcm(const int64_t a, const int64_t b) {
-  if (b == 0) {
-    return -1;
-  }
-  const int64_t temp = (a * b) / (Measure(a, b));
-  return temp;
-}
 
 Status CheckDataTypeSupportForTransferFractalZ(const DataType data_type) {
   return (GetSizeByDataType(data_type) > 0) ? SUCCESS : UNSUPPORTED;

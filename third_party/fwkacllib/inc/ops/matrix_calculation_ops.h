@@ -88,7 +88,7 @@ REG_OP(AttentionQKVGradW)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
 */
 REG_OP(AttentionQKVGradX)
-    .INPUT(ln_dx, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(ln_dx, TensorType({DT_FLOAT16}))
     .INPUT(query_dx, TensorType({DT_FLOAT16}))
     .INPUT(key_dw, TensorType({DT_FLOAT16}))
     .INPUT(value_dw, TensorType({DT_FLOAT16}))

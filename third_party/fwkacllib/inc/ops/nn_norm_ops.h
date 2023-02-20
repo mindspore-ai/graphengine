@@ -1869,8 +1869,8 @@ REG_OP(SoftmaxCrossEntropyLoss)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x1: A mutable Tensor. The type only support float16.
-* @li x2: A mutable Tensor. The type only support float16.
+* @li x1: A mutable Tensor. The type support float16 float32.
+* @li x2: A mutable Tensor. The type support float16 float32.
 * @li mask: A mutable Tensor. Must meet all of the following rules:
 *     shape of mask should be 1D.
 *     dtype of mask should be uint8.
@@ -1892,11 +1892,11 @@ REG_OP(SoftmaxCrossEntropyLoss)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
-    .INPUT(x1, TensorType({DT_FLOAT16}))
-    .INPUT(x2, TensorType({DT_FLOAT16}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(mask, TensorType({DT_UINT8}))
-    .OUTPUT(y1, TensorType({DT_FLOAT16}))
-    .OUTPUT(y2, TensorType({DT_FLOAT16}))
+    .OUTPUT(y1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y2, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(alpha, Float)
     .REQUIRED_ATTR(input_keep_prob, Float)
     .ATTR(axis, ListInt, {-1})

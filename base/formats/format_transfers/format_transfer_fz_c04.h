@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_NCHW_FZ_C04_H_
-#define GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_NCHW_FZ_C04_H_
+#ifndef GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_FZ_C04_H_
+#define GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_FZ_C04_H_
 
 #include <vector>
 #include "formats/register_format_transfer.h"
 
 namespace ge {
 namespace formats {
-class FormatTransferNchwToFZC04 : public FormatTransfer {
+class FormatTransfer4DToFZC04 : public FormatTransfer {
+ public:
+  Status TransFormat(const ge::formats::TransArgs &args, ge::formats::TransResult &result) override;
+  Status TransShape(const Format src_format, const std::vector<int64_t> &src_shape,
+                    const DataType data_type, const Format dst_format,
+                    std::vector<int64_t> &dst_shape) override;
+ private:
+  Status BuildTransArgsNchwToFzC04(const ge::formats::TransArgs &src_dst_args, TransResult &nchw_result_holder,
+                                   ge::formats::TransArgs &nchw_dst_args);
+  Status TransShapeFromSrcToNchw(const Format src_format, const std::vector<int64_t> &src_shape,
+                                 const DataType data_type, std::vector<int64_t> &nchw_shape);
+};
+
+class FormatTransferFZC04To4D : public FormatTransfer {
  public:
   Status TransFormat(const ge::formats::TransArgs &args, ge::formats::TransResult &result) override;
   Status TransShape(const Format src_format, const std::vector<int64_t> &src_shape,

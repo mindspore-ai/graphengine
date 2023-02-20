@@ -234,6 +234,7 @@ class DeployPlannerBase {
   static std::atomic<int64_t> endpoint_name_id_gen_;
   std::map<std::string, std::string> short_names_;
   std::set<std::string> deploy_to_devlist_;
+  static std::atomic<int64_t> plan_id_gen_;
 };
 
 class ModelRelationFlattener {

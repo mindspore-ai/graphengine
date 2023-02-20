@@ -207,9 +207,10 @@ void ProfilingContext::UpdateElementHashId() {
 }
 
 bool ProfilingContext::IsDumpToStdEnabled() {
-  char_t profiling_to_std_out[128] = {};
+  const uint32_t kProfilingStdLengh = 128U;
+  char_t profiling_to_std_out[kProfilingStdLengh] = {};
   const bool enabled = (mmGetEnv("GE_PROFILING_TO_STD_OUT", static_cast<char_t *>(profiling_to_std_out),
-                                 sizeof(profiling_to_std_out)) == EN_OK);
+                                 kProfilingStdLengh) == EN_OK);
   return enabled;
 }
 }

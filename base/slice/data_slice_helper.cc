@@ -244,7 +244,7 @@ Status DataSliceHelper::GetDavinciSliceInfo(const NodePtr &node, std::vector<Axi
     std::vector<std::pair<Format, GeShape>> cache_input_info;
     std::vector<std::pair<Format, GeShape>> cache_output_info;
     DataSliceAdapter::SetOriOpInfo(op, cache_input_info, cache_output_info);
-    op_proxy = OpDescUtils::CreateOperatorFromOpDesc(op);
+    op_proxy = OpDescUtils::CreateOperatorFromNode(node);
     const graphStatus ret = static_cast<graphStatus>(axis_slice_info_ptr(op_proxy, axis_type_vec));
     DataSliceAdapter::SetCurOpInfo(op, cache_input_info, cache_output_info);
     if (ret != GRAPH_SUCCESS) {

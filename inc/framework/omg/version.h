@@ -17,10 +17,8 @@
 #ifndef INC_FRAMEWORK_OMG_VERSION_H_
 #define INC_FRAMEWORK_OMG_VERSION_H_
 
-#include <memory>
-
-#include "framework/common/debug/log.h"
-#include "framework/common/string_util.h"
+#include <string>
+#include "ge/ge_api_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
@@ -29,14 +27,11 @@ class GE_FUNC_VISIBILITY PlatformVersionManager {
   PlatformVersionManager() = delete;
   ~PlatformVersionManager() = delete;
   static Status GetPlatformVersion(std::string &ver) {
-    ver = "1.11.z";
-    const std::vector<std::string> version_splits = StringUtils::Split(ver, '.');
-    GE_IF_BOOL_EXEC(version_splits.size() < 3U, GELOGW("Read platform version error!"); return FAILED;);
-
-    GELOGI("Read current platform version: %s.", ver.c_str());
+    ver = "1.11.z";  // format x.y.z
+    GELOGI("current platform version: %s.", ver.c_str());
     return SUCCESS;
   }
-};  // class PlatformManager
+};  // class PlatformVersionManager
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_OMG_VERSION_H_

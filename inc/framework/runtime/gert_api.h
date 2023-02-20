@@ -21,8 +21,10 @@
 #include "common/ge_types.h"
 #include "common/ge_visibility.h"
 #include "mem_allocator.h"
+#include "exe_graph/lowering/lowering_opt.h"
 
 namespace gert {
+// todo: 后续需要删除OptimizeOption，归一到LoweringOption
 struct OptimizeOption {
   /**
    * 是否相信用户传入的输出tensor上的shape，如果开启了本选项，可以省去计算图上输出节点的InferShape，提升一点Host调度性能。
@@ -93,9 +95,15 @@ std::unique_ptr<StreamExecutor> LoadStreamExecutorFromModelData(const ge::ModelD
  * @return 成功时返回StreamExecutor的指针，失败时返回空指针。
  *         返回值类型是unique_ptr，因此返回的StreamExecutor生命周期由外部管理。
  */
+// todo: 后续需要删除参数为OptimizeOption的接口，归一使用带LoweringOption接口
 VISIBILITY_EXPORT
 std::unique_ptr<StreamExecutor> LoadStreamExecutorFromModelData(const ge::ModelData &model_data,
                                                                 const OptimizeOption &optimize_option,
+                                                                ge::graphStatus &error_code);
+
+VISIBILITY_EXPORT
+std::unique_ptr<StreamExecutor> LoadStreamExecutorFromModelData(const ge::ModelData &model_data,
+                                                                const LoweringOption &optimize_option,
                                                                 ge::graphStatus &error_code);
 VISIBILITY_EXPORT
 ge::graphStatus IsDynamicModel(const void *const model, size_t model_size, bool &is_dynamic_model);

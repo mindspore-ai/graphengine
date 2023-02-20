@@ -133,7 +133,8 @@ bool OpSoStore::Load(const uint8_t *const data, const size_t &len) {
     GELOGD("Load vendor:%s so:%s from om, bin len:%u", vendor_name.c_str(), so_name.c_str(), so_bin_head->bin_len);
 
     std::unique_ptr<char[]> so_bin = std::unique_ptr<char[]>(new(std::nothrow) char[so_bin_head->bin_len]);
-    GE_ASSERT_EOK(memcpy_s(so_bin.get(), so_bin_head->bin_len, next_buffer, so_bin_head->bin_len));
+    GE_ASSERT_EOK(memcpy_s(so_bin.get(), static_cast<size_t>(so_bin_head->bin_len), next_buffer,
+                           static_cast<size_t>(so_bin_head->bin_len)));
 
     const OpSoBinPtr so_bin_ptr
         = ge::MakeShared<OpSoBin>(so_name, vendor_name, std::move(so_bin), so_bin_head->bin_len);

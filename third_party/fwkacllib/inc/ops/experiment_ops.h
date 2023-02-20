@@ -938,6 +938,68 @@ REG_OP(PSAMaskGrad)
     .OP_END_FACTORY_REG(PSAMaskGrad)
 
 /**
+* @brief Find nearby points in spherical space or spherical layer. \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li xyz: A 3D Tensor of type float16 or float32, xyz coordinates of the features.
+* @li center_xyz: A 3D Tensor of type float16 or float32. centers coordinates of the ball query. \n
+
+* @par Attributes:
+* @li min_radius: A required float, minimum radius of the balls.
+* @li max_radius: A required float, maximum radius of the balls.
+* @li sample_num: A required int, maximum number of features in the balls. \n
+
+* @par Outputs:
+* One outputs:
+* @li idx: A 3D(B, M, sample_num) Tensor of type int32 with the indices of the features that form the query balls. \n
+
+* @par Third-party framework compatibility
+* Compatible with the MMCV operator BallQuery(BallQuery branch).
+*/
+REG_OP(BallQuery)
+    .INPUT(xyz, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(center_xyz, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(idx, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(min_radius, Float)
+    .REQUIRED_ATTR(max_radius, Float)
+    .REQUIRED_ATTR(sample_num, Int)
+    .OP_END_FACTORY_REG(BallQuery)
+
+/**
+* @brief Find nearby points in spherical space. \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li xyz: A 2D Tensor of type float16 or float32, xyz coordinates of the features.
+* @li center_xyz: A 2D Tensor of type float16 or float32. Centers coordinates of the ball query.
+* @li xyz_batch_cnt: A 1D Tensor of type int32 or int64, Stacked input xyz coordinates nums in
+     each batch, just like (N1, N2, ...).
+* @li center_xyz_batch_cnt: A 1D Tensor of type int32 or int64. Stacked input centers coordinates nums in
+     each batch, just like (M1, M2, ...). \n
+
+* @par Attributes:
+* @li max_radius: A required float, maximum radius of the balls.
+* @li sample_num: A required int, maximum number of features in the balls. \n
+
+* @par Outputs:
+* One outputs:
+* @li idx: A 2D(M, sample_num) Tensor of type int32 with the indices of the features that form the query balls. \n
+
+* @par Third-party framework compatibility
+* Compatible with the MMCV operator BallQuery(StackBallQuery branch).
+*/
+REG_OP(StackBallQuery)
+    .INPUT(xyz, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(center_xyz, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(xyz_batch_cnt, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(center_xyz_batch_cnt, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(idx, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(max_radius, Float)
+    .REQUIRED_ATTR(sample_num, Int)
+    .OP_END_FACTORY_REG(StackBallQuery)
+
+/**
  * @brief Find and get the corresponding value from the corresponding ps according to the keys
  * @par Inputs:
  * @li kyes: A tensor. Must be int64 type,
@@ -1008,6 +1070,22 @@ REG_OP(HcomCollRemoteUpdate)
     .REQUIRED_ATTR(max_num, Int)
     .REQUIRED_ATTR(embedding_dim, Int)
     .OP_END_FACTORY_REG(HcomCollRemoteUpdate)
+
+/**
+* @brief Find a min polygon from the point set in the operator MinAreaPolygons. \n
+
+* @par Inputs:
+* @li pointsets: A 2D Tensor with shape (N, 18), format ND, dtype must be one
+ of the following types: float16, float32, double. \n
+
+* @par Outputs:
+* @li polygons: A 2D Tensor with shape (N, 8), format ND, dtype must be one of
+ the following types: float16, float32, double.  \n
+*/
+REG_OP(MinAreaPolygons)
+    .INPUT(pointsets, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(polygons, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(MinAreaPolygons)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

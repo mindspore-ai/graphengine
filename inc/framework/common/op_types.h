@@ -21,6 +21,7 @@
 #include <string>
 
 #include "graph/types.h"
+#include "graph/compiler_def.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY OpTypeContainer {
@@ -50,7 +51,8 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
 
 #define REGISTER_OPTYPE_DEFINE(var_name, str_name)           \
   const char_t *var_name = str_name;                         \
-  const bool g_##var_name##_reg = OpTypeContainer::Instance()->Register(str_name)
+  const bool VAR_UNUSED g_##var_name##_reg = OpTypeContainer::Instance()->Register(str_name)
 
 #define IS_OPTYPE_EXISTING(str_name) (ge::OpTypeContainer::Instance()->IsExisting(str_name))
 #endif  // INC_FRAMEWORK_COMMON_OP_TYPES_H_
+

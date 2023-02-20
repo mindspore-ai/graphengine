@@ -393,6 +393,34 @@ RTS_API rtError_t rtMbufInit(rtMemBuffCfg_t *cfg);
 /**
 * @ingroup rt_mem_queue
 * @brief alloc buff
+* @param [out]  buff: The buff id the shared memory pointer applied by calling halBuffAlloc and halBuffAllocByPool
+* @param [in]  size: The amount of memory space requested
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtBuffAlloc(const uint64_t size, void **buff);
+
+/**
+* @ingroup rt_mem_queue
+* @brief determine whether buff id is the shared memory pointer applied by calling halBuffAlloc and halBuffAllocByPool
+* @param [in]  buff: The buff id the shared memory pointer applied by calling halBuffAlloc and halBuffAllocByPool
+* @param [in]  size: The amount of memory space requested
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtBuffConfirm(void *buff, const uint64_t size);
+
+/**
+* @ingroup rt_mem_queue
+* @brief alloc buff
+* @param [out] mbufPtr: buff addr alloced
+* @param [in]  buff: The buff must be the shared memory pointer applied by calling halBuffAlloc and halBuffAllocByPool
+* @param [in]  size: The amount of memory space requested
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufBuild(void *buff, const uint64_t size, rtMbufPtr_t *mbufPtr);
+
+/**
+* @ingroup rt_mem_queue
+* @brief alloc buff
 * @param [out] memBuf: buff addr alloced
 * @param [in]  size: The amount of memory space requested
 * @return RT_ERROR_NONE for ok
@@ -409,6 +437,24 @@ RTS_API rtError_t rtMbufAlloc(rtMbufPtr_t *memBuf, uint64_t size);
 * @return RT_ERROR_NONE for ok
 */
 RTS_API rtError_t rtMbufAllocEx(rtMbufPtr_t *memBuf, uint64_t size, uint64_t flag, int32_t grpId);
+
+/**
+* @ingroup rt_mem_queue
+* @brief free buff
+* @param [in]  buff: The buff id the shared memory pointer applied by calling halBuffAlloc and halBuffAllocByPool
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtBuffFree(void *buff);
+
+/**
+* @ingroup rt_mem_queue
+* @brief free the head of mbufPtr
+* @param [in] mbufPtr: buff addr alloced
+* @param [out]  buff: The buffer of mbuPtr
+* @param [out]  size: The amount of memory space of buffer
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufUnBuild(const rtMbufPtr_t mbufPtr, void **buff, uint64_t *size);
 
 /**
 * @ingroup rt_mem_queue

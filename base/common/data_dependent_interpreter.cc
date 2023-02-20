@@ -71,6 +71,11 @@ ge::graphStatus DataDependentInterpreter::IsDataDependentByImplOp(const ge::Node
   std::string type;
   GE_ASSERT_SUCCESS(ge::GetOriginalType(node, type), "Failed to get original type from %s(%s).",
                     node->GetName().c_str(), node->GetType().c_str());
+  if (space_registry_ == nullptr) {
+    GELOGW("Attention: default registry is not existed. Tiling will be executed failed");
+    is_data_dependent = false;
+    return ge::GRAPH_SUCCESS;
+  }
   auto op_impl = space_registry_->GetOpImpl(type);
   if (op_impl == nullptr) {
     GELOGW("The node %s type %s does not registered by `IMPL_OP`", node->GetName().c_str(), type.c_str());
@@ -133,7 +138,7 @@ ge::graphStatus DataDependentInterpreter::IsDataDependentByUbGraph(int32_t index
   GE_ASSERT_NOTNULL(ub_graph);
 
   auto data_node = FindSubgraphDataNode(ub_graph, index);
-  GE_ASSERT_NOTNULL(data_node, "Failed to find the data node from ub graph by index %d from node %s type %s",
+  GE_ASSERT_NOTNULL(data_node, "Failed to find the data node from ub graph by index %d from node %s type %s.",
                     index, node_->GetName().c_str(), node_->GetType().c_str());
 
   is_data_dependent = false;

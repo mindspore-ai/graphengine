@@ -50,7 +50,7 @@ constexpr char const *kKeyConstValue = "const_value";
 constexpr char const *kFileSuffix = ".om";
 constexpr char const *kKeyDynamicInput = "dynamic_input";
 constexpr char const *kKeyCompileFlag = "compile_flag";
-constexpr uint32_t kDumpJsonIndent = 2U;
+constexpr int32_t kDumpJsonIndent = 2;
 constexpr uint32_t kShapeRangePairSize = 2U;
 constexpr uint32_t kShapeRangeLow = 0U;
 constexpr uint32_t kShapeRangeHigh = 1U;
@@ -188,9 +188,9 @@ std::string GenerateFileName(const SingleOpDesc &single_op_desc, const int32_t i
 
 bool AttrValueIsString(const Json &j, const std::string &key) {
   try {
-    const std::string tmp_str = j.at(key).get<string>();
+    const std::string tmp_str = j.at(key).get<std::string>();
     return true;
-  } catch (Json::type_error &e) {
+  } catch (Json::type_error &) {
     return false;
   }
 }
@@ -210,7 +210,7 @@ void JsonConstToDescConst(const Json &j, SingleOpTensorDesc &desc) {
 
 template<typename T>
 T GetValue(const std::map<std::string, T> &dict, std::string &key, T default_val) {
-  transform(key.begin(), key.end(), key.begin(), &::tolower);
+  (void)transform(key.begin(), key.end(), key.begin(), &::tolower);
   const auto it = dict.find(key);
   if (it == dict.end()) {
     return default_val;
@@ -224,13 +224,13 @@ void SetAttrValue(const Json &j, SingleOpAttr &attr) {
   // when attr type is "data_type", we support two kinds of attr value.
   // 1. value: "DT_FLOAT", "DT_INT32", "DT_INT8" ...
   // 2. value: 1, 3 ...
-  if (j.at(kKeyType).get<string>() == "data_type" && AttrValueIsString(j, kKeyValue)) {
-    std::string type_str = j.at(kKeyValue).get<string>();
+  if ((j.at(kKeyType).get<std::string>() == "data_type") && AttrValueIsString(j, kKeyValue)) {
+    std::string type_str = j.at(kKeyValue).get<std::string>();
     DataType dtype = TypeUtils::SerialStringToDataType(type_str);
     attr.value.SetValue<DataType>(dtype);
     return;
   }
-  attr.value.SetValue<T>(j.at(kKeyValue).get<T>());
+  (void)attr.value.SetValue<T>(j.at(kKeyValue).get<T>());
 }
 }  // namespace
 
@@ -289,8 +289,8 @@ void from_json(const Json &j, SingleOpTensorDesc &desc) {
   if (it != j.end()) {
     desc.ori_dims = j.at(kKeyOriginShape).get<std::vector<int64_t>>();
   }
-  std::string format_str = j.at(kKeyFormat).get<string>();
-  std::string type_str = j.at(kKeyType).get<string>();
+  std::string format_str = j.at(kKeyFormat).get<std::string>();
+  std::string type_str = j.at(kKeyType).get<std::string>();
   desc.format = GetValue(kFormatDict, format_str, FORMAT_RESERVED);
   desc.type = GetValue(kDataTypeDict, type_str, DT_UNDEFINED);
   is_tensor_valid = is_tensor_valid && ge::TypeUtils::IsFormatValid(format_str);
@@ -321,8 +321,8 @@ void from_json(const Json &j, SingleOpTensorDesc &desc) {
 }
 
 void from_json(const Json &j, SingleOpAttr &attr) {
-  attr.name = j.at(kKeyName).get<string>();
-  attr.type = j.at(kKeyType).get<string>();
+  attr.name = j.at(kKeyName).get<std::string>();
+  attr.type = j.at(kKeyType).get<std::string>();
   map<std::string, GeAttrValue::ValueType>::const_iterator it = kAttrTypeDict.find(attr.type);
   if (it == kAttrTypeDict.cend()) {
     GELOGE(UNSUPPORTED, "[Find][JsonAttr] name=%s, type=%s failed for Unsupported type.",
@@ -343,7 +343,7 @@ void from_json(const Json &j, SingleOpAttr &attr) {
       SetAttrValue<float>(j, attr);
       break;
     case GeAttrValue::VT_STRING:
-      SetAttrValue<string>(j, attr);
+      SetAttrValue<std::string>(j, attr);
       break;
     case GeAttrValue::VT_LIST_BOOL:
       SetAttrValue<std::vector<bool>>(j, attr);
@@ -375,12 +375,12 @@ void from_json(const Json &j, SingleOpAttr &attr) {
 void from_json(const Json &j, SingleOpDesc &desc) {
   const auto op = j.find(kKeyOp);
   if (op != j.end()) {
-    desc.op = j.at(kKeyOp).get<string>();
+    desc.op = j.at(kKeyOp).get<std::string>();
   }
 
   const auto name = j.find(kKeyName);
   if (name != j.end()) {
-    desc.name = j.at(kKeyName).get<string>();
+    desc.name = j.at(kKeyName).get<std::string>();
   }
 
   const auto input_desc = j.find(kKeyInputDesc);

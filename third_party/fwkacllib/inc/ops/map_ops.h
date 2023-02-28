@@ -88,7 +88,7 @@ REG_OP(TensorMapInsert)
 
 * @par Inputs:
 * @li input_handle: The input map. Must be type: DT_VARIANT.
-* @li key: A Tensor,the key to be looked up. Must be one of 
+* @li key: A Tensor, the key to be looked up. Must be one of
   the following types: int32,int64,string . \n
 
 * @par Attributes:

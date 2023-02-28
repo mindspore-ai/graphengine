@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef INC_FRAMEWORK_OMG_MODEL_TOOL_H_
-#define INC_FRAMEWORK_OMG_MODEL_TOOL_H_
+#ifndef AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_
+#define AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_
 
-#include <memory>
-#include <string>
-
-#include "framework/common/debug/ge_log.h"
-#include "proto/ge_ir.pb.h"
+#include <map>
+#include "framework/common/ge_inner_error_codes.h"
+#include "graph/compute_graph.h"
 
 namespace ge {
-class GE_FUNC_VISIBILITY ModelTool {
+class GraphDeploymentOptimizer {
  public:
-  static Status GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef &model_def, uint32_t &modeldef_size);
-
-  static Status GetModelInfoFromPbtxt(const char *model_file, ge::proto::ModelDef &model_def);
+  static Status OptimizeForAutoDeploy(const ComputeGraphPtr &compute_graph, ComputeGraphPtr &optimized_graph);
+  static Status OptimizeByRecomputation(const ComputeGraphPtr &graph);
 };
 }  // namespace ge
 
-#endif  // INC_FRAMEWORK_OMG_MODEL_TOOL_H_
+#endif  // AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_

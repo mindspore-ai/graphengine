@@ -41,7 +41,8 @@ typedef enum tagFftsPlusSoftType {
     RT_SOFT_CTX_TYPE_AT_END = 4,
     RT_SOFT_CTX_TYPE_LABEL = 5,
     RT_SOFT_CTX_PERSISTENT_CACHE = 6,
-    RT_SOFT_CTX_TYPE_MAX = 7,
+    RT_SOFT_CTX_DSA = 7,
+    RT_SOFT_CTX_TYPE_MAX = 8,
 } rtFftsPlusSoftType_t;
 
 typedef enum tagFftsPlusContextType {
@@ -63,6 +64,7 @@ typedef enum tagFftsPlusContextType {
     RT_CTX_TYPE_AT_END = 0x0400,
     RT_CTX_TYPE_LABEL = 0x0500,
     RT_CTX_TYPE_PERSISTENT_CACHE = 0x0600,
+    RT_CTX_TYPE_DSA = 0x0700,
 }rtFftsPlusContextType_t;
 
 // condition type
@@ -119,7 +121,8 @@ typedef struct tagFftsPlusAicAivCtx {
     uint8_t predCntInit;
     uint8_t predCnt;
     // 8-11
-    uint32_t resv2;
+    uint16_t resv2;
+    uint16_t policyPri;
     // 12-63
     uint16_t successorList[RT_CTX_SUCCESSOR_NUM];
     // 64-67
@@ -182,7 +185,8 @@ typedef struct tagFftsPlusMixAicAivCtx {
     uint8_t predCntInit;
     uint8_t predCnt;
     // 8-11
-    uint32_t reserved3;
+    uint16_t reserved3;
+    uint16_t policyPri;
     // 12-63
     uint16_t successorList[RT_CTX_SUCCESSOR_NUM];
     // 64-67
@@ -738,6 +742,56 @@ typedef struct tagFftsPlusPersistentCacheCtx {
     // 72-127
     uint32_t res6[14];
 } rtFftsPlusPersistentCacheCtx_t;
+
+
+typedef struct tagFftsPlusDsaCtx {
+    // 0-3bytes
+    uint16_t contextType;
+    uint8_t successorNum;
+    uint8_t res1 : 6;
+    uint8_t dumpSwitch : 1;
+    uint8_t aten : 1;
+    // 4-7
+    uint8_t res2[2];
+    uint8_t predCntInit;
+    uint8_t predCnt;
+    // 8-11
+    uint32_t res3;
+    // 12-63
+    uint16_t successorList[RT_CTX_SUCCESSOR_NUM];
+
+    // bottom half 64B
+    // 0-3 bytes
+    uint16_t numberOffset;
+    uint16_t addressOffset;
+    // 4-7 bytes
+    uint32_t res5;
+    // 8-11 bytes
+    uint16_t threadId;
+    uint16_t threadDim;
+    // 12-15 bytes
+    uint32_t start : 1;
+    uint32_t functionType : 3;
+    uint32_t dataType : 3;
+    uint32_t algoType : 3;
+    uint32_t paramVldBitmap : 5;
+    uint32_t paramAddrValBitmap : 7;
+    uint32_t res6 : 10;
+    // 16-31 bytes
+    uint32_t dsaCfgResultAddrLow;
+    uint32_t dsaCfgResultAddrHigh;
+    uint32_t dsaCfgStateAddrLow;
+    uint32_t dsaCfgStateAddrHigh;
+    // 32-47 bytes
+    uint32_t dsaCfgParamAddrLow;
+    uint32_t dsaCfgParamAddrHigh;
+    uint32_t dsaCfgSeedLow;
+    uint32_t dsaCfgSeedHigh;
+    // 48-63 bytes
+    uint32_t dsaCfgNumberLow;
+    uint32_t dsaCfgNumberHigh;
+    uint32_t res7[2];
+} rtFftsPlusDsaCtx_t;
 
 #pragma pack(pop)
 

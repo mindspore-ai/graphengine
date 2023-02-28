@@ -25,6 +25,7 @@ enum MemStorageType {
   HBM = 0,
   RDMA_HBM,
   HOST_DDR,
+  HOST_SVM,
 };
 
 struct HostVarInfo {
@@ -38,31 +39,36 @@ struct TensorInfo {
   DataType data_type;
 };
 
-///
 /// \param size [in] rdma pool memory size to be allocated.
 /// \param mem_type [in] memory type for rdma pool.
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status InitRdmaPool(size_t size, rtMemType_t mem_type = RT_MEMORY_HBM);
 
-///
 /// \param var_info [in] host variable addr infos.
 /// \param mem_type [in] memory type for rdma pool.
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info,
                                              rtMemType_t mem_type = RT_MEMORY_HBM);
 
-///
 /// \param tensor_info [in] description for tensor stored shared memory.
 /// \param dev_addr [out] malloced shared memory addr.
 /// \param memory_size [out] malloced shared memory size.
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status MallocSharedMemory(const TensorInfo &tensor_info, uint64_t &dev_addr, uint64_t &memory_size);
 
-///
 /// \param var_name [in] var_name name of host variable.
 /// \param base_addr [out] base_addr vase addr of host variable.
 /// \param var_size [out] var_size memory_size of host variable.
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status GetVarBaseAddrAndSize(const std::string &var_name, uint64_t &base_addr, uint64_t &var_size);
+
+/*
+ * @brief
+ * @param [in]  session_id
+ * @param [out] var_size:session variables mem size
+ * @param [out] graphs_mem_info: graphs mem info, include key:graph_id; value: {feature_map_size, const_size}
+ */
+GE_FUNC_VISIBILITY Status GetSessionMemInfo(const uint64_t session_id, uint64_t &var_size,
+                                            std::map<uint32_t, std::vector<uint64_t>> &graphs_mem_info);
 }  // namespace ge
 #endif  // INC_FRAMEWORK_MEMORY_MEMORY_API_H_

@@ -19,6 +19,10 @@ extern "C" {
 #define RT_MQ_MODE_DEFAULT RT_MQ_MODE_PUSH
 #define RT_EVENT_SUMMARY_RSV 4
 #define RT_EVENT_MAX_MSG_LEN  128
+#define RT_MQ_LOCAL_QUEUE_DEPLOY  1U
+#define RT_MQ_CLIENT_QUEUE_DEPLOY 0U
+
+#define RT_BUFF_SP_HUGEPAGE_ONLY (1 << 1)
 
 typedef struct tagMemQueueInfo {
     int32_t id;
@@ -34,7 +38,20 @@ typedef struct tagMemQueueAttr {
     uint32_t flowCtrlDropTime;
     bool flowCtrlFlag;
     bool overWriteFlag;
+    uint32_t deployType : 1;
+    uint32_t resv : 31;
 } rtMemQueueAttr_t;
+
+typedef enum tagMemQueueSetCmdType {
+    RT_MQ_QUEUE_SET_WORK_MODE,
+    RT_MQ_QUEUE_ENABLE_LOCAL_QUEUE,
+    RT_MQ_QUEUE_SET_CMD_MAX,
+} rtMemQueueSetCmdType;
+
+typedef struct tagMemQueueSetInputPara {
+    void *inBuff;
+    uint32_t inLen;
+} rtMemQueueSetInputPara;
 
 typedef struct tagMemQueueShareAttr {
     uint32_t manage : 1;
@@ -221,6 +238,16 @@ RTS_API rtError_t rtMemQueueCreate(int32_t devId, const rtMemQueueAttr_t *queAtt
 
 /**
  * @ingroup rt_mem_queue
+ * @brief mbuf queue set
+ * @param [in] devId   the logical device id
+ * @param [in] cmd     cmd type of queue set
+ * @param [in] input   input param of queue set
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtMemQueueSet(int32_t devId, rtMemQueueSetCmdType cmd, const rtMemQueueSetInputPara *input);
+
+/**
+ * @ingroup rt_mem_queue
  * @brief destroy mbuf queue
  * @param [in] devId   the logical device id
  * @param [in] qid  queue id
@@ -374,6 +401,17 @@ RTS_API rtError_t rtMbufAlloc(rtMbufPtr_t *memBuf, uint64_t size);
 
 /**
 * @ingroup rt_mem_queue
+* @brief alloc buff
+* @param [out] memBuf: buff addr alloced
+* @param [in]  size: The amount of memory space requested
+* @param [in]  flag: Huge page flag(bit0~31: mem type, bit32~bit35: devid, bit36~63: resv)
+* @param [in]  grpId: group id
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufAllocEx(rtMbufPtr_t *memBuf, uint64_t size, uint64_t flag, int32_t grpId);
+
+/**
+* @ingroup rt_mem_queue
 * @brief free buff
 * @param [in] memBuf: buff addr to be freed
 * @return RT_ERROR_NONE for ok
@@ -388,6 +426,16 @@ RTS_API rtError_t rtMbufFree(rtMbufPtr_t memBuf);
 * @return   RT_ERROR_NONE for success, others for fail
 */
 RTS_API rtError_t rtMbufSetDataLen(rtMbufPtr_t memBuf, uint64_t len);
+
+/**
+* @ingroup rt_mem_queue
+* @brief set Data len of Mbuf
+* @param [in] memBuf: Mbuf addr
+* @param [out] len: data len
+* @return   RT_ERROR_NONE for success, others for fail
+*/
+RTS_API rtError_t rtMbufGetDataLen(rtMbufPtr_t memBuf, uint64_t *len);
+
 
 /**
 * @ingroup rt_mem_queue
@@ -417,9 +465,51 @@ RTS_API rtError_t rtMbufGetBuffSize(rtMbufPtr_t memBuf, uint64_t *totalSize);
 */
 RTS_API rtError_t rtMbufGetPrivInfo(rtMbufPtr_t memBuf,  void **priv, uint64_t *size);
 
+/**
+* @ingroup rt_mem_queue
+* @brief copy buf ref
+* @param [in] memBuf: src buff addr
+* @param [out] newMemBuf: des buff addr
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufCopyBufRef(rtMbufPtr_t memBuf, rtMbufPtr_t *newMemBuf);
+
+/**
+* @ingroup rt_mem_queue
+* @brief append mbuf to mbuf chain
+* @param [inout] memBufChainHead, the mbuf chain head
+* @param [in] memBuf, the mbuf to append
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufChainAppend(rtMbufPtr_t memBufChainHead, rtMbufPtr_t memBuf);
+
+/**
+* @ingroup rt_mem_queue
+* @brief get mbuf num in mbuf chain
+* @param [in] memBufChainHead, the mbuf chain head
+* @param [out] num, the mbuf chain size
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufChainGetMbufNum(rtMbufPtr_t memBufChainHead, uint32_t *num);
+
+/**
+* @ingroup rt_mem_queue
+* @brief get mbuf in mbuf chain
+* @param [in] mbufChainHead, the mbuf chain head
+* @param [in] index, the mbuf index which to get in chain
+* @param [out] mbuf, the mbuf to get
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtMbufChainGetMbuf(rtMbufPtr_t memBufChainHead, uint32_t index, rtMbufPtr_t *memBuf);
+
+#define RT_MEM_GRP_NAME_LEN 32  // it must be same as driver define BUFF_GRP_NAME_LEN
+#define RT_MEM_CACHE_MAX_NUM 1024  // it must be same as driver define BUFF_CACHE_MAX_NUM
+
 // mem group
 typedef struct {
     uint64_t maxMemSize; // max buf size in grp, in KB. = 0 means no limit
+    uint32_t cacheAllocFlag;
+    int32_t rsv[RT_MEM_GRP_NAME_LEN - 1];
 } rtMemGrpConfig_t;
 
 typedef struct {
@@ -430,20 +520,24 @@ typedef struct {
     uint32_t rsv : 28;
 } rtMemGrpShareAttr_t;
 
-#define RT_MEM_GRP_QUERY_GROUPS_OF_PROCESS 1  // query process all grp
+#define RT_MEM_GRP_QUERY_GROUPS_OF_PROCESS 1 // query process all grp
+#define RT_MEM_GRP_QUERY_GROUP_ID 2 // query group id from name
 
 typedef struct {
     int32_t pid;
 } rtMemGrpQueryByProc_t; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
 
 typedef struct {
+    char grpName[RT_MEM_GRP_NAME_LEN];
+} rtMemGrpQueryGroupId_t; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+
+typedef struct {
     int32_t cmd;
     union {
         rtMemGrpQueryByProc_t grpQueryByProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+        rtMemGrpQueryGroupId_t grpQueryGroupId; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
     };
 } rtMemGrpQueryInput_t;
-
-#define RT_MEM_GRP_NAME_LEN 32  // it must be same as driver define BUFF_GRP_NAME_LEN
 
 typedef struct {
     char_t groupName[RT_MEM_GRP_NAME_LEN];  // group name
@@ -451,10 +545,23 @@ typedef struct {
 } rtMemGrpOfProc_t; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
 
 typedef struct {
-    rtMemGrpOfProc_t *groupsOfProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+    int32_t groupId; // group id
+} rtMemGrpQueryGroupIdInfo_t; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+
+typedef struct {
     size_t maxNum; // max number of result
     size_t resultNum; // if the number of results exceeds 'maxNum', only 'maxNum' results are filled in buffer
+    union {
+        rtMemGrpOfProc_t *groupsOfProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
+        rtMemGrpQueryGroupIdInfo_t *groupIdInfo; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+    };
 } rtMemGrpQueryOutput_t;
+
+typedef struct {
+    uint64_t memSize;
+    uint32_t memFlag;
+    int32_t rsv[RT_MEM_CACHE_MAX_NUM];
+} rtMemGrpCacheAllocPara;
 
 /**
 * @ingroup rt_mem_queue
@@ -465,6 +572,17 @@ typedef struct {
 * @return   0 for success, others for fail
 */
 RTS_API rtError_t rtMemGrpCreate(const char_t *name, const rtMemGrpConfig_t *cfg);
+
+/**
+* @ingroup rt_mem_queue
+* @brief alloc mem group cache
+* @attention null
+* @param [in] name, group name
+* @param [in] devId, device id
+* @param [in] para, mem group cache alloc para
+* @return   0 for success, others for fail
+*/
+RTS_API rtError_t rtMemGrpCacheAlloc(const char_t *name, int32_t devId, const rtMemGrpCacheAllocPara *para);
 
 /**
 * @ingroup rt_mem_queue

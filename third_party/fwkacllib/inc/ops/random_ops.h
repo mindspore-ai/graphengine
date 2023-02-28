@@ -469,16 +469,16 @@ REG_OP(TruncatedNormal)
 
 *@par Inputs:
 include:
-*@li shape:The shape of the output tensor.
-*@li prob:0-D. Number of bit 1 . \n
+*@li shape:The shape of the output tensor. Must be one of the following types: int32, int64 .
+*@li prob:0-D. Number of bit 1 . Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
-*@li seed:If either seed or seed2 are set to be non-zero, the random number
+*@li seed: An optional int. If either seed or seed2 are set to be non-zero, the random number
 *generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
-*@li seed2:A second seed to avoid seed collision . \n
+*@li seed2: An optional int. A second seed to avoid seed collision . \n
 
 *@par Outputs:
-*y:Output (1-D) random number using uint data format . \n
+*y:Output (1-D) random number using uint data format . A Tensor of type uint8 . \n
 
 *@attention Constraints:
 *The output is aligned with 128 bits
@@ -528,31 +528,90 @@ REG_OP(DropOutGenMaskV3)
 
     
 /**
-*@brief Generate stateless random bit mask for dropout . \n
+* @brief Generate stateless random bit mask for dropout . \n
 
-*@par Inputs:
+* @par Inputs:
 include:
-*@li shape:The shape of the output tensor.
-*@li prob:0-D. Number of bit 1 . \n
-*@li seed:If either seed or seed2 are set to be non-zero, the random number
-*generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
-*@li seed2:A second seed to avoid seed collision . \n
+* @li shape:The shape of the output tensor.
+* @li prob:0-D. Number of bit 1 . \n
+* @li seed:Frist seed to avoid seed collision.
+* @li seed1:Second seed to avoid seed collision . \n
+* @li offset:Initial offset of random number . \n
 
-*@par Outputs:
+* @par Outputs:
 *y:Output (1-D) random number using uint data format . \n
 
-*@attention Constraints:
+* @attention Constraints:
 *The output is aligned with 128 bits
 
-*@see StatelessDropOutGenMask()
+* @see StatelessDropOutGenMask()
 */
 REG_OP(StatelessDropOutGenMask)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
     .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
     .INPUT(seed, TensorType({ DT_INT32, DT_INT64 }))
     .INPUT(seed1, TensorType({ DT_INT32, DT_INT64 }))
+    .OPTIONAL_INPUT(offset, TensorType({ DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_UINT8 }))
     .OP_END_FACTORY_REG(StatelessDropOutGenMask)
+
+/**
+* @brief Generate bernoulli distribution for tensor input . \n
+
+* @par Inputs:
+include:
+* @li shape:The shape of the output tensor. A Tensor of type int32, int64.
+* @li prob:0-D. Number of bit 1 . \n
+* @li seed:If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by arandom seed. Otherwise, it is seeded by the given seed.
+* @li offset:To avoid seed collision . \n
+* @li dtype: The type of the output.
+
+* @par Outputs:
+* y:A Tensor. A Tensor of type int8, uint8, int16, uint16, 
+*  int32, uint32, int64, uint64, bool, float16, float, double, bf16. \n
+*/
+REG_OP(StatelessBernoulli)
+    .INPUT(shape, TensorType({ DT_INT32, DT_INT64}))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .INPUT(seed, TensorType({ DT_INT64 }))
+    .INPUT(offset, TensorType({ DT_INT64 }))
+    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,
+        DT_INT64, DT_UINT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(StatelessBernoulli)
+
+/**
+* @brief Draws binary random numbers (0 or 1) from a Bernoulli distribution.The input tensor
+* should be a tensor containing probabilities p (a value in the range [0, 1]) to be used for
+* drawing the binary random number, where an output of 1 is produced with ptobability p and
+* an output of 0 is produced with probability (1-p). \n
+
+* @par Inputs:
+include:
+* @li x: All values in input have to be in the range:[0, 1].
+* @li seed: If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by a random seed. Otherwise, it is seeded by the given seed.
+* @li offset: To avoid seed collision. \n
+
+* @par Attributes:
+* @li dtype: The data type for the elements of the output tensor. if not specifed, 
+* we will use the data type of the input tensor. \n
+
+* @par Outputs:
+* y: The returned output tensor only has values 0 or 1, same shape as input tensor. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Onnx operator Bernoulli
+*/
+REG_OP(StatelessBernoulliV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(seed, TensorType({DT_INT64}))
+    .INPUT(offset, TensorType({DT_INT64}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,
+        DT_INT64, DT_UINT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .ATTR(dtype, Type, DT_UNDEFINED)
+    .OP_END_FACTORY_REG(StatelessBernoulliV2)
 
 /**
 *@brief Generates values in an interval . \n
@@ -863,5 +922,97 @@ REG_OP(Geometric)
     .ATTR(seed, Int, 0)
     .OP_END_FACTORY_REG(Geometric)
 
+/**
+* @brief Returns a tensor where each row contains numsamples indices sampled from the multinomial distribution. \n
+
+* @par Inputs:
+* x:  A Tensor. Must be one of the following types: float16, float, double.
+* @li seed:If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by a random seed. Otherwise, it is seeded by the given seed.
+* @li offset:To avoid seed collision . \n
+
+* @par Attributes:
+* @li numsamples: An Required int, number of samples to draw.
+* @li replacement: An optional bool, whether to draw with replacement or not. Defaults to false. \n
+
+* @par Outputs:
+* y: A Tensor, with type int64 . \n
+
+* @par Third-party framework compatibility
+* @ Compatible with the Pytorch operator multinomial.
+*/
+REG_OP(MultinomialWithReplacement)
+    .INPUT(x, TensorType({ DT_FLOAT16,DT_FLOAT,DT_DOUBLE }))
+    .INPUT(seed, TensorType({ DT_INT64 }))
+    .INPUT(offset, TensorType({ DT_INT64 }))
+    .OUTPUT(y, TensorType({ DT_INT64 }))
+    .REQUIRED_ATTR(numsamples, Int)
+    .ATTR(replacement, Bool, false)
+    .OP_END_FACTORY_REG(MultinomialWithReplacement)
+
+/**
+* @brief Returns the random permutation of integers from 0 to n-1. \n
+
+* @par Inputs:
+* Inputs include:
+* @li n: A input scalar with type of int64.
+* @li seed:If seed is set to be -1, and offset is set to be 0, the random number
+* generator is seeded by a random seed. Otherwise, it is seeded by the given seed.
+* @li offset:To avoid seed collision. \n
+
+* @par Attributes:
+* @li layout: An optional int. Defaults to 0.
+* @li dtype: An optional Type. Defaults to int64. \n
+
+* @par Outputs:
+* @li y: A required Tensor. Must be one of the following types:
+* float16, float32, float64, int8, uint8, int16, int32, int64. \n
+
+* @attention Constraints:
+* The implementation for Randperm on Ascend uses AICPU, with bad performance.
+
+* @par Third-party framework compatibility
+* @li compatible with Pytorch Randperm operator.
+*/
+REG_OP(StatelessRandperm)
+    .INPUT(n, TensorType({DT_INT64}))
+    .INPUT(seed, TensorType({DT_INT64}))
+    .INPUT(offset, TensorType({DT_INT64}))
+    .OUTPUT(y, TensorType({DT_INT64, DT_INT32, DT_INT16,
+        DT_UINT8, DT_INT8, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(layout, Int, 0)
+    .ATTR(dtype, Type, DT_INT64)
+    .OP_END_FACTORY_REG(StatelessRandperm)
+
+/*
+* @brief Generate random bool or uint1 mask for dropout v4 . \n
+
+* @par Inputs:
+ include:
+* @li shape:The shape of the output tensor.
+* @li prob:0-D. Prob of 1 . \n
+
+* @par Attributes:
+* @li seed:If either seed or seed2 are set to be non-zero, the random number
+* generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+* @li seed2:A second seed to avoid seed collision.
+* @li dtype:dtype of out put tensor, default is bool . \n
+
+* @par Outputs:
+* y:Output random number using bool or uint1 data format . \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+
+* @see DropOutGenMaskV4()
+*/
+REG_OP(DropOutGenMaskV4)
+    .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_BOOL, DT_UINT1 }))
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .ATTR(dtype, Type, DT_BOOL)
+    .OP_END_FACTORY_REG(DropOutGenMaskV4)
 }   // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

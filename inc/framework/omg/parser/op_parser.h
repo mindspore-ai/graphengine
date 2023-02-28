@@ -24,7 +24,6 @@
 #include "graph/utils/op_desc_utils.h"
 
 using google::protobuf::Message;
-using Status = domi::Status;
 
 namespace ge {
 /**

@@ -23,6 +23,7 @@
 
 #include "ge/ge_api_error_codes.h"
 #include "ge/ge_api_types.h"
+#include "ge/ge_data_flow_api.h"
 #include "graph/graph.h"
 #include "graph/tensor.h"
 
@@ -142,7 +143,7 @@ class GE_FUNC_VISIBILITY Session {
   ///
   Status BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
 
-  Status BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs); /*lint !e148*/
+  Status BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs);  /*lint !e148*/
 
   ///
   /// @ingroup ge_graph
@@ -190,6 +191,38 @@ class GE_FUNC_VISIBILITY Session {
   Status RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback);
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
+
+  uint64_t GetSessionId() const;
+
+  /// @ingroup ge_graph
+  /// @brief Feed input data to graph.
+  /// @param [in] graph_id graph id
+  /// @param [in] inputs input data
+  /// @param [in] info intput data flow flag
+  /// @param [in] timeout data feed timeout(ms), -1 means never timeout
+  /// @return Status result of function
+  Status FeedDataFlowGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, const DataFlowInfo &info,
+                           int32_t timeout);
+
+  /// @ingroup ge_graph
+  /// @brief Fetch graph output data in order.
+  /// @param [in] graph_id graph id
+  /// @param [out] outputs output data
+  /// @param [out] info output data flow flag
+  /// @param [in] timeout data fetch timeout(ms), -1 means never timeout
+  /// @return Status result of function
+  Status FetchDataFlowGraph(uint32_t graph_id, std::vector<Tensor> &outputs, DataFlowInfo &info, int32_t timeout);
+
+  /// @ingroup ge_graph
+  /// @brief Fetch graph output data in order.
+  /// @param [in] graph_id graph id
+  /// @param [in] indexes fetch output data order(index cannot be duplicated)
+  /// @param [out] outputs output data
+  /// @param [out] info output data flow flag
+  /// @param [in] timeout data ftech timeout(ms), -1 means never timeout
+  /// @return Status result of function
+  Status FetchDataFlowGraph(uint32_t graph_id, const std::vector<uint32_t> &indexes, std::vector<Tensor> &outputs,
+                            DataFlowInfo &info, int32_t timeout);
 
  private:
   uint64_t sessionId_;

@@ -20,10 +20,8 @@
 #include "external/ge/ge_api_error_codes.h"
 #include "runtime/base.h"
 
-///
 /// @brief Output the profiling data of single operator in Pytorch, and does not support multithreading
 /// @return Status result
-///
 GE_FUNC_VISIBILITY ge::Status ProfSetStepInfo(const uint64_t index_id, const uint16_t tag_id, rtStream_t const stream);
 
 GE_FUNC_VISIBILITY ge::Status ProfGetDeviceFormGraphId(const uint32_t graph_id, uint32_t &device_id);

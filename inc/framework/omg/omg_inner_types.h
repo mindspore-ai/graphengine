@@ -29,8 +29,8 @@
 #include "graph/node.h"
 
 using domi::DOMI_TENSOR_ND;
-using domi::DOMI_TENSOR_RESERVED;
 using domi::domiTensorFormat_t;
+using domi::DOMI_TENSOR_RESERVED;
 using std::unordered_map;
 
 namespace ge {
@@ -99,6 +99,7 @@ struct OmgContext {
   std::string atc_cmdline;
   bool user_attr_index_valid = false;
   bool is_online_model = false;
+  bool is_subgraph_multi_batch = false;
 };
 }  // namespace ge
 

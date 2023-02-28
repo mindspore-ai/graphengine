@@ -230,7 +230,7 @@ REG_OP(Bucketize)
 *input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
 
 *@par Outputs:
-*output_y: A tensor with the same type and shape of input_x \n
+* output_y: A tensor with the same type and shape of input_x \n
 
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator Trunc. \n
@@ -261,11 +261,11 @@ sorted and can be repeated . \n
 
 REG_OP(SparseSegmentSum)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(segment_ids, TensorType({DT_INT32}))
+        DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
+        DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(SparseSegmentSum)
 
 /**
@@ -287,10 +287,10 @@ sorted and can be repeated . \n
 */
 
 REG_OP(SparseSegmentMean)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(segment_ids, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
     .OP_END_FACTORY_REG(SparseSegmentMean)
 
 /**
@@ -315,11 +315,11 @@ SparseSegmentMean op . \n
 */
 
 REG_OP(SparseSegmentMeanGrad)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(segment_ids, TensorType({DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
     .INPUT(output_dim0, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
     .OP_END_FACTORY_REG(SparseSegmentMeanGrad)
 
 /**
@@ -674,7 +674,7 @@ REG_OP(Conj)
 *@par Inputs:
 *The input x and weight must have the same type. Inputs include:
 *@li x: A Tensor dtype of float32.
-*@li target: A Tensor dtype of int32.
+*@li target: A Tensor dtype of int32 or int64.
 *@li weight: A Tensor dtype of float32 . \n
 
 *@par Attributes:
@@ -690,7 +690,7 @@ REG_OP(Conj)
 */
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT}))
-    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(target, TensorType({DT_INT32, DT_INT64}))
     .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
@@ -704,7 +704,7 @@ REG_OP(NLLLoss)
 *@par Inputs:
 *@li x:A Tensor dtype of float32.
 *@li y_grad:A Tensor dtype of float32.
-*@li target:A Tensor dtype of int32.
+*@li target:A Tensor dtype of int32, int64.
 *@li weight:A Tensor dtype of float32.
 *@li total_weight:A Tensor dtype of float32 . \n
 
@@ -721,7 +721,7 @@ REG_OP(NLLLoss)
 REG_OP(NLLLossGrad)
     .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(y_grad, TensorType({DT_FLOAT}))
-    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(target, TensorType({DT_INT32, DT_INT64}))
     .INPUT(weight, TensorType({DT_FLOAT}))
     .INPUT(total_weight, TensorType({DT_FLOAT}))
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))
@@ -1009,6 +1009,36 @@ REG_OP(Complex)
     .OP_END_FACTORY_REG(Complex)
 
 /**
+* @brief Counts the number of occurrences of each value in an integer array . \n
+
+* @par Inputs:
+* Five inputs, including:
+* indices: A 2D Tensor of type int64.
+* values: A 1D Tensor of type int32 or int64.
+* dense_shape: A 1D Tensor of type int64.
+* size: A non-negative scalar Tensor.
+* weights: A Tensor of type int32 or int64 or fp32 or fp64 or only 1 \n
+
+* @par Attributes:
+* dtype: An optional bool.Defaults to False. bool . \n
+
+* @par Outputs:
+* y: A Tensor . Has the same type as `input_weights` .\n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseBincount.
+*/
+REG_OP(SparseBincount)
+    .INPUT(indices, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(dense_shape, TensorType({DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(binary_output, Bool, false)
+    .OUTPUT(output, TensorType({DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(SparseBincount)
+
+/**
 * @brief  deal complex.
 
 * @par Inputs:
@@ -1098,7 +1128,7 @@ REG_OP(Cross)
     .OP_END_FACTORY_REG(Cross)
 
 /**
- *@brief Computes batched the p-norm distance between each pair of
+ * @brief Computes batched the p-norm distance between each pair of
  *the two collections of row vectors. \n
 
  *@par Inputs:
@@ -1218,6 +1248,35 @@ REG_OP(DenseCountSparseOutput)
     .OP_END_FACTORY_REG(DenseCountSparseOutput)
 
 /**
+* @brief Computes gradients for SparseSegmentSum . \n
+
+* @par Inputs:
+* The input grad must have be type float or double. Inputs include:
+* @li grad: A Tensor. Must be one of the following types: bfloat16, float16, float32, double.
+  gradient propagated to the SparseSegmentSum op.
+* @li indices: A Tensor. Must be one of the following types: int32, int64.
+  indices passed to the corresponding SparseSegmentSum op.
+* @li segment_ids: A Tensor of type int32, int64. segment_ids passed to the
+  corresponding SparseSegmentSum op.
+* @li output_dim0: A Tensor of type int32. dimension 0 of "x" passed to
+  SparseSegmentSum op . \n
+
+* @par Outputs:
+* output:A Tensor. Has the same type as grad . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow SparseSegmentSumGrad operator
+*/
+
+REG_OP(SparseSegmentSumGrad)
+    .INPUT(grad, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(segment_ids, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(output_dim0, TensorType({DT_INT32}))
+    .OUTPUT(output, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(SparseSegmentSumGrad)
+
+/**
  * @brief Count the number of occurrences of each value in the input ragged integer array,
  * and output it according to the sparse matrix. \n
 
@@ -1335,6 +1394,153 @@ REG_OP(ScaledMaskedSoftmaxGrad)
     .ATTR(scale, Float, 1.0)
     .ATTR(fixed_triu_mask, Bool, false)
     .OP_END_FACTORY_REG(ScaledMaskedSoftmaxGrad)
+    
+/**
+ * @brief SignBitsPack.
+
+ * @par Inputs:
+ * one input, including:
+ * @li x: A 1D Tensor of float32 or float16.
+ * 
+ * @par Attributes:
+ * @li size: first dim value of output tensor.
+ * 
+ * @par Outputs:
+ * @li y: A 2D Tensor of type uint8 with shape (size, N)
+ */
+REG_OP(SignBitsPack)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .REQUIRED_ATTR(size, Int)
+    .OP_END_FACTORY_REG(SignBitsPack)
+
+/**
+* @brief  Get sobol samples. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li dim: Dimension of results, which must be a scalar of type int32.
+* @li num_results: Number of results, which must be a scalar of type int32.
+* @li skip: Number of initial points, which must be a scalar of type int32. \n
+
+* @par Attributes:
+* @li dtype: Data type of output samples. \n
+
+* @par Outputs:
+* @li y: A Tensor with the DT_FLOAT or DT_DOUBLE type generated samples. \n
+
+* @par Third-party framework compatibility
+* @li compatible with tensorflow SobolSample operator.
+**/
+REG_OP(SobolSample)
+    .INPUT(dim, TensorType({DT_INT32}))
+    .INPUT(num_results, TensorType({DT_INT32}))
+    .INPUT(skip, TensorType({DT_INT32}))
+    .OUTPUT(samples, TensorType({DT_FLOAT,DT_DOUBLE}))
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(SobolSample)
+
+/**
+ * @brief Count the number of occurrences of each value in the input sparse integer array,
+ * and output it according to the sparse matrix. \n 
+
+ * @par Inputs:
+ * @li indices: A tensor of type int64.
+ * @li values: A tensor of type int32 or int64. 
+ * @li dense_shape: A tensor of type int64.
+ * @li weights: A tensor of type int32 or int64 or float or double. \n
+ 
+ * @par Attributes:
+ * @li minlength: An optional int >=-1. Defaults to -1. 
+ * @li maxlength: An optional int >=-1. Defaults to -1. 
+ * @li binary_output: A required bool. \n
+
+ * @par Outputs:
+ * @li output_indices: A tensor of type int64. 
+ * @li output_values: A tensor of the same type as "weights".
+ * @li output_dense_shape: A tensor of type int64. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the TensorFlow operator SparseCountSparseOutput. \n
+ */
+REG_OP(SparseCountSparseOutput)
+    .INPUT(indices, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(dense_shape, TensorType({DT_INT64}))
+    .INPUT(weights, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_indices, TensorType({DT_INT64}))
+    .OUTPUT(output_values, TensorType({DT_INT32,DT_INT64,DT_FLOAT,DT_DOUBLE}))
+    .OUTPUT(output_dense_shape, TensorType({DT_INT64}))
+    .ATTR(minlength, Int, -1)
+    .ATTR(maxlength, Int, -1)
+    .REQUIRED_ATTR(binary_output, Bool)
+    .OP_END_FACTORY_REG(SparseCountSparseOutput)
+
+/**
+* @brief Counts the number of occurrences of each value in an integer array. \n
+
+* @par Inputs:
+* @li splits: A Tensor of type int64. 1D int64 Tensor.
+* @li values: A Tensor. Must be one of the following types: int32, int64. 2D int Tensor.
+* @li size: A Tensor. Must have the same type as values. non-negative int scalar Tensor. 
+* @li weights: A Tensor. Must be one of the following types: float32.
+               is a float32 Tensor with the same shape as input,
+               or a length-0 Tensor, in which case it acts as all weights equal to 1. \n
+
+* @par Outputs:
+* @li output: A Tensor with length "size" for each stride and has the same dtype as weights. \n
+
+* @par Attributes:
+* binary_output: An optional bool. Defaults to False. bool;
+                 Whether the kernel should count the appearance or number of occurrences. \n
+
+* @attention Constraints:
+* The operator will use the interface set_atomic_add(), therefore weights and output should be float32 only. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow RaggedBinCount operator.
+*/
+
+REG_OP(RaggedBinCount)
+    .INPUT(splits, TensorType(DT_INT64))
+    .INPUT(values, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .OUTPUT(output, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .ATTR(binary_output, Bool, false)
+    .OP_END_FACTORY_REG(RaggedBinCount)
+
+/**
+* @brief Counts the number of occurrences of each value in an integer array. \n
+
+* @par Inputs:
+* @li input: A Tensor of type int32, int64. 1D or 2D int Tensor.
+* @li size: A Tensor. Must have the same type as input. non-negative int scalar Tensor.
+* @li weights: A Tensor. Must be one of the following types: int32, int64, float32, float64.
+               with the same shape as input,
+               or a length-0 Tensor, in which case it acts as all weights equal to 1. \n
+
+* @par Outputs:
+* @li output: A Tensor with length "size" for each stride and has the same dtype as weights. \n
+
+* @par Attributes:
+* binary_output: An optional bool. Defaults to False. bool;
+                 Whether the kernel should count the appearance or number of occurrences. \n
+
+* @attention Constraints:
+* The operator will use the interface set_atomic_add(), therefore weights and output should be float32 only. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow DenseBincount operator.
+*/
+
+REG_OP(DenseBincount)
+    .INPUT(input, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weights, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .OUTPUT(output, TensorType(DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE))
+    .ATTR(binary_output, Bool, false)
+    .OP_END_FACTORY_REG(DenseBincount)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

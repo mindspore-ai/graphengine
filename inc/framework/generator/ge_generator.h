@@ -27,8 +27,8 @@
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/op_desc.h"
-#include "graph/detail/attributes_holder.h"
 #include "framework/omg/omg_inner_types.h"
+#include "graph/detail/attributes_holder.h"
 
 namespace ge {
 const std::string kAttrSupportDynamicShape = "support_dynamicshape";
@@ -43,9 +43,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
   }
   GeGenerator() = default;
 
-  ~GeGenerator() {
-    (void)Finalize();
-  }
+  ~GeGenerator() { (void)Finalize(); }
 
   GeGenerator(const GeGenerator &) = delete;
 
@@ -87,14 +85,15 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [out] model_buff: model buff of op.
   /// @return SUCCESS or FAILED
   Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                            const std::vector<GeTensor> &outputs,
+                            OpEngineType engine_type, ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                            const std::vector<GeTensor> &outputs,
+                            OpEngineType engine_type, int32_t compile_flag, ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                             const std::vector<GeTensor> &outputs, OpEngineType engine_type,
-                            ModelBufferData &model_buff);
-  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
-                            const std::vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
-                            ModelBufferData &model_buff);
-  Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
-                            const std::vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
-                            ModelBufferData &model_buff, GraphStage graph_stage, ComputeGraphPtr &compute_graph);
+                            int32_t compile_flag, ModelBufferData &model_buff,
+                            GraphStage graph_stage, ComputeGraphPtr &compute_graph);
 
   ///
   /// @ingroup ge
@@ -105,12 +104,12 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] graph_name: graph name.
   /// @param [out] graph: graph of single op.
   /// @return SUCCESS or FAILED
-  Status BuildSingleOpGraph(const OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs, std::string graph_name,
-                            Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type) const;
+  Status BuildSingleOpGraph(const OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs,
+                            std::string graph_name, Graph &graph,
+                            std::vector<std::pair<std::string, std::string>> &inputs_name_type) const;
   Status BuildOriginalGraphInfo(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                                 const std::vector<GeTensor> &outputs, const std::string &model_file_name,
-                                bool is_offline, int32_t compile_flag, GraphStage graph_stage, Graph &graph,
-                                ComputeGraphPtr &compute_graph, bool &fuzz_compile_flag,
+                                bool is_offline, GraphStage graph_stage, Graph &graph, ComputeGraphPtr &compute_graph,
                                 std::vector<std::pair<std::string, std::string>> &inputs_name_type);
 
  private:
@@ -125,16 +124,25 @@ class GE_FUNC_VISIBILITY GeGenerator {
   Status CheckForSingleOp(const OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                           const std::vector<GeTensor> &outputs) const;
   Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph) const;
+  Status ResetAiCpuToDynamicShape(const ComputeGraphPtr &graph) const;
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
-  Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model, const std::vector<GeTensor> &inputs,
+  Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model,
+                                     const std::vector<GeTensor> &inputs,
                                      const std::vector<GeTensor> &outputs,
                                      const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
                                      std::vector<ge::NamedAttrs> &generalized_build_attrs) const;
+  void AddExcludeEnginesOption(const OpDescPtr &op_desc, std::map<std::string, std::string> &graph_options) const;
+  void AddShapeGeneralizedOption(std::map<std::string, std::string> &graph_options);
+  void SetFuzzCompile(const std::vector<GeTensor> &inputs, int32_t compile_flag);
+  bool IsFuzzCompileEnable();
+  void ConvertOpInfosToOptions(const OpDescPtr &op_desc);
+  Status ResetInputOutputShape(const ComputeGraphPtr &graph, std::vector<GeTensor> &inputs_dynamic,
+                               std::vector<GeTensor> &outputs_dynamic);
+  Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic);
 
   class Impl;
-
   std::shared_ptr<Impl> impl_;
 };
 }  // namespace ge

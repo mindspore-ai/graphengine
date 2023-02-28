@@ -21,13 +21,11 @@
 #include <sstream>
 #include <string>
 
-#include <google/protobuf/text_format.h>
 #include "external/graph/types.h"
 #include "external/register/register.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/scope_guard.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/detail/attributes_holder.h"
 
 #define GE_CHECK_POSITIVE_SIZE_RANGE(size)                             \
   do {                                                                 \
@@ -47,27 +45,27 @@
 
 // new ge marco
 // Encapsulate common resource releases
-#define GE_MAKE_GUARD_RTMEM(var)  \
-  GE_MAKE_GUARD(var, [&] {        \
-    if ((var) != nullptr) {       \
-      GE_CHK_RT(rtFreeHost(var)); \
-    }                             \
+#define GE_MAKE_GUARD_RTMEM(var)        \
+  GE_MAKE_GUARD(var, [&] {              \
+    if ((var) != nullptr) {             \
+      GE_CHK_RT(rtFreeHost(var));       \
+    }                                   \
   })
 
-#define GE_MAKE_GUARD_RTSTREAM(var)    \
-  GE_MAKE_GUARD(var, [&] {             \
-    if ((var) != nullptr) {            \
-      GE_CHK_RT(rtStreamDestroy(var)); \
-    }                                  \
+#define GE_MAKE_GUARD_RTSTREAM(var)     \
+  GE_MAKE_GUARD(var, [&] {              \
+    if ((var) != nullptr) {             \
+      GE_CHK_RT(rtStreamDestroy(var));  \
+    }                                   \
   })
 
 // For propagating errors when calling a function.
-#define GE_RETURN_IF_ERROR(expr)           \
-  do {                                     \
-    const ge::Status _chk_status = (expr); \
-    if (_chk_status != ge::SUCCESS) {      \
-      return _chk_status;                  \
-    }                                      \
+#define GE_RETURN_IF_ERROR(expr)            \
+  do {                                      \
+    const ge::Status _chk_status = (expr);  \
+    if (_chk_status != ge::SUCCESS) {       \
+      return _chk_status;                   \
+    }                                       \
   } while (false)
 
 #define GE_RETURN_WITH_LOG_IF_ERROR(expr, ...) \
@@ -201,7 +199,7 @@
 #define GE_DELETE_NEW_ARRAY(var) \
   do {                           \
     if ((var) != nullptr) {      \
-      delete[](var);             \
+      delete[] (var);            \
       (var) = nullptr;           \
     }                            \
   } while (false)
@@ -211,7 +209,7 @@
     if ((addr) != nullptr) {                                        \
       const rtError_t error = rtFree(addr);                         \
       if (error != RT_ERROR_NONE) {                                 \
-        GELOGE(RT_FAILED, "Call rtFree failed, error: %#x", error); \
+        GELOGE(ge::RT_FAILED, "Call rtFree failed, error: %#x", error); \
       }                                                             \
       (addr) = nullptr;                                             \
     }                                                               \
@@ -224,12 +222,10 @@ namespace ge {
  */
 constexpr int32_t OM_PROTO_VERSION = 2;
 
-///
 /// @ingroup domi_common
 /// @brief onverts Vector of a number to a string.
 /// @param [in] v  Vector of a number
 /// @return string
-///
 template <typename T>
 GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
   bool first = true;
@@ -247,76 +243,12 @@ GE_FUNC_VISIBILITY std::string ToString(const std::vector<T> &v) {
   return ss.str();
 }
 
-///
-/// @ingroup domi_common
-/// @brief Converts RepeatedField to String.
-/// @param [in] rpd_field  RepeatedField
-/// @return string
-///
-template <typename T>
-GE_FUNC_VISIBILITY std::string ToString(const google::protobuf::RepeatedField<T> &rpd_field) {
-  std::stringstream ss;
-  ss << "[";
-  for (const T x : rpd_field) {
-    ss << x;
-    ss << ", ";
-  }
-  // Delete the two extra characters at the end of the line.
-  std::string str = ss.str().substr(0U, ss.str().length() - 2U);
-  str += "]";
-  return str;
-}
-
-///
-///  @ingroup ge_ir_utils
-///  @brief RepeatedPtrField->String
-///  @param [in] const rpd_field  RepeatedPtrField
-///  @return String
-///
-template <typename T>
-GE_FUNC_VISIBILITY std::string ToString(const google::protobuf::RepeatedPtrField<T> &rpd_ptr_field) {
-  std::stringstream ss;
-  ss << "[";
-  for (const T &x : rpd_ptr_field) {
-    ss << x;
-    ss << ", ";
-  }
-  std::string str_ret = ss.str().substr(0U, ss.str().length() - 2U);
-  str_ret += "]";
-  return str_ret;
-}
-
-///
-/// @ingroup domi_common
-/// @brief Reads the proto structure from an array.
-/// @param [in] data proto data to be read
-/// @param [in] size proto data size
-/// @param [out] proto Memory for storing the proto file
-/// @return true success
-/// @return false fail
-///
-GE_FUNC_VISIBILITY bool ReadProtoFromArray(const void *const data, const int32_t size,
-                                           google::protobuf::Message *const proto);
-
-///
-/// @ingroup domi_proto
-/// @brief Reads the proto file in the text format.
-/// @param [in] file path of proto file
-/// @param [out] message Memory for storing the proto file
-/// @return true success
-/// @return false fail
-///
-GE_FUNC_VISIBILITY bool ReadProtoFromText(const char_t *const file, google::protobuf::Message *const message);
-
-///
 /// @ingroup: domi_common
 /// @brief: get length of file
 /// @param [in] input_file: path of file
 /// @return int64_t： File length. If the file length fails to be obtained, the value -1 is returned.
-///
 GE_FUNC_VISIBILITY extern int64_t GetFileLength(const std::string &input_file);
 
-///
 /// @ingroup domi_common
 /// @brief Reads all data from a binary file.
 /// @param [in] file_name  path of file
@@ -324,59 +256,36 @@ GE_FUNC_VISIBILITY extern int64_t GetFileLength(const std::string &input_file);
 /// @param [out] length  Output memory size
 /// @return false fail
 /// @return true success
-///
 GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char_t *const file_name, char_t **const buffer, int32_t &length);
 
-///
 /// @ingroup domi_common
 /// @brief Recursively Creating a Directory
 /// @param [in] directory_path  Path, which can be a multi-level directory.
 /// @return 0 success
 /// @return -1 fail
-///
 GE_FUNC_VISIBILITY extern int32_t CreateDirectory(const std::string &directory_path);
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the current time string.
 /// @return Time character string in the format ： %Y%m%d%H%M%S, eg: 20171011083555
-///
 GE_FUNC_VISIBILITY std::string CurrentTimeInStr();
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the absolute time (timestamp) of the current system.
 /// @return Timestamp, in microseconds (US)
-///
-///
 GE_FUNC_VISIBILITY uint64_t GetCurrentTimestamp();
 
-///
 /// @ingroup domi_common
 /// @brief Obtains the absolute time (timestamp) of the current system.
 /// @return Timestamp, in seconds (US)
-///
-///
 GE_FUNC_VISIBILITY uint32_t GetCurrentSecondTimestap();
 
-///
-/// @ingroup domi_common
-/// @brief Check whether the product of two int64 numbers exceeds the int64 range.
-/// @param [in] a
-/// @param [in] b
-/// @return false: true: The result is within the normal int64 range.
-///
-GE_FUNC_VISIBILITY bool CheckInt64MulOverflow(const int64_t a, const int64_t b);
-
-///
 /// @ingroup domi_common
 /// @brief Absolute path for obtaining files.
 /// @param [in] path of input file
 /// @param [out] Absolute path of a file. If the absolute path cannot be obtained, an empty string is returned
-///
 GE_FUNC_VISIBILITY std::string RealPath(const char_t *path);
 
-///
 /// @ingroup domi_common
 /// @brief Check whether the specified input file path is valid.
 /// 1.  The specified path cannot be empty.
@@ -384,23 +293,18 @@ GE_FUNC_VISIBILITY std::string RealPath(const char_t *path);
 /// 3.  The file path exists and is readable.
 /// @param [in] file_path path of input file
 /// @param [out] result
-///
 GE_FUNC_VISIBILITY bool CheckInputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
-///
 /// @ingroup domi_common
 /// @brief Checks whether the specified output file path is valid.
 /// @param [in] file_path path of output file
 /// @param [out] result
-///
 GE_FUNC_VISIBILITY bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
-///
 /// @ingroup domi_common
 /// @brief Check whether the file path meets the whitelist verification requirements.
 /// @param [in] str file path
 /// @param [out] result
-///
 GE_FUNC_VISIBILITY bool ValidateStr(const std::string &file_path, const std::string &mode);
 
 GE_FUNC_VISIBILITY Status ConvertToInt32(const std::string &str, int32_t &val);

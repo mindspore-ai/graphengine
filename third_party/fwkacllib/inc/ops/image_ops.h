@@ -28,10 +28,10 @@ namespace ge {
 *@brief Decode the frame(s) of a GIF-encoded image to a uint8 tensor . \n
 
 *@par Inputs:
-*contents:A Tensor of type string. 0-D. The GIF-encoded image. \n
+*contents: A Tensor of type string. 0-D. The GIF-encoded image. \n
 
 *@par Outputs:
-*image:A Tensor of type uint8. \n
+*image: A Tensor of type uint8. \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow DecodeGif operator.
@@ -47,12 +47,17 @@ REG_OP(DecodeGif)
 *@par Inputs:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
 interpretted as channels, and must be three. Inputs include:
-*@li images:A Tensor of type float. Images to adjust. At least 3-D. The format
-must be NHWC.
-*@li delta:A Tensor of type float. A float delta to add to the hue . \n
+* @li images: Images to adjust. Must be one of the following types:uint8, float16, float32.
+            At least 3-D. The format could be NHWC, NCHW or ND.
+* @li delta: A Tensor of type float. A float delta to add to the hue . \n
 
 *@par Outputs:
-*y:A Tensor of type float. The format must be NHWC. \n
+*y: Images to adjust. Must be one of the following types:uint8, float16, float32.
+            At least 3-D. The format could be NHWC, NCHW or ND. \n
+
+*@par Attributes:
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+            Value used for inferring real format of images.
 
 *@attention Constraints:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
@@ -63,9 +68,10 @@ interpretted as channels, and must be three . \n
 */
 
 REG_OP(AdjustHue)
-    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
     .INPUT(delta, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .ATTR(data_format, String, "HWC")
     .OP_END_FACTORY_REG(AdjustHue)
 
 /**
@@ -74,12 +80,12 @@ REG_OP(AdjustHue)
 *@par Inputs:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
 interpretted as channels, and must be three. Inputs include:
-*@li images:A Tensor of type float. Images to adjust. At least 3-D. The format
+*@li images: A Tensor of type float. Images to adjust. At least 3-D. The format
 must be NHWC.
-*@li scale:A Tensor of type float. A float scale to add to the saturation . \n
+*@li scale: A Tensor of type float. A float scale to add to the saturation . \n
 
 *@par Outputs:
-*y:A Tensor of type float. The format must be NHWC. \n
+*y: A Tensor of type float. The format must be NHWC. \n
 
 *@attention Constraints:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
@@ -101,12 +107,12 @@ REG_OP(AdjustSaturation)
 *@par Inputs:
 *Input images is a tensor of at least 3 dimensions. The last 3 dimensions are
 interpreted as '[height, width, channels]'. Inputs include:
-*@li images:A Tensor of type float. Images to adjust. At least 3-D. The format
+*@li images: A Tensor of type float. Images to adjust. At least 3-D. The format
 must be NHWC.
-*@li scale:A Tensor of type float. A float multiplier for adjusting contrast . \n
+*@li scale: A Tensor of type float. A float multiplier for adjusting contrast . \n
 
 *@par Outputs:
-*y:A Tensor of type float. The format must be NHWC. \n
+*y: A Tensor of type float. The format must be NHWC. \n
 
 *@attention Constraints:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
@@ -123,19 +129,19 @@ REG_OP(AdjustContrast)
     .OP_END_FACTORY_REG(AdjustContrast)
 
 /**
-*@brief Extracts crops from the input image tensor and resizes them. Extracts
+* @brief Extracts crops from the input image tensor and resizes them. Extracts
 crops from the input image tensor and resizes them using bilinear sampling or
 nearest neighbor sampling to a common output size specified by crop_size . \n
 
 *@par Inputs:
 *Input x must be a 4-D tensor. Inputs include:
-*@li x:A Tensor. Must be one of the following types:uint8, uint16, int8,
+* @li x: A Tensor. Must be one of the following types:uint8, uint16, int8,
 int16, int32, int64, float16, float, double. A 4-D tensor of shape
 [batch, image_height, image_width, depth]. The format must be NHWC.
 *@li boxes: A Tensor. Must be one of the following types: float16, float. A 2-D tensor of shape [num_boxes, 4].
 *@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with
 int32 values in [0, batch).
-*@li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements, crop_size
+* @li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements, crop_size
 = [crop_height, crop_width]. All cropped image patches are resized to this size . \n
 
 *@par Attributes:
@@ -146,7 +152,7 @@ extrapolation, when applicable.
 NearestNeighbor . \n
 
 *@par Outputs:
-*y: A Tensor. Must be one of the following types: float16, float. The format must be NHWC. \n
+* y: A Tensor. Must be one of the following types: float16, float. The format must be NHWC. \n
 
 *@attention Constraints:
 *Input images must be a 4-D tensor . \n
@@ -167,13 +173,63 @@ REG_OP(CropAndResize)
     .OP_END_FACTORY_REG(CropAndResize)
 
 /**
+* @brief Extracts crops from the input image tensor and resizes them. Extracts
+crops from the input image tensor and resizes them using bilinear sampling or
+nearest neighbor sampling to a common output size specified by crop_size . \n
+
+* @par Inputs:
+* Input x must be a 4-D tensor. Inputs include:
+* @li x: A Tensor. Must be one of the following types:uint8, uint16, int8,
+         int16, int32, int64, float16, float, double. A 4-D tensor of shape
+         [batch, image_height, image_width, depth]. The format must be NHWC.
+* @li boxes: A Tensor. Must be the float types.
+             A 2-D tensor of shape [num_boxes, 4].
+* @li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with
+                 int32 values in [0, batch).
+* @li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements,
+                 crop_size = [crop_height, crop_width].
+                 All cropped image patches are resized to this size . \n
+
+* @par Attributes:
+* @li extrapolation_value: An optional float. Defaults to 0. Value used for
+                           extrapolation, when applicable.
+* @li method: An optional string from: '"bilinear", "nearest"'. Defaults to
+              "bilinear". Currently two sampling methods are supported: Bilinear
+              and NearestNeighbor .
+* @li dtype: An Type attr, support type list [uint8, float16, float].
+             Defaults to DT_FLOAT . \n
+
+* @par Outputs:
+* y: A Tensor. Must be one of the following types: uint8, float16, float.
+     The format must be NHWC. \n
+
+* @attention Constraints:
+* Input images must be a 4-D tensor . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow CropAndResize operator.
+*/
+
+REG_OP(CropAndResizeV2)
+    .INPUT(x, TensorType({DT_UINT8, DT_UINT16, DT_INT8, \
+        DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(box_index, TensorType({DT_INT32}))
+    .INPUT(crop_size, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(extrapolation_value, Float, 0)
+    .ATTR(method, String, "bilinear")
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(CropAndResizeV2)
+
+/**
 *@brief Extracts crops from the input image tensor and resizes them.
 * Extracts crops from the input image tensor and resizes them using bilinear sampling or
 * nearest neighbor sampling to a common output size specified by crop_size . \n
 
 *@par Inputs:
 *Input images must be a 5HD tensor. Inputs include:
-*@li x:A Tensor. Must be one of the following types:float16, float. A 5HD tensor of shape
+*@li x: A Tensor. Must be one of the following types:float16, float. A 5HD tensor of shape
 * [batch, C1, image_height, image_width, C0].
 *@li boxes: A Tensor. Must be one of the following types: float16, float. A 2-D tensor of shape [num_boxes, 4].
 *@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch) . \n
@@ -1247,7 +1303,8 @@ REG_OP(DecodeBmp)
 *@li acceptable_fraction: An optional float. Defaults to 1. The minimum required
 fraction of lines before a truncated input is accepted.
 *@li dct_method: An optional string. Defaults to "". string specifying a hint
-*about the algorithm used for decompression. \n
+*about the algorithm used for decompression. 
+*@li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.
@@ -1262,6 +1319,7 @@ REG_OP(DecodeAndCropJpeg)
     .ATTR(try_recover_truncated, Bool, false)
     .ATTR(acceptable_fraction, Float, 1.0)
     .ATTR(dct_method, String, "")
+    .ATTR(dst_img_format, String, "HWC")
     .OP_END_FACTORY_REG(DecodeAndCropJpeg)
 
 /**
@@ -1649,6 +1707,9 @@ REG_OP(IMGWarpResize)
 
 *@par Outputs:
 *y: A Tensor dtype of float16, float32, should be same shape and type as x.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(SpatialTransformerD)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
@@ -1755,6 +1816,55 @@ REG_OP(Resize)
     .OP_END_FACTORY_REG(Resize)
 
 /**
+*@brief Calculate the resize_grad function.
+support resize_grad image tensor using nearest(1d) and linear(1d) and bicubic(2d) interpolation. \n
+
+* @par Inputs:
+* Input grads must be a 4-D tensor. Inputs include:
+* @li grads: A Tensor. Must be one of the following types: uint8, int8, int16,
+int32, int64, float16, float, double. 4-D with shape [batch, height, width, channels]
+or shape [batch, channels, height, width].
+* @li roi: A 1-D float Tensor. only takes effect when attr coordinate_transformation_mode
+is "tf_crop_and_resize"
+* @li scales: A 1-D float Tensor, the scale array along each dimension.
+* @li original_size: A 1-D int64 Tensor, The size of the output tensor. \n
+
+* @par Attributes:
+* @li coordinate_transformation_mode: String. Defaults to half_pixel. how to transform
+the coordinate in the resized tensor to the coordinate in the original tensor.
+other optional: pytorch_half_pixel, align_corners, asymmetric, tf_half_pixel_for_nn,
+tf_crop_and_resize.
+* @li cubic_coeff_a: Float. Defaults to -0.75, only used in cubic interpolation.
+other optional: -0.5
+* @li exclude_outside: Int. Defaults to 0, If set to 1, the weight of sampling
+locations outside the tensor will be set to 0 and the weight will be renormalized
+so that their sum is 1.0.
+* @li extrapolation_value: Float. Defaults to 0.0f. When coordinate_transformation_mode
+is "tf_crop_and_resize" and x_original is outside the range [0, length_original - 1],
+this value is used as the corresponding output value.
+* @li mode: String. Defaults to nearest. Three interpolation modes: nearest (default),
+linear and cubic.
+* @li nearest_mode: String. Defaults to round_prefer_floor. Four modes: round_prefer_floor,
+round_prefer_ceil, floor, ceil. Only used by nearest interpolation. \n
+
+*@par Outputs:
+*@li y: A Tensor with the same type of grads's, shape depends on grads and sizes. \n
+*/
+REG_OP(ResizeGrad)
+    .INPUT(grads, TensorType({OrdinaryType, DT_STRING}))
+    .OPTIONAL_INPUT(roi, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OPTIONAL_INPUT(scales, TensorType({DT_FLOAT}))
+    .INPUT(original_size, TensorType({DT_INT64, DT_INT32}))
+    .OUTPUT(y, TensorType({OrdinaryType, DT_STRING}))
+    .ATTR(coordinate_transformation_mode, String, "half_pixel")
+    .ATTR(cubic_coeff_a, Float, -0.75)
+    .ATTR(exclude_outside, Int, 0)
+    .ATTR(extrapolation_value, Float, 0.0)
+    .ATTR(mode, String, "nearest")
+    .ATTR(nearest_mode, String, "round_prefer_floor")
+    .OP_END_FACTORY_REG(ResizeGrad)
+
+/**
 *@brief Function parse image from string to int. \n
 
 *@par Inputs:
@@ -1765,8 +1875,11 @@ REG_OP(Resize)
 *@li ratio: An optional int. Defaults to 1. Downscaling ratio.
 *@li fancy_upscaling: An optional bool. Defaults to True. If true use a slower but nicer upscaling of the chroma planes
 *@li try_recover_truncated: An optional bool. Defaults to False. If true try to recover an image from truncated input.
-*@li acceptable_fraction: An optional float. Defaults to 1. The minimum required fraction of lines before a truncated input is accepted.
-*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used for decompression. \n
+*@li acceptable_fraction: An optional float. Defaults to 1. 
+* The minimum required fraction of lines before a truncated input is accepted.
+*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used 
+* for decompression.
+*@li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.
@@ -1780,6 +1893,7 @@ REG_OP(DecodeJpeg)
     .ATTR(try_recover_truncated, Bool, false)
     .ATTR(acceptable_fraction, Float, 1.0)
     .ATTR(dct_method, String, "")
+    .ATTR(dst_img_format, String, "HWC")
     .OP_END_FACTORY_REG(DecodeJpeg)
 
 /**
@@ -1828,6 +1942,9 @@ REG_OP(DenseImageWarp)
 *@par Outputs:
 *y: A Tensor with the same type of x's,
     shape depends on x and sizes. \n
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 REG_OP(ResizeD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -2039,24 +2156,24 @@ REG_OP(IMGWarpOffsets)
     .OP_END_FACTORY_REG(IMGWarpOffsets)
 
 /**
-*@brief This operation samples 3d input x by using interpolation based on flow field grid,
- which is usually gennerated by affine_grid.
+* @brief This operation samples 3d input x by using interpolation based on flow field grid,
+  which is usually gennerated by affine_grid.
 
-*@par Inputs:
-*@li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
-*@li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
+* @par Inputs:
+* @li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
+* @li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
 
-*@par Attributes:
-*@li interpolation_mode: An optional string specifying the interpolation method.
-*@li padding_mode: An optional string specifying the pad method.
-*@li align_corners: An optional bool. If "true", the centers of the corner
- pixels of the input and output tensors are aligned. Defaults to "false" .
+* @par Attributes:
+* @li interpolation_mode: An optional string specifying the interpolation method.
+* @li padding_mode: An optional string specifying the pad method.
+* @li align_corners: An optional bool. If "true", the centers of the corner
+  pixels of the input and output tensors are aligned. Defaults to "false" .
 
-*@par Outputs:
-*y: Returns 5-D Tensor with the same dtype as `x`.
+* @par Outputs:
+* y: Returns 5-D Tensor with the same dtype as `x`.
 
-*@par Third-party framework compatibility
-*Compatible with pytorch GridSampler3D operator.
+* @par Third-party framework compatibility
+* Compatible with pytorch GridSampler3D operator.
 */
 REG_OP(GridSampler3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -2346,6 +2463,50 @@ REG_OP(EncodeJpegVariableQuality)
     .OP_END_FACTORY_REG(EncodeJpegVariableQuality)
 
 /**
+* @brief Select top 'pre_nms_topn' scoring boxes, decodes them with respect to anchors, applies non-maximal suppression
+* on overlapping boxes with higher than 'nms_threshold' intersection-over-union (IoU) value, discarding boxes where
+* shorter side is less than 'min_size'. \n
+
+* @par Inputs:
+* scores: 4-D tensor with shape of [num_images, height, width, num_anchors], containing the scores of the boxes for
+* given anchors, can be unsorted. Must be one of the following types: float32 . \n
+* bbox_deltas: 4-D tensor with shape of [num_images, height, width, 4 * num_anchors], encoding boxes with respect to
+* each anchor. Coordinates are given in the form [dy, dx, dh, dw]. Must be one of the following types: float32.. \n
+* image_info: 2-D tensor with shape of [num_images, 5], containing image information Height, Width, Scale. Must be one
+* of the following types: float32. \n
+* anchors: 3-D tensor with shape of [height, width, 4 * num_anchors], describing the anchor boxes. Boxes are formatted
+* in the form [y1, x1, y2, x2]. Must be one of the following types: float32. \n
+* nms_threshold: A scalar of type float32, non-maximal suppression threshold. \n
+* pre_nms_topn: A scalar of type int32, number of top scoring boxes to be used as input. \n
+* min_size: A scalar of type float32, Any boxes that has a smaller size than min_size will be discarded. \n
+
+* @par Attributes:
+* post_nms_topn: An optional float. Maximum number of rois in the output. Defaults to be 300. \n
+
+* @par Outputs:
+* @li rois: 3-D tensor with shape of [num_images, post_nms_topn, 4], padded by 0 if less than 'post_nms_topn'. Must be
+* one of the following types: float32 . \n
+* @li rois_probabilities: 2-D tensor with shape of [num_images, post_nms_topn], probability of each roi in 'rois'
+* padded by 0 if needed, sorted by scores. Must be one of the following types: float32. \n
+
+* @attention Constraints:+
+* Only supports 2864 input boxes at one time.\n
+
+*/
+REG_OP(GenerateBoundingBoxProposals)
+    .INPUT(scores, TensorType({DT_FLOAT}))
+    .INPUT(bbox_deltas, TensorType({DT_FLOAT}))
+    .INPUT(image_info, TensorType({DT_FLOAT}))
+    .INPUT(anchors, TensorType({DT_FLOAT}))
+    .INPUT(nms_threshold, TensorType({DT_FLOAT}))
+    .INPUT(pre_nms_topn, TensorType({DT_INT32}))
+    .INPUT(min_size, TensorType({DT_FLOAT}))
+    .OUTPUT(rois, TensorType({DT_FLOAT}))
+    .OUTPUT(rois_probabilities, TensorType({DT_FLOAT}))
+    .ATTR(post_nms_topn, Int, 300)
+    .OP_END_FACTORY_REG(GenerateBoundingBoxProposals)
+
+/**
 * @brief image to transforms. \n
 
 * @par Inputs:
@@ -2371,5 +2532,155 @@ REG_OP(ImageProjectiveTransform)
     .ATTR(fill_mode, String, "CONSTANT")
     .OUTPUT(transformed_images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(ImageProjectiveTransform)
+
+/**
+* @brief image to transforms. \n
+
+* @par Inputs:
+* @li images: [batch, height, width, channels], 4-D tensor.
+* @li transforms: [batch, 8] or [1, 8] matrix, 2-D tensor.
+* @li outout_shape: [new_height, new_width], 1-D tensor.
+* @li fill_value: [scalar], 1-D tensor.
+
+* @par Attributes:
+* @li interpolation: Interpolation method, "NEAREST" or "BILINEAR", 0-D tensor.
+* @li fill_mode: Defaults to "CONSTANT". Fill mode, "REFLECT", "WRAP", or "CONSTANT", 0-D tensor.
+
+* @par Outputs
+* transformed_images: has the same type as iamges, 4-D tensor with shape[batch, new_height, new_width, channels]. \n
+
+* @par Third-party framework compatibility.
+* Compatible with tensorflow ImageProjectiveTransformv2 operator.
+*/
+REG_OP(ImageProjectiveTransformV2)
+    .INPUT(images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(transforms, TensorType({DT_FLOAT}))
+    .INPUT(output_shape, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(fill_value, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(interpolation, String)
+    .ATTR(fill_mode, String, "CONSTANT")
+    .OUTPUT(transformed_images, TensorType({DT_UINT8, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(ImageProjectiveTransformV2)
+
+/**
+* @brief Extracts a glimpse from the input tensor . \n
+
+* @par Inputs:
+* Input input must be a 4-D tensor. Inputs include:
+* @li input: A 4-D float tensor of shape [batch_size, height, width, channels].
+The format must be NHWC.
+* @li size: A 1-D tensor of 2 elements containing the size of the glimpses to
+extract. The glimpse height must be specified first, following by the glimpse
+width.
+* @li offsets: A 2-D integer tensor of shape [batch_size, 2] containing the y,
+x locations of the center of each window . \n
+
+* @par Attributes:
+* @li centered: indicates if the offset coordinates are centered relative to
+the image, in which case the (0, 0) offset is relative to the center of the
+input images. If false, the (0,0) offset corresponds to the upper left corner
+of the input images.
+* @li normalized: indicates if the offset coordinates are normalized.
+* @li uniform_noise: indicates if the noise should be generated using a
+uniform distribution or a Gaussian distribution.
+* @li noise: indicates if the noise should uniform, gaussian, or zero.
+The default is uniform which means the the noise type will be decided by
+uniform_noise . \n
+
+* @par Outputs:
+* glimpse:A tensor representing the glimpses [batch_size, glimpse_height,
+glimpse_width, channels]. The format must be NHWC. \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow ExtractGlimpseV2 operator.
+*/
+
+REG_OP(ExtractGlimpseV2)
+    .INPUT(input, TensorType({DT_FLOAT}))
+    .INPUT(size, TensorType({DT_INT32}))
+    .INPUT(offsets, TensorType({DT_FLOAT}))
+    .OUTPUT(glimpse, TensorType({DT_FLOAT}))
+    .ATTR(centered, Bool, true)
+    .ATTR(normalized, Bool, true)
+    .ATTR(uniform_noise, Bool, true)
+    .ATTR(noise, String, "uniform")
+    .OP_END_FACTORY_REG(ExtractGlimpseV2)
+
+/**
+* @brief ImgToTensor: Convert image to tensor \n
+
+* @par Inputs:
+* @li image: A 4-D Tensor. type support uint8, format support NCHW or NHWC\n
+
+* @par Outputs:
+* @li y: A 4-D Tensor. type support float, format support NCHW \n
+
+* @par Third-party framework compatibility
+* Compatible with pytorch ToTensor operator.
+*/
+
+REG_OP(ImgToTensor)
+    .INPUT(x, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(ImgToTensor)
+
+/**
+* @brief NormalizeV2 \n
+
+* @par Inputs:
+* @li x: A 4-D Tensor. Must be one of the following types: uint8, float16,
+*        float. Must set the format, supported format list ["NCHW, NHWC"].
+* @li mean: A 4-D float tensor. value of "C(channel)" is same to x
+* @li variance: A 4-D float tensor. value of "C(channel)" is same to x \n
+
+* @par Outputs:
+* @li y: A 4-D Tensor. Must be one of the following types: float16, float.
+*        Must set the format, supported format list ["NCHW, NHWC"]. \n
+
+* @par Attributes:
+* @li dtype: An Type attr, support type list [DT_FLOAT16, DT_FLOAT].
+*            Defaults to DT_FLOAT. \n
+
+* @par Third-party framework compatibility
+* Compatible with pytorch normalize operator.
+*/
+
+REG_OP(NormalizeV2)
+    .INPUT(x, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT}))
+    .INPUT(variance, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(dtype, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(NormalizeV2)
+
+/**
+* @brief Applies a affine transformation to an image. \n
+
+* @par Inputs:
+* @li x: An NCHW tensor of type float32 or float32.
+* @li matrix: transformation matrix, format ND , shape must be (2, 3), type must be float32. \n
+
+* @par Attributes:
+* @li out_height: A required int32, specifying the height of the output image.
+* Must be greater than "0".
+* @li out_width: A required int32, specifying the width of the output image.
+* Must be greater than "0".
+* @li interpolation_mode: Interpolation mode, only support "bilinear" and "nearest", default "bilinear".
+* @li padding_mode: padding mode, only support "zeros", "border" and "reflection", default "zeros". \n
+
+* @par Outputs:
+* y: output tensor, format NCHW, type must be float32.
+*/
+REG_OP(WarpAffine)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(matrix, TensorType({ DT_FLOAT }))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(out_height, Int)
+    .REQUIRED_ATTR(out_width, Int)
+    .ATTR(interpolation_mode, String, "bilinear")
+    .ATTR(padding_mode, String, "const")
+    .ATTR(padding_value, Int, 0)
+    .OP_END_FACTORY_REG(WarpAffine)
 }  // namespace ge
+
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

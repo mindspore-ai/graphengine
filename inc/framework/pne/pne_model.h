@@ -31,12 +31,15 @@
 namespace ge {
 const std::string PNE_ID_NPU = "NPU";
 const std::string PNE_ID_CPU = "HOST_CPU";
+const std::string PNE_ID_UDF = "UDF";
+const std::string PNE_ID_PS = "PS";
 
 struct ModelRelation;
+struct ModelDeployResource;
 class PneModel {
  public:
   PneModel() = default;
-  explicit PneModel(const ComputeGraphPtr &root_graph) : root_graph_(root_graph){};
+  explicit PneModel(const ComputeGraphPtr &root_graph) : root_graph_(root_graph) {};
   virtual ~PneModel() = default;
   PneModel(const PneModel &other) = delete;
   PneModel &operator=(const PneModel &other) = delete;
@@ -64,58 +67,51 @@ class PneModel {
     return it->second;
   }
 
-  inline const std::map<std::string, std::shared_ptr<PneModel>> &GetSubmodels() const {
-    return submodels_;
+  inline const std::map<std::string, std::shared_ptr<PneModel>> &GetSubmodels() const { return submodels_; }
+
+  inline void SetSubmodels(std::map<std::string, std::shared_ptr<PneModel>> submodels) {
+    submodels_ = std::move(submodels);
   }
 
-  inline void SetModelType(const std::string &type) {
-    model_type_ = type;
-  }
+  inline void SetModelType(const std::string &type) { model_type_ = type; }
 
-  inline const std::string &GetModelType() const {
-    return model_type_;
-  }
+  inline const std::string &GetModelType() const { return model_type_; }
 
-  inline void SetModelName(const std::string &model_name) {
-    model_name_ = model_name;
-  }
+  inline void SetModelName(const std::string &model_name) { model_name_ = model_name; }
 
-  inline const std::string &GetModelName() const {
-    return model_name_;
-  }
+  inline const std::string &GetModelName() const { return model_name_; }
 
-  inline void SetRootGraph(const ComputeGraphPtr graph) {
-    root_graph_ = graph;
-  }
+  inline void SetRootGraph(const ComputeGraphPtr graph) { root_graph_ = graph; }
 
-  inline const ComputeGraphPtr &GetRootGraph() const {
-    return root_graph_;
-  }
+  inline const ComputeGraphPtr &GetRootGraph() const { return root_graph_; }
 
   inline void SetModelRelation(std::shared_ptr<ModelRelation> model_relation) {
     model_relation_ = std::move(model_relation);
   }
 
-  inline const std::shared_ptr<ModelRelation> GetModelRelation() const {
-    return model_relation_;
+  inline const std::shared_ptr<ModelRelation> GetModelRelation() const { return model_relation_; }
+
+  inline void SetDeployResource(std::shared_ptr<ModelDeployResource> deploy_resource) {
+    deploy_resource_ = std::move(deploy_resource);
   }
+
+  inline const std::shared_ptr<ModelDeployResource> GetDeployResource() const { return deploy_resource_; }
 
  public:
   virtual Status SerializeModel(ModelBufferData &model_buff) = 0;
 
   virtual Status UnSerializeModel(const ModelBufferData &model_buff) = 0;
 
-  virtual void SetModelId(const uint32_t model_id) {
-    model_id_ = model_id;
-  }
+  virtual void SetModelId(const uint32_t model_id) { model_id_ = model_id; }
 
-  virtual uint32_t GetModelId() const {
-    return model_id_;
-  }
+  virtual uint32_t GetModelId() const { return model_id_; }
+
+  virtual std::string GetLogicDeviceId() const { return ""; }
 
  private:
   std::map<std::string, std::shared_ptr<PneModel>> submodels_;
   std::shared_ptr<ModelRelation> model_relation_;
+  std::shared_ptr<ModelDeployResource> deploy_resource_;
   ComputeGraphPtr root_graph_ = nullptr;
   std::string model_name_;
   std::string model_type_;

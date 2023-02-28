@@ -1,18 +1,12 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* @file rt_error_codes.h
+*
+* Copyright (C) Huawei Technologies Co., Ltd. 2019-2020. All Rights Reserved.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*/
 
 #ifndef __INC_EXTERNEL_RT_ERROR_CODES_H__
 #define __INC_EXTERNEL_RT_ERROR_CODES_H__
@@ -45,6 +39,7 @@ static const int32_t ACL_ERROR_RT_INVALID_MEMORY_TYPE        = 107016; // invali
 static const int32_t ACL_ERROR_RT_INVALID_HANDLE             = 107017; // invalid handle
 static const int32_t ACL_ERROR_RT_INVALID_MALLOC_TYPE        = 107018; // invalid malloc type
 static const int32_t ACL_ERROR_RT_WAIT_TIMEOUT               = 107019; // wait timeout
+static const int32_t ACL_ERROR_RT_TASK_TIMEOUT               = 107020; // task timeout
 
 static const int32_t ACL_ERROR_RT_FEATURE_NOT_SUPPORT        = 207000; // feature not support
 static const int32_t ACL_ERROR_RT_MEMORY_ALLOCATION          = 207001; // memory allocation error
@@ -63,6 +58,8 @@ static const int32_t ACL_ERROR_RT_QUEUE_EMPTY                = 207013; // queue 
 static const int32_t ACL_ERROR_RT_QUEUE_FULL                 = 207014; // queue is full
 static const int32_t ACL_ERROR_RT_REPEATED_INIT              = 207015; // repeated init
 static const int32_t ACL_ERROR_RT_AIVEC_OVER_FLOW            = 207016; // aivec over flow
+static const int32_t ACL_ERROR_RT_OVER_FLOW                  = 207017; // common over flow
+static const int32_t ACL_ERROR_RT_DEVIDE_OOM                 = 207018; // device oom
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR             = 507000; // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR                   = 507001; // ts internel error
@@ -106,6 +103,15 @@ static const int32_t ACL_ERROR_RT_DIE_MODE_CHANGE_ERROR      = 507038; // can no
 static const int32_t ACL_ERROR_RT_DIE_SET_ERROR              = 507039; // single die mode can not set die
 static const int32_t ACL_ERROR_RT_INVALID_DIEID              = 507040; // invalid die id
 static const int32_t ACL_ERROR_RT_DIE_MODE_NOT_SET           = 507041; // die mode not set
+static const int32_t ACL_ERROR_RT_AICORE_TRAP_READ_OVERFLOW       = 507042; // aic trap read overflow
+static const int32_t ACL_ERROR_RT_AICORE_TRAP_WRITE_OVERFLOW      = 507043; // aic trap write overflow
+static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_READ_OVERFLOW  = 507044; // aiv trap read overflow
+static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_WRITE_OVERFLOW = 507045; // aiv trap write overflow
+static const int32_t ACL_ERROR_RT_STREAM_SYNC_TIMEOUT        = 507046; // stream sync time out
+static const int32_t ACL_ERROR_RT_EVENT_SYNC_TIMEOUT         = 507047; // event sync time out
+static const int32_t ACL_ERROR_RT_FFTS_PLUS_TIMEOUT          = 507048; // ffts+ timeout
+static const int32_t ACL_ERROR_RT_FFTS_PLUS_EXCEPTION        = 507049; // ffts+ exception
+static const int32_t ACL_ERROR_RT_FFTS_PLUS_TRAP_EXCEPTION   = 507050; // ffts+ trap exception
 
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR         = 507899; // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR       = 507900; // aicpu internal error

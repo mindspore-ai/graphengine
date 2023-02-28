@@ -29,6 +29,8 @@
 namespace ge {
 class ProcessNodeEngineImpl {
  public:
+  virtual ~ProcessNodeEngineImpl() = default;
+
   virtual Status OptimizeGraph(const std::vector<GeTensor> &inputs, ComputeGraphPtr &compute_graph) = 0;
 
   virtual Status BuildGraph(ComputeGraphPtr &compute_graph, PneModelPtr &model) = 0;
@@ -55,6 +57,22 @@ class ProcessNodeEngine {
   virtual const std::string &GetEngineName(const ge::NodePtr &node_ptr = nullptr) const = 0;
 
   virtual void SetImpl(ProcessNodeEngineImplPtr impl) = 0;
+
+  virtual Status AddGraph(const ComputeGraphPtr &compute_graph, const std::map<std::string, std::string> &options) {
+    (void) compute_graph;
+    (void) options;
+    return SUCCESS;
+  }
+
+  virtual Status RemoveGraph(const uint32_t graph_id) {
+    (void) graph_id;
+    return SUCCESS;
+  }
+
+  virtual Status ParallelPartition(ComputeGraphPtr &compute_graph) {
+    (void) compute_graph;
+    return NOT_CHANGED;
+  }
 
  protected:
   std::string engine_id_;

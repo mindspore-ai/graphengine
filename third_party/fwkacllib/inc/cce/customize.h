@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2020. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,14 @@
 #include <stdint.h>
 
 #define CC_DEVICE_DIM_MAX 8
-typedef enum tagOpTensorFormat
-{
+typedef enum tagOpTensorFormat {
     OP_TENSOR_FORMAT_NC1HWC0 = 0,
     OP_TENSOR_FORMAT_ND,
     OP_TENSOR_FORMAT_RESERVED,
-
 } opTensorFormat_t;
 
 
-typedef enum tagOpDataType
-{
+typedef enum tagOpDataType {
     OP_DATA_FLOAT = 0,             /**< float type */
     OP_DATA_HALF,                  /**< fp16 type */
     OP_DATA_INT8,                  /**< int8 type */
@@ -40,8 +37,7 @@ typedef enum tagOpDataType
     OP_DATA_RESERVED
 } opDataType_t;
 
-typedef struct tagOpTensor
-{
+typedef struct tagOpTensor {
     // real dim info
     opTensorFormat_t format;
     opDataType_t data_type;
@@ -51,7 +47,7 @@ typedef struct tagOpTensor
 } opTensor_t;
 
 typedef opTensor_t tagCcAICPUTensor;
-typedef void * rtStream_t;
+typedef void *rtStream_t;
 typedef void (*aicpu_run_func)(opTensor_t **, void **, int32_t,
                                opTensor_t **, void **, int32_t, void *, rtStream_t);
 

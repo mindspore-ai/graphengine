@@ -548,6 +548,9 @@ REG_OP(Snapshot)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator GuaranteeConst.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GuaranteeConst)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -717,8 +720,8 @@ REG_OP(ExpandDims)
 */
 
 REG_OP(Unsqueeze)
-    .INPUT(x, TensorType({DT_FLOAT32, DT_INT32, DT_UINT8, DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT32, DT_INT32, DT_UINT8, DT_BOOL}))
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
     .ATTR(axes, ListInt, {})
     .OP_END_FACTORY_REG(Unsqueeze)
 
@@ -791,11 +794,9 @@ REG_OP(UnsqueezeV3)
 *@li Compatible with the Caffe operator Reshape.
 */
 REG_OP(Reshape)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
-        DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .INPUT(x, TensorType::ALL())
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
-        DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .OUTPUT(y, TensorType::ALL())
     .ATTR(axis, Int, 0)
     .ATTR(num_axes, Int, -1)
     .OP_END_FACTORY_REG(Reshape)
@@ -985,7 +986,7 @@ REG_OP(PlaceholderWithDefault)
 *x: A tensor must have numeric type. \n
 
 *@par Attributes:
-*dtype: An optional int32 or int64. The output data type. Defaults to int32. \n
+*dtype: Same as the input data type. The output data type. Defaults to int32. \n
 
 *@par Outputs:
 *y: A tensor must have numeric type. \n
@@ -1160,27 +1161,27 @@ REG_OP(MirrorPadGrad)
     .OP_END_FACTORY_REG(MirrorPadGrad)
 
 /**
-*@brief Returns locations of nonzero / true values in a tensor. \n
+* @brief Returns locations of nonzero / true values in a tensor. \n
 
-*@par Inputs:
-*Including:
-*x: A Tensor. Must be one of the following types:
-DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16,
-DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL. \n
+* @par Inputs:
+* Including:
+* @li x: A Tensor. Must be one of the following types:
+  DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_QINT8,
+  DT_QUINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_QINT32,
+  DT_INT64, DT_UINT64, DT_BOOL, DT_COMPLEX64, DT_COMPLEX128 \n
 
-*@par Outputs:
-*y: A Tensor of type DT_INT64. \n
+* @par Outputs:
+* @li y: A Tensor of type DT_INT64. \n
 
-*@attention Constraints:
-*Where runs on the Ascend AI CPU, which delivers poor performance.\n
+* @attention Constraints:
+* Where runs on the Ascend AI CPU, which delivers poor performance.\n
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator Where.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Where.
 */
 
 REG_OP(Where)
-    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
-              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .INPUT(x, TensorType({BasicType(), DT_BOOL}))
     .OUTPUT(y, TensorType({DT_INT64}))
     .OP_END_FACTORY_REG(Where)
 
@@ -1462,6 +1463,9 @@ REG_OP(NonZeroWithValueShape)
 
 * @par Third-party framework compatibility
 * Compatible with the ONNX operator Expand.
+
+* @attention Constraints:
+* The operator will not be enhanced in the future.
 */
 
 REG_OP(ExpandD)
@@ -1583,6 +1587,69 @@ REG_OP(UniqueConsecutive)
     .ATTR(return_counts, Bool, false)
     .ATTR(axis, Int, 1000)
     .OP_END_FACTORY_REG(UniqueConsecutive)
+
+/**
+* @brief Decodes a variant Tensor into a RaggedTensor. \n
+*
+* @par Input:
+* @li encoded_ragged:  A Tensor of type variant. A variant Tensor containing encoded RaggedTensors. \n
+*
+* @par Outputs:
+* @li output_nested_splits: A list of output_ragged_rank Tensor objects with type int32 or int64.
+* @li output_dense_values:  A Tensor, which must be one of the following types:
+*               double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool. \n
+*
+* @par Attributes:
+* @li input_ragged_rank: An int that is >= -1. The ragged rank of each encoded RaggedTensor component in the input.
+*         If set to -1, this is inferred as output_n - rank(encoded_ragged).
+* @li output_ragged_rank: An int that is >= 0. The expected ragged rank of the output RaggedTensor.
+*          The following must hold: output_n = rank(encoded_ragged) + input_n.
+* @li Tvalues: The data type of output_dense_values.
+* @li Tsplits: The data type of output_nested_splits. An optional DType of "int32, int64". Defaults to `int64`. \n
+*
+* @par Third-party framework compatibility.
+* Compatible with tensorflow RaggedTensorFromVariant operator.
+*/
+REG_OP(RaggedTensorFromVariant)
+    .INPUT(encoded_ragged, TensorType({DT_VARIANT}))
+    .DYNAMIC_OUTPUT(output_nested_splits, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(output_dense_values, TensorType::BasicType())
+    .REQUIRED_ATTR(input_ragged_rank, Int)
+    .REQUIRED_ATTR(output_ragged_rank, Int)
+    .REQUIRED_ATTR(Tvalues, Type)
+    .ATTR(Tsplits, Type, DT_INT64)
+    .OP_END_FACTORY_REG(RaggedTensorFromVariant)
+
+/**
+* @brief Return the unique elements of the input tensor with counts and sorted elements. \n
+
+* @par Inputs:
+* @li x: A tensor. Input "x" is a k-dimensional tensor. \n
+
+* @par Attributes:
+* @li return_inverse: An optional DType from: "bool". Defaults to False.
+* @li return_counts: An optional DType from: "bool". Defaults to False.
+* @li sorted: An optional DType from "bool". Defaults to True. \n
+
+* @par Outputs:
+* @li y: A Tensor. The output list of unique scalar elements. Has the same type as "x".
+* @li indices: A tensor of type DT_INT32, DT_INT64.
+*              Representing the indices for where elements in the original input map to in the output.
+* @li counts: A tensor of type DT_INT32, DT_INT64.
+              Representing the number of occurrences for each unique value or tensor. \n
+
+* @par Third-party framework compatibility
+* Compatible with Pytorch operator _unique2.
+*/
+REG_OP(UniqueWithCountsAndSorting)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(counts, TensorType({DT_INT32, DT_INT64}))
+    .ATTR(return_inverse, Bool, false)
+    .ATTR(return_counts, Bool, false)
+    .ATTR(sorted, Bool, true)
+    .OP_END_FACTORY_REG(UniqueWithCountsAndSorting)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

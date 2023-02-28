@@ -207,6 +207,10 @@ enum {
     HSS, /**< helper */
     FFTS,
     OP,
+    UDF,
+    HICAID,
+    TSYNC,
+    AUDIO,
     INVLID_MOUDLE_ID
 };
 

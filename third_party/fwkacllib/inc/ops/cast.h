@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef INC_FRAMEWORK_COMMON_AICPU_OP_H_
-#define INC_FRAMEWORK_COMMON_AICPU_OP_H_
+/*!
+ * \file cast.h
+ * \brief
+ */
 
-#include "cce/customize.h"
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_CAST_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_CAST_H_
 
-#endif  // INC_FRAMEWORK_COMMON_AICPU_OP_H_
+
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_CAST_H_

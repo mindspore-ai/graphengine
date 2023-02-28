@@ -51,10 +51,10 @@ typedef enum tagRtDeviceCapabilityType {
     RT_SCHEDULE_SOFTWARE_OPT,
     RT_SCHEDULE_HARDWARE, // HWTS Schedule
     RT_AICPU_BLOCKING_OP_NOT_SUPPORT,
-    RT_AICPU_BLOCKING_OP_SUPPORT, // 1910/1980/1951 ts support AICPU blocking operation
+    RT_AICPU_BLOCKING_OP_SUPPORT, // 1910/1980/51 ts support AICPU blocking operation
     RT_MODE_NO_FFTS, // no ffts
-    RT_MODE_FFTS, // 1981 get ffts work mode, ffts
-    RT_MODE_FFTS_PLUS, // 1981 get ffts work mode, ffts plus
+    RT_MODE_FFTS, // 81 get ffts work mode, ffts
+    RT_MODE_FFTS_PLUS, // 81 get ffts work mode, ffts plus
 } rtDeviceCapabilityType;
 
 typedef enum tagRtVersion {
@@ -79,7 +79,14 @@ typedef enum tagRtPlatformType {
     PLATFORM_LHISI_SD3403 = 7,
     PLATFORM_MINI_V3 = 8,
     PLATFORM_MINI_5612 = 9,
-    PLATFORM_END = 10,
+    PLATFORM_CLOUD_V2_910B1 = 10,
+    PLATFORM_CLOUD_V2_910B2 = 11,
+    PLATFORM_CLOUD_V2_910B3 = 12,
+    PLATFORM_CLOUD_V2_910C1 = 13,
+    PLATFORM_CLOUD_V2_910C2 = 14,
+    PLATFORM_CLOUD_V2_910C3 = 15,
+    PLATFORM_MDC_BS9SX1A = 16,
+    PLATFORM_END = 17,
 } rtPlatformType_t;
 
 typedef enum tagRtCubeFracMKNFp16 {
@@ -184,15 +191,6 @@ RTS_API rtError_t rtGetAiCoreMemoryRates(rtAiCoreMemoryRates_t *aiCoreMemoryRate
  * @return memoryConfig
  */
 RTS_API rtError_t rtGetMemoryConfig(rtMemoryConfig_t *memoryConfig);
-
-/**
- * @ingroup
- * @brief get float overflow mode
- * @param [out] floatOverflowMode
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtGetFloatOverflowMode(rtFloatOverflowMode_t * const floatOverflowMode);
 
 /**
  * @ingroup

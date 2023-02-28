@@ -24,22 +24,30 @@
 extern "C" {
 #endif
 
-typedef enum aclCompileType { ACL_COMPILE_SYS, ACL_COMPILE_UNREGISTERED } aclopCompileType;
+typedef enum aclCompileType {
+    ACL_COMPILE_SYS,
+    ACL_COMPILE_UNREGISTERED
+} aclopCompileType;
 
 typedef enum {
-  ACL_PRECISION_MODE,
-  ACL_AICORE_NUM,
-  ACL_AUTO_TUNE_MODE,
-  ACL_OP_SELECT_IMPL_MODE,
-  ACL_OPTYPELIST_FOR_IMPLMODE,
-  ACL_OP_DEBUG_LEVEL,
-  ACL_DEBUG_DIR,
-  ACL_OP_COMPILER_CACHE_MODE,
-  ACL_OP_COMPILER_CACHE_DIR,
-  ACL_OP_PERFORMANCE_MODE
+    ACL_PRECISION_MODE,
+    ACL_AICORE_NUM,
+    ACL_AUTO_TUNE_MODE, // The auto_tune_mode has been discarded
+    ACL_OP_SELECT_IMPL_MODE,
+    ACL_OPTYPELIST_FOR_IMPLMODE,
+    ACL_OP_DEBUG_LEVEL,
+    ACL_DEBUG_DIR,
+    ACL_OP_COMPILER_CACHE_MODE,
+    ACL_OP_COMPILER_CACHE_DIR,
+    ACL_OP_PERFORMANCE_MODE,
+    ACL_OP_JIT_COMPILE,
+    ACL_OP_DETERMINISTIC
 } aclCompileOpt;
 
-typedef enum aclCompileFlag { ACL_OP_COMPILE_DEFAULT, ACL_OP_COMPILE_FUZZ } aclOpCompileFlag;
+typedef enum aclCompileFlag {
+    ACL_OP_COMPILE_DEFAULT,
+    ACL_OP_COMPILE_FUZZ
+} aclOpCompileFlag;
 
 typedef struct aclGraphDumpOption aclGraphDumpOption;
 
@@ -61,10 +69,15 @@ typedef struct aclGraphDumpOption aclGraphDumpOption;
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType, int numInputs, const aclTensorDesc *const inputDesc[],
-                                          int numOutputs, const aclTensorDesc *const outputDesc[],
-                                          const aclopAttr *attr, aclopEngineType engineType,
-                                          aclopCompileType compileFlag, const char *opPath);
+ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType,
+                                          int numInputs,
+                                          const aclTensorDesc *const inputDesc[],
+                                          int numOutputs,
+                                          const aclTensorDesc *const outputDesc[],
+                                          const aclopAttr *attr,
+                                          aclopEngineType engineType,
+                                          aclopCompileType compileFlag,
+                                          const char *opPath);
 
 /**
  * @ingroup AscendCL
@@ -87,10 +100,39 @@ ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType, int numInputs, con
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopCompileAndExecute(
-    const char *opType, int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
-    int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[], const aclopAttr *attr,
-    aclopEngineType engineType, aclopCompileType compileFlag, const char *opPath, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclopCompileAndExecute(const char *opType,
+    int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
+    int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[],
+    const aclopAttr *attr, aclopEngineType engineType, aclopCompileType compileFlag,
+    const char *opPath, aclrtStream stream);
+
+
+/**
+ * @ingroup AscendCL
+ * @brief compile and execute op
+ *
+ * @param opType [IN]           op type
+ * @param numInputs [IN]        number of inputs
+ * @param inputDesc [IN]        pointer to array of input tensor descriptions
+ * @param inputs [IN]           pointer to array of input buffers
+ * @param numOutputs [IN]       number of outputs
+ * @param outputDesc [IN|OUT]   pointer to array of output tensor descriptions
+ * @param outputs [IN]          pointer to array of outputs buffers
+ * @param attr [IN]             pointer to instance of aclopAttr.
+ *                              may pass nullptr if the op has no attribute
+ * @param engineType [IN]       engine type
+ * @param compileFlag [IN]      compile flag
+ * @param opPath [IN]           path of op
+ * @param stream [IN]           stream handle
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclopCompileAndExecuteV2(const char *opType,
+    int numInputs, aclTensorDesc *inputDesc[], aclDataBuffer *inputs[],
+    int numOutputs, aclTensorDesc *outputDesc[], aclDataBuffer *outputs[],
+    aclopAttr *attr, aclopEngineType engineType, aclopCompileType compileFlag,
+    const char *opPath, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -136,10 +178,11 @@ ACL_FUNC_VISIBILITY aclError aclopSetCompileFlag(aclOpCompileFlag flag);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclGenGraphAndDumpForOp(
-    const char *opType, int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
-    int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[], const aclopAttr *attr,
-    aclopEngineType engineType, const char *graphDumpPath, const aclGraphDumpOption *graphDumpOpt);
+ACL_FUNC_VISIBILITY aclError aclGenGraphAndDumpForOp(const char *opType,
+    int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
+    int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[],
+    const aclopAttr *attr, aclopEngineType engineType,
+    const char *graphDumpPath, const aclGraphDumpOption *graphDumpOpt);
 
 /**
  * @ingroup AscendCL
@@ -169,4 +212,4 @@ ACL_FUNC_VISIBILITY aclError aclDestroyGraphDumpOpt(const aclGraphDumpOption *gr
 }
 #endif
 
-#endif  // INC_EXTERNAL_ACL_ACL_OP_COMPILER_H_
+#endif // INC_EXTERNAL_ACL_ACL_OP_COMPILER_H_

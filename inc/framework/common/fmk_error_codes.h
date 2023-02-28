@@ -19,18 +19,14 @@
 
 #if defined(_MSC_VER)
 #ifdef FUNC_VISIBILITY
-#define GE_FUNC_VISIBILITY _declspec(dllexport)
 #define GE_OBJECT_VISIBILITY
 #else
-#define GE_FUNC_VISIBILITY
 #define GE_OBJECT_VISIBILITY
 #endif
 #else
 #ifdef FUNC_VISIBILITY
-#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
 #define GE_OBJECT_VISIBILITY
 #else
-#define GE_FUNC_VISIBILITY
 #define GE_OBJECT_VISIBILITY __attribute__((visibility("hidden")))
 #endif
 #endif
@@ -40,13 +36,15 @@
 
 #include "framework/common/fmk_types.h"
 #include "register/register_error_codes.h"
+#include "external/ge/ge_error_codes.h"
 
 // Each module uses the following four macros to define error codes:
 #define DECLARE_ERRORNO_OMG(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OMG, name, value)
 #define DECLARE_ERRORNO_OME(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OME, name, value)
 #define DECLARE_ERRORNO_CALIBRATION(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_CALIBRATION, name, value)
 
-#define DEF_ERRORNO(name, desc) const ErrorNoRegisterar g_##name##_errorno((name), (desc));
+#define DEF_ERRORNO(name, desc) \
+  const bool g_##name##_errorno = StatusFactory::Instance()->RegisterErrorNo(name, desc)
 
 // Interface for Obtaining Error Code Description
 #define GET_ERRORNO_STR(value) domi::StatusFactory::Instance()->GetErrDesc(value)
@@ -60,7 +58,7 @@ class GE_FUNC_VISIBILITY StatusFactory {
  public:
   static StatusFactory *Instance();
 
-  void RegisterErrorNo(const uint32_t err, const std::string &desc);
+  bool RegisterErrorNo(const uint32_t err, const std::string &desc);
 
   std::string GetErrDesc(const uint32_t err);
 
@@ -70,14 +68,6 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
  private:
   std::map<uint32_t, std::string> err_desc_;
-};
-
-class GE_FUNC_VISIBILITY ErrorNoRegisterar {
- public:
-  ErrorNoRegisterar(const uint32_t err, const std::string &desc) {
-    StatusFactory::Instance()->RegisterErrorNo(err, desc);
-  }
-  ~ErrorNoRegisterar() {}
 };
 
 // Common errocode

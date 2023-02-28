@@ -1,23 +1,8 @@
-/**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * @file base.h
- * @brief HCOM data type definition 
- * 
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ * Description: HCOM data type definition
+ * Author: ligang
+ * Create: 2019-05-24
  */
 
 #ifndef HCCL_BASE_H_
@@ -70,7 +55,7 @@ struct MemRegisterAddr {
     u64 length;
 };
 /*
- * @brief The max number of memory register address for remote access.
+ * @brief The max number of memory register addr for remote access.
  */
 const u32 HCCL_MAX_MEM_REGISTER_NUM = 32;
 
@@ -94,13 +79,13 @@ enum HcclEventType {
     HCCL_EVENT_RESERVED /**< reserved */
 };
 
-const u32 TAG_MAX_LEN = 127; // ×î´óµÄtag ³¤¶È
+const u32 TAG_MAX_LEN = 127; // æœ€å¤§çš„tag é•¿åº¦
 using TagAttr = struct TagAttrDef {
-    char name[TAG_MAX_LEN + 1]; // tag±êÊ¶
-    // tag±êÊ¶µÄ½ÓÊÕÊý¾Ý£¬µ÷ÓÃÕßÊÇ·ñ»áÖ÷¶¯µ÷ÓÃ½ÓÊÕ½Ó¿Ú£¬0 = ·ñ, 1 = »á(Ô¤Áô£¬ÔÝ²»Ö§³Ö)¡£
-    // ¶ÔÓÚactiveRecv = 0£¬µ±½ÓÊÕ²àÊÕµ½Êý¾Ý»òÕß·¢ËÍÇëÇóÊ±£¬Ö÷¶¯Í¨Öªµ÷ÓÃÕß¡£
+    char name[TAG_MAX_LEN + 1]; // tagæ ‡è¯†
+    // tagæ ‡è¯†çš„æŽ¥æ”¶æ•°æ®ï¼Œè°ƒç”¨è€…æ˜¯å¦ä¼šä¸»åŠ¨è°ƒç”¨æŽ¥æ”¶æŽ¥å£ï¼Œ0 = å¦, 1 = ä¼š(é¢„ç•™ï¼Œæš‚ä¸æ”¯æŒ)ã€‚
+    // å¯¹äºŽactiveRecv = 0ï¼Œå½“æŽ¥æ”¶ä¾§æ”¶åˆ°æ•°æ®æˆ–è€…å‘é€è¯·æ±‚æ—¶ï¼Œä¸»åŠ¨é€šçŸ¥è°ƒç”¨è€…ã€‚
     uint32_t activeRecv;
-    uint32_t sendCredit; // ÅäÖÃ¸ÃtagÔÊÐíinflightµÄsend¸öÊý
+    uint32_t sendCredit; // é…ç½®è¯¥tagå…è®¸inflightçš„sendä¸ªæ•°
     uint32_t eventId;
 };
 
@@ -139,41 +124,41 @@ typedef void *rtModel_t;
 
 struct HcomOperation {
     std::string hcclType;
-    void *inputPtr;
-    void *outputPtr;
-    u64 count;
-    HcclDataType dataType;
-    HcclReduceOp opType;
-    u32 root;
-
-    HcomOperation()
-    {
-        inputPtr = nullptr;
-        outputPtr = nullptr;
-        count = 0;
-        dataType = HCCL_DATA_TYPE_RESERVED;
-        opType = HCCL_REDUCE_RESERVED;
-        root = 0;
-    }
+    void *inputPtr{nullptr};
+    void *outputPtr{nullptr};
+    u64 count{0};
+    HcclDataType dataType{HCCL_DATA_TYPE_RESERVED};
+    HcclReduceOp opType{HCCL_REDUCE_RESERVED};
+    u32 root{0};
+    const char *group{nullptr};
 };
 
 struct HcomRemoteAccessAddrInfo {
     u32 remotetRankID;
-    u64 remoteAddr;  // host embedding table address
-    u64 localAddr;  // device HBM address
-    u64 length;   // Memory Length in Bytes 
+    u64 remoteAddr;  // host embedding table addr
+    u64 localAddr;  // device HBM addr
+    u64 length;   // Memory Length in Bytes
 };
 
 struct HcomAllToAllVParams {
-    void *sendbuf;  // device mem
-    void *sendcounts;  // device mem;  Type: uint_64
-    void *sdispls;  // device mem;  Type: uint_64
-    HcclDataType sendtype;
-    void *recvbuf;  // device mem
-    void *recvcounts;  // device mem;  Type: uint_64 
-    void *rdispls;  // device mem;  Type: uint_64
-    HcclDataType recvtype;
-    const char *group;  // not used now
+    void *sendbuf{nullptr};     // device mem
+    void *sendcounts{nullptr};  // device mem;  Type: uint_64
+    void *sdispls{nullptr};     // device mem;  Type: uint_64
+    HcclDataType sendtype{HCCL_DATA_TYPE_RESERVED};
+    void *recvbuf{nullptr};  // device mem
+    void *recvcounts{nullptr};  // device mem;  Type: uint_64
+    void *rdispls{nullptr};  // device mem;  Type: uint_64
+    HcclDataType recvtype{HCCL_DATA_TYPE_RESERVED};
+    const char *group{nullptr};
+};
+
+struct HcomAllToAllVCParams {
+    void *sendbuf{nullptr};     // device mem
+    HcclDataType sendtype{HCCL_DATA_TYPE_RESERVED};
+    void *recvbuf{nullptr};  // device mem
+    HcclDataType recvtype{HCCL_DATA_TYPE_RESERVED};
+    void *sendcountmatrix{nullptr};  // device mem;  Type: uint_64
+    const char *group{nullptr};
 };
 
 struct HcomGatherAllToAllVParams {
@@ -185,29 +170,60 @@ struct HcomGatherAllToAllVParams {
     void *gatheredbuf;  // device mem
     s32 addrLength;
     HcclDataType recvtype;
-    const char *group;  // not used now
+    const char *group;
 };
 
 typedef enum workMode {
-HCCL_MODE_NORMAL = 0, // ²»Ö§³ÖÈÎºÎProbe any£¬½öÖ§³Ö¾«È·µÄprobe
-HCCL_MODE_ANY = 1     // ½öÖ§³ÖANY_SOURCE + ANY_TAGµÄprobe
+HCCL_MODE_NORMAL = 0, // ä¸æ”¯æŒä»»ä½•Probe anyï¼Œä»…æ”¯æŒç²¾ç¡®çš„probe
+HCCL_MODE_ANY = 1,     // ä»…æ”¯æŒANY_SOURCE + ANY_TAGçš„probe
+HCCL_MODE_PS = 2,     // æ”¯æŒpsä¾§hccdåŠŸèƒ½
+HCCL_MODE_AI_CPU = 3     // æ”¯æŒaicpuä¾§hccdåŠŸèƒ½
 } WorkMode;
 
 typedef struct tagCommAttr {
-    WorkMode mode;  // Í¨ÐÅÓòÄÚµÄprobe¹¤×÷Ä£Ê½
+    WorkMode mode;  // é€šä¿¡åŸŸå†…çš„probeå·¥ä½œæ¨¡å¼
     uint32_t deviceId = 0;
 } CommAttr;
 
 typedef void* HcclMessage;
 typedef void* HcclRequest;
+typedef void* ServiceHandle;
 
 typedef struct {
-    int srcRank;    // ½ÓÊÕ/Ì½²âµ½µÄmsg/ÐÅ·âµÄ·¢ËÍ¶Ërank_id£¬MPI±ê×¼¶¨Òå£¬µ÷ÓÃÕß¿ÉÒÔ·ÃÎÊ
-    int tag;        // ½ÓÊÕ/Ì½²âµ½µÄmsg/ÐÅ·âµÄtag£¬MPI±ê×¼¶¨Òå£¬µ÷ÓÃÕß¿ÉÒÔ·ÃÎÊ
-    int error;      // ½ÓÊÕ/Ì½²âµÄ´íÎóÂë0£ºno error£¬others£º´«Êä¹ý³Ì³ö´í£¬MPI±ê×¼¶¨Òå£¬µ÷ÓÃÕß¿ÉÒÔ·ÃÎÊ
-    int cancelled;  // Ö¸¶¨ÊµÏÖ£¬²»½¨Òéµ÷ÓÃÕß·ÃÎÊ
-    int count;      // ½ÓÊÕ/Ì½²âµ½µÄpayload´óÐ¡£¬Ö¸¶¨ÊµÏÖ£¬²»½¨Òéµ÷ÓÃÕß·ÃÎÊ
+    int srcRank;    // æŽ¥æ”¶/æŽ¢æµ‹åˆ°çš„msg/ä¿¡å°çš„å‘é€ç«¯rank_idï¼ŒMPIæ ‡å‡†å®šä¹‰ï¼Œè°ƒç”¨è€…å¯ä»¥è®¿é—®
+    int tag;        // æŽ¥æ”¶/æŽ¢æµ‹åˆ°çš„msg/ä¿¡å°çš„tagï¼ŒMPIæ ‡å‡†å®šä¹‰ï¼Œè°ƒç”¨è€…å¯ä»¥è®¿é—®
+    int error;      // æŽ¥æ”¶/æŽ¢æµ‹çš„é”™è¯¯ç 0ï¼šno errorï¼Œothersï¼šä¼ è¾“è¿‡ç¨‹å‡ºé”™ï¼ŒMPIæ ‡å‡†å®šä¹‰ï¼Œè°ƒç”¨è€…å¯ä»¥è®¿é—®
+    int cancelled;  // æŒ‡å®šå®žçŽ°ï¼Œä¸å»ºè®®è°ƒç”¨è€…è®¿é—®
+    int count;      // æŽ¥æ”¶/æŽ¢æµ‹åˆ°çš„payloadå¤§å°ï¼ŒæŒ‡å®šå®žçŽ°ï¼Œä¸å»ºè®®è°ƒç”¨è€…è®¿é—®
 } HcclStatus;
+
+using ReqStatus = struct tagReqStatus {
+    int tableId;        // æŸ¥æ‰¾çš„table_id
+    int tag;            // ä¸Žç®—å­IRä¸­çš„tagç›¸åŒ
+    int actualSize;     // å¦‚æžœæ˜¯æŽ¥æ”¶æŽ¥å£çš„status, è¿˜è¿”å›žå®žé™…æŽ¥æ”¶åˆ°çš„size
+    int rsvd0;
+};
+
+using LookupReqStatus = struct tagLookupReqStatus {
+    int tableId;        // æŸ¥æ‰¾çš„table_id
+    int tag;            // ä¸Žç®—å­IRä¸­çš„tagç›¸åŒ
+    int actualCount;    // å¦‚æžœæ˜¯æŽ¥æ”¶æŽ¥å£çš„status, è¿˜è¿”å›žå®žé™…æŽ¥æ”¶åˆ°çš„keyCount
+    int rsvd0;
+};
+
+using UpdateReqStatus = struct tagUpdateReqStatus {
+    int tableId;            // æŸ¥æ‰¾çš„table_id
+    int tag;                // ä¸Žç®—å­IRä¸­çš„tagç›¸åŒ
+    int actualKeyCount;     // å¦‚æžœæ˜¯æŽ¥æ”¶æŽ¥å£çš„status, è¿˜è¿”å›žå®žé™…æŽ¥æ”¶åˆ°çš„keyCount
+    int actualValueCount;   // å¦‚æžœæ˜¯æŽ¥æ”¶æŽ¥å£çš„status, è¿˜è¿”å›žå®žé™…æŽ¥æ”¶åˆ°çš„keyCount
+};
+
+using CalcParams = struct tagCalcParams {
+    int uniqueCost0;    // worker/clientä¾§çš„åŽ»é‡å¼€é”€, å•ä½:ms
+    int gatherCost0;    // worker/clientä¾§çš„æ¢å¤å¼€é”€, å•ä½:ms
+    int uniqueCost1;    // ps/serverä¾§çš„åŽ»é‡å¼€é”€, å•ä½:ms
+    int gatherCost1;    // ps/serverä¾§çš„æ¢å¤å¼€é”€, å•ä½:ms
+};
 
 #define HCCL_REQUEST_NULL   NULL
 

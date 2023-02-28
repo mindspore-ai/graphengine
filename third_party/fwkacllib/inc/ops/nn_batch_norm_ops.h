@@ -99,8 +99,8 @@ Specifies the variance used for inference. Must be "None"
 if the operation is used for training . \n
 
 *@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. 
-Defaults to "0.0001".
+*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero.
+* Defaults to "0.0001".
 *@li data_format: An optional string, specifying the format of "x". Defaults to "NHWC".
 *@li is_training: An optional bool, specifying if the operation is used for training or inference. 
 Defaults to "True" . \n
@@ -261,7 +261,46 @@ REG_OP(SyncBatchNormBackwardElemt)
     .INPUT(mean_dy_xmu, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(grad_input, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SyncBatchNormBackwardElemt)
-    
+
+/**
+* @brief After the sum(total_sum) and the square sum(total_square_sum) are separately calculated on each device,
+* a total mean(batch_mean) and reciprocal of standard deviation(batch_invstd) are returned,
+* running_mean and running_var are updated.
+
+* @par Inputs:
+* include:
+* @li total_sum: A Tensor. The sum of each device. Must be one of the following types: float16, float32.
+* @li total_square_sum: A Tensor. The square sum of each device. Must be one of the following types: float16, float32.
+* @li sample_count: A Tensor. Number of data for each device. Must be one of the following types: int32.
+* @li mean: A Tensor. Runtime mean. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Runtime variance. Must be one of the following types: float16, float32.  \n
+
+* @par Attributes:
+* Two Attributes, including:
+* @li momentum: A optional float. Defaults to 0.1. \n
+* @li eps: An optional float. Defaults to 0.00001. \n
+
+* @par Outputs:
+* include:
+* @li batch_mean: A Tensor. Total mean of this batch. Must be one of the following types: float16, float32.
+* @li batch_invstd: A Tensor. General statistics. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Updated Runtime mean. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Updated Runtime variance. Must be one of the following types: float16, float32. \n
+*/
+REG_OP(SyncBatchNormGatherStats)
+    .INPUT(total_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(total_square_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(sample_count, TensorType({DT_INT32}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(batch_invstd, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(momentum, Float, 0.1)
+    .ATTR(eps, Float, 0.00001)
+    .OP_END_FACTORY_REG(SyncBatchNormGatherStats)
+
 /**
 *@brief Performs batch normalization . \n
 
@@ -544,23 +583,30 @@ REG_OP(BNInference)
     .OP_END_FACTORY_REG(BNInference)
 
 /**
-*@brief Performs batch normalization . \n
+*@brief Performs batch normalization .
 
 *@par Inputs:
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
-*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x" Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x" Specifies the variance used for inference.
-*@li scale: An optional tensor of type float16 or float32, no use
-*@li offset: An optional tensor of type float16 or float32, no use
+*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"
+* Specifies the mean used for inference.
+*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"
+* Specifies the variance used for inference.
+*@li scale: An optional tensor of type float16 or float32, no use.
+*@li offset: An optional tensor of type float16 or float32, no use. \n
+
 *@par Attributes:
-*@li momentum: An optional float32 num, represents the mean and the variance's scale factor
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
+*@li momentum: An optional float32 num, represents the mean and
+* the variance's scale factor.
+*@li epsilon: An optional float32, specifying the small value
+* added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional attr, not use
+*@li mode: An optional attr, not use. \n
+
 *@par Outputs:
-*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
+*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x". \n
+
 *@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED. Please use BNInference instead.
+* Warning: THIS FUNCTION IS DEPRECATED. Please use BNInference instead.
 */
 REG_OP(BNInferenceD)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))

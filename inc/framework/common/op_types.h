@@ -31,9 +31,7 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
   }
   ~OpTypeContainer() = default;
 
-  bool Register(const std::string &op_type) {
-    return op_type_list_.insert(op_type).second;
-  }
+  bool Register(const std::string &op_type) { return op_type_list_.insert(op_type).second; }
 
   bool IsExisting(const std::string &op_type) {
     return op_type_list_.find(op_type) != op_type_list_.end();
@@ -48,11 +46,11 @@ class GE_FUNC_VISIBILITY OpTypeContainer {
 }  // namespace ge
 
 #define REGISTER_OPTYPE_DECLARE(var_name, str_name) \
-  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const char_t *var_name;
+  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const char_t *var_name
 
-#define REGISTER_OPTYPE_DEFINE(var_name, str_name) \
-  const char_t *var_name = str_name;               \
-  const bool g_##var_name##_reg = OpTypeContainer::Instance()->Register(str_name);
+#define REGISTER_OPTYPE_DEFINE(var_name, str_name)           \
+  const char_t *var_name = str_name;                         \
+  const bool g_##var_name##_reg = OpTypeContainer::Instance()->Register(str_name)
 
 #define IS_OPTYPE_EXISTING(str_name) (ge::OpTypeContainer::Instance()->IsExisting(str_name))
 #endif  // INC_FRAMEWORK_COMMON_OP_TYPES_H_

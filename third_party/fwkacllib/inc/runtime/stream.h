@@ -28,7 +28,8 @@ extern "C" {
 #define RT_STREAM_PRIMARY_DEFAULT (0x40U)
 #define RT_STREAM_PRIMARY_FIRST_DEFAULT (0x80U)
 #define RT_STREAM_OVERFLOW (0x100U)
-
+#define RT_STREAM_FAST_LAUNCH (0x200U)
+#define RT_STREAM_FAST_SYNC   (0x400U)
 /**
  * @ingroup stream_type
  * @brief stream type
@@ -73,6 +74,15 @@ RTS_API rtError_t rtStreamDestroy(rtStream_t stm);
 
 /**
  * @ingroup dvrt_stream
+ * @brief force destroy stream instance.
+ * @param [in] stm   the stream to destroy
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamDestroyForce(rtStream_t stm);
+
+/**
+ * @ingroup dvrt_stream
  * @brief wait an recorded event for stream
  * @param [in] stm   the wait stream
  * @param [in] event   the event to wait
@@ -83,10 +93,10 @@ RTS_API rtError_t rtStreamWaitEvent(rtStream_t stm, rtEvent_t evt);
 
 /**
  * @ingroup dvrt_stream
- * @brief wait an recorded event for stream, used for 1951 pg1
+ * @brief wait an recorded event for stream, used for 51 pg1
  * @param [in] stm   the wait stream
  * @param [in] event   the event to wait
- * @param [in] timeout   timeout value for 1951 pg1
+ * @param [in] timeout   timeout value for 51 pg1
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -100,6 +110,16 @@ RTS_API rtError_t rtStreamWaitEventWithTimeout(rtStream_t stm, rtEvent_t evt, ui
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtStreamSynchronize(rtStream_t stm);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief wait stream to be complete and set timeout
+ * @param [in] stm   stream to wait
+ * @param [in] timeout   timeout value,the unit is milliseconds
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamSynchronizeWithTimeout(rtStream_t stm, int32_t timeout);
 
 /**
  * @ingroup dvrt_stream
@@ -202,7 +222,7 @@ RTS_API rtError_t rtStreamSwitchN(void *ptr, uint32_t size, void *valuePtr, rtSt
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDebugRegisterForStream(rtStream_t stm, uint32_t flag, const void *addr,
-                                   uint32_t *streamId, uint32_t *taskId);
+                                           uint32_t *streamId, uint32_t *taskId);
 
 /*
  * @ingroup rt_model
@@ -232,6 +252,16 @@ RTS_API rtError_t rtSetStreamOverflowSwitch(rtStream_t stm, uint32_t flags);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetStreamOverflowSwitch(rtStream_t stm, uint32_t *flags);
+
+/*
+ * @ingroup dvrt_stream
+ * @brief get stream geOpTag
+ * @param [in] stm: stream handle
+ * @param [out] geOpTag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetStreamTag(rtStream_t stm, uint32_t *geOpTag);
 
 #if defined(__cplusplus)
 }

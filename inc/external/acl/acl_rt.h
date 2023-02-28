@@ -25,78 +25,88 @@
 extern "C" {
 #endif
 
+#define ACL_EVENT_SYNC      0x00000001u
 #define ACL_EVENT_TIME_LINE 0x00000008u
 
+#define ACL_STREAM_FAST_LAUNCH 0x00000001u
+#define ACL_STREAM_FAST_SYNC   0x00000002u
+
 typedef enum aclrtRunMode {
-  ACL_DEVICE,
-  ACL_HOST,
+    ACL_DEVICE,
+    ACL_HOST,
 } aclrtRunMode;
 
 typedef enum aclrtTsId {
-  ACL_TS_ID_AICORE = 0,
-  ACL_TS_ID_AIVECTOR = 1,
-  ACL_TS_ID_RESERVED = 2,
+    ACL_TS_ID_AICORE   = 0,
+    ACL_TS_ID_AIVECTOR = 1,
+    ACL_TS_ID_RESERVED = 2,
 } aclrtTsId;
 
 typedef enum aclrtEventStatus {
-  ACL_EVENT_STATUS_COMPLETE = 0,
-  ACL_EVENT_STATUS_NOT_READY = 1,
-  ACL_EVENT_STATUS_RESERVED = 2,
+    ACL_EVENT_STATUS_COMPLETE  = 0,
+    ACL_EVENT_STATUS_NOT_READY = 1,
+    ACL_EVENT_STATUS_RESERVED  = 2,
 } aclrtEventStatus;
 
 typedef enum aclrtEventRecordedStatus {
-  ACL_EVENT_RECORDED_STATUS_NOT_READY = 0,
-  ACL_EVENT_RECORDED_STATUS_COMPLETE = 1,
+    ACL_EVENT_RECORDED_STATUS_NOT_READY = 0,
+    ACL_EVENT_RECORDED_STATUS_COMPLETE = 1,
 } aclrtEventRecordedStatus;
 
 typedef enum aclrtEventWaitStatus {
-  ACL_EVENT_WAIT_STATUS_COMPLETE = 0,
-  ACL_EVENT_WAIT_STATUS_NOT_READY = 1,
-  ACL_EVENT_WAIT_STATUS_RESERVED = 0xffff,
+    ACL_EVENT_WAIT_STATUS_COMPLETE  = 0,
+    ACL_EVENT_WAIT_STATUS_NOT_READY = 1,
+    ACL_EVENT_WAIT_STATUS_RESERVED  = 0xffff,
 } aclrtEventWaitStatus;
 
 typedef enum aclrtCallbackBlockType {
-  ACL_CALLBACK_NO_BLOCK,
-  ACL_CALLBACK_BLOCK,
+    ACL_CALLBACK_NO_BLOCK,
+    ACL_CALLBACK_BLOCK,
 } aclrtCallbackBlockType;
 
 typedef enum aclrtMemcpyKind {
-  ACL_MEMCPY_HOST_TO_HOST,
-  ACL_MEMCPY_HOST_TO_DEVICE,
-  ACL_MEMCPY_DEVICE_TO_HOST,
-  ACL_MEMCPY_DEVICE_TO_DEVICE,
+    ACL_MEMCPY_HOST_TO_HOST,
+    ACL_MEMCPY_HOST_TO_DEVICE,
+    ACL_MEMCPY_DEVICE_TO_HOST,
+    ACL_MEMCPY_DEVICE_TO_DEVICE,
 } aclrtMemcpyKind;
 
 typedef enum aclrtMemMallocPolicy {
-  ACL_MEM_MALLOC_HUGE_FIRST,
-  ACL_MEM_MALLOC_HUGE_ONLY,
-  ACL_MEM_MALLOC_NORMAL_ONLY,
-  ACL_MEM_MALLOC_HUGE_FIRST_P2P,
-  ACL_MEM_MALLOC_HUGE_ONLY_P2P,
-  ACL_MEM_MALLOC_NORMAL_ONLY_P2P,
+    ACL_MEM_MALLOC_HUGE_FIRST,
+    ACL_MEM_MALLOC_HUGE_ONLY,
+    ACL_MEM_MALLOC_NORMAL_ONLY,
+    ACL_MEM_MALLOC_HUGE_FIRST_P2P,
+    ACL_MEM_MALLOC_HUGE_ONLY_P2P,
+    ACL_MEM_MALLOC_NORMAL_ONLY_P2P,
 } aclrtMemMallocPolicy;
 
 typedef enum aclrtMemAttr {
-  ACL_DDR_MEM,
-  ACL_HBM_MEM,
-  ACL_DDR_MEM_HUGE,
-  ACL_DDR_MEM_NORMAL,
-  ACL_HBM_MEM_HUGE,
-  ACL_HBM_MEM_NORMAL,
-  ACL_DDR_MEM_P2P_HUGE,
-  ACL_DDR_MEM_P2P_NORMAL,
-  ACL_HBM_MEM_P2P_HUGE,
-  ACL_HBM_MEM_P2P_NORMAL,
+    ACL_DDR_MEM,
+    ACL_HBM_MEM,
+    ACL_DDR_MEM_HUGE,
+    ACL_DDR_MEM_NORMAL,
+    ACL_HBM_MEM_HUGE,
+    ACL_HBM_MEM_NORMAL,
+    ACL_DDR_MEM_P2P_HUGE,
+    ACL_DDR_MEM_P2P_NORMAL,
+    ACL_HBM_MEM_P2P_HUGE,
+    ACL_HBM_MEM_P2P_NORMAL,
 } aclrtMemAttr;
 
 typedef enum aclrtGroupAttr {
-  ACL_GROUP_AICORE_INT,
-  ACL_GROUP_AIV_INT,
-  ACL_GROUP_AIC_INT,
-  ACL_GROUP_SDMANUM_INT,
-  ACL_GROUP_ASQNUM_INT,
-  ACL_GROUP_GROUPID_INT
+    ACL_GROUP_AICORE_INT,
+    ACL_GROUP_AIV_INT,
+    ACL_GROUP_AIC_INT,
+    ACL_GROUP_SDMANUM_INT,
+    ACL_GROUP_ASQNUM_INT,
+    ACL_GROUP_GROUPID_INT
 } aclrtGroupAttr;
+
+typedef enum aclrtFloatOverflowMode {
+    ACL_RT_OVERFLOW_MODE_SATURATION = 0,
+    ACL_RT_OVERFLOW_MODE_INFNAN,
+    ACL_RT_OVERFLOW_MODE_UNDEF,
+} aclrtFloatOverflowMode;
 
 typedef struct tagRtGroupInfo aclrtGroupInfo;
 
@@ -160,6 +170,17 @@ ACL_FUNC_VISIBILITY uint32_t aclrtGetThreadIdFromExceptionInfo(const aclrtExcept
  * @retval 0xFFFFFFFF if info is null
  */
 ACL_FUNC_VISIBILITY uint32_t aclrtGetDeviceIdFromExceptionInfo(const aclrtExceptionInfo *info);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get error code from exception information
+ *
+ * @param info [IN]   pointer of exception information
+ *
+ * @retval The error code from exception information
+ * @retval 0xFFFFFFFF if info is null
+ */
+ACL_FUNC_VISIBILITY uint32_t aclrtGetErrorCodeFromExceptionInfo(const aclrtExceptionInfo *info);
 
 /**
  * @ingroup AscendCL
@@ -498,7 +519,7 @@ ACL_FUNC_VISIBILITY aclError aclrtRecordEvent(aclrtEvent event, aclrtStream stre
  */
 ACL_FUNC_VISIBILITY aclError aclrtResetEvent(aclrtEvent event, aclrtStream stream);
 
-/**
+ /**
  * @ingroup AscendCL
  * @brief Queries an event's status
  *
@@ -524,15 +545,15 @@ ACL_FUNC_VISIBILITY aclError aclrtQueryEvent(aclrtEvent event, aclrtEventStatus 
 ACL_FUNC_VISIBILITY aclError aclrtQueryEventStatus(aclrtEvent event, aclrtEventRecordedStatus *status);
 
 /**
- * @ingroup AscendCL
- * @brief Queries an event's wait-status
- *
- * @param  event [IN]    event to query
- * @param  status [OUT]  event wait-status
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
+* @ingroup AscendCL
+* @brief Queries an event's wait-status
+*
+* @param  event [IN]    event to query
+* @param  status [OUT]  event wait-status
+*
+* @retval ACL_SUCCESS The function is successfully executed.
+* @retval OtherValues Failure
+*/
 ACL_FUNC_VISIBILITY aclError aclrtQueryEventWaitStatus(aclrtEvent event, aclrtEventWaitStatus *status);
 
 /**
@@ -585,7 +606,9 @@ ACL_FUNC_VISIBILITY aclError aclrtEventElapsedTime(float *ms, aclrtEvent startEv
  *
  * @see aclrtFree | acldvppMalloc | aclrtMallocCached
  */
-ACL_FUNC_VISIBILITY aclError aclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy);
+ACL_FUNC_VISIBILITY aclError aclrtMalloc(void **devPtr,
+                                         size_t size,
+                                         aclrtMemMallocPolicy policy);
 
 /**
  * @ingroup AscendCL
@@ -608,7 +631,9 @@ ACL_FUNC_VISIBILITY aclError aclrtMalloc(void **devPtr, size_t size, aclrtMemMal
  *
  * @see aclrtFree | aclrtMalloc
  */
-ACL_FUNC_VISIBILITY aclError aclrtMallocCached(void **devPtr, size_t size, aclrtMemMallocPolicy policy);
+ACL_FUNC_VISIBILITY aclError aclrtMallocCached(void **devPtr,
+                                               size_t size,
+                                               aclrtMemMallocPolicy policy);
 
 /**
  * @ingroup AscendCL
@@ -699,7 +724,10 @@ ACL_FUNC_VISIBILITY aclError aclrtFreeHost(void *hostPtr);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count,
+ACL_FUNC_VISIBILITY aclError aclrtMemcpy(void *dst,
+                                         size_t destMax,
+                                         const void *src,
+                                         size_t count,
                                          aclrtMemcpyKind kind);
 
 /**
@@ -746,8 +774,12 @@ ACL_FUNC_VISIBILITY aclError aclrtMemset(void *devPtr, size_t maxCount, int32_t 
  *
  * @see aclrtSynchronizeStream
  */
-ACL_FUNC_VISIBILITY aclError aclrtMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count,
-                                              aclrtMemcpyKind kind, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclrtMemcpyAsync(void *dst,
+                                              size_t destMax,
+                                              const void *src,
+                                              size_t count,
+                                              aclrtMemcpyKind kind,
+                                              aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -764,8 +796,13 @@ ACL_FUNC_VISIBILITY aclError aclrtMemcpyAsync(void *dst, size_t destMax, const v
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclrtMemcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width,
-                                           size_t height, aclrtMemcpyKind kind);
+ACL_FUNC_VISIBILITY aclError aclrtMemcpy2d(void *dst,
+                                           size_t dpitch,
+                                           const void *src,
+                                           size_t spitch,
+                                           size_t width,
+                                           size_t height,
+                                           aclrtMemcpyKind kind);
 
 /**
  * @ingroup AscendCL
@@ -783,31 +820,40 @@ ACL_FUNC_VISIBILITY aclError aclrtMemcpy2d(void *dst, size_t dpitch, const void 
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclrtMemcpy2dAsync(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width,
-                                                size_t height, aclrtMemcpyKind kind, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclrtMemcpy2dAsync(void *dst,
+                                                size_t dpitch,
+                                                const void *src,
+                                                size_t spitch,
+                                                size_t width,
+                                                size_t height,
+                                                aclrtMemcpyKind kind,
+                                                aclrtStream stream);
 
 /**
- * @ingroup AscendCL
- * @brief Asynchronous initialize memory
- * and set contents of memory to specified value async
- *
- * @par Function
+* @ingroup AscendCL
+* @brief Asynchronous initialize memory
+* and set contents of memory to specified value async
+*
+* @par Function
  *  The memory to be initialized is on the Host or device side,
  *  and the system determines whether
  *  it is host or device according to the address
  *
- * @param devPtr [IN]      destination address pointer
- * @param maxCount [IN]    Max length of destination address memory
- * @param value [IN]       set value
- * @param count [IN]       the number of byte to set
- * @param stream [IN]      asynchronized task stream
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- *
- * @see aclrtSynchronizeStream
- */
-ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr, size_t maxCount, int32_t value, size_t count,
+* @param devPtr [IN]      destination address pointer
+* @param maxCount [IN]    Max length of destination address memory
+* @param value [IN]       set value
+* @param count [IN]       the number of byte to set
+* @param stream [IN]      asynchronized task stream
+*
+* @retval ACL_SUCCESS The function is successfully executed.
+* @retval OtherValues Failure
+*
+* @see aclrtSynchronizeStream
+*/
+ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr,
+                                              size_t maxCount,
+                                              int32_t value,
+                                              size_t count,
                                               aclrtStream stream);
 
 /**
@@ -820,6 +866,22 @@ ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr, size_t maxCount, int
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtCreateStream(aclrtStream *stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief  create stream instance with param
+ *
+ * @par Function
+ * Can create fast streams through the aclrtCreateStreamWithConfig interface
+ *
+ * @param  stream [OUT]   the created stream
+ * @param  priority [IN]   the priority of stream, reserved param, must be 0
+ * @param  flag [IN]   indicate the function for stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtCreateStreamWithConfig(aclrtStream *stream, uint32_t priority, uint32_t flag);
 
 /**
  * @ingroup AscendCL
@@ -853,6 +915,20 @@ ACL_FUNC_VISIBILITY aclError aclrtDestroyStream(aclrtStream stream);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtSynchronizeStream(aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief block the host until all tasks
+ * in the specified stream have completed
+ *
+ * @param  stream [IN]   the stream to wait
+ * @param  timeout [IN]  timeout value,the unit is milliseconds
+ * -1 means waiting indefinitely, 0 means check whether synchronization is complete immediately
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSynchronizeStreamWithTimeout(aclrtStream stream, int32_t timeout);
 
 /**
  * @ingroup AscendCL
@@ -953,8 +1029,11 @@ ACL_FUNC_VISIBILITY aclError aclrtGetAllGroupInfo(aclrtGroupInfo *groupInfo);
  *
  * @see aclrtGetGroupCount | aclrtGetAllGroupInfo
  */
-ACL_FUNC_VISIBILITY aclError aclrtGetGroupInfoDetail(const aclrtGroupInfo *groupInfo, int32_t groupIndex,
-                                                     aclrtGroupAttr attr, void *attrValue, size_t valueLen,
+ACL_FUNC_VISIBILITY aclError aclrtGetGroupInfoDetail(const aclrtGroupInfo *groupInfo,
+                                                     int32_t groupIndex,
+                                                     aclrtGroupAttr attr,
+                                                     void *attrValue,
+                                                     size_t valueLen,
                                                      size_t *paramRetSize);
 
 /**
@@ -1024,8 +1103,51 @@ ACL_FUNC_VISIBILITY aclError aclrtGetMemInfo(aclrtMemAttr attr, size_t *free, si
  */
 ACL_FUNC_VISIBILITY aclError aclrtSetOpWaitTimeout(uint32_t timeout);
 
+/**
+ * @ingroup AscendCL
+ * @brief enable or disable overflow switch on some stream
+ * @param stream [IN]   set overflow switch on this stream
+ * @param flag [IN]  0 : disable 1 : enable
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetStreamOverflowSwitch(aclrtStream stream, uint32_t flag);
+
+/**
+ * @ingroup AscendCL
+ * @brief get overflow switch on some stream
+ * @param stream [IN]   get overflow switch on this stream
+ * @param flag [OUT]  current overflow switch, 0 : disable others : enable
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtGetStreamOverflowSwitch(aclrtStream stream, uint32_t *flag);
+
+/**
+ * @ingroup AscendCL
+ * @brief set saturation mode
+ * @param mode [IN]   target saturation mode
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetDeviceSatMode(aclrtFloatOverflowMode mode);
+
+/**
+ * @ingroup AscendCL
+ * @brief get saturation mode
+ * @param mode [OUT]   get saturation mode
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtGetDeviceSatMode(aclrtFloatOverflowMode *mode);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // INC_EXTERNAL_ACL_ACL_RT_H_
+#endif // INC_EXTERNAL_ACL_ACL_RT_H_
+

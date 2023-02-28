@@ -28,7 +28,7 @@ namespace ge {
  * @brief Outputs a tensor gathering all input tensors.
  * @par Inputs:
  * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
-  float32.
+  float32, uint8, uint16, uint32, float64.
  * @par Attributes:
  * @li rank_size: A required integer identifying the number of ranks
   participating in the op.
@@ -41,8 +41,10 @@ namespace ge {
   as the name of a world group.
  */
 REG_OP(HcomAllGather)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(rank_size, Int)
     .REQUIRED_ATTR(group, String)
     .OP_END_FACTORY_REG(HcomAllGather)
@@ -99,8 +101,10 @@ REG_OP(HcomAllReduce)
   as the name of a world group.
  */
 REG_OP(HcomBroadcast)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(root_rank, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(fusion, Int, 0)
@@ -186,7 +190,8 @@ REG_OP(HcomReduceScatter)
  * @see HcomReceive
 */
 REG_OP(HcomSend)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(dest_rank, Int)
@@ -217,7 +222,8 @@ REG_OP(HcomSend)
  * @see HcomSend
 */
 REG_OP(HcomReceive)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(src_rank, Int)
@@ -303,14 +309,62 @@ REG_OP(HcomRemoteScatterWrite)
   using the RDMA.
  */
 REG_OP(HcomAllToAllV)
-    .INPUT(send_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(send_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .INPUT(send_counts, TensorType({DT_INT64}))
     .INPUT(send_displacements, TensorType({DT_INT64}))
     .INPUT(recv_counts, TensorType({DT_INT64}))
     .INPUT(recv_displacements, TensorType({DT_INT64}))
-    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(group, String)
     .OP_END_FACTORY_REG(HcomAllToAllV)
+
+/**
+ * @brief All ranks send the same amount of data to each other, and receive the same amount of data from each other.
+ * @par Inputs:
+ * @li x: A tensor. Must be one of the following types: float32, int32, int8, int16, float16,
+  int64, uint64, uint8, uint16, uint32, float64.
+ * @par Outputs:
+ * @li y: A Tensor. Has the same type as "x".
+ * @par Attributes:
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+ * @attention all ranks participating in the op should be full-mesh networking
+  using the RDMA.
+ */
+REG_OP(HcomAllToAll)
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .REQUIRED_ATTR(group, String)
+    .OP_END_FACTORY_REG(HcomAllToAll)
+
+/**
+ * @brief All ranks send different amount of data to, and receive different
+  amount of data from, all ranks.
+ * @par Inputs:
+ * Two inputs, including:
+ * @li send_data: A tensor. the memory to send.
+ * @li send_count_matrix: A two dimensional matrix, where entry [i][j] specifies
+ * the number of elements in the send_data that rank i to rank j.
+ * @par Outputs:
+ * recv_data: A Tensor  has same element type as send_data.
+ * @par Attributes:
+ * @li rank: A required integer identifying the self rank.
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+ */
+REG_OP(HcomAllToAllVC)
+    .INPUT(send_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .INPUT(send_count_matrix, TensorType({DT_INT64})) // [ranksize, ranksize]
+    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .REQUIRED_ATTR(rank, Int)
+    .REQUIRED_ATTR(group, String)
+    .OP_END_FACTORY_REG(HcomAllToAllVC)
 
 /**
  * @brief All ranks send different amount of data to, and receive different
@@ -345,12 +399,13 @@ REG_OP(HcomGatherAllToAllV)
     .INPUT(addrinfo_count_per_rank, TensorType({DT_INT64}))
     .INPUT(recv_counts, TensorType({DT_INT64}))
     .INPUT(recv_displacements, TensorType({DT_INT64}))
-    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
-    .OUTPUT(gathered, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
+    .OUTPUT(gathered, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64,
+                          DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(dtype, Type)
     .REQUIRED_ATTR(addr_length, Int)
     .OP_END_FACTORY_REG(HcomGatherAllToAllV)
-
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_

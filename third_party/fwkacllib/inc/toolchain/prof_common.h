@@ -1,23 +1,27 @@
-/*
- * Copyright (c) Huawei Technologies Co., Ltd. 2019-2021. All rights reserved.
- * Description: handle perf data
- * Author: Huawei Technologies Co., Ltd.
- * Create: 2019-10-13
+/**
+ * @file prof_common.h
+ *
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
  */
 #ifndef MSPROFILER_PROF_COMMON_H_
 #define MSPROFILER_PROF_COMMON_H_
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
-#include <stdint.h>
-
 #define MSPROF_DATA_HEAD_MAGIC_NUM  0x5a5a
 
 enum MsprofDataTag {
-    MSPROF_ACL_DATA_TAG = 0,            //acl data tag, range: 0~19
-    MSPROF_GE_DATA_TAG_MODEL_LOAD = 20, //ge data tag, range: 20~39
+    MSPROF_ACL_DATA_TAG = 0,            // acl data tag, range: 0~19
+    MSPROF_GE_DATA_TAG_MODEL_LOAD = 20, // ge data tag, range: 20~39
     MSPROF_GE_DATA_TAG_FUSION = 21,
     MSPROF_GE_DATA_TAG_INFER = 22,
     MSPROF_GE_DATA_TAG_TASK = 23,
@@ -25,14 +29,14 @@ enum MsprofDataTag {
     MSPROF_GE_DATA_TAG_STEP = 25,
     MSPROF_GE_DATA_TAG_ID_MAP = 26,
     MSPROF_GE_DATA_TAG_HOST_SCH = 27,
-    MSPROF_RUNTIME_DATA_TAG_API = 40,   //runtime data tag, range: 40~59
+    MSPROF_RUNTIME_DATA_TAG_API = 40,   // runtime data tag, range: 40~59
     MSPROF_RUNTIME_DATA_TAG_TRACK = 41,
-    MSPROF_AICPU_DATA_TAG = 60,         //aicpu data tag, range: 60~79
+    MSPROF_AICPU_DATA_TAG = 60,         // aicpu data tag, range: 60~79
     MSPROF_AICPU_MODEL_TAG = 61,
-    MSPROF_HCCL_DATA_TAG = 80,          //hccl data tag, range: 80~99
-    MSPROF_DP_DATA_TAG = 100,           //dp data tag, range: 100~119
-    MSPROF_MSPROFTX_DATA_TAG = 120,     //hccl data tag, range: 120~139
-    MSPROF_DATA_TAG_MAX = 65536,        //data tag value type is uint16_t
+    MSPROF_HCCL_DATA_TAG = 80,          // hccl data tag, range: 80~99
+    MSPROF_DP_DATA_TAG = 100,           // dp data tag, range: 100~119
+    MSPROF_MSPROFTX_DATA_TAG = 120,     // hccl data tag, range: 120~139
+    MSPROF_DATA_TAG_MAX = 65536,        // data tag value type is uint16_t
 };
 
 /**
@@ -148,13 +152,21 @@ struct MsprofGeProfInferData {
     uint8_t  reserve[MSPROF_GE_INFER_DATA_RESERVE_BYTES];
 };
 
-#define MSPROF_GE_TASK_DATA_RESERVE_BYTES 12
+constexpr int32_t MSPROF_GE_TASK_DATA_RESERVE_BYTES = 12;
 #define MSPROF_GE_OP_TYPE_LEN 56
 enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_AI_CORE = 0,
     MSPROF_GE_TASK_TYPE_AI_CPU,
     MSPROF_GE_TASK_TYPE_AIV,
+    MSPROF_GE_TASK_TYPE_WRITE_BACK,
+    MSPROF_GE_TASK_TYPE_MIX_AIC,
+    MSPROF_GE_TASK_TYPE_MIX_AIV,
+    MSPROF_GE_TASK_TYPE_FFTS_PLUS,
+    MSPROF_GE_TASK_TYPE_DSA,
+    MSPROF_GE_TASK_TYPE_DVPP,
+    MSPROF_GE_TASK_TYPE_INVALID
 };
+
 enum MsprofGeShapeType {
     MSPROF_GE_SHAPE_TYPE_STATIC = 0,
     MSPROF_GE_SHAPE_TYPE_DYNAMIC,
@@ -368,11 +380,11 @@ struct MsprofHcclProfReduce {
     uint64_t src;
     uint64_t dst;
     uint64_t size;
-    uint32_t op;       // {0: sum, 1: mul, 2: max, 3: min}
-    uint32_t dataType; // data type {0: INT8, 1: INT16, 2: INT32, 3: FP16, 4:FP32, 5:INT64, 6:UINT64}
-    uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
+    uint32_t op;            // {0: sum, 1: mul, 2: max, 3: min}
+    uint32_t dataType;      // data type {0: INT8, 1: INT16, 2: INT32, 3: FP16, 4:FP32, 5:INT64, 6:UINT64}
+    uint32_t linkType;      // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
     uint32_t remoteRank;
-    uint32_t transportType; //  transport type {0: SDMA, 1: RDMA, 2:LOCAL}
+    uint32_t transportType; // transport type {0: SDMA, 1: RDMA, 2:LOCAL}
     uint32_t role;          // role {0: dst, 1:src}
     double durationEstimated;
 };
@@ -383,9 +395,9 @@ struct MsprofHcclProfRDMA {
     uint64_t dst;
     uint64_t size;
     uint64_t notifyID;
-    uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
+    uint32_t linkType;      // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
     uint32_t remoteRank;
-    uint32_t transportType; //  transport type {0: RDMA, 1:SDMA, 2:LOCAL}
+    uint32_t transportType; // transport type {0: RDMA, 1:SDMA, 2:LOCAL}
     uint32_t role;          // role {0: dst, 1:src}
     uint32_t type;          // RDMA type {0: RDMASendNotify, 1:RDMASendPayload}
     double durationEstimated;
@@ -397,7 +409,7 @@ struct MsprofHcclProfMemcpy {
     uint64_t dst;
     uint64_t size;
     uint64_t notifyID;
-    uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
+    uint32_t linkType;      // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
     uint32_t remoteRank;
     uint32_t transportType; // transport type {0: RDMA, 1:SDMA, 2:LOCAL}
     uint32_t role;          // role {0: dst, 1:src}
@@ -448,18 +460,17 @@ struct MsprofStampInfo {
     uint16_t dataTag;
     uint32_t processId;
     uint32_t threadId;
-    uint32_t category;         //marker category
+    uint32_t category;    // marker category
     uint32_t  eventType;
     int32_t payloadType;
-    union PayloadValue         //payload info for marker
-    {
+    union PayloadValue {
         uint64_t ullValue;
         int64_t llValue;
         double dValue;
         uint32_t uiValue[2];
         int32_t iValue[2];
         float fValue[2];
-    } payload;
+    } payload;            // payload info for marker
     uint64_t startTime;
     uint64_t endTime;
     int32_t messageType;

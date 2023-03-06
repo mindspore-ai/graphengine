@@ -1,8 +1,8 @@
-[submodule "parser"]
-	path = parser
-	url = https://gitee.com/ascend/parser.git
+[submodule "910/metadef"]
+	path = 910/metadef
+	url = https://gitee.com/ascend/metadef.git
 	branch = master
-[submodule "metadef"]
-	path = metadef
+[submodule "910b/metadef"]
+	path = 910b/metadef
 	url = https://gitee.com/ascend/metadef.git
 	branch = master

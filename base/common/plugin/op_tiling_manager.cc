@@ -59,7 +59,7 @@ void OpTilingManager::LoadSo() {
     char_t resolved_path[MMPA_MAX_PATH] = {};
     const INT32 result = mmRealPath(root_path.c_str(), &(resolved_path[0U]), MMPA_MAX_PATH);
     if (result != EN_OK) {
-      GELOGW("[FindSo][Check] Get path with op_master [%s] failed, reason:%s", root_path.c_str(), strerror(errno));
+      GELOGW("[FindSo][Check] Get path with op_master [%s] failed", root_path.c_str());
       root_path = path + "op_tiling/";
       so_name = "liboptiling.so";
     }

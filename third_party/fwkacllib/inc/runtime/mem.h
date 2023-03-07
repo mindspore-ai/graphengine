@@ -426,7 +426,7 @@ typedef struct {
 } rtMemcpyAddrInfo;
 
 RTS_API rtError_t rtMemcpyAsyncPtr(void *memcpyAddrInfo, uint64_t destMax, uint64_t count,
-                                   rtMemcpyKind_t kind, rtStream_t stream);
+                                   rtMemcpyKind_t kind, rtStream_t stream, uint32_t qosCfg);
 
 /**
  * @ingroup dvrt_mem

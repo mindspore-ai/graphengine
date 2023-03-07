@@ -59,7 +59,7 @@ Status ModelParserBase::LoadFromFile(const char_t *const model_path, const int32
 
   // get length of file:
   (void)fs.seekg(0, std::ifstream::end);
-  const uint64_t len = fs.tellg();
+  const uint64_t len = static_cast<uint64_t>(fs.tellg());
 
   GE_CHECK_GE(len, 1U);
 

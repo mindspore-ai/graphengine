@@ -43,6 +43,7 @@ const std::string kBinFilePathValue = "value_bin_file";
 const std::int32_t kFirstElementIndex = 0;
 const std::int32_t kIndentWidth = 2;
 const char_t *kTmpWeightDir = "tmp_weight/";
+const int64_t kMinWeightSize = 2097152;  // 2 * 1024 * 1024 Bytes
 
 Status ReplaceNode(const NodePtr &new_node, const NodePtr &old_node, const ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(GraphUtils::ReplaceNodeAnchors(new_node, old_node, {}, {0}),
@@ -299,9 +300,13 @@ Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph) {
         continue;
       }
       const auto &tensor = weight[0];
+      // Only convert const to fileconstant when weight size is greater than 2M
+      if (tensor->GetData().GetSize() <= kMinWeightSize) {
+        continue;
+      }
+
       const auto &op_desc = node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
-
       const std::string file_constant_name = op_desc->GetName() + "_" + FILECONSTANT;
       const auto &file_constant_op = MakeShared<OpDesc>(file_constant_name, FILECONSTANT);
       GE_CHECK_NOTNULL(file_constant_op);

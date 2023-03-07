@@ -2646,7 +2646,7 @@ REG_OP(ImgToTensor)
 */
 
 REG_OP(NormalizeV2)
-    .INPUT(x, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(mean, TensorType({DT_FLOAT}))
     .INPUT(variance, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))

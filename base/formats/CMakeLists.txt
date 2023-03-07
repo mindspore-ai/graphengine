@@ -12,7 +12,7 @@ set(SRC_FORMAT_TRANSFERS
     "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
     "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
     "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
-    "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_nchw_fz_c04.cc"
+    "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_fz_c04.cc"
     "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
     "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
     "${AIR_CODE_DIR}/base/formats/format_transfers/format_transfer_transpose.cc"

@@ -32,6 +32,11 @@ typedef struct tagStarsSqeHeader {
     uint16_t taskId;
 } rtStarsSqeHeader_t;
 
+typedef struct tagRtStarsCommonSqe {
+    rtStarsSqeHeader_t sqeHeader;  // word 0-1
+    uint32_t commandCustom[14];       // word 2-15 is custom define by command.
+} rtStarsCommonSqe_t;
+
 typedef struct tagStarsDsaSqe {
     // 0-7 bytes
     rtStarsSqeHeader_t sqeHeader;

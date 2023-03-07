@@ -34,7 +34,7 @@ class DumpOp {
   void SetDumpInfo(const DumpProperties &dump_properties, const OpDescPtr &op_desc,
                    const std::vector<uintptr_t> &input_addrs, const std::vector<uintptr_t> &output_addrs,
                    const rtStream_t stream);
-  Status LaunchDumpOp();
+  Status LaunchDumpOp(bool is_single_op_dump);
   void SetLoopAddr(const uintptr_t global_step, const uintptr_t loop_per_iter, const uintptr_t loop_cond);
   void SetDynamicModelInfo(const std::string &dynamic_model_name, const std::string &dynamic_om_name,
                            const uint32_t dynamic_model_id);

@@ -40,7 +40,7 @@ namespace ge {
 * the index of the input feature map, "x1", "y1", "x2", or "y2" must be
 * greater than or equal to "0.0".
 * @li roi_actual_num: A  optional tensor of type int32, specifying
-* the number of ROIs per batch . 
+* the number of ROIs per batch.
 * @li argmax: A tensor of type int32, describing the index of grad. \n
 
 * @par Attributes:

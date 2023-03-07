@@ -45,24 +45,11 @@ void CloseHandle(void * const handle) {
 }
 
 void OppSoManager::LoadOppPackage() {
-#ifndef ONLY_COMPILE_OPEN_SRC
   LoadOpsProtoSo();
   LoadOpMasterSo();
-#else
-  auto space_registry = gert::DefaultOpImplSpaceRegistry::GetInstance().GetDefaultSpaceRegistry();
-  if (space_registry == nullptr) {
-    space_registry = std::make_shared<gert::OpImplSpaceRegistry>();
-    if (space_registry == nullptr) {
-      GELOGE(ge::FAILED, "Create space registry failed.");
-      return;
-    }
-    gert::DefaultOpImplSpaceRegistry::GetInstance().SetDefaultSpaceRegistry(space_registry);
-    GELOGI("Create default space registry!");
-  }
-#endif
 }
 
-void OppSoManager::LoadOpsProtoSo() {
+void OppSoManager::LoadOpsProtoSo() const {
   std::string ops_proto_path;
   const Status ret = PluginManager::GetOpsProtoPath(ops_proto_path);
   if (ret != SUCCESS) {
@@ -94,7 +81,7 @@ void OppSoManager::LoadOpsProtoSo() {
   }
 }
 
-void OppSoManager::LoadOpMasterSo() {
+void OppSoManager::LoadOpMasterSo() const {
   std::string op_tiling_path;
   const Status ret = PluginManager::GetOpTilingPath(op_tiling_path);
   if (ret != SUCCESS) {

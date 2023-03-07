@@ -33,10 +33,10 @@ bool CheckDataTypeSupportedForFracZToNchw(const DataType data_type) { return Get
 Status CheckArgsForFracZToNchw(const TransArgs &args) {
   const auto src_shape = args.src_shape;
   const auto dst_shape = args.dst_shape;
-  if ((args.src_format != FORMAT_FRACTAL_Z) || (args.dst_format != FORMAT_NCHW)) {
+  if ((args.src_primary_format != FORMAT_FRACTAL_Z) || (args.dst_primary_format != FORMAT_NCHW)) {
     const std::string error = "Dose not support trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_primary_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_primary_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
@@ -63,7 +63,7 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
                       ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.src_format));
   if (c0 < 0) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }

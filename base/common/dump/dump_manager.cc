@@ -136,6 +136,7 @@ Status DumpManager::SetDumpPath(const DumpConfig &dump_config, DumpProperties &d
 Status DumpManager::SetDumpConf(const DumpConfig &dump_config) {
   DumpProperties dump_properties;
   if (!NeedDoDump(dump_config, dump_properties)) {
+    diagnoseSwitch::DisableDumper();
     GELOGD("No need do dump process.");
     return SUCCESS;
   }

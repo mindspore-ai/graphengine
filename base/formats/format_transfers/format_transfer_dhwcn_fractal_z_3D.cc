@@ -31,9 +31,8 @@ Status CheckDataTypeSupportForDhwcnFractalZ3D(const DataType dtype) {
 }
 
 Status TransShapeToFzForDhwcnFractalZ3D(const int64_t d, const int64_t n, const int64_t c, const int64_t h,
-                                        const int64_t w, const DataType data_type, std::vector<int64_t> &dst_shape) {
-  const auto c0 = GetCubeSizeByDataType(data_type);
-  if (c0 < 0) {
+                                        const int64_t w, const int64_t c0, std::vector<int64_t> &dst_shape) {
+  if (c0 <= 0) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
@@ -49,7 +48,7 @@ Status TransShapeToFzForDhwcnFractalZ3D(const int64_t d, const int64_t n, const 
   return SUCCESS;
 }
 
-Status TransShapeDhwckToFz3D(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeDhwckToFz3D(const std::vector<int64_t> &src_shape, const Format &dst_format,
                              std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kDhwcnDimsNum)) {
     return ACL_ERROR_GE_SHAPE_INVALID;
@@ -59,8 +58,9 @@ Status TransShapeDhwckToFz3D(const std::vector<int64_t> &src_shape, const DataTy
   const auto w = src_shape.at(kDhwcnW);
   const auto c = src_shape.at(kDhwcnC);
   const auto n = src_shape.at(kDhwcnN);
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
 
-  return TransShapeToFzForDhwcnFractalZ3D(d, n, c, h, w, data_type, dst_shape);
+  return TransShapeToFzForDhwcnFractalZ3D(d, n, c, h, w, c0, dst_shape);
 }
 Status TransFormatDhwckToFz3D(const TransArgs &args, TransResult &result) {
   if (!CheckShapeValid(args.src_shape, kDhwcnDimsNum)) {
@@ -72,7 +72,7 @@ Status TransFormatDhwckToFz3D(const TransArgs &args, TransResult &result) {
   const int64_t c = args.src_shape[kDhwcnC];
   const int64_t n = args.src_shape[kDhwcnN];
   const int64_t n1n0 = Ceil(n, static_cast<int64_t>(kNiSize)) * kNiSize;
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
   const int64_t c1 = Ceil(c, c0);
 
   const auto cn = c * n;
@@ -150,10 +150,11 @@ Status TransFormatDhwckToFz3D(const TransArgs &args, TransResult &result) {
 }  // namespace
 
 Status FormatTransferDhwcnFractalZ3D::TransFormat(const TransArgs &args, TransResult &result) {
-  GELOGD("Begin to trans format from %s to %s, src shape %s, data type %s, dst shape %s",
+  GELOGD("Begin to trans format from %s to %s, src shape %s, data type %s, dst shape %s, src c0 is %ld, dst c0 is %ld.",
          TypeUtils::FormatToSerialString(args.src_format).c_str(),
          TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-         TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), ShapeToString(args.dst_shape).c_str());
+         TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), ShapeToString(args.dst_shape).c_str(),
+         args.src_c0_format, args.dst_c0_format);
   std::vector<int64_t> expect_shape;
   const auto ret = TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, expect_shape);
   if (ret != SUCCESS) {
@@ -163,7 +164,7 @@ Status FormatTransferDhwcnFractalZ3D::TransFormat(const TransArgs &args, TransRe
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
-  if ((args.src_format == FORMAT_DHWCN) && (args.dst_format == FORMAT_FRACTAL_Z_3D)) {
+  if ((args.src_primary_format == FORMAT_DHWCN) && (args.dst_primary_format == FORMAT_FRACTAL_Z_3D)) {
     return TransFormatDhwckToFz3D(args, result);
   }
 
@@ -180,7 +181,7 @@ Status FormatTransferDhwcnFractalZ3D::TransShape(const Format src_format, const 
   const Format src_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(src_format)));
   const Format dst_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(dst_format)));
   if ((src_primary_format == FORMAT_DHWCN) && (dst_primary_format == FORMAT_FRACTAL_Z_3D)) {
-    return TransShapeDhwckToFz3D(src_shape, data_type, dst_shape);
+    return TransShapeDhwckToFz3D(src_shape, dst_format, dst_shape);
   }
 
   return ACL_ERROR_GE_FORMAT_INVALID;

@@ -32,9 +32,8 @@ bool CheckDataTypeSupportedForTransShapeHwcnToC1hwncoc0(const DataType data_type
   return (data_type == DT_FLOAT) || (data_type == DT_FLOAT16) || (data_type == DT_INT8);
 }
 
-Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<int64_t> &src_shape,
+Status TransShapeHwcnToC1hwncoc0(const std::vector<int64_t> &src_shape, const int64_t cube_size,
                                  std::vector<int64_t> &dst_shape) {
-  const auto cube_size = GetCubeSizeByDataType(data_type);
   dst_shape.clear();
   dst_shape.push_back(Ceil(src_shape.at(kHwcnC), static_cast<int64_t>(cube_size)));
   dst_shape.push_back(src_shape.at(kHwcnH));
@@ -53,10 +52,10 @@ Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<in
 }
 
 Status CheckArgsForHwcnToC1hwncoc0(const TransArgs &args) {
-  if ((args.src_format != FORMAT_HWCN) || (args.dst_format != FORMAT_C1HWNCoC0)) {
+  if ((args.src_primary_format != FORMAT_HWCN) || (args.dst_primary_format != FORMAT_C1HWNCoC0)) {
     const std::string error = "Dose not support trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_primary_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_primary_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
@@ -84,7 +83,8 @@ Status CheckArgsForHwcnToC1hwncoc0(const TransArgs &args) {
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   std::vector<int64_t> expect_dst_shape;
-  const auto ret = TransShapeHwcnToC1hwncoc0(args.src_data_type, args.src_shape, expect_dst_shape);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
+  const auto ret = TransShapeHwcnToC1hwncoc0(args.src_shape, c0, expect_dst_shape);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -250,7 +250,8 @@ Status FormatTransferHwcnC1hwncoc0::TransShape(const Format src_format, const st
                                                const DataType data_type, const Format dst_format,
                                                std::vector<int64_t> &dst_shape) {
   (void)dst_format;
-  if ((src_format == FORMAT_HWCN) && CheckDataTypeSupportedForTransShapeHwcnToC1hwncoc0(data_type)) {
+  const Format src_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(src_format)));
+  if ((src_primary_format == FORMAT_HWCN) && CheckDataTypeSupportedForTransShapeHwcnToC1hwncoc0(data_type)) {
     if (!CheckShapeValid(src_shape, kHwcnDimsNum)) {
       GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
              ShapeToString(src_shape).c_str());
@@ -258,8 +259,9 @@ Status FormatTransferHwcnC1hwncoc0::TransShape(const Format src_format, const st
                         ShapeToString(src_shape).c_str());
       return ACL_ERROR_GE_SHAPE_INVALID;
     }
-    return TransShapeHwcnToC1hwncoc0(data_type, src_shape, dst_shape);
-  } else if (src_format != FORMAT_HWCN) {
+    const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
+    return TransShapeHwcnToC1hwncoc0(src_shape, c0, dst_shape);
+  } else if (src_primary_format != FORMAT_HWCN) {
     return ACL_ERROR_GE_FORMAT_INVALID;
   } else {
     return ACL_ERROR_GE_DATATYPE_INVALID;

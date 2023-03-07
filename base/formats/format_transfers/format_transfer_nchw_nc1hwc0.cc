@@ -28,9 +28,9 @@
 namespace ge {
 namespace formats {
 namespace {
-Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, const DataType data_type, const int64_t cube_size,
                                std::vector<int64_t> &dst_shape) {
-  const int64_t c0 = GetCubeSizeByDataType(data_type);
+  int64_t c0 = (cube_size <= 0) ? GetCubeSizeByDataType(data_type) : cube_size;
   if (c0 <= 0) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][Cube]Failed, the data type %s is invalid",
            TypeUtils::DataTypeToSerialString(data_type).c_str());
@@ -62,15 +62,16 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, const Data
 }
 
 Status CheckArgsForNchwToNc1hwc0(const TransArgs &args) {
-  if ((args.src_format != FORMAT_NCHW) || (args.dst_format != FORMAT_NC1HWC0)) {
+  if ((args.src_primary_format != FORMAT_NCHW) || (args.dst_primary_format != FORMAT_NC1HWC0)) {
     const std::string error = "Dose not support trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_primary_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_primary_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   std::vector<int64_t> expect_5d_shape;
-  const auto ret = TransShapeNchwToNc1hwc0(args.src_shape, args.src_data_type, expect_5d_shape);
+  const int64_t  c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
+  const auto ret = TransShapeNchwToNc1hwc0(args.src_shape, args.src_data_type, c0, expect_5d_shape);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -116,7 +117,7 @@ Status GetDstDataAfterTransOfNchw2Nc1hwc0(const TransArgs &args, TransResult &re
   const auto h = args.src_shape.at(kNchwH);
   const auto w = args.src_shape.at(kNchwW);
 
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
   if (c0 <= 0) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Check][Shape]The c0 is invalid %" PRId64 ", data_type %s",
            c0, TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
@@ -246,8 +247,9 @@ Status FormatTransferNchwNc1hwc0::TransShape(const Format src_format, const std:
                                              std::vector<int64_t> &dst_shape) {
   const Format src_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(src_format)));
   (void)dst_format;
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
   if (src_primary_format == FORMAT_NCHW) {
-    return TransShapeNchwToNc1hwc0(src_shape, data_type, dst_shape);
+    return TransShapeNchwToNc1hwc0(src_shape, data_type, c0, dst_shape);
   } else {
     return ACL_ERROR_GE_FORMAT_INVALID;
   }

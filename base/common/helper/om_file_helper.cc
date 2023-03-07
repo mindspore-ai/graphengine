@@ -210,9 +210,13 @@ Status OmFileLoadHelper::LoadModelPartitionTable(const uint8_t *const model_data
     model_contexts_[model_index].partition_datas_.push_back(partition);
     if ((partition.size > model_data_size) || (mem_offset > static_cast<size_t>(model_data_size - partition.size))) {
       GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
-             "The partition size %zu is greater than the model data size %lu.",
-             static_cast<size_t>(partition.size) + mem_offset, model_data_size);
+             "The partition size (%lu + %zu) is greater than the model data size %lu.",
+             partition.size, mem_offset, model_data_size);
       return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
+    }
+    if (CheckUint64AddOverflow(mem_offset, partition.size) != SUCCESS) {
+      GELOGE(FAILED, "UINT64 %zu and %lu addition can result in overflow!", mem_offset, partition.size);
+      return FAILED;
     }
     mem_offset += partition.size;
     GELOGD("type:%d, size:%lu, index:%zu", static_cast<int32_t>(partition.type), partition.size, model_index);
@@ -260,6 +264,10 @@ ModelPartitionTable *OmFileSaveHelper::GetPartitionTable(const size_t cur_ctx_in
   for (size_t i = 0U; i < static_cast<size_t>(partition_size); i++) {
     const ModelPartition partition = cur_ctx.partition_datas_[i];
     partition_table->partition[i] = {partition.type, mem_offset, partition.size};
+    if (CheckUint64AddOverflow(mem_offset, partition.size) != SUCCESS) {
+      GELOGE(FAILED, "UINT64 %lu and %lu addition can result in overflow!", mem_offset, partition.size);
+      return nullptr;
+    }
     mem_offset += partition.size;
     GELOGD("Partition, type:%d, size:%lu", static_cast<int32_t>(partition.type), partition.size);
   }

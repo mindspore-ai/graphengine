@@ -67,11 +67,11 @@ FormatTransferRegister::FormatTransferRegister(FormatTransferBuilder builder, co
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY std::shared_ptr<FormatTransfer> BuildFormatTransfer(
     const TransArgs &args) {
-  return GetFormatTransferRegistry().GenerateFormatTransfer(args.src_format, args.dst_format);
+  return GetFormatTransferRegistry().GenerateFormatTransfer(args.src_primary_format, args.dst_primary_format);
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool FormatTransferExists(const TransArgs &args) {
-  return GetFormatTransferRegistry().IsFormatTransferExists(args.src_format, args.dst_format);
+  return GetFormatTransferRegistry().IsFormatTransferExists(args.src_primary_format, args.dst_primary_format);
 }
 }  // namespace formats
 }  // namespace ge

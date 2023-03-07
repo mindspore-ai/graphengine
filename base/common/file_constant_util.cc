@@ -52,7 +52,18 @@ Status ReplaceNode(const NodePtr &new_node, const NodePtr &old_node, const Compu
   NodeUtils::UnlinkAll(*old_node);
   GE_CHK_STATUS_RET(GraphUtils::RemoveJustNode(compute_graph, old_node), "Remove node:%s in graph:%s failed",
                     old_node->GetName().c_str(), compute_graph->GetName().c_str());
+  GE_CHK_STATUS_RET(new_node->SetOwnerComputeGraph(compute_graph), "Set OwnerComputeGraph for node:%s failed",
+                    new_node->GetName().c_str());
   return SUCCESS;
+}
+
+std::string GetRegulatedGraphName(const std::string &graph_name) {
+  std::string regulated_graph_name = graph_name;
+  replace(regulated_graph_name.begin(), regulated_graph_name.end(), '/', '_');
+  replace(regulated_graph_name.begin(), regulated_graph_name.end(), '\\', '_');
+  replace(regulated_graph_name.begin(), regulated_graph_name.end(), '.', '_');
+  GELOGD("Get regulated graph name[%s] success", regulated_graph_name.c_str());
+  return regulated_graph_name;
 }
 }
 
@@ -312,7 +323,8 @@ Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph) {
       GE_CHECK_NOTNULL(file_constant_op);
       const auto &output_desc = op_desc->GetOutputDesc(0U);
       (void)file_constant_op->AddOutputDesc("y", output_desc);
-      std::string file_path = kTmpWeightDir + compute_graph->GetName() + "_" + time_stamp + "/" + file_constant_name;
+      std::string graph_name = GetRegulatedGraphName(compute_graph->GetName());
+      std::string file_path = kTmpWeightDir + graph_name + "/" + file_constant_name;
       GE_CHK_STATUS_RET(FileSaver::SaveToFile(file_path, tensor->GetData().GetData(), tensor->GetData().GetSize()),
                         "Failed to save the weight of node:%s to file:%s.", node->GetName().c_str(), file_path.c_str());
 
@@ -336,32 +348,13 @@ Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph) {
 }
 
 Status UnloadFileConstantWeights(const ComputeGraphPtr &compute_graph) {
-  for (const auto &node : compute_graph->GetAllNodes()) {
-    if (node->GetType() == FILECONSTANT) {
-      const auto &op_desc = node->GetOpDesc();
-      GE_CHECK_NOTNULL(op_desc);
-      std::string file_path;
-      size_t offset = 0U;
-      size_t length = 0U;
-      GetFileConstantPath(op_desc, file_path, offset, length);
-      if (file_path.empty()) {
-        continue;
-      }
-      std::string real_path = RealPath(file_path.c_str());
-      // Only unload weight files in directory "./tmp_weight/"
-      auto pos = real_path.find(kTmpWeightDir);
-      if (pos == std::string::npos) {
-        continue;
-      }
-      // Find directory "./tmp_weight/graph_name/"
-      pos = real_path.find('/', pos);
-      pos = real_path.find('/', pos + 1);
-      GE_CHK_BOOL_RET_STATUS(pos != std::string::npos, FAILED, "File path:%s is invalid.", real_path.c_str());
-      std::string file_dir = real_path.substr(0, pos);
-      GE_CHK_BOOL_RET_STATUS(mmRmdir(file_dir.c_str()) == 0, FAILED, "Failed to remove dir:%s.", file_dir.c_str());
-      break;
-    }
+  std::string graph_name = GetRegulatedGraphName(compute_graph->GetName());
+  std::string weight_dir = kTmpWeightDir + graph_name;
+  std::string real_path = RealPath(weight_dir.c_str());
+  if (real_path.empty()) {
+    return SUCCESS;
   }
+  GE_CHK_BOOL_RET_STATUS(mmRmdir(real_path.c_str()) == 0, FAILED, "Failed to remove dir:%s.", real_path.c_str());
   // Remove directory "./tmp_weight/" when it is empty
   (void)rmdir(kTmpWeightDir);
   GELOGD("Unload file constant weights success, graph name:%s.", compute_graph->GetName().c_str());

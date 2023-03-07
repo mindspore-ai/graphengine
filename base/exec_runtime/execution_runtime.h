@@ -40,6 +40,8 @@ class ExecutionRuntime {
 
   static void SetExecutionRuntime(const std::shared_ptr<ExecutionRuntime> &instance);
 
+  static bool IsMbufAllocatorEnabled();
+
   static bool IsHeterogeneousEnabled();
 
   static void DisableHeterogeneous();

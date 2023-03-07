@@ -619,6 +619,20 @@ REG_OP(TableToResource)
     .OP_END_FACTORY_REG(TableToResource)
 
 /**
+* @brief embedding feature_id trans to offset_id. \n
+
+* @par Inputs:
+* @li feature_id: A Tensor, dtype is int64.
+
+* @par Outputs:
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32. \n
+*/
+REG_OP(EmbeddingFeatureMapping)
+    .INPUT(feature_id, TensorType({DT_INT64}))
+    .OUTPUT(offset_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingFeatureMapping)
+
+/**
 * @brief embedding hashtable resource applyadagrad. \n
 
 * @par Inputs:
@@ -1086,6 +1100,104 @@ REG_OP(MinAreaPolygons)
     .INPUT(pointsets, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(polygons, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(MinAreaPolygons)
+
+/**
+* @brief Calculate the index and distance of the nearest three point to the target point.
+* @par Inputs:
+* Two input:
+* xyz1: The set of target points.
+* xyz2: The set of compare points. \n
+
+* @par Outputs:
+* dist: A Tensor, the distance of the nearest point to the target point.
+* idx: A Tensor, the index of the nearest point to the target point. \n
+*/
+REG_OP(ThreeNN)
+    .INPUT(xyz1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(xyz2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(dist, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(idx, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(ThreeNN)
+
+/**
+ * @brief Calculate the voxels of cloud points \n
+
+ * @par Inputs:
+ * Three inputs, including:
+ * @li points: the shape is [M, C], points[:3] contain xyz points and points[3:] contain other information. 
+ * @li voxel_size: the size of voxel with the shape of [3]. 
+ * @li coors_range:the coordinate range of voxel with the shape of [6]. \n
+
+ * @par Outputs:
+ * Four outputs, including:
+ * @li voxels: the output voxels with the shape of [M, max_points, C].
+ * @li coors: the voxel coordinates with shape of [M, 3].
+ * @li num_points_per_voxel: the number of points per voxel with the shape of [M].
+ * @li voxel_num: the number of voxels. \n
+
+ * @par Attributes:
+ * Three attrs, including:
+ * @li max_points: maximum points contained in a voxel.
+ * @li max_voxels: maximum voxels this op create. 
+ * @li deterministic: An optional attr, only support true now, false is faster. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the mmcv operator Voxelization.\n
+ */
+REG_OP(Voxelization)
+    .INPUT(points, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .INPUT(voxel_size, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .INPUT(coors_range, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(voxels, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(coors, TensorType({DT_INT32}))
+    .OUTPUT(num_points_per_voxel, TensorType({DT_INT32}))
+    .OUTPUT(voxel_num, TensorType({DT_INT32}))
+    .ATTR(max_points, Int, 35)
+    .ATTR(max_voxels, Int, 20000)
+    .ATTR(deterministic, Bool, true)
+    .OP_END_FACTORY_REG(Voxelization)
+
+/**
+* @brief Convert the image from YUV to Raw.
+*
+* @par Inputs:
+* @li img_channel_0: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 0.
+* @li img_channel_1: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 1.
+* @li img_channel_2: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 2.
+* @li img_channel_3: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 3.
+* @li img_size: A 1D Tensor, dtype is int32, shape is (2,).
+*     The data is h_out and w_out, which indicates the output height and width.
+* @li gamma: A 1D Tensor, dtype is int32, shape is (4,).
+*
+* @par Outputs:
+* @li raw_img: A 2D Tensor, dtype is uint16, shape is (h_out, w_out). the output raw image. \n
+*/
+REG_OP(ImgRawDecodePostHandle)
+    .INPUT(img_channel_0, TensorType({DT_UINT16}))
+    .INPUT(img_channel_1, TensorType({DT_UINT16}))
+    .INPUT(img_channel_2, TensorType({DT_UINT16}))
+    .INPUT(img_channel_3, TensorType({DT_UINT16}))
+    .INPUT(img_size, TensorType({DT_INT32}))
+    .INPUT(gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(raw_img, TensorType({DT_UINT16}))
+    .OP_END_FACTORY_REG(ImgRawDecodePostHandle)
+
+/**
+* @brief RGB2YUV422. Convert the image from rgb to yuv422. \n
+
+* @par Inputs:
+* rgb: A Tensor of type uint8. \n
+* @par Outputs:
+* yuv: A Tensor of type uint8. \n
+
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+* interpretted as channels, and must be three . \n
+*/
+REG_OP(RGB2YUV422)
+    .INPUT(rgb, TensorType({DT_UINT8}))
+    .OUTPUT(yuv, TensorType({DT_UINT8}))
+    .OP_END_FACTORY_REG(RGB2YUV422)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

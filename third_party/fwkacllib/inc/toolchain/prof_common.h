@@ -461,7 +461,7 @@ struct MsprofStampInfo {
     uint32_t processId;
     uint32_t threadId;
     uint32_t category;    // marker category
-    uint32_t  eventType;
+    uint32_t eventType;
     int32_t payloadType;
     union PayloadValue {
         uint64_t ullValue;

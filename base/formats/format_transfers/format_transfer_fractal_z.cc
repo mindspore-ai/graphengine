@@ -40,12 +40,11 @@ Status CheckDataTypeSupportForTransferFractalZ(const DataType data_type) {
  * After the conversion to two-dimensional matrix, the memory arrangement is small n and large Z.
  * If 4D(eg.NCHW) is used to represent convolution kernel, N is width, HWC is height.
  *
- * frac_z axises: (C1*H*W, No, Ni, C0), which Ni = 16, C0 = 16/32, No = Ceil(N/Ni), C1 = Ceil(C/C0)
+ * frac_z axises: (C1*H*W, No, Ni, C0), which Ni = 16, C0 = 8/16/32, No = Ceil(N/Ni), C1 = Ceil(C/C0)
  * @return
  */
 Status TransShapeToFz(const int64_t n, const int64_t c, const int64_t h, const int64_t w,
-                      const DataType data_type, std::vector<int64_t> &dst_shape) {
-  const auto c0 = GetCubeSizeByDataType(data_type);
+                      const int64_t c0, std::vector<int64_t> &dst_shape) {
   if (c0 < 0) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
@@ -68,14 +67,13 @@ Status TransShapeToFz(const int64_t n, const int64_t c, const int64_t h, const i
 }
 
 Status TransShapeToFzWithGroups(const int64_t n, const int64_t c, const int64_t h, const int64_t w,
-                                const DataType data_type, std::vector<int64_t> &dst_shape, const int64_t groups) {
-  const auto c0 = GetCubeSizeByDataType(data_type);
+                                const int64_t c0, std::vector<int64_t> &dst_shape, const int64_t groups) {
   if (c0 < 0) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   const int64_t cin_ori = c;
   const int64_t cout_ori = n / groups;
-  const int64_t cube_k = GetCubeSizeByDataType(data_type);
+  const int64_t cube_k = c0;
   const int64_t e_mult = std::min(
       Lcm(Lcm(cin_ori, cube_k) / (cin_ori), Lcm(cout_ori, static_cast<int64_t>(kCubeSize)) / (cout_ori)),
       groups);
@@ -97,7 +95,7 @@ Status TransShapeToFzWithGroups(const int64_t n, const int64_t c, const int64_t 
   return SUCCESS;
 }
 
-Status TransShapeNchwToFz(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeNchwToFz(const std::vector<int64_t> &src_shape, const Format &dst_format,
                           std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {
     return ACL_ERROR_GE_SHAPE_INVALID;
@@ -107,10 +105,11 @@ Status TransShapeNchwToFz(const std::vector<int64_t> &src_shape, const DataType 
   const auto c = src_shape.at(kNchwC);
   const auto h = src_shape.at(kNchwH);
   const auto w = src_shape.at(kNchwW);
-  return TransShapeToFz(n, c, h, w, data_type, dst_shape);
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
+  return TransShapeToFz(n, c, h, w, c0, dst_shape);
 }
 
-Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, const Format &dst_format,
                           std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kHwcnDimsNum)) {
     return ACL_ERROR_GE_SHAPE_INVALID;
@@ -120,11 +119,12 @@ Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, const DataType 
   const auto w = src_shape.at(kHwcnW);
   const auto c = src_shape.at(kHwcnC);
   const auto n = src_shape.at(kHwcnN);
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
 
-  return TransShapeToFz(n, c, h, w, data_type, dst_shape);
+  return TransShapeToFz(n, c, h, w, c0, dst_shape);
 }
 
-Status TransShapeHwcnToFzWithGroups(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeHwcnToFzWithGroups(const std::vector<int64_t> &src_shape, const Format &dst_format,
                                     std::vector<int64_t> &dst_shape, const int64_t groups) {
  if (!CheckShapeValid(src_shape, kHwcnDimsNum)) {
     return ACL_ERROR_GE_SHAPE_INVALID;
@@ -134,12 +134,13 @@ Status TransShapeHwcnToFzWithGroups(const std::vector<int64_t> &src_shape, const
   const auto w = src_shape.at(kHwcnW);
   const auto c = src_shape.at(kHwcnC);
   const auto n = src_shape.at(kHwcnN);
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
 
-  return TransShapeToFzWithGroups(n, c, h, w, data_type, dst_shape, groups);
+  return TransShapeToFzWithGroups(n, c, h, w, c0, dst_shape, groups);
 }
 
 
-Status TransShapeNhwcToFz(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeNhwcToFz(const std::vector<int64_t> &src_shape, const Format &dst_format,
                           std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kNhwcDimsNum)) {
     return ACL_ERROR_GE_SHAPE_INVALID;
@@ -149,8 +150,9 @@ Status TransShapeNhwcToFz(const std::vector<int64_t> &src_shape, const DataType 
   const auto h = src_shape.at(kNhwcH);
   const auto w = src_shape.at(kNhwcW);
   const auto c = src_shape.at(kNhwcC);
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
 
-  return TransShapeToFz(n, c, h, w, data_type, dst_shape);
+  return TransShapeToFz(n, c, h, w, c0, dst_shape);
 }
 
 Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
@@ -159,7 +161,7 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
   const int64_t h = args.src_shape.at(kNchwH);
   const int64_t w = args.src_shape.at(kNchwW);
 
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
   const int64_t c1 = Ceil(c, c0);
 
   const int64_t hw = h * w;
@@ -269,7 +271,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
                       cin_ori, cout_ori, groups);
     return GRAPH_FAILED;
   }
-  const int64_t cube_k = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t cube_k = GetC0Value(static_cast<int32_t>(args.dst_format));
   const int64_t e_mult = std::min(
       Lcm(Lcm(cin_ori, cube_k) / (cin_ori), Lcm(cout_ori, static_cast<int64_t>(kCubeSize)) / (cout_ori)),
       groups);
@@ -345,7 +347,7 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
   const int64_t c = args.src_shape[kHwcnC];
   const int64_t n = args.src_shape[kHwcnN];
   const int64_t n1n0 = Ceil(n, static_cast<int64_t>(kNiSize)) * kNiSize;
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
   const int64_t c1 = Ceil(c, c0);
 
   const auto cn = c * n;
@@ -437,7 +439,7 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
   const auto hwc = h * w * c;
 
   const int64_t n1n0 = Ceil(n, static_cast<int64_t>(kNiSize)) * kNiSize;
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
   const int64_t c1 = Ceil(c, c0);
   const auto n1n0c0 = n1n0 * c0;
   const auto wn1n0c0 = w * n1n0c0;
@@ -519,14 +521,13 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
 }  // namespace
 
 Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &result) {
-  GELOGD("Begin to trans format from %s to %s, src shape %s, data type %s, dst shape %s",
-         TypeUtils::FormatToSerialString(args.src_format).c_str(),
+  GELOGD("Begin to trans format from %s to %s, src shape %s, data type %s, dst shape %s, src_c0_format=%ld, "
+         "dst_c0_format=%ld ", TypeUtils::FormatToSerialString(args.src_format).c_str(),
          TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-         TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), ShapeToString(args.dst_shape).c_str());
+         TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), ShapeToString(args.dst_shape).c_str(),
+         args.src_c0_format, args.dst_c0_format);
   std::vector<int64_t> expect_shape;
-  const Format src_format = static_cast<Format>(GetFormatFromSub(args.src_format, args.src_sub_format));
-  const Format dst_format = static_cast<Format>(GetFormatFromSub(args.dst_format, args.dst_sub_format));
-  const auto ret = TransShape(src_format, args.src_shape, args.src_data_type, dst_format, expect_shape);
+  const auto ret = TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, expect_shape);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -534,17 +535,17 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
-  if ((args.src_format == FORMAT_NHWC) && (args.dst_format == FORMAT_FRACTAL_Z)) {
+  if ((args.src_primary_format == FORMAT_NHWC) && (args.dst_primary_format == FORMAT_FRACTAL_Z)) {
     return TransFormatNhwcToFz(args, result);
   }
-  if ((args.src_format == FORMAT_HWCN) && (GetPrimaryFormat(args.dst_format) == FORMAT_FRACTAL_Z)) {
+  if ((args.src_primary_format == FORMAT_HWCN) && (args.dst_primary_format == FORMAT_FRACTAL_Z)) {
     if ((static_cast<int64_t>(args.dst_sub_format)) > 1) {
       return TransFormatHwcnToFzWithGroups(args, result, static_cast<int64_t>(args.dst_sub_format));
     }
     return TransFormatHwcnToFz(args, result);
   }
 
-  if ((args.src_format == FORMAT_NCHW) && (args.dst_format == FORMAT_FRACTAL_Z)) {
+  if ((args.src_primary_format == FORMAT_NCHW) && (args.dst_primary_format == FORMAT_FRACTAL_Z)) {
     return TransFormatFromNchwToFz(args, result);
   }
   return ACL_ERROR_GE_FORMAT_INVALID;
@@ -555,22 +556,27 @@ Status FormatTransferFractalZ::TransShape(const Format src_format, const std::ve
                                           std::vector<int64_t> &dst_shape) {
   const Format src_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(src_format)));
   const Format dst_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(dst_format)));
+  GELOGD("Begin to trans shape from %s to %s, src shape %s, data type %s, dst shape %s, "
+         "src_c0_format=%ld, dst_c0_format=%ld ", TypeUtils::FormatToSerialString(src_primary_format).c_str(),
+         TypeUtils::FormatToSerialString(dst_primary_format).c_str(), ShapeToString(src_shape).c_str(),
+         TypeUtils::DataTypeToSerialString(data_type).c_str(), ShapeToString(dst_shape).c_str(),
+         GetC0Value(static_cast<int32_t>(src_format)), GetC0Value(static_cast<int32_t>(dst_format)));
   if (CheckDataTypeSupportForTransferFractalZ(data_type) != SUCCESS) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
   if ((src_primary_format == FORMAT_NHWC) && (dst_primary_format == FORMAT_FRACTAL_Z)) {
-    return TransShapeNhwcToFz(src_shape, data_type, dst_shape);
+    return TransShapeNhwcToFz(src_shape, dst_format, dst_shape);
   }
   if ((src_primary_format == FORMAT_HWCN) && (dst_primary_format == FORMAT_FRACTAL_Z)) {
     if (GetSubFormat(static_cast<int32_t>(dst_format)) > 1) {
-        return TransShapeHwcnToFzWithGroups(src_shape, data_type, dst_shape,
+        return TransShapeHwcnToFzWithGroups(src_shape, dst_format, dst_shape,
                                             static_cast<int64_t>(GetSubFormat(static_cast<int32_t>(dst_format))));
      }
-    return TransShapeHwcnToFz(src_shape, data_type, dst_shape);
+    return TransShapeHwcnToFz(src_shape, dst_format, dst_shape);
   }
   if ((src_primary_format == FORMAT_NCHW) && (dst_primary_format == FORMAT_FRACTAL_Z)) {
-    return TransShapeNchwToFz(src_shape, data_type, dst_shape);
+    return TransShapeNchwToFz(src_shape, dst_format, dst_shape);
   }
 
   return ACL_ERROR_GE_FORMAT_INVALID;

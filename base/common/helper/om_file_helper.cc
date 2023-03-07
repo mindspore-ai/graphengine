@@ -123,8 +123,8 @@ static Status ConvertToModelPartitionTable(const TinyModelPartitionTable *tiny_t
   return SUCCESS;
 }
 
-bool OmFileLoadHelper::IsPartitionTableNumValid(uint32_t partition_num,
-                                                uint32_t increase_partition_num) {
+bool OmFileLoadHelper::IsPartitionTableNumValid(const uint32_t partition_num,
+                                                const uint32_t increase_partition_num) const {
   if ((partition_num != (PARTITION_SIZE + increase_partition_num)) &&
       (partition_num != (PARTITION_SIZE - 1U + increase_partition_num)) &&
       (partition_num != (PARTITION_SIZE - kOptionalNum + increase_partition_num)) &&
@@ -161,7 +161,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(const uint8_t *const model_data
     partition_table = PtrToPtr<void, ModelPartitionTable>(ValueToPtr(PtrToValue(model_data) + mem_offset));
     partition_table_size = SizeOfModelPartitionTable(*partition_table);
   } else {
-    TinyModelPartitionTable *tiny_partition_table =
+    TinyModelPartitionTable * const tiny_partition_table =
         PtrToPtr<void, TinyModelPartitionTable>(ValueToPtr(PtrToValue(model_data) + mem_offset));
     if (!(IsPartitionTableNumValid(tiny_partition_table->num, 0U) ||
         IsPartitionTableNumValid(tiny_partition_table->num, 1U))) {

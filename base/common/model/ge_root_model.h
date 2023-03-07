@@ -63,7 +63,7 @@ namespace ge {
 
   Status SetLogicDeviceId(const std::string &logical_device_id);
 
-  void SetWeightSize(int64_t weight_size) { total_weight_size_ = weight_size; }
+  void SetWeightSize(const int64_t weight_size) { total_weight_size_ = weight_size; }
   int64_t GetWeightSize() const { return total_weight_size_; }
 
   void SetFlattenGraph(const ComputeGraphPtr &flatten_graph) {
@@ -72,7 +72,7 @@ namespace ge {
   }
   ComputeGraphPtr GetFlattenGraph() const { return flatten_graph_; }
 
-  void SetNodesToTaskDef(std::unordered_map<ge::NodePtr, std::vector<domi::TaskDef>> &nodes_2_task_def) {
+  void SetNodesToTaskDef(const std::unordered_map<ge::NodePtr, std::vector<domi::TaskDef>> &nodes_2_task_def) {
     const std::lock_guard<std::mutex> lock(model_ids_mutex_);
     nodes_to_task_defs_ = nodes_2_task_def;
   }
@@ -80,7 +80,7 @@ namespace ge {
     return nodes_to_task_defs_;
   }
 
-  void SetGraphToStaticModels(std::unordered_map<std::string, ge::GeModelPtr> &graph_2_static_models) {
+  void SetGraphToStaticModels(const std::unordered_map<std::string, ge::GeModelPtr> &graph_2_static_models) {
     const std::lock_guard<std::mutex> lock(model_ids_mutex_);
     graph_to_static_models_ = graph_2_static_models;
   }

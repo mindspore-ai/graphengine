@@ -75,11 +75,12 @@ class ModelRelationBuilder {
                         const ComputeGraph &root_graph);
   Status DoBuildForPartitionedCall(const NodePtr &node, std::map<NodePtr,
                                    std::map<int32_t, std::string>> &paired_inputs);
-  Status DoBuildForNetOutput(const NodePtr &node, std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs);
+  Status DoBuildForNetOutput(const NodePtr &node, const std::map<NodePtr,
+                             std::map<int32_t, std::string>> &paired_inputs);
   Status CreateEmptyModelRelation(const OpDesc &op_desc);
   Status GetOrCreateModelQueueInfo(const OpDesc &op_desc, ModelRelation::ModelQueueInfo *&model_queue_info);
-  Status CheckDataNode(const NodePtr &node, bool &create_relation_flag);
-  Status CheckNetOutputNode(const NodePtr &node, bool &create_relation_flag);
+  Status CheckDataNode(const NodePtr &node, bool &create_relation_flag) const;
+  Status CheckNetOutputNode(const NodePtr &node, bool &create_relation_flag) const;
 
   std::map<std::string, ModelRelation::QueueDef> queue_defs_;
 };

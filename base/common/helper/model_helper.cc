@@ -308,35 +308,19 @@ Status ModelHelper::GetSoBinData(string &cpu_info, string &os_info) {
     std::string op_master_path = opp_path;
     op_proto_path += vendors[i] + kOpsProtoPath + os_info + "/" + cpu_info + "/" + kOpsProto;
     uint32_t bin_len = 0U;
+
     auto op_proto_bin = GetBinFromFile(op_proto_path, bin_len);
-#ifdef ONLY_COMPILE_OPEN_SRC
-    if (op_proto_bin != nullptr) {
-      const OpSoBinPtr proto_bin_ptr = ge::MakeShared<OpSoBin>(kOpsProto, vendors[i], std::move(op_proto_bin), bin_len);
-      GE_ASSERT_NOTNULL(proto_bin_ptr);
-      op_so_store_.AddKernel(proto_bin_ptr);
-    }
-#else
     GE_ASSERT_NOTNULL(op_proto_bin, " open proto so fail, path=%s", op_proto_path.c_str());
     const OpSoBinPtr proto_bin_ptr = ge::MakeShared<OpSoBin>(kOpsProto, vendors[i], std::move(op_proto_bin), bin_len);
     GE_ASSERT_NOTNULL(proto_bin_ptr);
     op_so_store_.AddKernel(proto_bin_ptr);
-#endif
 
     op_master_path += vendors[i] + kOpMasterPath + os_info + "/" + cpu_info + "/" + kOpMaster;
     auto op_master_bin = GetBinFromFile(op_master_path, bin_len);
-#ifdef ONLY_COMPILE_OPEN_SRC
-    if (op_master_bin != nullptr) {
-      const OpSoBinPtr master_bin_ptr
-          = ge::MakeShared<OpSoBin>(kOpMaster, vendors[i], std::move(op_master_bin), bin_len);
-      GE_ASSERT_NOTNULL(master_bin_ptr);
-      op_so_store_.AddKernel(master_bin_ptr);
-    }
-#else
     GE_ASSERT_NOTNULL(op_master_bin, " open master so fail, path=%s", op_master_path.c_str());
     const OpSoBinPtr master_bin_ptr = ge::MakeShared<OpSoBin>(kOpMaster, vendors[i], std::move(op_master_bin), bin_len);
     GE_ASSERT_NOTNULL(master_bin_ptr);
     op_so_store_.AddKernel(master_bin_ptr);
-#endif
   }
 
   GE_ASSERT_TRUE(op_so_store_.Build());
@@ -364,13 +348,6 @@ Status ModelHelper::SaveSoStoreModelPartitionInfo(std::shared_ptr<OmFileSaveHelp
     }
 
     GE_ASSERT_SUCCESS(GetSoBinData(host_env_cpu, host_env_os));
-#ifdef ONLY_COMPILE_OPEN_SRC
-    if (op_so_store_.GetKernelNum() == 0U) {
-      GELOGW("[SaveSoStoreModelPartitionInfo] get cpu and os info empty!!");
-      return SUCCESS;
-    }
-#endif
-
     const uint8_t * const op_so_data = GetOpSoStoreData();
     const auto data_size = GetOpStoreDataSize();
     GE_ASSERT_SUCCESS(SaveModelPartition(om_file_save_helper, ModelPartitionType::SO_BINS,

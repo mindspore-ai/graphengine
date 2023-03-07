@@ -94,7 +94,7 @@ Status ModelRelationBuilder::BuildForSingleModel(const ComputeGraph &root_graph,
   return SUCCESS;
 }
 
-Status ModelRelationBuilder::CheckDataNode(const NodePtr &node, bool &create_relation_flag) {
+Status ModelRelationBuilder::CheckDataNode(const NodePtr &node, bool &create_relation_flag) const {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
   std::string pne_id = PNE_ID_NPU;
@@ -129,7 +129,7 @@ Status ModelRelationBuilder::CheckDataNode(const NodePtr &node, bool &create_rel
   return SUCCESS;
 }
 
-Status ModelRelationBuilder::CheckNetOutputNode(const NodePtr &node, bool &create_relation_flag) {
+Status ModelRelationBuilder::CheckNetOutputNode(const NodePtr &node, bool &create_relation_flag) const {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
   std::string pne_id = PNE_ID_NPU;
@@ -258,7 +258,8 @@ Status ModelRelationBuilder::DoBuildForPartitionedCall(const NodePtr &node,
 }
 
 Status ModelRelationBuilder::DoBuildForNetOutput(const NodePtr &node,
-                                                 std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs) {
+                                                 const std::map<NodePtr, std::map<int32_t, std::string>>
+                                                 &paired_inputs) {
   GE_CHECK_NOTNULL(node);
   bool create_relation_flag = true;
   GE_CHK_STATUS_RET_NOLOG(CheckNetOutputNode(node, create_relation_flag));

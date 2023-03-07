@@ -24,6 +24,7 @@ const DeployPlan::DeviceInfo kLocalDeviceInfo{CPU, kLocalNodeId, 0};
 }  // namespace
 
 std::atomic<int64_t> DeployPlannerBase::endpoint_name_id_gen_{};
+std::atomic<int64_t> DeployPlannerBase::plan_id_gen_{};
 
 const std::vector<DeployPlan::QueueInfo> &DeployPlan::GetQueueInfoList() const {
   return queues_;
@@ -126,6 +127,7 @@ DeployPlanner::DeployPlanner(const PneModelPtr &root_model)
 Status DeployPlannerBase::BuildPlan(DeployPlan &deploy_plan) {
   GE_CHK_STATUS_RET(Initialize(), "Failed to initialize deploy planner.");
   GE_CHK_STATUS_RET(ParseModelRelation(), "Failed to parse model relation.");
+  plan_id_gen_++;
   deploy_plan = std::move(deploy_plan_);
   return SUCCESS;
 }
@@ -750,7 +752,8 @@ std::string DeployPlannerBase::GetEndpointFullName(const DeployPlan::QueueInfo &
                                                    const DeployPlannerBase::ModelQueueIndex &model_queue_index) {
   std::stringstream ss;
   ss << model_queue_index.model_name << ":" << model_queue_index.id
-     << "_FROM_" << endpoint_info.name << "@" << endpoint_info.device_info.GetKey();
+     << "_FROM_" << endpoint_info.name << "@" << endpoint_info.device_info.GetKey()
+     << "_T" << std::to_string(plan_id_gen_);
   const auto &name = ss.str();
   if (name.length() <= kMaxQueueNameLen) {
     return name;
@@ -801,8 +804,10 @@ Status DeployPlannerBase::BuildTransferPlan(const std::pair<DeployPlan::DeviceIn
                                             DeployPlan &deploy_plan) {
   const auto &src_device = routes.first;
   const auto &dst_device = routes.second;
-  const std::string route_name = src_device.GetKey() + "_to_" + dst_device.GetKey();
+  const std::string route_name = src_device.GetKey() + "_to_" + dst_device.GetKey() +
+                                 "_T" + std::to_string(plan_id_gen_);
   GE_CHK_STATUS_RET_NOLOG(CreateTransferInfo(route_name, src_device, dst_device));
+  plan_id_gen_++;
   deploy_plan = std::move(deploy_plan_);
   return SUCCESS;
 }

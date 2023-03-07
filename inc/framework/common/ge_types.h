@@ -73,6 +73,7 @@ const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 // profiling data
 
 const std::string kTaskTypeAicore = "AI_CORE";
+const std::string kTaskTypeAiv = "AIV";
 const std::string kTaskTypeMixAic = "MIX_AIC";
 const std::string kTaskTypeMixAiv = "MIX_AIV";
 const std::string kTaskTypeAicpu = "AI_CPU";
@@ -375,6 +376,7 @@ struct OpDescInfo {
   std::string op_type;
   uint32_t task_id = 0U;
   uint32_t stream_id = 0U;
+  uint32_t context_id = UINT32_MAX;
   uint32_t imply_type = 0U;
   uint32_t block_dim = 0U;
   std::string op_file_path;

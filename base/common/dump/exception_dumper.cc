@@ -128,16 +128,6 @@ void ExceptionDumper::SaveDumpOpInfo(const OpDescPtr &op, const uint32_t task_id
   }
 }
 
-void ExceptionDumper::SaveDumpOpInfo(const OpDescPtr &op, const std::vector<void *> input_addrs,
-                                     const std::vector<void *> output_addrs, const uint32_t task_id,
-                                     const uint32_t stream_id) {
-  OpDescInfo op_desc_info;
-  SaveOpDescInfo(op, task_id, stream_id, op_desc_info);
-  op_desc_info.input_addrs = input_addrs;
-  op_desc_info.output_addrs = output_addrs;
-  op_desc_info_.emplace_back(std::move(op_desc_info));
-}
-
 void ExceptionDumper::SaveOpDescInfo(const OpDescPtr &op, const uint32_t task_id, const uint32_t stream_id,
                                      OpDescInfo &op_desc_info) const {
   if (op == nullptr) {
@@ -150,6 +140,7 @@ void ExceptionDumper::SaveOpDescInfo(const OpDescPtr &op, const uint32_t task_id
   op_desc_info.op_type = op->GetType();
   op_desc_info.task_id = task_id;
   op_desc_info.stream_id = stream_id;
+  (void)AttrUtils::GetInt(op, "current_context_id", op_desc_info.context_id);
   (void)AttrUtils::GetInt(op, ATTR_NAME_IMPLY_TYPE, op_desc_info.imply_type);
   (void)AttrUtils::GetInt(op, TVM_ATTR_NAME_BLOCKDIM, op_desc_info.block_dim);
   (void)AttrUtils::GetStr(op, op->GetName() + "_kernelname", op_desc_info.dev_func);
@@ -297,7 +288,17 @@ Status ExceptionDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> &ex
   }
   for (const rtExceptionInfo &iter : exception_infos) {
     OpDescInfo op_desc_info;
-    if (GetOpDescInfo(iter.streamid, iter.taskid, op_desc_info)) {
+    bool is_find = false;
+    if (iter.expandInfo.type == RT_EXCEPTION_FFTS_PLUS) {
+      uint16_t context_id = iter.expandInfo.u.fftsPlusInfo.contextId;
+      uint16_t thread_id = iter.expandInfo.u.fftsPlusInfo.threadId;
+      GELOGI("ffts+ op context id: %u, thread id: %u.", context_id, thread_id);
+      is_find = GetOpDescInfo(iter.streamid, iter.taskid, op_desc_info, static_cast<uint32_t>(context_id));
+    } else {
+      is_find = GetOpDescInfo(iter.streamid, iter.taskid, op_desc_info);
+    }
+
+    if (is_find) {
       toolkit::dump::DumpData dump_data;
       SetDumpData(op_desc_info, dump_data);
       const uint64_t now_time = GetNowTime();
@@ -347,7 +348,6 @@ Status ExceptionDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> &ex
       GELOGI("[Dump][Exception] Dump exception info SUCCESS");
     } else {
       GELOGW("[Dump][Exception] Get op desc info failed,task id:%u,stream id:%u", iter.taskid, iter.streamid);
-      return PARAM_INVALID;
     }
   }
   return SUCCESS;
@@ -388,12 +388,14 @@ void ExceptionDumper::RefreshAddrs(OpDescInfo &op_desc_info) const {
   }
 }
 
-bool ExceptionDumper::GetOpDescInfo(const uint32_t stream_id, const uint32_t task_id, OpDescInfo &op_desc_info) {
+bool ExceptionDumper::GetOpDescInfo(const uint32_t stream_id, const uint32_t task_id, OpDescInfo &op_desc_info,
+                                    const uint32_t context_id) {
   GELOGI("[Get][OpDescInfo] There are %zu op info saved, target stream_id:%u, task_id:%u.", op_desc_info_.size(),
          stream_id, task_id);
   const std::lock_guard<std::mutex> lock(mutex_);
   for (auto &dump_op_info : op_desc_info_) {
-    if ((dump_op_info.task_id == task_id) && (dump_op_info.stream_id == stream_id)) {
+    if ((dump_op_info.task_id == task_id) && (dump_op_info.stream_id == stream_id) &&
+         dump_op_info.context_id == context_id) {
       GELOGI("[Get][OpDescInfo] Find exception op [%s] of task_id: %u, stream_id: %u.", dump_op_info.op_name.c_str(),
              task_id, stream_id);
       op_desc_info = dump_op_info;

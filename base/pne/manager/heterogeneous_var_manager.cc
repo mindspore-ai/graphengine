@@ -67,7 +67,7 @@ Status HeterogeneousVarManager::RecordInitOp(const uint32_t graph_id, const std:
   for (size_t i = 0U; i < inputs.size(); ++i) {
     auto &recorded_input = operation.inputs[i];
     recorded_input.MutableData().clear();
-    recorded_input.SetData(inputs[i].GetData());
+    GE_CHK_GRAPH_STATUS_RET(recorded_input.SetData(inputs[i].GetData()));
   }
   pending_init_operations_[graph_id].emplace_back(std::move(operation));
   GELOGI("Init operation recorded, graph id = %u, num_inputs = %zu", graph_id, inputs.size());

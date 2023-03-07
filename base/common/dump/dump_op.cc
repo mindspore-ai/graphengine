@@ -303,8 +303,9 @@ Status DumpOp::SetDumpModelName(toolkit::aicpu::dump::OpMappingInfo &op_mapping_
   return SUCCESS;
 }
 
-Status DumpOp::LaunchDumpOp() {
-  GELOGI("Start to launch dump op %s", op_desc_->GetName().c_str());
+Status DumpOp::LaunchDumpOp(bool is_single_op_dump) {
+  GELOGI("Start to launch dump op %s, is single op dump %d.", op_desc_->GetName().c_str(),
+         static_cast<int32_t>(is_single_op_dump));
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
   if (rt_ret != RT_ERROR_NONE) {
@@ -328,7 +329,7 @@ Status DumpOp::LaunchDumpOp() {
                              : toolkit::aicpu::dump::DumpData::TENSOR_DUMP_DATA;
   op_mapping_info.set_dump_data(dump_data);
 
-  if (SetDumpModelName(op_mapping_info) != SUCCESS) {
+  if (!is_single_op_dump && (SetDumpModelName(op_mapping_info) != SUCCESS)) {
     return SUCCESS;
   }
   SetLoopAddrToOpMapping(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);

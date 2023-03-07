@@ -171,7 +171,7 @@ std::string DataSliceAdapter::GetTensorStr(const OpDesc::Vistor<ge::GeTensorDesc
   for (const auto &tensor : all_tensor_desc) {
     const Format ori_format = tensor->GetOriginFormat();
     const GeShape ori_shape = tensor->GetOriginShape();
-    const Format format = tensor->GetFormat();
+    const Format format = static_cast<Format>(GetPrimaryFormat(tensor->GetFormat()));
     const GeShape shape = tensor->GetShape();
     auto iter_ori = FORMAT_MAP_STR.find(ori_format);
     auto iter = FORMAT_MAP_STR.find(format);
@@ -236,7 +236,8 @@ bool DataSliceAdapter::CheckOriInfo(const OpDescPtr &op)
       continue;
     }
     auto ori_shape = cur_tensor->GetOriginShape();
-    if (ori_shape.GetShapeSize() == 0) {
+    auto shape = cur_tensor->GetShape();
+    if (ori_shape.GetShapeSize() == 0 && shape.GetShapeSize() != 0) {
       GELOGW("op_name = %s, input_tensor[%zu] ori_shape is empty", op->GetName().c_str(), idx);
       return false;
     }
@@ -248,7 +249,8 @@ bool DataSliceAdapter::CheckOriInfo(const OpDescPtr &op)
       continue;
     }
     auto ori_shape = cur_tensor->GetOriginShape();
-    if (ori_shape.GetShapeSize() == 0) {
+    auto shape = cur_tensor->GetShape();
+    if (ori_shape.GetShapeSize() == 0 && shape.GetShapeSize() != 0) {
       GELOGW("op_name = %s, output_tensor[%zu] ori_shape is empty", op->GetName().c_str(), idx);
       return false;
     }
@@ -267,7 +269,8 @@ void DataSliceAdapter::SetOriOpInfo(OpDescPtr &op,
       GELOGW("op_name = %s, input_tensor[%u] is nullptr", op->GetName().c_str(), idx);
       continue;
     }
-    cache_input_info.emplace_back(cur_tensor->GetFormat(), cur_tensor->GetShape());
+    cache_input_info.emplace_back(static_cast<Format>(GetPrimaryFormat(cur_tensor->GetFormat())),
+                                  cur_tensor->GetShape());
     cur_tensor->SetFormat(cur_tensor->GetOriginFormat());
     cur_tensor->SetShape(cur_tensor->GetOriginShape());
   }
@@ -278,7 +281,8 @@ void DataSliceAdapter::SetOriOpInfo(OpDescPtr &op,
       GELOGW("op_name = %s, output_tensor[%u] is nullptr", op->GetName().c_str(), idx);
       continue;
     }
-    cache_output_info.emplace_back(cur_tensor->GetFormat(), cur_tensor->GetShape());
+    cache_output_info.emplace_back(static_cast<Format>(GetPrimaryFormat(cur_tensor->GetFormat())),
+                                   cur_tensor->GetShape());
     cur_tensor->SetFormat(cur_tensor->GetOriginFormat());
     cur_tensor->SetShape(cur_tensor->GetOriginShape());
   }
@@ -376,7 +380,7 @@ std::vector<int64_t> DataSliceAdapter::TransAxisForSplit(const GeTensorDescPtr &
   }
 
   const auto ori_format = tensor->GetOriginFormat();
-  const auto format = tensor->GetFormat();
+  const auto format = static_cast<Format>(GetPrimaryFormat(tensor->GetFormat()));
   auto iter = FORMAT_MAP.find(ori_format);
   auto iter_dst = FORMAT_MAP.find(format);
   if (iter == FORMAT_MAP.cend() || iter_dst == FORMAT_MAP.cend()) {
@@ -425,7 +429,7 @@ std::vector<int64_t> DataSliceAdapter::TransAxisForNoSplit(const GeTensorDescPtr
     return axis_vec;
   }
   const std::string format_char = ori_format_vec[axis];
-  auto format = tensor->GetFormat();
+  auto format = static_cast<Format>(GetPrimaryFormat(tensor->GetFormat()));
   auto iter_dst = FORMAT_MAP.find(format);
   if (iter_dst == FORMAT_MAP.cend()) {
     GELOGW("Cannot find format[%d] in FORMAT_MAP", format);
@@ -446,7 +450,7 @@ std::vector<int64_t> DataSliceAdapter::TransAxis(const GeTensorDescPtr &tensor, 
 {
   std::vector<int64_t> axis_vec;
   auto ori_format = tensor->GetOriginFormat();
-  auto format = tensor->GetFormat();
+  auto format = static_cast<Format>(GetPrimaryFormat(tensor->GetFormat()));
   if (format == ori_format) {
     axis_vec.push_back(ori_axis);
     return axis_vec;
@@ -477,6 +481,12 @@ Status DataSliceAdapter::FixAxisTypeInfoToOne(AxisTypeInfo &axis_type_info)
   }
   std::vector<CutInfo> output_cut_info_vec = axis_type_info.GetRelateOutputs();
   for (const auto &item : output_cut_info_vec) {
+    bool is_reduce = (axis_type_info.GetAxisType() == AxisType::REDUCESUM) ||
+                     (axis_type_info.GetAxisType() == AxisType::REDUCEMAX) ||
+                     (axis_type_info.GetAxisType() == AxisType::REDUCEMIN);
+    if (item.second.empty() && is_reduce) {
+      continue;
+    }
     count = (count == 0) ? item.second.size() : count;
     if (count != item.second.size()) {
       GELOGW("The split axis size is not same in all input output tensors.");
@@ -489,7 +499,9 @@ Status DataSliceAdapter::FixAxisTypeInfoToOne(AxisTypeInfo &axis_type_info)
   }
   for (auto &item : output_cut_info_vec) {
     std::vector<int64_t> &axis_vec = item.second;
-    axis_vec = {axis_vec[0]};
+    if (!axis_vec.empty()) {
+      axis_vec = {axis_vec[0]};
+    }
   }
   axis_type_info.SetRelateInputs(input_cut_info_vec);
   axis_type_info.SetRelateOutputs(output_cut_info_vec);

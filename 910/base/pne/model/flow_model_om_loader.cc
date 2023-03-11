@@ -146,15 +146,10 @@ Status FlowModelOmLoader::LoadToFlowModel(const ge::ModelData &model_data, FlowM
   GE_CHECK_NOTNULL(root_graph, ", load root graph is null");
   const auto tmp_flow_model = MakeShared<FlowModel>(root_graph);
   GE_CHECK_NOTNULL(tmp_flow_model, ", load root graph is null");
-  const auto model_relation = MakeShared<ModelRelation>();
-  GE_CHECK_NOTNULL(model_relation, ", make shared for model relation failed, graph_name %s",
-                   root_graph->GetName().c_str());
-  std::string model_name;
   std::vector<string> submodel_names;
-  ret = LoadFlowModelPartition(model_partitions[kFlowModelPartitionsFlowModelIdx], model_name, *model_relation,
-                               submodel_names);
+  ret = LoadFlowModelPartition(model_partitions[kFlowModelPartitionsFlowModelIdx], tmp_flow_model, submodel_names);
   GE_CHK_STATUS_RET(ret, "load flow model partition failed.");
-  tmp_flow_model->SetModelName(model_name);
+
   std::map<std::string, PneModelPtr> flow_submodels;
   ret = LoadFlowSubmodelPartition(model_partitions, flow_submodels);
   GE_CHK_STATUS_RET(ret, "load flow submodel partition failed.");
@@ -169,7 +164,6 @@ Status FlowModelOmLoader::LoadToFlowModel(const ge::ModelData &model_data, FlowM
     GE_CHK_STATUS_RET(ret, "add sub model failed, model_name=%s, model_type=%s.", submodel->GetModelName().c_str(),
                       submodel->GetModelType().c_str());
   }
-  tmp_flow_model->SetModelRelation(model_relation);
   flow_model = tmp_flow_model;
   GELOGI("load to flow model success, model name=%s.", flow_model->GetModelName().c_str());
   return SUCCESS;
@@ -196,7 +190,7 @@ Status FlowModelOmLoader::CheckModelPartitions(const std::vector<ModelPartition>
            flow_model_partition.type);
     return FAILED;
   }
-  for (auto idx = kFlowModelPartitionsFlowSubModelStartIdx; idx < model_partitions.size(); ++idx) {
+  for (size_t idx = kFlowModelPartitionsFlowSubModelStartIdx; idx < model_partitions.size(); ++idx) {
     const auto &flow_submodel_partition = model_partitions[idx];
     if (flow_submodel_partition.type != FLOW_SUBMODEL) {
       GELOGE(FAILED, "flow model [%zu]th partition type must be FLOW_SUBMODEL[%d], but %d.", FLOW_SUBMODEL,
@@ -217,22 +211,66 @@ ComputeGraphPtr FlowModelOmLoader::LoadRootGraph(const ModelPartition &model_def
   return model.GetGraph();
 }
 
-Status FlowModelOmLoader::LoadFlowModelPartition(const ModelPartition &flow_model_partition, std::string &model_name,
-                                                 ModelRelation &model_relation, std::vector<string> &submodel_names) {
+Status FlowModelOmLoader::LoadFlowModelPartition(const ModelPartition &flow_model_partition,
+                                                 const FlowModelPtr &flow_model, std::vector<string> &submodel_names) {
   flow_model::proto::FlowModelDef flow_model_def;
   if (!flow_model_def.ParseFromArray(flow_model_partition.data, static_cast<int32_t>(flow_model_partition.size))) {
     GELOGE(FAILED, "parse flow model partition def failed.");
     return FAILED;
   }
-  model_name = flow_model_def.model_name();
+  flow_model->SetModelName(flow_model_def.model_name());
   submodel_names.assign(flow_model_def.submodel_name().cbegin(), flow_model_def.submodel_name().cend());
-  ConvertModelRealtion(flow_model_def.relation(), model_relation);
+
+  const auto model_relation = MakeShared<ModelRelation>();
+  GE_CHECK_NOTNULL(model_relation, ", make shared for model relation failed, model_name %s",
+                   flow_model_def.model_name().c_str());
+  ConvertModelRealtion(flow_model_def.relation(), *model_relation);
+  flow_model->SetModelRelation(model_relation);
+
+  const auto &proto_models_esched_priority = flow_model_def.models_esched_priority();
+  if (!proto_models_esched_priority.empty()) {
+    std::map<std::string, std::map<std::string, int32_t>> models_esched_priority;
+    for (const auto &proto_models_esched_priority_pair : proto_models_esched_priority) {
+      const auto &proto_esched_priority = proto_models_esched_priority_pair.second.esched_priority();
+      std::map<std::string, int32_t> esched_priority(proto_esched_priority.cbegin(), proto_esched_priority.cend());
+      models_esched_priority[proto_models_esched_priority_pair.first] = std::move(esched_priority);
+    }
+    flow_model->SetModelsEschedPriority(models_esched_priority);
+  }
+
+  const auto &proto_model_name_to_rank_id = flow_model_def.model_name_to_rank_id();
+  if (!proto_model_name_to_rank_id.empty()) {
+    const std::map<std::string, uint32_t> model_name_to_rank_id(proto_model_name_to_rank_id.cbegin(),
+                                                                proto_model_name_to_rank_id.cend());
+    flow_model->SetModelNameToRankId(model_name_to_rank_id);
+  }
+
+  const auto &proto_group_name_to_rank_ids = flow_model_def.group_name_to_rank_ids();
+  if (!proto_group_name_to_rank_ids.empty()) {
+    std::map<std::string, std::vector<uint32_t>> group_name_to_rank_ids;
+    for (const auto &proto_group_name_to_rank_ids_pair : proto_group_name_to_rank_ids) {
+      const auto &proto_rank_ids = proto_group_name_to_rank_ids_pair.second.rank_id();
+      std::vector<uint32_t> rank_ids(proto_rank_ids.cbegin(), proto_rank_ids.cend());
+      group_name_to_rank_ids[proto_group_name_to_rank_ids_pair.first] = std::move(rank_ids);
+    }
+    flow_model->SetGroupNameToRankIds(group_name_to_rank_ids);
+  }
+
+  const auto &proto_device_to_rank_ids = flow_model_def.device_to_rank_ids();
+  if (!proto_device_to_rank_ids.empty()) {
+    std::map<std::string, std::vector<uint32_t>> device_to_rank_ids;
+    for (const auto &proto_device_to_rank_ids_pair : proto_device_to_rank_ids) {
+      const auto &proto_rank_ids = proto_device_to_rank_ids_pair.second.rank_id();
+      device_to_rank_ids[proto_device_to_rank_ids_pair.first] = {proto_rank_ids.cbegin(), proto_rank_ids.cend()};
+    }
+    flow_model->SetDeviceToRankIds(device_to_rank_ids);
+  }
   return SUCCESS;
 }
 
 Status FlowModelOmLoader::LoadFlowSubmodelPartition(const std::vector<ModelPartition> &model_partitions,
                                                     std::map<std::string, PneModelPtr> &flow_submodels) {
-  for (auto idx = kFlowModelPartitionsFlowSubModelStartIdx; idx < model_partitions.size(); ++idx) {
+  for (size_t idx = kFlowModelPartitionsFlowSubModelStartIdx; idx < model_partitions.size(); ++idx) {
     const auto &flow_submodel_partition = model_partitions[idx];
     flow_model::proto::SubmodelDef flow_submodel_def;
     if (!flow_submodel_def.ParseFromArray(flow_submodel_partition.data,

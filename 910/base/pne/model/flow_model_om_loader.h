@@ -29,8 +29,8 @@ class FlowModelOmLoader {
  private:
   static Status CheckModelPartitions(const std::vector<ModelPartition> &model_partitions);
   static ComputeGraphPtr LoadRootGraph(const ModelPartition &model_def_partition);
-  static Status LoadFlowModelPartition(const ModelPartition &flow_model_partition, std::string &model_name,
-                                       ModelRelation &model_relation, std::vector<string> &submodel_names);
+  static Status LoadFlowModelPartition(const ModelPartition &flow_model_partition, const FlowModelPtr &flow_model,
+                                       std::vector<string> &submodel_names);
   static Status LoadFlowSubmodelPartition(const std::vector<ModelPartition> &model_partitions,
                                           std::map<std::string, PneModelPtr> &flow_submodels);
 };

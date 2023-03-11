@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#define RT_IPCINT_MSGLEN_MAX     (0x8U)
+
 typedef enum rtEventWaitStatus {
     EVENT_STATUS_COMPLETE = 0,
     EVENT_STATUS_NOT_READY = 1,
@@ -25,10 +27,14 @@ typedef enum rtEventStatus {
 } rtEventStatus_t;
 
 typedef struct tagIpcIntNoticeInfo {
-    uint32_t hccl_pid;
-    uint32_t hccl_grpId;
-    uint32_t hccl_eventId;
-    uint32_t hccl_tid;
+    uint32_t ntcPid;
+    uint16_t ntcGrpId;
+    uint16_t ntcTid;
+    uint16_t ntcSubEventId;
+    uint8_t  ntcEventId;
+    uint8_t  msgLen;
+    uint8_t  msg[RT_IPCINT_MSGLEN_MAX];
+    uint8_t  reserved1[2];
 } rtIpcIntNoticeInfo_t;
 
 /**
@@ -297,33 +303,13 @@ RTS_API rtError_t rtSetIpcNotifyPid(const char_t *name, int32_t pid[], int32_t n
 
 /**
  * @ingroup dvrt_event
- * @brief Alloc callback cq resource with input stream
- * @param [in] stm  stream handle to be register callback cq
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_DRV_ERR for driver error
- */
-RTS_API rtError_t rtIpcIntNoticeCreate(rtStream_t stm);
-
-/**
- * @ingroup dvrt_event
  * @brief Create an ipc interrupt notice task
  * @param [in] ipcIntNoticeInfo  ipcIntNotice info to be sent
- * @param [in] stm  stream handle with registered callback cq
+ * @param [in] stm  stream handle
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtIpcIntNotice(const rtIpcIntNoticeInfo_t * const ipcIntNoticeInfo, rtStream_t stm);
-
-/**
- * @ingroup dvrt_event
- * @brief Free callback cq resource with input stream
- * @param [in] stm  stream handle with registered callback cq
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_DRV_ERR for driver error
- */
-RTS_API rtError_t rtIpcIntNoticeDestroy(rtStream_t stm);
 
 #if defined(__cplusplus)
 }

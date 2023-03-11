@@ -1,8 +1,12 @@
-/*
- * Copyright (c) Huawei Technologies Co., Ltd. 2019-2021. All rights reserved.
- * Description: handle perf data
- * Author: xp
- * Create: 2019-10-13
+/**
+ * @file prof_reporter.h
+ *
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
  */
 
 #ifndef MSPROF_ENGINE_PROF_REPORTER_H

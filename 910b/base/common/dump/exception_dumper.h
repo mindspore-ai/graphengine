@@ -52,6 +52,11 @@ class ExceptionDumper {
   static Status DumpDevMem(const ge::char_t * const file, const void * const addr, const int64_t size);
 
   static void Reset(ExtraOpInfo &extra_op_info);
+
+  const std::vector<OpDescInfo> &GetSavedOpDescInfo() const {
+    return op_desc_info_;
+  }
+
  private:
   void RefreshAddrs(OpDescInfo &op_desc_info) const;
   void SaveOpDescInfo(const OpDescPtr &op, const uint32_t task_id, const uint32_t stream_id,

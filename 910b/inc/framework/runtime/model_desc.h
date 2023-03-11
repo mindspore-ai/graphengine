@@ -66,6 +66,9 @@ class VISIBILITY_EXPORT ModelIoDesc {
   ShapeRange &MutableOriginShapeRange();
   ShapeRange &MutableStorageShapeRange();
 
+  const Shape &GetAippShape() const;
+  Shape &MutableAippShape();
+
  private:
   const ge::char_t *name_;
   int32_t data_type_;
@@ -73,6 +76,8 @@ class VISIBILITY_EXPORT ModelIoDesc {
   StorageShape shape_;
   ShapeRange storage_shape_range_;
   ShapeRange origin_shape_range_;
+  // use for aipp
+  Shape aipp_shape_;
 };
 
 class VISIBILITY_EXPORT ModelDesc {

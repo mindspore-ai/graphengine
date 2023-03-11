@@ -97,6 +97,7 @@ set(SRC_BASE_LIST
     "graph/build/memory/var_mem_assign_util.cc"
     "common/profiling/profiling_properties.cc"
     "exec_runtime/deploy/deploy_planner.cc"
+    "exec_runtime/deploy/model_events_builder.cc"
     "exec_runtime/execution_runtime.cc"
     "common/profiling/profiling_definitions.cc"
     "common/ge_inner_attrs.cc"

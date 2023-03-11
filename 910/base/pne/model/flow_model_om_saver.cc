@@ -121,6 +121,39 @@ Status FlowModelOmSaver::AddFlowModelPartition() {
     flow_model_def.add_submodel_name(submodel.second->GetModelName());
   }
 
+  for (const auto &models_esched_priority : flow_model_->GetModelsEschedPriority()) {
+    auto *const proto_models_esched_priority = flow_model_def.mutable_models_esched_priority();
+    flow_model::proto::FlowModelDef_EschedPriority proto_esched_priority;
+    auto *const proto_esched_priority_map = proto_esched_priority.mutable_esched_priority();
+    for (const auto &esched_priority : models_esched_priority.second) {
+      (*proto_esched_priority_map)[esched_priority.first] = esched_priority.second;
+    }
+    (*proto_models_esched_priority)[models_esched_priority.first] = proto_esched_priority;
+  }
+
+  for (const auto &model_name_to_rank_id : flow_model_->GetModelNameToRankId()) {
+    auto *const proto_model_name_to_rank_id = flow_model_def.mutable_model_name_to_rank_id();
+    (*proto_model_name_to_rank_id)[model_name_to_rank_id.first] = model_name_to_rank_id.second;
+  }
+
+  for (const auto &group_name_to_rank_ids : flow_model_->GetGroupNameToRankIds()) {
+    auto *const proto_group_name_to_rank_ids = flow_model_def.mutable_group_name_to_rank_ids();
+    flow_model::proto::FlowModelDef_RankIds rank_ids;
+    for (const auto &rank_id : group_name_to_rank_ids.second) {
+      rank_ids.add_rank_id(rank_id);
+    }
+    (*proto_group_name_to_rank_ids)[group_name_to_rank_ids.first] = rank_ids;
+  }
+
+  for (const auto &device_to_rank_ids : flow_model_->GetDeviceToRankIds()) {
+    auto *const proto_device_to_rank_ids = flow_model_def.mutable_device_to_rank_ids();
+    flow_model::proto::FlowModelDef_RankIds rank_ids;
+    for (const auto &rank_id : device_to_rank_ids.second) {
+      rank_ids.add_rank_id(rank_id);
+    }
+    (*proto_device_to_rank_ids)[device_to_rank_ids.first] = rank_ids;
+  }
+
   GE_CHK_STATUS_RET(AddPartition(flow_model_def, FLOW_MODEL), "[Add][FlowModelDef]Failed, model=%s",
                     flow_model_->GetModelName().c_str());
   return SUCCESS;
@@ -144,7 +177,7 @@ Status FlowModelOmSaver::AddFlowSubModelPartitions() {
                       submodel->GetModelType().c_str());
     submodel_def.set_om_data(serialize_buff.data.get(), serialize_buff.length);
     if (submodel->GetModelType() == PNE_ID_UDF) {
-      auto *udf_graph = submodel_def.mutable_graph();
+      auto *const udf_graph = submodel_def.mutable_graph();
       const ModelSerializeImp serialize_imp;
       if (!serialize_imp.SerializeGraph(submodel->GetRootGraph(), udf_graph, false)) {
         GELOGE(FAILED, "serialize udf graph failed, model name=%s", submodel->GetModelName().c_str());

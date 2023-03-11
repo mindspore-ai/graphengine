@@ -30,6 +30,7 @@
 #include "mem_allocator.h"
 #include "framework/runtime/rt_session.h"
 #include "register/op_impl_space_registry.h"
+#include "framework/common/ge_types.h"
 
 namespace gert {
 enum class ExecutorState {
@@ -155,6 +156,23 @@ class VISIBILITY_EXPORT ModelV2Executor {
   void SetSpaceRegistry(gert::OpImplSpaceRegistryPtr space_registry) {
     space_registry_ = space_registry;
   }
+  /**
+   * @brief 获取aipp相关config info
+   * @param [in] index 输入index
+   * @param [out] aipp_info 待输出的aipp info
+   * @return 成功时返回`ge::SUCCESS`
+   */
+  ge::Status GetAippInfo(const uint32_t index, ge::AippConfigInfo &aipp_info) const;
+  /**
+   * @brief 获取aipp输入类型
+   * @param [in] index 输入index
+   * @param [out] aipp_type 待返回的aipp type
+   * @param [out] aipp_index 待返回的aipp index
+   * @return 成功时返回`ge::SUCCESS`
+   */
+  ge::Status GetAippType(const uint32_t index, ge::InputAippType &aipp_type, size_t &aipp_index) const;
+
+  ge::Status InitAipp(const ge::ComputeGraphPtr &root_graph);
 
  private:
   friend class ModelV2ExecutorBuilder;
@@ -169,6 +187,9 @@ class VISIBILITY_EXPORT ModelV2Executor {
   ExecutorSubscribersScheduler subscribers_;
   ExecutorState state_ = ExecutorState::kInit;
   gert::OpImplSpaceRegistryPtr space_registry_;
+  // for aipp
+  std::map<uint32_t, ge::AippConfigInfo> aipp_info_list_;
+  std::map<uint32_t, std::pair<ge::InputAippType, size_t>> aipp_type_list_;
 };
 }  // namespace gert
 

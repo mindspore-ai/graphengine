@@ -1707,8 +1707,8 @@ REG_OP(AdaptiveAvgPool2dGrad)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A tensor of type float16.
-* @li grad: A tensor of type float16.
+* @li x: A tensor of type float16,float32.
+* @li grad: A tensor of type float16,float32.
 * @li argmax: A tensor of type uint16 or int64. \n
 
 * @par Attributes:
@@ -1737,10 +1737,10 @@ REG_OP(AdaptiveAvgPool2dGrad)
 */
 
 REG_OP(MaxPoolGradWithArgmaxV1)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(grad, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(argmax, TensorType({DT_UINT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -1754,7 +1754,7 @@ REG_OP(MaxPoolGradWithArgmaxV1)
 
 * @par Inputs:
 * One input:
-* x: A Tensor of type float16. \n
+* x: A Tensor of type float16, float32. \n
 
 * @par Attributes:
 * @li ksize: A required list of int8, int16, int32, or int64 values,
@@ -1782,8 +1782,8 @@ REG_OP(MaxPoolGradWithArgmaxV1)
 * Compatible with the PyTorch operator max_pool2d_with_indices.
 */
 REG_OP(MaxPoolWithArgmaxV1)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OUTPUT(argmax, TensorType({DT_UINT16}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)

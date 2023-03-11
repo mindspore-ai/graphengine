@@ -251,7 +251,8 @@ Status FormatTransferTranspose::TransFormat(const TransArgs &args, TransResult &
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
-  return Transpose(args.data, args.src_shape, args.src_data_type, perm_args[args.src_format][args.dst_format], result);
+  return Transpose(args.data, args.src_shape, args.src_data_type,
+                   perm_args[args.src_primary_format][args.dst_primary_format], result);
 }
 
 Status FormatTransferTranspose::TransShape(const Format src_format, const std::vector<int64_t> &src_shape,

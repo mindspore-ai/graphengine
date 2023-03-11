@@ -33,10 +33,10 @@ bool CheckDataTypeForNc1hwc0ToNhwc(const DataType &data_type) { return GetSizeBy
 Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
   auto src_shape = args.src_shape;
   auto dst_shape = args.dst_shape;
-  if ((args.src_format != FORMAT_NC1HWC0) || (args.dst_format != FORMAT_NHWC)) {
+  if ((args.src_primary_format != FORMAT_NC1HWC0) || (args.dst_primary_format != FORMAT_NHWC)) {
     const std::string error = "Dose not support trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_primary_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_primary_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
@@ -62,7 +62,7 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
                       ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.src_format));
   if (c0 <= 0) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][Cube]Failed, the data type %s is invalid",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());

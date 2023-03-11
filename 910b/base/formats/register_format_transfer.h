@@ -29,10 +29,14 @@ namespace ge {
 namespace formats {
 struct TransArgs {
   const uint8_t *data;
-  Format src_format; // src primary format
-  Format dst_format; // dst primary format
-  Format src_sub_format;
-  Format dst_sub_format;
+  Format src_format; // src full format
+  Format dst_format; // dst full format
+  Format src_primary_format; // src primary format
+  Format dst_primary_format; // dst primary format
+  Format src_sub_format; // src sub format
+  Format dst_sub_format; // dst sub format
+  int64_t src_c0_format; // src s0 format
+  int64_t dst_c0_format; // dst c0 format
   // For scenes that need to supplement the shape, for example, 5D to 4D
   // It is not possible to convert the format normally if you only get the src_shape,
   // and must get the shape before you mend the shape.

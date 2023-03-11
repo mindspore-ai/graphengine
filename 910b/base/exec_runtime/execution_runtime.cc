@@ -42,8 +42,14 @@ ExecutionRuntime *ExecutionRuntime::GetInstance() {
 }
 
 Status ExecutionRuntime::InitHeterogeneousRuntime(const std::map<std::string, std::string> &options) {
-  GE_CHK_STATUS_RET_NOLOG(LoadHeterogeneousLib());
-  GE_CHK_STATUS_RET_NOLOG(SetupHeterogeneousRuntime(options));
+  if (LoadHeterogeneousLib() != ge::SUCCESS) {
+    FinalizeExecutionRuntime();
+    return FAILED;
+  }
+  if (SetupHeterogeneousRuntime(options) != ge::SUCCESS) {
+    FinalizeExecutionRuntime();
+    return FAILED;
+  }
   return SUCCESS;
 }
 
@@ -120,6 +126,17 @@ bool ExecutionRuntime::IsHeterogeneous() {
     GELOGI("Get embedding service cluster config path success, path = %s", file_path);
     const std::lock_guard<std::mutex> lk(mu_);
     deploy_with_flow_ = false;
+    return true;
+  }
+  return false;
+}
+
+bool ExecutionRuntime::IsMbufAllocatorEnabled() {
+  const int32_t base = 10;
+  const char *enable_mbuf_allocator = std::getenv("ENABLE_MBUF_ALLOCATOR");
+  if ((enable_mbuf_allocator != nullptr) &&
+      (static_cast<int32_t>(std::strtol(enable_mbuf_allocator, nullptr, base) == 1))) {
+    GELOGD("ENABLE_MBUF_ALLOCATOR=[%s].", enable_mbuf_allocator);
     return true;
   }
   return false;

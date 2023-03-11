@@ -191,6 +191,7 @@ REG_OP(GatherNd)
 
 * @par Attributes:
 * batch_dims: An optional int. Defaults to 0.
+* is_preprocessed: An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x".
@@ -208,6 +209,7 @@ REG_OP(GatherV2)
     .INPUT(axis, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(batch_dims, Int, 0)
+    .ATTR(is_preprocessed, Bool, false)
     .OP_END_FACTORY_REG(GatherV2)
 
 /**
@@ -532,6 +534,8 @@ REG_OP(StridedSliceGrad)
 * @li segment_ids: A Tensor of type INT32,INT64.whose shape is a prefix
 * of "x.shape"
 * @li num_segments: A Tensor of type INT32,INT64
+* #li is_preprocessed: An optional bool. Defaults to "false".If it is true, it means that the repetition rate
+* of segment_ids is high
 
 * @par Outputs:
 * y: type is the same as x type . \n
@@ -544,6 +548,7 @@ REG_OP(UnsortedSegmentSum)
     .INPUT(segment_ids, TensorType::IndexNumberType())
     .INPUT(num_segments, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
+    .ATTR(is_preprocessed, Bool, false)
     .OP_END_FACTORY_REG(UnsortedSegmentSum)
 
 /**
@@ -1346,6 +1351,7 @@ REG_OP(StridedSliceAssignD)
 * @par Attributes:
 * @li validate_indices: A bool specifying whether to verify the argument of "indice" .
 * @li batch_dims: An optional int. Defaults to 0.
+* @li is_preprocessed: An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x" .
@@ -1363,6 +1369,7 @@ REG_OP(Gather)
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(validate_indices, Bool, true)
     .ATTR(batch_dims, Int, 0)
+    .ATTR(is_preprocessed, Bool, false)
     .OP_END_FACTORY_REG(Gather)
 
 /**

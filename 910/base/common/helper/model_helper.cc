@@ -45,6 +45,7 @@ const string kOpMasterPath = "/op_impl/ai_core/tbe/op_tiling/lib/";
 
 namespace ge {
 ModelHelper::~ModelHelper() {}
+std::string ModelHelper::output_file_name_;
 
 Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
                                        const ModelPartitionType type, const uint8_t* const data,
@@ -361,6 +362,7 @@ Status ModelHelper::SaveSoStoreModelPartitionInfo(std::shared_ptr<OmFileSaveHelp
     }
     is_so_store_ = true;
   }
+  output_file_name_ = output_file_name;
   return SUCCESS;
 }
 

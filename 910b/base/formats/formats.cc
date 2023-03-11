@@ -60,13 +60,15 @@ Status TransDataFormat(const TransArgs &args, TransResult &result) {
 Status TransTensorShape(const Format src_format, const std::vector<int64_t> &src_shape, const DataType data_type,
                         const Format dst_format, std::vector<int64_t> &dst_shape) {
   formats::TransArgs args;
-  args.src_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(src_format)));
-  args.dst_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(dst_format)));
+  args.src_format = src_format;
+  args.dst_format = dst_format;
+  args.src_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(src_format)));
+  args.dst_primary_format = static_cast<Format>(GetPrimaryFormat(static_cast<int32_t>(dst_format)));
   const auto transfer = BuildFormatTransfer(args);
   if (transfer == nullptr) {
     const std::string error = "Failed to trans data from format " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_primary_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_primary_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }

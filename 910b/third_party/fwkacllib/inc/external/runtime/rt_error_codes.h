@@ -60,6 +60,8 @@ static const int32_t ACL_ERROR_RT_REPEATED_INIT              = 207015; // repeat
 static const int32_t ACL_ERROR_RT_AIVEC_OVER_FLOW            = 207016; // aivec over flow
 static const int32_t ACL_ERROR_RT_OVER_FLOW                  = 207017; // common over flow
 static const int32_t ACL_ERROR_RT_DEVIDE_OOM                 = 207018; // device oom
+static const int32_t ACL_ERROR_RT_SEND_MSG                   = 207019; // hdc send msg fail
+static const int32_t ACL_ERROR_RT_COPY_USER_FAIL             = 207020; // copy data fail
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR             = 507000; // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR                   = 507001; // ts internel error

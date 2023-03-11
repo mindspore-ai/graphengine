@@ -69,10 +69,10 @@ Has the same type as "features" . \n
 *Compatible with the TensorFlow operator SparseSoftmaxCrossEntropyWithLogits.
 */
 REG_OP(SparseSoftmaxCrossEntropyWithLogits)
-    .INPUT(features, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(features, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
     .INPUT(labels, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(backprop, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(backprop, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(SparseSoftmaxCrossEntropyWithLogits)
 
 /**

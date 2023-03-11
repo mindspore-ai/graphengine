@@ -75,12 +75,12 @@ bool CheckShape(const Format format, const ShapeVector &shape) {
  * @dst_shape: N*H1*W1*H0*w0
  * @return
  */
-Status TransShapeToFracZz(const ShapeVector &src_shape, const DataType data_type, ShapeVector &dst_shape,
-                          ShapeVector &hw_shape) {
+Status TransShapeToFracZz(const ShapeVector &src_shape, const int64_t c0,
+                          ShapeVector &dst_shape, ShapeVector &hw_shape) {
   dst_shape.clear();
   hw_shape.clear();
-  const auto w0 = GetCubeSizeByDataType(data_type);
-  const auto h0 = GetCubeSizeByDataType(data_type);
+  const auto w0 = c0;
+  const auto h0 = c0;
   if (src_shape.size() == kSingleDim) {
     dst_shape.push_back(DIM_DEFAULT_VALUE);
     dst_shape.push_back(Ceil(src_shape[kNdDimIndexN], w0));
@@ -123,25 +123,28 @@ Status TransShapeToFracZz(const ShapeVector &src_shape, const DataType data_type
 
 Status CheckShapeRelation(const TransArgs &args, ShapeVector &hw_shape) {
   ShapeVector expect_src_shape;
-  const auto ret = TransShapeToFracZz(args.dst_shape, args.src_data_type, expect_src_shape, hw_shape);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.src_format));
+  const auto ret = TransShapeToFracZz(args.dst_shape, c0, expect_src_shape, hw_shape);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Trans][ShapeToFracZz] Failed from %s to %s, shape %s to %s, data type %s",
+    GELOGE(ret, "[Trans][ShapeToFracZz] Failed from %s to %s, shape %s to %s, data type %s, c0 is %ld",
            TypeUtils::FormatToSerialString(args.dst_format).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            ShapeToString(args.dst_shape).c_str(),
            ShapeToString(args.src_shape).c_str(),
-           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to trans shape from %s to %s, shape %s to %s, data type %s",
+           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), c0);
+    REPORT_CALL_ERROR("E19999", "Failed to trans shape from %s to %s, shape %s to %s, data type %s, c0 is ["
+                                "%" PRId64 "] ",
                       TypeUtils::FormatToSerialString(args.dst_format).c_str(),
                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
                       ShapeToString(args.dst_shape).c_str(),
                       ShapeToString(args.src_shape).c_str(),
-                      TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+                      TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), c0);
     return ret;
   }
   if (!IsTransShapeSrcCorrect(args, expect_src_shape)) {
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
+
   return SUCCESS;
 }
 
@@ -361,19 +364,19 @@ Status FormatTransferFractalZz::TransFormat(const TransArgs &args, TransResult &
                        TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
-  if ((!CheckShape(args.src_format, args.src_shape)) || (!IsShapeValid(args.dst_shape))) {
+  if ((!CheckShape(args.src_primary_format, args.src_shape)) || (!IsShapeValid(args.dst_shape))) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
            "[Check][Shape]Failed, not support trans format from %s to %s, "
            "src shape %s, dst shape %s, data type %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(),
+           TypeUtils::FormatToSerialString(args.src_primary_format).c_str(),
+           TypeUtils::FormatToSerialString(args.dst_primary_format).c_str(),
            ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(),
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     REPORT_CALL_ERROR("E19999",  "Check shape failed, not support trans format from %s to %s, "
                       "src shape %s, dst shape %s, data type %s",
-                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                      TypeUtils::FormatToSerialString(args.dst_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_primary_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_primary_format).c_str(),
                       ShapeToString(args.src_shape).c_str(),
                       ShapeToString(args.dst_shape).c_str(),
                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
@@ -385,7 +388,8 @@ Status FormatTransferFractalZz::TransFormat(const TransArgs &args, TransResult &
          ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
   ShapeVector expect_shape;
   ShapeVector hw_shape;
-  const auto ret = TransShapeToFracZz(args.src_shape, args.src_data_type, expect_shape, hw_shape);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
+  const auto ret = TransShapeToFracZz(args.src_shape, c0, expect_shape, hw_shape);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -433,7 +437,8 @@ Status FormatTransferFractalZz::TransShape(const Format src_format, const std::v
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   ShapeVector hw_shape;
-  return TransShapeToFracZz(src_shape, data_type, dst_shape, hw_shape);
+  const auto c0 = GetC0Value(static_cast<int32_t>(dst_format));
+  return TransShapeToFracZz(src_shape, c0, dst_shape, hw_shape);
 }
 
 Status FormatTransferFractalZzND::TransFormat(const TransArgs &args, TransResult &result) {
@@ -456,7 +461,7 @@ Status FormatTransferFractalZzND::TransFormat(const TransArgs &args, TransResult
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
-  if ((!IsShapeValid(args.src_shape)) || (!CheckShape(args.dst_format, args.dst_shape))) {
+  if ((!IsShapeValid(args.src_shape)) || (!CheckShape(args.dst_primary_format, args.dst_shape))) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, not support trans format "
            "from %s to %s, src shape %s, dst shape %s, data type %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),

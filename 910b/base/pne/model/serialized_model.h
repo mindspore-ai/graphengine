@@ -21,7 +21,7 @@
 namespace ge {
 class SerializedModel : public PneModel {
  public:
-  explicit SerializedModel(const ComputeGraphPtr &root_graph) : PneModel(root_graph) {}
+  using PneModel::PneModel;
   ~SerializedModel() override = default;
 
   Status SerializeModel(ModelBufferData &model_buff) override {

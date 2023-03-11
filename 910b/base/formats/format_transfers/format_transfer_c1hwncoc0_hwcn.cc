@@ -35,10 +35,10 @@ bool CheckDataTypeSupportedForC1hwncoc0ToHwcn(const DataType &data_type) {
 Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
   const auto src_shape = args.src_shape;
   const auto dst_shape = args.dst_shape;
-  if ((args.src_format != FORMAT_C1HWNCoC0) || (args.dst_format != FORMAT_HWCN)) {
+  if ((args.src_primary_format != FORMAT_C1HWNCoC0) || (args.dst_primary_format != FORMAT_HWCN)) {
     const std::string error = "Dose not support trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_primary_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_primary_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
@@ -60,7 +60,7 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
     REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  const auto cube_size = GetCubeSizeByDataType(args.src_data_type);
+  const auto cube_size = GetC0Value(static_cast<int32_t>(args.src_format));
   if ((src_shape.at(kC1hwncoc0C1) != (((dst_shape.at(kHwcnC) - 1) / cube_size) + 1)) ||
       (src_shape.at(kC1hwncoc0H) != dst_shape.at(kHwcnH)) || (src_shape.at(kC1hwncoc0W) != dst_shape.at(kHwcnW)) ||
       (src_shape.at(kC1hwncoc0N) != dst_shape.at(kHwcnN)) || (src_shape.at(kC1hwncoc0Co) != cube_size) ||
@@ -96,7 +96,7 @@ Status GetDstDataAfterTransForC1hwncoc0ToHwcn(const TransArgs &args, TransResult
   const auto c0 = args.src_shape.at(kC1hwncoc0C0);
   const auto co = args.src_shape.at(kC1hwncoc0Co);
   const auto c = args.dst_shape.at(kHwcnC);
-  const auto cube_size = GetCubeSizeByDataType(args.src_data_type);
+  const auto cube_size = GetC0Value(static_cast<int32_t>(args.src_format));
   const int64_t cn = c * n;
   const int64_t wcn = w * cn;
   const int64_t coc0 = co * c0;

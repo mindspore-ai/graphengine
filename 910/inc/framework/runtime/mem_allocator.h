@@ -20,6 +20,7 @@
 #include "block.h"
 #include "exe_graph/runtime/allocator.h"
 #include "common/ge_visibility.h"
+#include "ge/ge_api_error_codes.h"
 
 namespace gert {
 namespace memory {

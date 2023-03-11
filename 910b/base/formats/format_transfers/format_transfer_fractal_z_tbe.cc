@@ -32,18 +32,18 @@ enum class NdDimIndex {
  * After the conversion to two-dimensional matrix, the memory arrangement is small n and large Z.
  * If 4D(eg.NCHW) is used to represent convolution kernel, N is width, HWC is height.
  *
- * frac_z axises: (C1*H*W, No, Ni, C0), which Ni = 16, C0 = 16/32, No = Ceil(N/Ni), C1 = Ceil(C/C0)
+ * frac_z axises: (C1*H*W, No, Ni, C0), which Ni = 16, C0 = 8/16/32, No = Ceil(N/Ni), C1 = Ceil(C/C0)
  * @return
  */
-Status TransShapeNdToFz(const std::vector<int64_t> &src_shape, const DataType data_type,
+Status TransShapeNdToFz(const std::vector<int64_t> &src_shape, const Format &dst_format,
                         std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, static_cast<int64_t>(NdDimIndex::k2dDimsNum))) {
     GELOGE(FAILED, "src_shape is valid");
     return FAILED;  // Only support 2D to fracz
   }
 
-  const int64_t c0 = GetCubeSizeByDataType(data_type);
-  if (c0 < 0) {
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(dst_format));
+  if (c0 <= 0) {
     GELOGE(FAILED, "data_type is valid");
     return FAILED;
   }
@@ -86,7 +86,7 @@ Status TransFormatNdToFz(const TransArgs &args, TransResult &result) {
   const int64_t c = args.src_shape[static_cast<size_t>(NdDimIndex::k2dC)];
   const int64_t n = args.src_shape[static_cast<size_t>(NdDimIndex::k2dN)];
   const int64_t n1n0 = Ceil(n, static_cast<int64_t>(kNiSize)) * kNiSize;
-  const int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
   const int64_t c1 = Ceil(c, c0);
   const int64_t hwn1n0c0 = n1n0 * c0;
   for (int64_t c1i = 0; c1i < c1; ++c1i) {
@@ -144,7 +144,7 @@ Status FormatTransferFractalZTbe::TransShape(const Format src_format, const std:
   }
 
   if ((src_primary_format == FORMAT_ND) && (dst_primary_format == FORMAT_FRACTAL_Z)) {
-    return TransShapeNdToFz(src_shape, data_type, dst_shape);
+    return TransShapeNdToFz(src_shape, dst_format, dst_shape);
   }
 
   return ACL_ERROR_GE_FORMAT_INVALID;

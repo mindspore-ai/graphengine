@@ -160,7 +160,7 @@ Status DeployPlanner::PrepareModelsAndRelation(ModelRelation &model_relation) {
     auto &submodel_info = MutableSubmodelInfo(model_name);
     submodel_info.model = submodel;
     submodel_info.device_info = kLocalDeviceInfo;
-    GELOGD("Model [%s] will be deployed on device [%d]", model_name.c_str(), submodel_info.device_info.GetNodeId());
+    GELOGD("Model[%s] will be deployed on device[%s]", model_name.c_str(), submodel_info.device_info.GetKey().c_str());
   }
   return SUCCESS;
 }
@@ -202,7 +202,7 @@ void DeployPlannerBase::UpdateForOutputControlIo() {
       // need control input queue
       // all empty goes to LoadModelWithoutQ for now
       if (!submodel_queue_info.input_queue_names.empty() || !submodel_queue_info.external_input_queue_names.empty()) {
-        GELOGI("submodel [%s] needs control output", it.first.c_str());
+        GELOGI("Submodel[%s] needs control output", it.first.c_str());
         models_without_output[submodel_queue_info.model_name].emplace_back(it.first);
       }
     }
@@ -289,15 +289,20 @@ void DeployPlannerBase::Mark2PgModels() {
     const auto &device_info = MutableSubmodelInfo(model_instance_name).device_info;
     model_placements[submodel_queue_info.model_name][device_info.GetNodeId()].emplace_back(device_info.GetDeviceId());
     model_instances[submodel_queue_info.model_name].emplace_back(model_instance_name);
+    instance_to_model_name_[model_instance_name] = submodel_queue_info.model_name;
   }
   for (const auto &it : model_placements) {
     const auto &model_name = it.first;
     const auto &devices = it.second;
     if (devices.begin()->second.size() > 1U) {
-      GELOGD("Submodel [%s] is deploy to multiple devices", model_name.c_str());
-      deploy_to_devlist_.emplace(model_name);
+      GELOGD("Submodel [%s] is deploy to multiple devices.", model_name.c_str());
       for (const auto &model_instance_name : model_instances[model_name]) {
-        deploy_to_devlist_.emplace(model_instance_name);
+        const auto &device_info = MutableSubmodelInfo(model_instance_name).device_info;
+        deploy_to_devlist_[model_name].emplace(device_info.GetKey());
+        GELOGD("Submodel[%s] is deploy to device[%s], instance = %s.",
+               model_name.c_str(),
+               device_info.GetKey().c_str(),
+               model_instance_name.c_str());
       }
     }
   }
@@ -355,14 +360,23 @@ Status DeployPlannerBase::ResolveModelInputs(const std::string &model_instance_n
       GELOGE(PARAM_INVALID, "Failed to find enqueue operation for queue [%s]", queue_name.c_str());
       return PARAM_INVALID;
     }
-    const bool dst_is_devlist = deploy_to_devlist_.find(model_instance_name) != deploy_to_devlist_.cend();
+    const auto dst_deploy_iter = deploy_to_devlist_.find(model_queue_info.model_name);
+    const bool dst_is_devlist = dst_deploy_iter != deploy_to_devlist_.cend();
     for (auto src_endpoint_index : src_endpoint_indices) {
       const auto &src_endpoint = deploy_plan_.queues_[static_cast<size_t>(src_endpoint_index)];
       // group to group : only deal with bind_relation in same node and same device
-      if (dst_is_devlist && (deploy_to_devlist_.find(src_endpoint.model_instance_name) != deploy_to_devlist_.cend())) {
+      const auto &src_model_name = instance_to_model_name_[src_endpoint.model_instance_name];
+      const auto src_deploy_iter = deploy_to_devlist_.find(src_model_name);
+      const bool src_is_devlist = src_deploy_iter != deploy_to_devlist_.cend();
+      if (dst_is_devlist && src_is_devlist) {
         const auto &src_device_info = src_endpoint.device_info;
-        if ((src_device_info.GetNodeId() != submodel_info.device_info.GetNodeId()) ||
-            (src_endpoint.device_info.GetDeviceId() != submodel_info.device_info.GetDeviceId())) {
+        const auto &dst_deploy_devlist = dst_deploy_iter->second;
+        const auto &src_deploy_devlist = src_deploy_iter->second;
+        // just check with same deploy deploy device
+        if ((dst_deploy_devlist.find(src_device_info.GetKey()) != dst_deploy_devlist.cend()) &&
+            (src_deploy_devlist.find(submodel_info.device_info.GetKey()) != src_deploy_devlist.cend()) &&
+            ((src_device_info.GetNodeId() != submodel_info.device_info.GetNodeId()) ||
+             (src_endpoint.device_info.GetDeviceId() != submodel_info.device_info.GetDeviceId()))) {
           GELOGD("Skip bind endpoints: name = %s, from %s to %s:%d@%s",
                  queue_name.c_str(),
                  src_endpoint.model_instance_name.c_str(),
@@ -594,7 +608,7 @@ Status DeployPlannerBase::BindOutputToRemoteInputs() {
       }
       GE_CHK_STATUS_RET(CreateGroupInfo(group_info, grouped_inputs_order_by_device, group_index));
       deploy_plan_.queue_bindings_.emplace_back(endpoint_index, group_index);
-      GELOGD("Output group binding added, local = %s@%s, peer model = %s:%d, peer input indices = %s",
+      GELOGD("Output group binding added, local = %s@%s, peer model = %s:%d, peer input indices = %s.",
              group_info.name.c_str(),
              deploy_plan_.queues_[endpoint_index].device_info.GetDesc().c_str(),
              model_queue_loc.model_name.c_str(),

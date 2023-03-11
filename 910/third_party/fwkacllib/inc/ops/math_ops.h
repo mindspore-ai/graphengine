@@ -94,6 +94,36 @@ REG_OP(Igammac)
     .OP_END_FACTORY_REG(Igammac)
 
 /**
+*@brief Computes the histogram of a tensor. \n
+
+*@par Inputs:
+* x: A Tensor of type float16,float32,int32. \n
+
+*@par Attributes:
+
+*@li bins: Optional. Must be one of the following types: int32. Defaults to 100.
+*@li min: Optional. Must be one of the following types: float32. Defaults to 0.0.
+*@li max: Optional. Must be one of the following types: float32. Defaults to 0.0. \n
+
+*@par Outputs:
+* y: A Tensor. A Tensor of type float32 or int32 . \n
+
+* @attention Constraints:
+* The operator will use the interface set_atomic_add(), therefore weights and output should be float32 only. \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator Histc.
+*/
+
+REG_OP(Histogram)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32}))
+    .ATTR(bins, Int, 100)
+    .ATTR(min, Float, 0.0)
+    .ATTR(max, Float, 0.0)
+    .OP_END_FACTORY_REG(Histogram);
+
+/**
 *@brief Compare values of input to threshold and pack resulting bits into
 a uint8 . \n
 
@@ -239,7 +269,7 @@ REG_OP(Trunc)
     .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
     .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
     .OP_END_FACTORY_REG(Trunc)
-	
+
 /**
 *@brief Computes the sum along sparse segments of a tensor . \n
 

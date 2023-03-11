@@ -66,11 +66,10 @@ bool CheckShapeForTransShapeToFracNz(const Format format, const ShapeVector &sha
  * @dst_shape: N*W1*H1*H0*w0
  * @return
  */
-Status TransShapeToFracNz(const ShapeVector &src_shape, const DataType data_type, ShapeVector &dst_shape,
+Status TransShapeToFracNz(const ShapeVector &src_shape, const int64_t &w0, ShapeVector &dst_shape,
                           ShapeVector &hw_shape) {
   dst_shape.clear();
   hw_shape.clear();
-  const auto w0 = GetCubeSizeByDataType(data_type);
   const int64_t h0 = kCubeSize;
   const size_t num_dims_single = 1U;
   if (src_shape.size() == num_dims_single) {
@@ -117,7 +116,7 @@ Status TransShapeToFracNz(const ShapeVector &src_shape, const DataType data_type
 
 Status CheckShapeRelationForTransShapeToFracNz(const TransArgs &args, ShapeVector &hw_shape) {
   ShapeVector expect_src_shape;
-  const auto ret = TransShapeToFracNz(args.dst_shape, args.src_data_type, expect_src_shape, hw_shape);
+  const auto ret = TransShapeToFracNz(args.dst_shape, args.src_c0_format, expect_src_shape, hw_shape);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Transfer][ShapeToFracNz]Failed, shape from %s to %s, shape %s to %s, "
            "data type %s, error_code:%u", TypeUtils::FormatToSerialString(args.dst_format).c_str(),
@@ -322,31 +321,32 @@ Status FormatTransferFractalNz::TransFormat(const TransArgs &args, TransResult &
                        TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
-  if ((!CheckShapeForTransShapeToFracNz(args.src_format, args.src_shape)) || (!IsShapeValid(args.dst_shape))) {
+  if ((!CheckShapeForTransShapeToFracNz(args.src_primary_format, args.src_shape)) || (!IsShapeValid(args.dst_shape))) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
            "[Check][Shape]Failed, trans format from %s to %s, "
            "src shape %s, dst shape %s, data type %s is not supported",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(),
+           TypeUtils::FormatToSerialString(args.src_primary_format).c_str(),
+           TypeUtils::FormatToSerialString(args.dst_primary_format).c_str(),
            ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(),
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     REPORT_INNER_ERROR("E19999", "Check shape failed, trans format from %s to %s, "
                        "src shape %s, dst shape %s, data type %s is not supported",
-                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                       TypeUtils::FormatToSerialString(args.dst_format).c_str(),
+                       TypeUtils::FormatToSerialString(args.src_primary_format).c_str(),
+                       TypeUtils::FormatToSerialString(args.dst_primary_format).c_str(),
                        ShapeToString(args.src_shape).c_str(),
                        ShapeToString(args.dst_shape).c_str(),
                        TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   GELOGD("Begin to trans format from %s to %s, src shape %s, dst shape %s, data type %s",
-         TypeUtils::FormatToSerialString(args.src_format).c_str(),
-         TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
+         TypeUtils::FormatToSerialString(args.src_primary_format).c_str(),
+         TypeUtils::FormatToSerialString(args.dst_primary_format).c_str(), ShapeToString(args.src_shape).c_str(),
          ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
   ShapeVector expect_shape;
   ShapeVector hw_shape;
-  const auto ret = TransShapeToFracNz(args.src_shape, args.src_data_type, expect_shape, hw_shape);
+  const int64_t c0 = GetC0Value(static_cast<int32_t>(args.dst_format));
+  const auto ret = TransShapeToFracNz(args.src_shape, c0, expect_shape, hw_shape);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -394,7 +394,8 @@ Status FormatTransferFractalNz::TransShape(const Format src_format, const std::v
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   ShapeVector hw_shape;
-  return TransShapeToFracNz(src_shape, data_type, dst_shape, hw_shape);
+  const auto w0 = GetC0Value(static_cast<int32_t>(dst_format));
+  return TransShapeToFracNz(src_shape, w0, dst_shape, hw_shape);
 }
 
 Status FormatTransferFractalNzND::TransFormat(const TransArgs &args, TransResult &result) {
@@ -417,7 +418,7 @@ Status FormatTransferFractalNzND::TransFormat(const TransArgs &args, TransResult
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
-  if ((!IsShapeValid(args.src_shape)) || (!CheckShapeForTransShapeToFracNz(args.dst_format, args.dst_shape))) {
+  if ((!IsShapeValid(args.src_shape)) || (!CheckShapeForTransShapeToFracNz(args.dst_primary_format, args.dst_shape))) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
            "[Check][Shape]Failed, trans format from %s to %s, src shape %s, dst shape %s, "
            "data type %s is not supported",

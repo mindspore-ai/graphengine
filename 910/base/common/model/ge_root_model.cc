@@ -44,8 +44,7 @@ Status GeRootModel::SerializeModel(ModelBufferData &model_buff) {
   (void) CheckIsUnknownShape(is_unknown_shape);
   ModelHelper model_helper;
   model_helper.SetSaveMode(false);
-  SaveParam save_param;
-  GE_CHK_STATUS_RET(model_helper.SaveToOmRootModel(shared_from_this(), save_param, "no-output.om", model_buff,
+  GE_CHK_STATUS_RET(model_helper.SaveToOmRootModel(shared_from_this(), "no-output.om", model_buff,
       is_unknown_shape), "[Serialize][Submodel] failed, model_name = [%s]", GetModelName().c_str());
   GELOGD("[Serialize][Submodel] succeeded, model_name = [%s], size = %lu", GetModelName().c_str(), model_buff.length);
   return SUCCESS;

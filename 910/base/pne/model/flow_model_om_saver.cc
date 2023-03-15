@@ -224,7 +224,7 @@ Status FlowModelOmSaver::UpdateModelHeader() {
 
 Status FlowModelOmSaver::SaveFlowModelToFile(const std::string &output_file) {
   ModelBufferData model{};
-  const auto ret = om_file_save_helper_.SaveModelToFile(output_file.c_str(), model, true);
+  const auto ret = om_file_save_helper_.SaveModel(output_file.c_str(), model, true);
   GE_CHK_STATUS_RET(ret, "save model to file failed, filename:%s.", output_file.c_str());
   return SUCCESS;
 }

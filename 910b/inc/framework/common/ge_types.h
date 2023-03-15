@@ -128,6 +128,9 @@ const std::set<std::string> kValidValues = {"", kBalanceMode, kMemoryPriority};
 const uint32_t kManualThread = 0U;
 const uint32_t kAutoThread = 1U;
 
+// model deploy mode
+const std::string kModelDeployModeSpmd = "SPMD";
+
 // ffts plus
 constexpr size_t kDSASetInputAddr = 0U;
 constexpr size_t kDSAOutputAddrSize = 1U;

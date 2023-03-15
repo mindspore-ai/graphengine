@@ -38,7 +38,8 @@ class GlobalProfiler {
   GlobalProfiler() = default;
   void Record(uint64_t name_idx, uint64_t type_idx, ExecutorEvent event,
                   std::chrono::time_point<std::chrono::system_clock> timestamp) {
-    auto index = count_++;
+    auto index = count_.load();
+    ++count_;
     if (index >= kProfilingDataCap) {
       return;
     }
@@ -47,7 +48,7 @@ class GlobalProfiler {
   }
   void Dump(std::ostream &out_stream, std::vector<std::string> &idx_to_str) const;
   size_t GetCount() const {
-    return count_;
+    return count_.load();
   }
 
  private:
@@ -95,7 +96,8 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     return enable_flags_;
   }
 
-  bool IsEnable(ProfilingType profiling_type) const {
+  bool IsEnabled(ProfilingType profiling_type) {
+    const std::lock_guard<std::mutex> lock(mutex_);
     return enable_flags_ & BuiltInSubscriberUtil::EnableBit<ProfilingType>(profiling_type);
   }
 
@@ -145,12 +147,13 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
   uint64_t str_idx_{0UL};
   std::vector<std::string> idx_to_str_;
   std::mutex register_mutex_;
+  std::mutex mutex_;
 };
 
 class ScopeProfiler {
  public:
   ScopeProfiler(const size_t element, const size_t event) : element_(element), event_(event) {
-    if (GlobalProfilingWrapper::GetInstance()->IsEnable(ProfilingType::kGeHost)) {
+    if (GlobalProfilingWrapper::GetInstance()->IsEnabled(ProfilingType::kGeHost)) {
       start_trace_ = std::chrono::system_clock::now();
     }
   }
@@ -160,7 +163,7 @@ class ScopeProfiler {
   }
 
   ~ScopeProfiler() {
-    if (GlobalProfilingWrapper::GetInstance()->IsEnable(ProfilingType::kGeHost)) {
+    if (GlobalProfilingWrapper::GetInstance()->IsEnabled(ProfilingType::kGeHost)) {
       GlobalProfilingWrapper::GetInstance()->Record(element_, event_, kExecuteStart, start_trace_);
       GlobalProfilingWrapper::GetInstance()->Record(element_, event_, kExecuteEnd, std::chrono::system_clock::now());
     }
@@ -173,15 +176,15 @@ class ScopeProfiler {
 };
 }  // namespace gert
 
-#define GE_PROFILING_START(event)                                                            \
-  std::chrono::time_point<std::chrono::system_clock> event##start_time;                      \
-  if (gert::GlobalProfilingWrapper::GetInstance()->IsEnable(gert::ProfilingType::kGeHost)) { \
-    event##start_time = std::chrono::system_clock::now();                                    \
+#define GE_PROFILING_START(event)                                                             \
+  std::chrono::time_point<std::chrono::system_clock> event##start_time;                       \
+  if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kGeHost)) { \
+    event##start_time = std::chrono::system_clock::now();                                     \
   }
 
 #define GE_PROFILING_END(name_idx, type_idx, event)                                                         \
   do {                                                                                                      \
-    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnable(gert::ProfilingType::kGeHost)) {              \
+    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kGeHost)) {             \
       gert::GlobalProfilingWrapper::GetInstance()->Record(name_idx, type_idx, ExecutorEvent::kExecuteStart, \
                                                           event##start_time);                               \
       gert::GlobalProfilingWrapper::GetInstance()->Record(name_idx, type_idx, ExecutorEvent::kExecuteEnd,   \
@@ -190,5 +193,6 @@ class ScopeProfiler {
   } while (false)
 
 #define RT2_PROFILING_SCOPE(element, event) gert::ScopeProfiler profiler((element), event)
+#define RT2_PROFILING_SCOPE_CONST(element, event) const gert::ScopeProfiler profiler((element), (event))
 #define RT2_PROFILING_SCOPE_ELEMENT(element) profiler.SetElement(element)
 #endif

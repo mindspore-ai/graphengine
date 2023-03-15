@@ -76,7 +76,7 @@ Status ModelRelationBuilder::BuildForSingleModel(const ComputeGraph &root_graph,
           CreateQueueDef(node->GetOpDesc()->GetOutputDesc(static_cast<uint32_t>(kDataOutputAnchorIndex)), queue_name));
       external_queue_names.emplace_back(queue_name);
     } else if (op_type == NETOUTPUT) {
-      const auto num_outputs = node->GetOpDesc()->GetAllInputsSize();
+      const size_t num_outputs = node->GetOpDesc()->GetAllInputsSize();
       for (size_t i = 0U; i < num_outputs; ++i) {
         const std::string queue_name = root_graph.GetName() + ":output:" + std::to_string(i);
         GE_CHK_STATUS_RET_NOLOG(CreateQueueDef(node->GetOpDesc()->GetInputDesc(static_cast<uint32_t>(i)), queue_name));
@@ -166,7 +166,7 @@ Status ModelRelationBuilder::CheckNetOutputNode(const NodePtr &node, bool &creat
 }
 
 Status ModelRelationBuilder::DoBuildForData(const NodePtr &node,
-                                            std::map<NodePtr, std::map<int, std::string>> &paired_inputs,
+                                            std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
                                             const ComputeGraph &root_graph) {
   GE_CHECK_NOTNULL(node);
   bool create_relation_flag = true;
@@ -275,7 +275,7 @@ Status ModelRelationBuilder::DoBuildForNetOutput(const NodePtr &node,
 
 Status ModelRelationBuilder::DoBuild(const ComputeGraph &root_graph) {
   model_relation_.root_model_queue_info.model_name = root_graph.GetName();
-  std::map<NodePtr, std::map<int, std::string>> paired_inputs;
+  std::map<NodePtr, std::map<int32_t, std::string>> paired_inputs;
   for (const auto &node : root_graph.GetDirectNode()) {
     const auto &op_type = node->GetType();
     if (op_type == DATA) {
@@ -348,7 +348,7 @@ Status ModelRelationBuilder::GetInputQueueNames(const NodePtr &node,
   GE_CHECK_NOTNULL(node);
   const auto &op_desc = node->GetOpDesc();
   GE_CHECK_LE(op_desc->GetInputsSize(), static_cast<uint64_t>(INT32_MAX));
-  const auto input_size = static_cast<int32_t>(op_desc->GetInputsSize());
+  const int32_t input_size = static_cast<int32_t>(op_desc->GetInputsSize());
   if (input_size == 0) {
     GELOGD("Node [%s] does not have input.", op_desc->GetName().c_str());
     return SUCCESS;

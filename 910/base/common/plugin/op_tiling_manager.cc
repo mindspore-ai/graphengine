@@ -41,7 +41,7 @@ OpTilingManager::~OpTilingManager() { ClearHandles(); }
 
 void OpTilingManager::LoadSo() {
   std::string op_tiling_path;
-  Status ret = PluginManager::GetOpTilingPath(op_tiling_path);
+  const Status ret = PluginManager::GetOpTilingPath(op_tiling_path);
   if (ret != SUCCESS) {
     GELOGW("Failed to get op tiling path!");
     return;

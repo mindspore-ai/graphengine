@@ -17,7 +17,7 @@
 #include "common/tbe_handle_store/kernel_store.h"
 
 namespace {
-const uint32_t kKernelItemMagic = 0x5d776efdU;
+const uint32_t kKernelItemMagic = 0x5D776EFDU;
 }
 
 namespace ge {

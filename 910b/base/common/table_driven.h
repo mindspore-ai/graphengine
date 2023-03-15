@@ -25,9 +25,9 @@ template <size_t DIM1, size_t DIM2, typename TE>
 class TableDriven2 {
  public:
   explicit TableDriven2(const TE &default_value) noexcept : default_value_(default_value) {
-    for (size_t i = 0; i < DIM1; ++i) {
-      for (size_t j = 0; j < DIM2; ++j) {
-        elements_[i][j] = default_value;
+    for (auto &row : elements_) {
+      for (auto &element : row) {
+        element = default_value;
       }
     }
   }

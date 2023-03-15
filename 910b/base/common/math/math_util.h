@@ -28,7 +28,7 @@
 
 namespace ge {
 inline size_t MemSizeAlign(const size_t bytes, const uint32_t aligns = 32U) {
-  const auto align_size = (aligns == 0U) ? sizeof(uintptr_t) : aligns;
+  const size_t align_size = (aligns == 0U) ? sizeof(uintptr_t) : aligns;
   return (((bytes + align_size) - 1U) / align_size) * align_size;
 }
 

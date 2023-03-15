@@ -412,9 +412,8 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper> &om_f
   return SUCCESS;
 }
 
-Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param,
-                                  const std::string &output_file, ModelBufferData &model,
-                                  const GeRootModelPtr &ge_root_model) {
+Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
+                                  ModelBufferData &model, const GeRootModelPtr &ge_root_model) {
   if (output_file.empty()) {
     GELOGE(FAILED, "[Save][Model]GraphBuilder SaveModel received invalid file name prefix, "
            "model %s", ge_model->GetName().c_str());
@@ -463,7 +462,7 @@ Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &s
     return ret;
   }
 
-  ret = om_file_save_helper->SaveModel(save_param, output_file_name.c_str(), model, is_offline_);
+  ret = om_file_save_helper->SaveModel(output_file_name.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "[Save][Model]Failed, model %s, output file %s",
            ge_model->GetName().c_str(), output_file.c_str());
@@ -474,10 +473,8 @@ Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &s
   return SUCCESS;
 }
 
-Status ModelHelper::SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
-                                      const std::string &output_file, ModelBufferData &model,
-                                      const bool is_unknown_shape) {
-  GE_CHECK_NOTNULL(ge_root_model);
+Status ModelHelper::SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
+                                      ModelBufferData &model, const bool is_unknown_shape) {
   GE_IF_BOOL_EXEC(ge_root_model == nullptr,
                   GELOGE(FAILED, "[Check][GERootModel]Ge_root_model is nullptr");
                   REPORT_INNER_ERROR("E19999", "Ge_root_model check failed, it is nullptr");
@@ -496,7 +493,7 @@ Status ModelHelper::SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const
                   return FAILED);
   if (!is_unknown_shape) {
     auto &model_root = name_to_ge_model.begin()->second;
-    return SaveToOmModel(model_root, save_param, output_file, model, ge_root_model);
+    return SaveToOmModel(model_root, output_file, model, ge_root_model);
   }
 
   std::shared_ptr<OmFileSaveHelper> om_file_save_helper = ge::MakeShared<OmFileSaveHelper>();
@@ -577,7 +574,7 @@ Status ModelHelper::SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const
     return INTERNAL_ERROR;
   }
 
-  ret = om_file_save_helper->SaveRootModel(save_param, output_file_name.c_str(), model, is_offline_);
+  ret = om_file_save_helper->SaveModel(output_file_name.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "[Save][Model]OmFileSaveHelper save model eturn fail, output_file %s",
            output_file_name.c_str());
@@ -662,7 +659,7 @@ Status ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std
     return FAILED;
   }
   ModelBufferData model;
-  const Status ret = om_file_save_helper->SaveModelToFile(output_file.c_str(), model, is_offline_);
+  const Status ret = om_file_save_helper->SaveModel(output_file.c_str(), model, is_offline_);
   return ((ret == SUCCESS) ? SUCCESS : FAILED);
 }
 
@@ -1244,7 +1241,6 @@ Status ModelHelper::LoadModelDataAndPackSo(const ModelBufferData &model, const s
   GE_ASSERT_SUCCESS(LoadRootModel(model_data), "Load Root Model fail");
   GELOGD("LoadRootModel success.");
   ModelBufferData model_buff;
-  SaveParam save_param;
   is_offline_ = true;
   if (!root_model_->CheckAndSetNeedSoInOM()) {
     return FileSaver::SaveToFile(output_file, static_cast<void *>(model.data.get()), model.length);
@@ -1255,7 +1251,7 @@ Status ModelHelper::LoadModelDataAndPackSo(const ModelBufferData &model, const s
   const auto root_ge_model = GetGeModel();
   root_model_->SetSubgraphInstanceNameToModel(root_graph->GetName(), root_ge_model);
 
-  GE_ASSERT_SUCCESS(SaveToOmRootModel(root_model_, save_param, output_file, model_buff, is_unknown_shape_model_),
+  GE_ASSERT_SUCCESS(SaveToOmRootModel(root_model_, output_file, model_buff, is_unknown_shape_model_),
       "SaveToOmRootModel fail");
   GELOGD("SaveToOmRootModel success.");
   return SUCCESS;

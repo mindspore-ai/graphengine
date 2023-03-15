@@ -93,10 +93,10 @@ static void SetLoopAddrToOpMapping(const uintptr_t step_id, const uintptr_t loop
 
 void DumpOp::DumpWorkspace(toolkit::aicpu::dump::Task &task) {
   std::vector<int64_t> space_type;
-  bool has_space_type = ge::AttrUtils::GetListInt(op_desc_, TVM_ATTR_NAME_WORKSPACE_TYPE, space_type);
+  bool has_space_type = ge::AttrUtils::GetListInt(op_desc_, ATTR_NAME_AICPU_WORKSPACE_TYPE, space_type);
   bool has_memory_log = false;
   if (has_space_type) {
-    auto result = std::find(space_type.begin(), space_type.end(), RT_MEMORY_CUST_AICPU_LOG);
+    auto result = std::find(space_type.begin(), space_type.end(), ge::AicpuWorkSpaceType::CUST_LOG);
     if (result != space_type.end()) {
       has_memory_log = true;
     }

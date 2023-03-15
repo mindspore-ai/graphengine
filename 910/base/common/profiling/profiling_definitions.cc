@@ -27,7 +27,7 @@ ProfilingContext &ProfilingContext::GetInstance()  {
   static ProfilingContext pc;
   return pc;
 }
-ProfilingContext::ProfilingContext() : inited_(false), enabled_(false), str_index_(kProfilingIndexEnd) {
+ProfilingContext::ProfilingContext() {
   if (!IsDumpToStdEnabled()) {
     return;
   }
@@ -187,7 +187,7 @@ void ProfilingContext::UpdateElementHashId() {
   for (; idx < static_cast<size_t>(kProfilingIndexEnd); idx++) {
     const auto &str = profiler_->GetStringHashes()[idx].str;
     uint64_t hash_id = 0UL;
-    const auto ret = QueryHashId(str, hash_id);
+    const Status ret = QueryHashId(str, hash_id);
     if (ret != SUCCESS) {
       GELOGW("[Get][QueryHashId]Failed, ret[0x%X]", ret);
     }
@@ -198,7 +198,7 @@ void ProfilingContext::UpdateElementHashId() {
   for (; idx < (static_cast<size_t>(kProfilingIndexEnd) + GetRegisterStringNum()); idx++) {
     const auto &str = profiler_->GetStringHashes()[idx].str;
     uint64_t hash_id = 0UL;
-    const auto ret = QueryHashId(str, hash_id);
+    const Status ret = QueryHashId(str, hash_id);
     if (ret != SUCCESS) {
       GELOGW("[Get][QueryHashId]Failed, ret[0x%X]", ret);
     }

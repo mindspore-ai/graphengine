@@ -107,7 +107,7 @@ const std::vector<ModelPartition> &OmFileLoadHelper::GetModelPartitions(const si
 
 static Status ConvertToModelPartitionTable(const TinyModelPartitionTable *tiny_table,
                                            std::unique_ptr<uint8_t[]> &model_partition_table_holder) {
-  size_t total_size = sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * tiny_table->num;
+  const size_t total_size = sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * tiny_table->num;
   model_partition_table_holder = std::unique_ptr<uint8_t[]>(new(std::nothrow) uint8_t[total_size]);
   if (model_partition_table_holder == nullptr) {
     GELOGE(FAILED, "malloc failed for size %zu", total_size);
@@ -242,17 +242,13 @@ Status OmFileLoadHelper::LoadModelPartitionTable(const uint8_t *const model_data
   return SUCCESS;
 }
 
-uint64_t OmFileSaveHelper::GetModelDataSize() const {
-  return model_contexts_.empty() ? 0U : model_contexts_[0U].model_data_len_;
-}
-
 ModelPartitionTable *OmFileSaveHelper::GetPartitionTable() {
   return GetPartitionTable(0U);
 }
 
 ModelPartitionTable *OmFileSaveHelper::GetPartitionTable(const size_t cur_ctx_index) {
   auto &cur_ctx = model_contexts_[cur_ctx_index];
-  const auto partition_size = static_cast<uint64_t>(cur_ctx.partition_datas_.size());
+  const uint64_t partition_size = static_cast<uint64_t>(cur_ctx.partition_datas_.size());
   // Build ModelPartitionTable, flex array
   cur_ctx.partition_table_.resize(sizeof(ModelPartitionTable) + (sizeof(ModelPartitionMemInfo) * partition_size),
                                   static_cast<char_t>(0));
@@ -300,62 +296,11 @@ Status OmFileSaveHelper::AddPartition(const ModelPartition &partition, const siz
   return SUCCESS;
 }
 
-Status OmFileSaveHelper::SaveModel(const SaveParam &save_param, const char_t *const output_file, ModelBufferData &model,
-                                   const bool is_offline) {
-  (void)save_param.cert_file;
-  (void)save_param.ek_file;
-  (void)save_param.encode_mode;
-  (void)save_param.hw_key_file;
-  (void)save_param.pri_key_file;
-  const Status ret = SaveModelToFile(output_file, model, is_offline);
-  if (ret == SUCCESS) {
-    GELOGD("Generate model with encrypt.");
-  }
-  return ret;
-}
-
-Status OmFileSaveHelper::SaveModelToFile(const char_t *const output_file, ModelBufferData &model,
-                                         const bool is_offline) {
+Status OmFileSaveHelper::SaveModel(const char_t *const output_file, ModelBufferData &model, const bool is_offline) {
   if (model_contexts_.empty()) {
     GELOGE(FAILED, "mode contexts empty");
     return FAILED;
   }
-  const auto &cur_ctx = model_contexts_[0U];
-  if (cur_ctx.model_data_len_ == 0U) {
-    GELOGE(PARAM_INVALID, "Model data len error! should not be 0");
-    return PARAM_INVALID;
-  }
-
-  ModelPartitionTable *const partition_table = GetPartitionTable();
-  GE_CHECK_NOTNULL(partition_table);
-  const uint64_t size_of_table = SizeOfModelPartitionTable(*partition_table);
-  FMK_UINT64_ADDCHECK(size_of_table, cur_ctx.model_data_len_)
-
-  model_header_.model_length = size_of_table + cur_ctx.model_data_len_;
-
-  GELOGD("Sizeof(ModelFileHeader):%zu,sizeof(ModelPartitionTable):%lu, model_data_len:%lu, model_total_len:%zu",
-         sizeof(ModelFileHeader), size_of_table, cur_ctx.model_data_len_,
-         static_cast<size_t>(model_header_.model_length + sizeof(ModelFileHeader)));
-
-  Status ret;
-  if (is_offline) {
-    ret = FileSaver::SaveToFile(output_file, model_header_, *partition_table, cur_ctx.partition_datas_);
-  } else {
-    ret = FileSaver::SaveToBuffWithFileHeader(model_header_, *partition_table, cur_ctx.partition_datas_, model);
-  }
-  if (ret == SUCCESS) {
-    GELOGD("Save model success without encrypt.");
-  }
-  return ret;
-}
-
-Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char_t *const output_file,
-                                       ModelBufferData &model, const bool is_offline) {
-  (void)save_param.cert_file;
-  (void)save_param.ek_file;
-  (void)save_param.encode_mode;
-  (void)save_param.hw_key_file;
-  (void)save_param.pri_key_file;
 
   std::vector<ModelPartitionTable *> model_partition_tabels;
   std::vector<std::vector<ModelPartition>> all_model_partitions;
@@ -386,7 +331,7 @@ Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char_t
     ret = FileSaver::SaveToBuffWithFileHeader(model_header_, model_partition_tabels, all_model_partitions, model);
   }
   if (ret == SUCCESS) {
-    GELOGD("Save model success without encrypt.");
+    GELOGD("Save model success.");
   }
   return ret;
 }

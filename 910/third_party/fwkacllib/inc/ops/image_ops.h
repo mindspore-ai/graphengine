@@ -1073,6 +1073,9 @@ whether boxes overlap too much with respect to IOU.
 *@li score_threshold: A 0-D float tensor representing the threshold for
 deciding when to remove boxes based on score . \n
 
+*@par Attributes:
+*offset: An optional int. Defaults to 0. \n
+
 *@par Outputs:
 *selected_indices: A 1-D integer tensor of shape [M] representing the selected
 indices from the boxes tensor, where M <= max_output_size . \n
@@ -1090,6 +1093,7 @@ REG_OP(NonMaxSuppressionV3)
     .INPUT(max_output_size, TensorType({DT_INT32}))
     .INPUT(iou_threshold, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(score_threshold, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(offset, Int, 0)
     .OUTPUT(selected_indices, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(NonMaxSuppressionV3)
 

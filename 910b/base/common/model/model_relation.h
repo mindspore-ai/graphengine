@@ -71,7 +71,7 @@ class ModelRelationBuilder {
 
  private:
   Status DoBuild(const ComputeGraph &root_graph);
-  Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
+  Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int, std::string>> &paired_inputs,
                         const ComputeGraph &root_graph);
   Status DoBuildForPartitionedCall(const NodePtr &node, std::map<NodePtr,
                                    std::map<int32_t, std::string>> &paired_inputs);

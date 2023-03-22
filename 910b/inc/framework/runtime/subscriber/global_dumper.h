@@ -56,15 +56,9 @@ class VISIBILITY_EXPORT GlobalDumper {
     return static_cast<bool>(enable_flags_ & BuiltInSubscriberUtil::EnableBit<DumpType>(dump_type));
   }
 
-  std::set<ge::ExceptionDumper *> &MutableInnerExceptionDumpers() {
-    return exception_dumpers_;
-  }
-
  private:
   GlobalDumper();
   uint64_t enable_flags_{0UL};
-  // each davinci model has own exception dumper
-  std::set<ge::ExceptionDumper *> exception_dumpers_{};
 };
 }  // namespace gert
 #endif

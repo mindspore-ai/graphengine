@@ -446,16 +446,16 @@ REG_OP(StatelessRandomNormalV2)
 * @brief Outputs deterministic pseudorandom random integers from a uniform distribution . \n
 
 * @par Inputs:
-* @li shape: The shape of the output tensor.
-* @li key: Key for the counter-based RNG algorithm.
-* @li counter: Initial counter for the counter-based RNG algorithm.
-* @li alg: 0-D. The RNG algorithm. \n
+* @li shape: The shape of the output tensor. Must be one of the following types: int32, int64.
+* @li key: Key for the counter-based RNG algorithm. Must be one of the following types: uint64.
+* @li counter: Initial counter for the counter-based RNG algorithm. Must be one of the following types: uint64.
+* @li alg: 0-D. The RNG algorithm. Must be one of the following types: int32. \n
 
 * @par Attributes:
 * dtype:Output data type . \n
 
 * @par Outputs:
-* y: Returns Random values with specified shape . \n
+* y: Returns Random values with specified shape. Must be one of the following types: float16, float32, float64. \n
 
 * @par Third-party framework compatibility
 * Compatible with TensorFlow StatelessRandomUniformV2 operator.

@@ -37,6 +37,15 @@ struct OmFileContext {
   uint64_t model_data_len_ = 0UL;
 };
 
+struct SaveParam {
+  int32_t encode_mode;
+  std::string ek_file;
+  std::string cert_file;
+  std::string hw_key_file;
+  std::string pri_key_file;
+  std::string model_name;
+};
+
 class GE_FUNC_VISIBILITY OmFileLoadHelper {
  public:
   Status Init(const ModelData &model);
@@ -82,15 +91,23 @@ class GE_FUNC_VISIBILITY OmFileSaveHelper {
  public:
   ModelFileHeader &GetModelFileHeader() { return model_header_; }
 
+  uint64_t GetModelDataSize() const;
+
   ModelPartitionTable *GetPartitionTable();
 
   Status AddPartition(const ModelPartition &partition);
 
   Status AddPartition(const ModelPartition &partition, const size_t cur_index);
 
-  Status SaveModel(const char_t *const output_file, ModelBufferData &model, const bool is_offline = true);
+  Status SaveModel(const SaveParam &save_param, const char_t *const output_file, ModelBufferData &model,
+                   const bool is_offline = true);
+
+  Status SaveModelToFile(const char_t *const output_file, ModelBufferData &model, const bool is_offline = true);
 
   ModelPartitionTable *GetPartitionTable(const size_t cur_ctx_index);
+
+  Status SaveRootModel(const SaveParam &save_param, const char_t *const output_file, ModelBufferData &model,
+                       const bool is_offline);
 
  private:
   ModelFileHeader model_header_;

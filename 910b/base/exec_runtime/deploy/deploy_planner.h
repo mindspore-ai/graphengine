@@ -233,9 +233,7 @@ class DeployPlannerBase {
   DeployPlan::SubmodelInfo tail_model_info_;
   static std::atomic<int64_t> endpoint_name_id_gen_;
   std::map<std::string, std::string> short_names_;
-  std::map<std::string, std::string> instance_to_model_name_;
-  std::map<std::string, std::set<std::string>> deploy_to_devlist_;
-  static std::atomic<int64_t> plan_id_gen_;
+  std::set<std::string> deploy_to_devlist_;
 };
 
 class ModelRelationFlattener {

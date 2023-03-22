@@ -136,7 +136,7 @@ REG_OP(CheckValid)
 
 * @par Attributes:
 * @li mode: Computation mode, a character string with the value range of [iou, iof].
-* @li eps: An optional float, prevent division by 0, default value is 1.0 .
+* @li eps: An optional float, prevent division by 0, default value is 1.0 . 
 * @li aligned: A bool value, if aligned is true, calculate the ious between each aligned pair of bboxes and gtboxes. \n
 
 * @par Outputs:

@@ -20,8 +20,6 @@
 #include <memory>
 #include "external/ge/ge_api_error_codes.h"
 #include "graph/ge_tensor.h"
-#include "framework/common/debug/ge_log.h"
-#include "runtime/rt_mem_queue.h"
 
 namespace ge {
 constexpr uint8_t kNullDataFlagBit = 1U;
@@ -75,16 +73,11 @@ class ExchangeService {
   virtual Status DestroyQueue(const int32_t device_id, const uint32_t queue_id) = 0;
   virtual Status Enqueue(const int32_t device_id, const uint32_t queue_id, const void *const data,
                          const size_t size, const ControlInfo &control_info) = 0;
-  virtual Status Enqueue(int32_t device_id, uint32_t queue_id, size_t size, rtMbufPtr_t m_buf,
-                         const ControlInfo &control_info) = 0;
   virtual Status Enqueue(const int32_t device_id, const uint32_t queue_id, const size_t size,
                          const FillFunc &fill_func, const ControlInfo &control_info) = 0;
   virtual Status Peek(const int32_t device_id, const uint32_t queue_id, size_t &size) = 0;
   virtual Status Dequeue(const int32_t device_id, const uint32_t queue_id, void *const data, const size_t size,
                          ControlInfo &control_info) = 0;
-  virtual Status DequeueMbufTensor(const int32_t device_id, const uint32_t queue_id,
-                                   std::shared_ptr<AlignedPtr> &aligned_ptr, const size_t size,
-                                   ControlInfo &control_info) = 0;
   virtual Status DequeueTensor(const int32_t device_id, const uint32_t queue_id, GeTensor &tensor,
                                ControlInfo &control_info) = 0;
 };

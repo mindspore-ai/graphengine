@@ -35,8 +35,7 @@ namespace ge {
 
 * @par Attributes:
 * @li trans_a: A optional attribute, the type is bool. Defaults to True.
-* @li trans_b: A optional attribute, the type is bool. Defaults to False.
-* @li trans_dw: A optional attribute, the type is bool. Defaults to False. \n
+* @li trans_b: A optional attribute, the type is bool. Defaults to False. \n
 
 * @par Outputs:
 * Six outputs, including:
@@ -63,7 +62,6 @@ REG_OP(AttentionQKVGradW)
     .OUTPUT(dbias_value, TensorType({DT_FLOAT16}))
     .ATTR(trans_a, Bool, true)
     .ATTR(trans_b, Bool, false)
-    .ATTR(trans_dw, Bool, false)
     .OP_END_FACTORY_REG(AttentionQKVGradW)
 
 /**
@@ -1906,7 +1904,7 @@ REG_OP(SwinAttentionScore)
     .INPUT(query, TensorType({DT_FLOAT16}))
     .INPUT(key, TensorType({DT_FLOAT16}))
     .INPUT(value, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(padding_mask1, TensorType({DT_FLOAT16}))
+    .INPUT(padding_mask1, TensorType({DT_FLOAT16}))
     .OPTIONAL_INPUT(padding_mask2, TensorType({DT_FLOAT16}))
     .INPUT(scale, TensorType({DT_FLOAT16}))
     .OPTIONAL_INPUT(drop_mask, TensorType({DT_INT8}))

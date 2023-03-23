@@ -748,8 +748,6 @@ typedef enum tagDomiActivationMode {
 } domiActivationMode_t;
 
 enum class MemorySizeCalcType { NORMAL = 0, ALWAYS_EMPTY };
-
-enum AicpuWorkSpaceType { CUST_LOG = 0, INVALID_TYPE };
 }  // namespace ge
 
 namespace domi {

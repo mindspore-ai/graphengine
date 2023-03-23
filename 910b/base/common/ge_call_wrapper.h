@@ -17,7 +17,6 @@
 #define GE_GE_CALL_WRAPPER_H_
 
 #include "framework/common/debug/ge_log.h"
-#include "common/util.h"
 
 /*lint --emacro((773),GE_TIMESTAMP_START)*/
 /*lint -esym(773,GE_TIMESTAMP_START)*/

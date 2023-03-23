@@ -52,7 +52,7 @@ class SingleDiagnoseSwitch {
   }
   void UnregisterHandler(const void *key) {
     std::lock_guard<std::mutex> lock(mutex_lock_);
-    (void)keys_to_handler_.erase(key);
+    keys_to_handler_.erase(key);
   }
   size_t GetHandleSize() const {
     std::lock_guard<std::mutex> lock(mutex_lock_);

@@ -1,18 +1,12 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* @file rt_error_codes.h
+*
+* Copyright (C) Huawei Technologies Co., Ltd. 2019-2020. All Rights Reserved.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*/
 
 #ifndef __INC_EXTERNEL_RT_ERROR_CODES_H__
 #define __INC_EXTERNEL_RT_ERROR_CODES_H__
@@ -66,8 +60,6 @@ static const int32_t ACL_ERROR_RT_REPEATED_INIT              = 207015; // repeat
 static const int32_t ACL_ERROR_RT_AIVEC_OVER_FLOW            = 207016; // aivec over flow
 static const int32_t ACL_ERROR_RT_OVER_FLOW                  = 207017; // common over flow
 static const int32_t ACL_ERROR_RT_DEVIDE_OOM                 = 207018; // device oom
-static const int32_t ACL_ERROR_RT_SEND_MSG                   = 207019; // hdc send msg fail
-static const int32_t ACL_ERROR_RT_COPY_USER_FAIL             = 207020; // copy data fail
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR             = 507000; // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR                   = 507001; // ts internel error

@@ -534,7 +534,7 @@ REG_OP(StridedSliceGrad)
 * @li segment_ids: A Tensor of type INT32,INT64.whose shape is a prefix
 * of "x.shape"
 * @li num_segments: A Tensor of type INT32,INT64
-* #li is_preprocessed: An optional bool. Defaults to "false".If it is true, it means that the repetition rate
+* @li is_preprocessed: An optional bool. Defaults to "false".If it is true, it means that the repetition rate
 * of segment_ids is high
 
 * @par Outputs:

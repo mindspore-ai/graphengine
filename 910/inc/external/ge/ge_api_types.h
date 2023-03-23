@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyM
 
 const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const std::string MEMORY_OPTIMIZATION_POLICY = "ge.exec.memoryOptimizationPolicy";
-
+const std::string STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
 
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
@@ -166,6 +166,7 @@ const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
 const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
+const char_t *const STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
 const char_t *const EXTERNAL_WEIGHT = "ge.externalWeight";
 static const char_t *const DETERMINISTIC = "ge.deterministic";
 }  // namespace configure_option

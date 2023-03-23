@@ -127,7 +127,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
 
   template <typename T>
-  inline const T *GetBuiltInSubscriber(const BuiltInSubscriberType type) const {
+  inline const T *GetBuiltInSubscriber(const BuiltInSubscriberType type) {
     return static_cast<T *>(built_in_subscribers_ptr_[static_cast<size_t>(type)]);
   }
 

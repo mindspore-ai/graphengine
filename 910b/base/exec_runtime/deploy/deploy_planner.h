@@ -73,7 +73,6 @@ class DeployPlan {
 
   enum class LoadMode {
     kLoadWithQ,
-    kLoadWithEvent,
     kLoadOnline
   };
 

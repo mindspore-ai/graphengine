@@ -465,25 +465,25 @@ REG_OP(TruncatedNormal)
     .OP_END_FACTORY_REG(TruncatedNormal)
 
 /**
-*@brief Generate random bit mask for dropout . \n
+* @brief Generate random bit mask for dropout . \n
 
-*@par Inputs:
+* @par Inputs:
 include:
-*@li shape:The shape of the output tensor. Must be one of the following types: int32, int64 .
-*@li prob:0-D. Number of bit 1 . Must be one of the following types: float16, float32 . \n
+* @li shape:The shape of the output tensor. Must be one of the following types: int32, int64 .
+* @li prob:0-D. Number of bit 1 . Must be one of the following types: float16, float32 . \n
 
-*@par Attributes:
-*@li seed: An optional int. If either seed or seed2 are set to be non-zero, the random number
+* @par Attributes:
+* @li seed: An optional int. If either seed or seed2 are set to be non-zero, the random number
 *generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
-*@li seed2: An optional int. A second seed to avoid seed collision . \n
+* @li seed2: An optional int. A second seed to avoid seed collision . \n
 
-*@par Outputs:
-*y:Output (1-D) random number using uint data format . A Tensor of type uint8 . \n
+* @par Outputs:
+* y:Output (1-D) random number using uint data format . A Tensor of type uint8 . \n
 
-*@attention Constraints:
+* @attention Constraints:
 *The output is aligned with 128 bits
 
-*@see DropOutGenMask()
+* @see DropOutGenMask()
 */
 REG_OP(DropOutGenMask)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))

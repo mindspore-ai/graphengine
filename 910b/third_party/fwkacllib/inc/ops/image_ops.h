@@ -42,28 +42,28 @@ REG_OP(DecodeGif)
     .OP_END_FACTORY_REG(DecodeGif)
 
 /**
-*@brief Adjust the hue of one or more images . \n
+* @brief Adjust the hue of one or more images . \n
 
-*@par Inputs:
+* @par Inputs:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
 interpretted as channels, and must be three. Inputs include:
 * @li images: Images to adjust. Must be one of the following types:uint8, float16, float32.
             At least 3-D. The format could be NHWC, NCHW or ND.
 * @li delta: A Tensor of type float. A float delta to add to the hue . \n
 
-*@par Outputs:
-*y: Images to adjust. Must be one of the following types:uint8, float16, float32.
+* @par Outputs:
+* y: Images to adjust. Must be one of the following types:uint8, float16, float32.
             At least 3-D. The format could be NHWC, NCHW or ND. \n
 
-*@par Attributes:
+* @par Attributes:
 * @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
             Value used for inferring real format of images.
 
-*@attention Constraints:
+* @attention Constraints:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
 interpretted as channels, and must be three . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 *Compatible with tensorflow AdjustHue operator.
 */
 
@@ -1286,27 +1286,27 @@ REG_OP(DecodeBmp)
     .OP_END_FACTORY_REG(DecodeBmp)
 
 /**
-*@brief Function parse image from string to int. \n
+* @brief Function parse image from string to int. \n
 
-*@par Inputs:
-*@li contents: A Tensor of type string. 0-D. The JPEG-encoded image. \n
-*@li crop_window: 1-D. The crop window: [crop_y, crop_x, crop_height, crop_width]. \n
+* @par Inputs:
+* @li contents: A Tensor of type string. 0-D. The JPEG-encoded image. \n
+* @li crop_window: 1-D. The crop window: [crop_y, crop_x, crop_height, crop_width]. \n
 
-*@par Attributes:
-*@li channels: An optional int. Defaults to 0. Number of color channels for the
+* @par Attributes:
+* @li channels: An optional int. Defaults to 0. Number of color channels for the
 *decoded image.
-*@li ratio: An optional int. Defaults to 1. Downscaling ratio.
-*@li fancy_upscaling: An optional bool. Defaults to True. If true use a slower
+* @li ratio: An optional int. Defaults to 1. Downscaling ratio.
+* @li fancy_upscaling: An optional bool. Defaults to True. If true use a slower
 *but nicer upscaling of the chroma planes
-*@li try_recover_truncated: An optional bool. Defaults to False. If true try to
+* @li try_recover_truncated: An optional bool. Defaults to False. If true try to
 *recover an image from truncated input.
-*@li acceptable_fraction: An optional float. Defaults to 1. The minimum required
+* @li acceptable_fraction: An optional float. Defaults to 1. The minimum required
 fraction of lines before a truncated input is accepted.
-*@li dct_method: An optional string. Defaults to "". string specifying a hint
+* @li dct_method: An optional string. Defaults to "". string specifying a hint
 *about the algorithm used for decompression. 
-*@li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
+* @li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
 
-*@par Outputs:
+* @par Outputs:
 *image: A Tensor dtype of uint8.
 */
 REG_OP(DecodeAndCropJpeg)
@@ -1865,23 +1865,23 @@ REG_OP(ResizeGrad)
     .OP_END_FACTORY_REG(ResizeGrad)
 
 /**
-*@brief Function parse image from string to int. \n
+* @brief Function parse image from string to int. \n
 
-*@par Inputs:
+* @par Inputs:
 * contents: A Tensor of type string. 0-D. The JPEG-encoded image. \n
 
-*@par Attributes:
-*@li channels: An optional int. Defaults to 0. Number of color channels for the decoded image.
-*@li ratio: An optional int. Defaults to 1. Downscaling ratio.
-*@li fancy_upscaling: An optional bool. Defaults to True. If true use a slower but nicer upscaling of the chroma planes
-*@li try_recover_truncated: An optional bool. Defaults to False. If true try to recover an image from truncated input.
-*@li acceptable_fraction: An optional float. Defaults to 1. 
+* @par Attributes:
+* @li channels: An optional int. Defaults to 0. Number of color channels for the decoded image.
+* @li ratio: An optional int. Defaults to 1. Downscaling ratio.
+* @li fancy_upscaling: An optional bool. Defaults to True. If true use a slower but nicer upscaling of the chroma planes
+* @li try_recover_truncated: An optional bool. Defaults to False. If true try to recover an image from truncated input.
+* @li acceptable_fraction: An optional float. Defaults to 1. 
 * The minimum required fraction of lines before a truncated input is accepted.
-*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used 
+* @li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used 
 * for decompression.
-*@li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
+* @li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
 
-*@par Outputs:
+* @par Outputs:
 *image: A Tensor dtype of uint8.
 */
 REG_OP(DecodeJpeg)

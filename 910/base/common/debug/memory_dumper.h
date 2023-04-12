@@ -22,6 +22,9 @@
 #include "framework/common/types.h"
 #include "mmpa/mmpa_api.h"
 #include "framework/common/ge_inner_error_codes.h"
+namespace {
+constexpr int32_t kInvalidFd = (-1);
+}  // namespace
 
 namespace ge {
 // MemoryDumper：dump memory data for internal test
@@ -29,7 +32,7 @@ namespace ge {
 // Open file at one time and output multiple times: create  MemoryDumper object first, and using Open/Dump/Close
 class MemoryDumper {
  public:
-  MemoryDumper();
+  MemoryDumper() = default;
   ~MemoryDumper();
 
   // Assignment/copy is not allowed to avoid repeated release
@@ -64,7 +67,7 @@ class MemoryDumper {
    */
   static int32_t OpenFile(const std::string &filename);
 
-  int32_t fd_;
+  int32_t fd_ = kInvalidFd;
 };
 }  // namespace ge
 

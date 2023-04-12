@@ -163,6 +163,9 @@ REG_OP(TileD)
 *     uint16, complex128, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64.
 
+* @par Attributes:
+* negative_index_support: An optional bool. Defaults to false.
+
 * @par Outputs:
 * y: A Tensor. Has the same type as "x".
 
@@ -174,6 +177,7 @@ REG_OP(GatherNd)
     .INPUT(x, TensorType::BasicType())
     .INPUT(indices, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
+    .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(GatherNd)
 
 /**
@@ -192,6 +196,7 @@ REG_OP(GatherNd)
 * @par Attributes:
 * batch_dims: An optional int. Defaults to 0.
 * is_preprocessed: An optional bool. Defaults to false.
+* negative_index_support: An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x".
@@ -210,6 +215,7 @@ REG_OP(GatherV2)
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(batch_dims, Int, 0)
     .ATTR(is_preprocessed, Bool, false)
+    .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(GatherV2)
 
 /**
@@ -1352,6 +1358,7 @@ REG_OP(StridedSliceAssignD)
 * @li validate_indices: A bool specifying whether to verify the argument of "indice" .
 * @li batch_dims: An optional int. Defaults to 0.
 * @li is_preprocessed: An optional bool. Defaults to false.
+* @li negative_index_support: An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x" .
@@ -1370,6 +1377,7 @@ REG_OP(Gather)
     .ATTR(validate_indices, Bool, true)
     .ATTR(batch_dims, Int, 0)
     .ATTR(is_preprocessed, Bool, false)
+    .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(Gather)
 
 /**

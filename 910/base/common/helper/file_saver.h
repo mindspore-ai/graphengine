@@ -55,6 +55,12 @@ class FileSaver {
 
   static Status SaveToFile(const std::string &file_path, const void * const data, const uint64_t len);
 
+  static void PrintModelSaveLog();
+
+  static void SetHostPlatformParamInitialized(bool host_platform_param_initialized) {
+    host_platform_param_initialized_ = host_platform_param_initialized;
+  }
+
  protected:
   /// @ingroup domi_common
   /// @brief Check validity of the file path
@@ -81,6 +87,8 @@ class FileSaver {
   static Status SaveWithFileHeader(const std::string &file_path, const ModelFileHeader &file_header,
                                    const std::vector<ModelPartitionTable *> &model_partition_tables,
                                    const std::vector<std::vector<ModelPartition>> &all_partition_datas);
+ private:
+  static bool host_platform_param_initialized_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_AUTH_FILE_SAVER_H_

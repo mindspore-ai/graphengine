@@ -155,6 +155,12 @@ REG_OP(AvgPool)
 * @li Due to instruction restrictions,
  * the values of "strides_h" and "strides_w" are positive integers within
  * the range [1, 63].
+* @li If the sliding window range exceeds the original width and height of the input feature map,
+ * and the calculation result of count_include_pad is False, the behavior of dividing by 0 will appear.
+ * This scenario does not conform to the normal logic of the operator.
+ * It is recommended to modify attributes such as ceil_mode or stride to satisfy that the sliding window
+ * always has an intersection with the input feature map. In this abnormal scenario,
+ * different chips may return different results, and four abnormal results may appear: 0, 65504, Nan, and INF.
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPoolV2.
 */

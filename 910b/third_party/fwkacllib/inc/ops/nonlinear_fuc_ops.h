@@ -583,9 +583,9 @@ REG_OP(ReluGradV2)
 * x: A tensor. Must be one of the following types: float32, float64, int32, uint8,
 *     int16, int8, int64, uint16, float16, qint8.
 *
-*@par Outputs:
-*@li y: A tensor. Has the same type as "x".
-*@li mask: A tensor of type uint8 or uint1.
+* @par Outputs:
+* @li y: A tensor. Has the same type as "x".
+* @li mask: A tensor of type uint8 or uint1.
 *
 *@par Third-party framework compatibility
 * Incompatible with TensorFlow or Caffe.

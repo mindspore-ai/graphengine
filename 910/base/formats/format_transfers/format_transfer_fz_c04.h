@@ -30,9 +30,9 @@ class FormatTransfer4DToFZC04 : public FormatTransfer {
                     std::vector<int64_t> &dst_shape) override;
  private:
   Status BuildTransArgsNchwToFzC04(const ge::formats::TransArgs &src_dst_args, TransResult &nchw_result_holder,
-                                   ge::formats::TransArgs &nchw_dst_args);
+                                   ge::formats::TransArgs &nchw_dst_args) const;
   Status TransShapeFromSrcToNchw(const Format src_format, const std::vector<int64_t> &src_shape,
-                                 const DataType data_type, std::vector<int64_t> &nchw_shape);
+                                 const DataType data_type, std::vector<int64_t> &nchw_shape) const;
 };
 
 class FormatTransferFZC04To4D : public FormatTransfer {

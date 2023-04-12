@@ -81,11 +81,14 @@ const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyM
 const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const std::string MEMORY_OPTIMIZATION_POLICY = "ge.exec.memoryOptimizationPolicy";
 const std::string STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
+const std::string OPTION_FEATURE_BASE_REFRESHABLE = "ge.featureBaseRefreshable";
+const std::string OPTION_CONST_LIFECYCLE = "ge.constLifecycle";
 
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
 const char_t *const OPTION_EXEC_MODEL_DEPLOY_MODE = "ge.exec.modelDeployMode";
 const char_t *const OPTION_EXEC_MODEL_DEPLOY_DEVICELIST = "ge.exec.modelDeployDevicelist";
+const char_t *const OPTION_EXEC_ENABLE_FUSION = "ge.exec.enableFusion";
 
 const std::string OPTION_EXEC_CM_CHIEF_IP = "ge.cmChiefIp";
 const std::string OPTION_EXEC_CM_CHIEF_PORT = "ge.cmChiefPort";

@@ -88,6 +88,11 @@ class DumpProperties {
     return is_train_op_debug_ || is_infer_op_debug_;
   }
 
+  void ClearOpDebugFlag() {
+    is_train_op_debug_ = false;
+    is_infer_op_debug_ = false;
+  }
+
   bool IsNeedDumpPath() const;
 
   bool IsDumpOpen() const;

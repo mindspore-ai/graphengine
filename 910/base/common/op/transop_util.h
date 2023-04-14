@@ -40,7 +40,7 @@ class TransOpUtil {
  private:
   TransOpUtil();
 
-  ~TransOpUtil();
+  ~TransOpUtil() = default;
 
   static TransOpUtil &Instance();
 

@@ -94,16 +94,16 @@ REG_OP(Igammac)
     .OP_END_FACTORY_REG(Igammac)
 
 /**
-*@brief Computes the histogram of a tensor. \n
+* @brief Computes the histogram of a tensor. \n
 
 *@par Inputs:
 * x: A Tensor of type float16,float32,int32. \n
 
 *@par Attributes:
 
-*@li bins: Optional. Must be one of the following types: int32. Defaults to 100.
-*@li min: Optional. Must be one of the following types: float32. Defaults to 0.0.
-*@li max: Optional. Must be one of the following types: float32. Defaults to 0.0. \n
+* @li bins: Optional. Must be one of the following types: int32. Defaults to 100.
+* @li min: Optional. Must be one of the following types: float32. Defaults to 0.0.
+* @li max: Optional. Must be one of the following types: float32. Defaults to 0.0. \n
 
 *@par Outputs:
 * y: A Tensor. A Tensor of type float32 or int32 . \n
@@ -625,11 +625,11 @@ REG_OP(IsInf)
  *@brief Computes the complex absolute value of a tensor.
 
  *@par Inputs:
- *x: x of complex numbers, this operation returns a tensor of type 
+ *x: x of complex numbers, this operation returns a tensor of type
  float or double that is the absolute value of each element in x .
 
 * @par Attributes:
-* Tout: representing the output of type. 
+* Tout: representing the output of type.
 
  *@par Outputs:
  *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
@@ -1027,7 +1027,7 @@ REG_OP(LpNormUpdate)
 * @li imag: An ND tensor of type  float32 double, representing the imaginary part of a complex number. \n
 *
 * @par Attributes:
-* Tout: representing the output of type. 
+* Tout: representing the output of type.
 * @par Outputs:
 * out: An ND tensor of type complex64, complex128 \n
 */
@@ -1075,7 +1075,7 @@ REG_OP(SparseBincount)
 * input: An ND tensor of type complex64, complex128 \n
 
 * @par Attributes:
-* Tout: representing the output of type. 
+* Tout: representing the output of type.
 
 * @par Outputs:
 * output: An ND tensor of type float32. double \n
@@ -1424,17 +1424,17 @@ REG_OP(ScaledMaskedSoftmaxGrad)
     .ATTR(scale, Float, 1.0)
     .ATTR(fixed_triu_mask, Bool, false)
     .OP_END_FACTORY_REG(ScaledMaskedSoftmaxGrad)
-    
+
 /**
  * @brief SignBitsPack.
 
  * @par Inputs:
  * one input, including:
  * @li x: A 1D Tensor of float32 or float16.
- * 
+ *
  * @par Attributes:
  * @li size: first dim value of output tensor.
- * 
+ *
  * @par Outputs:
  * @li y: A 2D Tensor of type uint8 with shape (size, N)
  */
@@ -1472,21 +1472,21 @@ REG_OP(SobolSample)
 
 /**
  * @brief Count the number of occurrences of each value in the input sparse integer array,
- * and output it according to the sparse matrix. \n 
+ * and output it according to the sparse matrix. \n
 
  * @par Inputs:
  * @li indices: A tensor of type int64.
- * @li values: A tensor of type int32 or int64. 
+ * @li values: A tensor of type int32 or int64.
  * @li dense_shape: A tensor of type int64.
  * @li weights: A tensor of type int32 or int64 or float or double. \n
- 
+
  * @par Attributes:
- * @li minlength: An optional int >=-1. Defaults to -1. 
- * @li maxlength: An optional int >=-1. Defaults to -1. 
+ * @li minlength: An optional int >=-1. Defaults to -1.
+ * @li maxlength: An optional int >=-1. Defaults to -1.
  * @li binary_output: A required bool. \n
 
  * @par Outputs:
- * @li output_indices: A tensor of type int64. 
+ * @li output_indices: A tensor of type int64.
  * @li output_values: A tensor of the same type as "weights".
  * @li output_dense_shape: A tensor of type int64. \n
 
@@ -1512,7 +1512,7 @@ REG_OP(SparseCountSparseOutput)
 * @par Inputs:
 * @li splits: A Tensor of type int64. 1D int64 Tensor.
 * @li values: A Tensor. Must be one of the following types: int32, int64. 2D int Tensor.
-* @li size: A Tensor. Must have the same type as values. non-negative int scalar Tensor. 
+* @li size: A Tensor. Must have the same type as values. non-negative int scalar Tensor.
 * @li weights: A Tensor. Must be one of the following types: float32.
                is a float32 Tensor with the same shape as input,
                or a length-0 Tensor, in which case it acts as all weights equal to 1. \n

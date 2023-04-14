@@ -47,12 +47,14 @@ class DumpOp {
   void SetStreamId(uint32_t stream_id) {
     stream_id_ = stream_id;
   }
+  Status UpdateAddrs(const std::vector<uintptr_t> &input_addrs,
+                     const std::vector<uintptr_t> &output_addrs);
  private:
-  Status ExecutorDumpOp(const toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status ExecutorDumpOp();
   void DumpWorkspace(toolkit::aicpu::dump::Task &task);
   Status DumpOutput(toolkit::aicpu::dump::Task &task);
   Status DumpInput(toolkit::aicpu::dump::Task &task);
-  Status SetDumpModelName(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status SetDumpModelName();
 
   DumpProperties dump_properties_;
   OpDescPtr op_desc_;
@@ -62,6 +64,7 @@ class DumpOp {
 
   void *proto_dev_mem_ = nullptr;
   void *proto_size_dev_mem_ = nullptr;
+  toolkit::aicpu::dump::OpMappingInfo op_mapping_info_;
   rtStream_t stream_;
   uintptr_t global_step_ = 0U;
   uintptr_t loop_per_iter_ = 0U;

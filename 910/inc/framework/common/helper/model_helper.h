@@ -21,6 +21,7 @@
 #include <string>
 
 #include "framework/common/helper/om_file_helper.h"
+#include "framework/common/helper/model_save_helper.h"
 #include "common/model/ge_model.h"
 #include "common/model/ge_root_model.h"
 #include "framework/common/types.h"
@@ -29,17 +30,17 @@
 #include "common/op_so_store/op_so_store.h"
 
 namespace ge {
-class GE_FUNC_VISIBILITY ModelHelper {
+class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  public:
   ModelHelper() = default;
   ~ModelHelper();
 
   Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
-                       ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr);
+                       ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
   Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
                          const size_t mode_index, const bool is_dyn_root) const;
   Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
-                           ModelBufferData &model, const bool is_unknown_shape);
+                           ModelBufferData &model, const bool is_unknown_shape) override;
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
@@ -49,7 +50,7 @@ class GE_FUNC_VISIBILITY ModelHelper {
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
-  void SetSaveMode(const bool val) {
+  void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
 

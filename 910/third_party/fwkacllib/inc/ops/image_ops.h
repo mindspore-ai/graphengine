@@ -52,7 +52,7 @@ interpretted as channels, and must be three. Inputs include:
 * @li delta: A Tensor of type float. A float delta to add to the hue . \n
 
 *@par Outputs:
-*y: Images to adjust. Must be one of the following types:uint8, float16, float32.
+* y: Images to adjust. Must be one of the following types:uint8, float16, float32.
             At least 3-D. The format could be NHWC, NCHW or ND. \n
 
 *@par Attributes:
@@ -102,30 +102,38 @@ REG_OP(AdjustSaturation)
     .OP_END_FACTORY_REG(AdjustSaturation)
 
 /**
-*@brief Adjust the contrast of one or more images . \n
+* @brief Adjust the contrast of one or more images . \n
 
-*@par Inputs:
+* @par Inputs:
 *Input images is a tensor of at least 3 dimensions. The last 3 dimensions are
 interpreted as '[height, width, channels]'. Inputs include:
-*@li images: A Tensor of type float. Images to adjust. At least 3-D. The format
+* @li images: A Tensor of type float. Images to adjust. At least 3-D. The format
 must be NHWC.
-*@li scale: A Tensor of type float. A float multiplier for adjusting contrast . \n
+* @li contrast_factor: A Tensor of type float. A float multiplier for adjusting contrast . \n
 
-*@par Outputs:
-*y: A Tensor of type float. The format must be NHWC. \n
+* @par Outputs:
+* y: A Tensor of type float. The format must be NHWC. \n
 
-*@attention Constraints:
+* @par Attributes:
+
+* @li mean_mode: An optional string. Could be "chn_wise" or "chn_y". Defaults to "chn_wise".
+Value used for different mean mode.
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+Value used for inferring real format of images.
+* @attention Constraints:
 *Input images is a tensor of at least 3 dimensions. The last dimension is
 interpretted as channels, and must be three . \n
 
-*@par Third-party framework compatibility
-*Compatible with tensorflow AdjustContrast operator.
+* @par Third-party framework compatibility
+* Compatible with tensorflow AdjustContrast operator.
 */
 
 REG_OP(AdjustContrast)
-    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
     .INPUT(contrast_factor, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .ATTR(data_format, String, "HWC")
+    .ATTR(mean_mode, String, "chn_wise")
     .OP_END_FACTORY_REG(AdjustContrast)
 
 /**
@@ -534,8 +542,8 @@ REG_OP(ResizeBicubicGrad)
 
 *@par Inputs:
 *Input images must be a 4-D tensor. Inputs include:
-*@li images: 4-D with shape [batch, height, width, channels]. The format
-must be NHWC.
+*@li images: 4-D with shape [batch, height, width, channels] (format is NHWC) or
+[batch, channels, height, width] (format is NCHW).
 *@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new
 size for the images . \n
 
@@ -543,14 +551,16 @@ size for the images . \n
 *@li align_corners: If true, the centers of the 4 corner pixels of the input
 and output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false.
-*@li half_pixel_centers: An optional bool. Defaults to False . \n
+*@li half_pixel_centers: An optional bool. Defaults to False .
+*@li dtype: Determine the DataType of input tensor and output tensor,
+must be float (set value 0) or uint8 (set value 4) , defaults to float.\n
 
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels]. The format
-must be NHWC. \n
+*y: 4-D with shape [batch, height, width, channels] (format is NHWC) or
+[batch, channels, height, width] (format is NCHW). \n
 
 *@attention Constraints:
-*Input images can be of different types but output images are always float .
+*Input images can be of different types, output images must be float or uint8.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeBicubic operator.
@@ -560,9 +570,10 @@ REG_OP(ResizeBicubic)
     .INPUT(images, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
         DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .INPUT(size, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_UINT8, DT_FLOAT}))
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
+    .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(ResizeBicubic)
 
 /**
@@ -1074,7 +1085,7 @@ whether boxes overlap too much with respect to IOU.
 deciding when to remove boxes based on score . \n
 
 *@par Attributes:
-*offset: An optional int. Defaults to 0. \n
+* offset: An optional int. Defaults to 0. \n
 
 *@par Outputs:
 *selected_indices: A 1-D integer tensor of shape [M] representing the selected
@@ -1307,8 +1318,8 @@ REG_OP(DecodeBmp)
 *@li acceptable_fraction: An optional float. Defaults to 1. The minimum required
 fraction of lines before a truncated input is accepted.
 *@li dct_method: An optional string. Defaults to "". string specifying a hint
-*about the algorithm used for decompression. 
-*@li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
+* about the algorithm used for decompression.
+* @li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.
@@ -1879,11 +1890,11 @@ REG_OP(ResizeGrad)
 *@li ratio: An optional int. Defaults to 1. Downscaling ratio.
 *@li fancy_upscaling: An optional bool. Defaults to True. If true use a slower but nicer upscaling of the chroma planes
 *@li try_recover_truncated: An optional bool. Defaults to False. If true try to recover an image from truncated input.
-*@li acceptable_fraction: An optional float. Defaults to 1. 
+* @li acceptable_fraction: An optional float. Defaults to 1.
 * The minimum required fraction of lines before a truncated input is accepted.
-*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used 
+* @li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used
 * for decompression.
-*@li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
+* @li dst_img_format: An optional string. Format of the output, "HWC" or "CHW". Defaults to "HWC". \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.

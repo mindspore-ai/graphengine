@@ -1134,7 +1134,7 @@ REG_OP(Conv3DBackpropInput)
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
  * The length of filter_height axis and filter_width axis must be in [1, 255].
- * @li out_backprop: A 5-D Tensor. The type is float16. 
+ * @li out_backprop: A 5-D Tensor. The type is float16.
  * The format of the out_backprop tensor must be one of the followings:
  * [batch, out_depth, out_height, out_width, out_channels] or
  * [batch, out_channels, out_depth, out_height, out_width].

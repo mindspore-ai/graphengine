@@ -69,6 +69,12 @@ struct VarAddrMgr {
   OpDescPtr op_desc;
 };
 
+struct VarDevAddrMgr {
+  ge::GeTensorDesc tensor_desc;
+  const uint8_t *logic_addr;
+  uint8_t *dev_addr;
+};
+
 struct VarBroadCastInfo {
   std::string var_name;
   std::string broadcast_name;
@@ -94,6 +100,8 @@ class VarResource {
 
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **const dev_ptr,
                         rtMemType_t &memory_type) const;
+
+  Status GetFileConstantReuseAddr(const OpDescPtr &op_desc, uint8_t **const dev_ptr, rtMemType_t &memory_type) const;
 
   Status GetReuseAddr(const OpDescPtr &op_desc, uint8_t **const dev_ptr, rtMemType_t &memory_type) const;
 
@@ -143,6 +151,14 @@ class VarResource {
 
   rtMemType_t GetVarMemType(const int64_t &offset);
 
+  VarDevAddrMgr *GetVarMgrInfo(const int64_t offset);
+
+  std::unordered_map<uint64_t, VarDevAddrMgr> &GetAllVarMgrInfo() { return var_dev_addr_mgr_map_; }
+
+  ge::Status CheckLogicAddrVaild(uint8_t *const logic_addr, uint64_t &inner_offset_tmp, uint64_t &logic_addr_tmp);
+
+  Status SetVarMgrDevAddr(const int64_t offset, uint8_t *dev_addr);
+
   std::unordered_map<std::string, ge::GeTensorDesc> GetAllVarDesc() const { return cur_var_tensor_desc_map_; }
 
   void SetVarIsReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
@@ -167,6 +183,7 @@ class VarResource {
   std::unordered_map<std::string, VarAddrMgr> var_addr_mgr_map_;
   std::unordered_map<std::string, ge::GeTensorDesc> cur_var_tensor_desc_map_;
   std::unordered_map<std::string, std::vector<TransNodeInfo>> var_to_trans_road_;
+  std::unordered_map<uint64_t, VarDevAddrMgr> var_dev_addr_mgr_map_;
   std::map<std::string, uint32_t> var_names_to_changed_graph_id_;
   std::map<std::string, uint32_t> var_names_to_allocated_graph_id_;
   std::map<uint32_t, std::unordered_map<std::string, VarBroadCastInfo>> var_broad_cast_info_;
@@ -320,6 +337,9 @@ class VarManager {
   uint8_t *GetVarMemoryAddr(uint8_t *const logic_addr, const rtMemType_t memory_type,
                             const uint32_t device_id = kDefaultDeviceId);
 
+  uint8_t *GetAutoMallocVarAddr(uint8_t *const logic_addr, const rtMemType_t memory_type,
+                                const uint32_t device_id);
+
   uint8_t *GetRdmaPoolMemory(const rtMemType_t memory_type, const size_t mem_size);
   uint8_t *GetHostPoolMemory(const rtMemType_t memory_type, const size_t mem_size);
 
@@ -334,7 +354,8 @@ class VarManager {
   Status VarManagerToDeserial(const uint64_t session_id, const deployer::VarManagerInfo &info);
 
   void UpdateMemoryConfig(const size_t graph_mem_max_size, const size_t var_mem_max_size,
-                          const size_t var_mem_logic_base, const size_t use_max_mem_size);
+                          const size_t var_mem_logic_base, const size_t use_max_mem_size,
+                          const bool var_mem_auto_malloc);
 
   void SetBatchVariablesKeyName(const std::string &batch_var_name, const std::string &key_name);
 
@@ -344,7 +365,14 @@ class VarManager {
 
   bool IsVarResourceInited() const { return (var_resource_ != nullptr); }
 
+  void SetVarMemAutoMalloc(const bool is_set_flag) {
+    var_mem_auto_malloc_ = is_set_flag;
+  }
+
+  bool IsVarMemAutoMalloc() const { return var_mem_auto_malloc_; }
+
  private:
+  bool var_mem_auto_malloc_ = true;
   SessionVersion version_;
   uint64_t session_id_;
   uint32_t device_id_;

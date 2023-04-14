@@ -48,7 +48,7 @@ namespace ge {
 using GraphId = uint32_t;
 using ConstGraphPtr = std::shared_ptr<const ge::Graph>;
 
-constexpr uint64_t INVALID_SESSION_ID = 0xffffffffffffffffUL;
+constexpr uint64_t INVALID_SESSION_ID = 0xFFFFFFFFFFFFFFFFUL;
 constexpr uint32_t kMaxLoadNum = 8U;
 
 struct ModelIdInfo {

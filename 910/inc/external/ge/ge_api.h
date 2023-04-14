@@ -24,6 +24,7 @@
 #include "ge/ge_api_error_codes.h"
 #include "ge/ge_api_types.h"
 #include "ge/ge_data_flow_api.h"
+#include "ge/ge_continuous_tensor_list_api.h"
 #include "graph/graph.h"
 #include "graph/tensor.h"
 
@@ -124,6 +125,16 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief run a graph of the session with specific session id
+  /// @param [in] graphId graph id
+  /// @param [in] inputs input data list
+  /// @param [out] outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraph(uint32_t graph_id, const ContinuousTensorList &inputs, std::vector<Tensor> &outputs);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief run a graph of the session with specific session id and specific stream asynchronously
   /// @param [in] graph_id graph id
   /// @param [in] stream specific stream
@@ -156,6 +167,18 @@ class GE_FUNC_VISIBILITY Session {
   /// @return Status result of function
   ///
   Status RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief run graph in the session with specific session id asynchronously
+  /// @param [in] graphId: graph id
+  /// @param [in] inputs: input data list
+  /// @param [out] callback: callback while runing graph has been finished.
+  ///                        The callback function will not be checked.
+  ///                        Please ensure that the implementation of the function is trusted.
+  /// @return Status result of function
+  ///
+  Status RunGraphAsync(uint32_t graph_id, const ContinuousTensorList &inputs, RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph

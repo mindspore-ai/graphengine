@@ -112,6 +112,85 @@ extern HcclResult HcomSetGradFusionByIndex(const char *group, u32 segmentNum, co
  * @return HcclResult
  */
 extern HcclResult HcomSetGradFusionBySize(const char *group, u32 segmentNum, const float *sizeList);
+
+/**
+ * @brief optimizer offload CPU-side hcom init.
+ *
+ * @param rankTable A string identifying the rank table.
+ * @param rankId An integer(u32) identifying the number of rank id.
+ * @return HcclResult
+ */
+extern HcclResult HcomInitByRankTable(const char *rankTable, uint32_t rankId);
+
+/**
+ * @brief optimizer offload CPU-side hcom destroy.
+ *
+ * @return HcclResult
+ */
+extern HcclResult HcomDestroy(void);
+
+/**
+ * @brief optimizer offload CPU-side establish a link.
+ *
+ * @param op A pointer identifying the op desc.
+ * @param request A pointer identifying the link setup handle.
+ * @return HcclResult
+ */
+extern HcclResult HcomPrepareStart(const HcomOpDesc* op, HcomRequest* request);
+
+/**
+ * @brief optimizer offload CPU-side query link status.
+ *
+ * @param request A pointer identifying link setup handle.
+ * @param status A pointer identifying the link status.
+ * @return HcclResult
+ */
+extern HcclResult HcomPrepareQuery(HcomRequest request, HcomStatus* status);
+
+/**
+ * @brief optimizer offload CPU-side cancel a link.
+ *
+ * @param request A pointer identifying link setup handle.
+ * @param status A pointer identifying the link status.
+ * @return HcclResult
+ */
+extern HcclResult HcomPrepareCancel(HcomRequest request, HcomStatus* status);
+
+/**
+ * @brief optimizer offload CPU-side hcom send.
+ *
+ * @param buf A pointer identifying the send data buf.
+ * @param count An integer(uint64_t) identifying the send data cout.
+ * @param dataType  An integer identifying the send data type.
+ * @param peerRank An integer(uint32_t) identifying the send data peer rank.
+ * @param tag An integer(uint32_t) identifying the tag.
+ * @param group A pointer identifying the group name.
+ * @param flag An integer(uint64_t) identifying the flag.
+ * @return HcclResult
+ */
+extern HcclResult HcomSendByOS(void* buf, uint64_t count, HcclDataType dataType, uint32_t peerRank,
+    uint32_t tag, const char* group, uint64_t flag);
+
+/**
+ * @brief optimizer offload CPU-side hcom recv.
+ *
+ * @param buf A pointer identifying the recv data buf.
+ * @param count An integer(uint64_t) identifying the recv data cout.
+ * @param dataType  An integer identifying the redv data type.
+ * @param peerRank An integer(uint32_t) identifying the recv data peer rank.
+ * @param tag An integer(uint32_t) identifying the tag.
+ * @param group A pointer identifying the group name.
+ * @param flag An integer(uint64_t) identifying the flag.
+ * @return HcclResult
+ */
+extern HcclResult HcomReceiveByOS(void* buf, uint64_t count, HcclDataType dataType, uint32_t peerRank,
+    uint32_t tag, const char* group, uint64_t flag);
+
+extern HcclResult HcomGatherByOs(void* inputBuf, uint64_t inputCount, HcclDataType inputType, void* outputBuf,
+    uint64_t outputCount, HcclDataType outputType, int root, const char *group, uint64_t flag);
+
+extern HcclResult HcomBcastByOS(void* buf, uint64_t count, HcclDataType dataType, int root, const char *group,
+    uint64_t flag);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

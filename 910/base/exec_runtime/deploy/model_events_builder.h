@@ -51,7 +51,7 @@ class ModelEventsBuilder {
 
 class HcomExecUtils {
  public:
-  static std::string ToJson(const std::vector<EventNode> &evnet_nodes);
+  static std::string ToJson(const std::vector<EventNode> &event_nodes);
 };
 } // namespace ge
 

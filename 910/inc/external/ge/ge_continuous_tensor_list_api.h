@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include "graph/tensor.h"
+#include "ge_error_codes.h"
 
 namespace ge {
 class ContinuousTensorListImpl;

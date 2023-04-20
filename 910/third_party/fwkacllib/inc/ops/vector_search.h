@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2023. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,33 @@ REG_OP(TopKPQDistance)
     .REQUIRED_ATTR(k, Int)
     .REQUIRED_ATTR(group_size, Int)
     .OP_END_FACTORY_REG(TopKPQDistance)
+
+/**
+* @brief Finds values and indices of the "k" largest or least elements for the last dimension. \n
+*
+* @par Inputs:
+* Two inputs, including:
+* @li pq_distance: A Tensor, Will be updated after calculation. Must be one of the following types: float32, float16, 
+* int32. 
+* @li grouped_extreme_distance: A Tensor, the extremum in each group. Must be one of the following types: float32, 
+* float16, int32.
+*
+* @par Attributes:
+* @li order: A string, indicates the sorting method, Must be one of the following string: "ASC" or "DES". default 
+* is "ASC".
+* @li k: Int, k maximum or minimum values, required.
+* @li group_size: Int, the group size of the extremum, required.
+*
+*/
+REG_OP(TopKPQDistanceV2)
+    .INPUT(pq_distance, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(grouped_extreme_distance, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(topk_distance, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(topk_index, TensorType({DT_INT32}))
+    .ATTR(order, String, "ASC")
+    .REQUIRED_ATTR(k, Int)
+    .REQUIRED_ATTR(group_size, Int)
+    .OP_END_FACTORY_REG(TopKPQDistanceV2)
 
 /**
 * @brief Calculate PQ distance. \n

@@ -50,8 +50,8 @@ class SingleDiagnoseSwitch {
     }
     handler.on_event(handler.arg, GetEnableFlag());
   }
-  void UnregisterHandler(const void *key) {
-    std::lock_guard<std::mutex> lock(mutex_lock_);
+  void UnregisterHandler(const void * const key) {
+    const std::lock_guard<std::mutex> lock(mutex_lock_);
     (void)keys_to_handler_.erase(key);
   }
   size_t GetHandleSize() const {

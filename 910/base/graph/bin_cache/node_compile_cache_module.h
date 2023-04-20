@@ -33,7 +33,8 @@ namespace {
   constexpr char_t const *kAttrOpParamSize = "op_para_size";
   constexpr char_t const *kAttrAtomicOpParamSize = "atomic_op_para_size";
 }
-enum class KernelLaunchBinType {
+enum class KernelLaunchBinType : std::uint32_t
+{
   kStubFunc = 0, // after register with stub name
   kWithHandle, // register with handle
   kBinTypeEnd

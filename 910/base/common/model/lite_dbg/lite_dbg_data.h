@@ -30,7 +30,6 @@
 #include "proto/task.pb.h"
 #include "framework/common/tlv/lite_dbg_desc.h"
 
-using Status = domi::Status;
 namespace ge {
 struct LiteDbgOutputDesc {
   int32_t data_type;
@@ -96,13 +95,13 @@ struct LiteDbgOpDesc {
   std::vector<LiteDbgMemInfoDesc> mem_info_list;
 };
 
+namespace {
+constexpr size_t kAddrLength = sizeof(uint64_t);
+constexpr size_t kDumpL1FusionOpMByteSize = 2U * 1042U * 1024U;
+}
+
 class LiteDbgData {
  public:
-  enum {
-    kAddrLength = sizeof(uint64_t),
-    kDumpL1FusionOpMByteSize = 2U * 1042U * 1024U
-  };
-
   explicit LiteDbgData(const GeModelPtr &ge_model);
   ~LiteDbgData() = default;
   LiteDbgData &operator=(const LiteDbgData &dbg) = delete;
@@ -110,17 +109,17 @@ class LiteDbgData {
 
   Status Init();
 
-  const void *GetDbgData() {
+  const void *GetDbgData() const {
     return static_cast<const void *>(buff_.get());
   }
 
-  uint64_t GetDbgDataSize() {
+  uint64_t GetDbgDataSize() const {
     return static_cast<uint64_t>(buff_size_ - des_size_);
   }
 
  private:
   void InitNodes();
-  OpDescPtr GetOpByIndex(uint32_t index) const {
+  OpDescPtr GetOpByIndex(const uint32_t index) const {
     if (op_map_.find(index) == op_map_.end()) {
       return nullptr;
     }
@@ -129,27 +128,27 @@ class LiteDbgData {
 
   Status InitDbgData();
   Status AddDbgOp(const domi::TaskDef &task_def);
-  Status GenDbgInput(const GeTensorDesc &tensor_desc, LiteDbgInputDesc &dbg_input);
+  Status GenDbgInput(const GeTensorDesc &tensor_desc, LiteDbgInputDesc &dbg_input) const;
   Status AddDbgInput(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op);
-  Status GenDbgOutput(const GeTensorDesc &tensor_desc, LiteDbgOutputDesc &dbg_output);
+  Status GenDbgOutput(const GeTensorDesc &tensor_desc, LiteDbgOutputDesc &dbg_output) const;
   Status AddDbgOutput(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op);
-  Status AddDbgWorkspace(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op);
+  Status AddDbgWorkspace(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op) const;
   Status AddDbgBuffer(LiteDbgOpDesc &dbg_op);
-  Status AddDbgMemInfo(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op);
+  Status AddDbgMemInfo(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op) const;
 
   Status InitDbgTlv();
-  void GenInputDescLen(std::vector<LiteDbgInputDesc> &input_list);
-  void GenOutputDescLen(std::vector<LiteDbgOutputDesc> &output_list);
-  void GenWorkspaceDescLen(std::vector<LiteDbgWorkspaceDesc> &workspace_list);
+  void GenInputDescLen(const std::vector<LiteDbgInputDesc> &input_list);
+  void GenOutputDescLen(const std::vector<LiteDbgOutputDesc> &output_list);
+  void GenWorkspaceDescLen(const std::vector<LiteDbgWorkspaceDesc> &workspace_list);
   void GenDbgPartitionLen();
   Status SaveDbgHead();
-  Status SaveDbgStrTlv(string &str, uint16_t type);
-  Status SaveDbgVecTlv(std::vector<int64_t> &vec, uint16_t type);
-  Status SaveDbgMemInfoTlv(std::vector<LiteDbgMemInfoDesc> &mem_info_list);
-  Status SaveDbgBufTlv(std::vector<LiteDbgBufferDesc> &buffer_list);
-  Status SaveDbgInputDescTlv(std::vector<LiteDbgInputDesc> &input_list);
-  Status SaveDbgOutputDescTlv(std::vector<LiteDbgOutputDesc> &output_list);
-  Status SaveDbgWorkspaceDescTlv(std::vector<LiteDbgWorkspaceDesc> &workspace_list);
+  Status SaveDbgStrTlv(const string &str, const uint32_t type);
+  Status SaveDbgVecTlv(const std::vector<int64_t> &vec, const uint32_t type);
+  Status SaveDbgMemInfoTlv(const std::vector<LiteDbgMemInfoDesc> &mem_info_list);
+  Status SaveDbgBufTlv(const std::vector<LiteDbgBufferDesc> &buffer_list);
+  Status SaveDbgInputDescTlv(const std::vector<LiteDbgInputDesc> &input_list);
+  Status SaveDbgOutputDescTlv(const std::vector<LiteDbgOutputDesc> &output_list);
+  Status SaveDbgWorkspaceDescTlv(const std::vector<LiteDbgWorkspaceDesc> &workspace_list);
   Status SaveDbgL1Tlv();
   Status SaveDbgPartition();
 

@@ -89,7 +89,7 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
 
 #define GEEVENT(fmt, ...)                                                                        \
   do {                                                                                           \
-    dlog_event((RUN_LOG_MASK | GE_MODULE_NAME), "%" PRIu64 " %s:" fmt, GeLog::GetTid(),          \
+    dlog_event((RUN_LOG_MASK | static_cast<uint32_t>(GE_MODULE_NAME)), "%" PRIu64 " %s:" fmt, GeLog::GetTid(),      \
         &__FUNCTION__[0], ##__VA_ARGS__);                                                        \
     if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {                                                \
       dlog_info(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
@@ -122,6 +122,14 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
       GELOGI("MallocMemory, func=%s, size=%" PRIu64 ", purpose=%s", (#FUNC), static_cast<size_t>(SIZE), (PURPOSE)); \
     }                                                                                                       \
   } while (false)
+
+#define GELOG_DEPRECATED(option)                                                                                \
+  do {                                                                                                          \
+    std::cout << "[WARNING][GE] Option " << (option) << " is deprecated and will be removed in future version." \
+                 " Please do not configure this option in the future." << std::endl;                            \
+  } while (false)
+
+
 #ifdef __cplusplus
 }
 #endif

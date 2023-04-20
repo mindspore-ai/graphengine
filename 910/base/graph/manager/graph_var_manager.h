@@ -46,7 +46,7 @@ constexpr uint64_t kUseMaxMemorySize = kGraphMemoryManagerMallocMaxSize + kMemor
 constexpr uint64_t kGraphMemoryBuffer = 34359738368U; // 32UL * 1024UL * 1024UL * 1024UL;
 constexpr uint64_t kMaxMemorySize = 274877906944U; // 256UL * 1024UL * 1024UL * 1024UL;
 constexpr char_t kEnvGeuseStaticMemory[] = "GE_USE_STATIC_MEMORY";
-const char_t *const kOptionExecGeUseStaticMemory = "GE_USE_STATIC_MEMORY";
+constexpr char_t kOptionExecGeUseStaticMemory[] = "GE_USE_STATIC_MEMORY";
 constexpr uint64_t kSessionMemAlignSize = 512U;
 constexpr size_t kSessionMemAlignUnit = 2U;
 constexpr float64_t kGraphMemoryManagerMallocRatio = 26.0 / 32.0;
@@ -55,7 +55,8 @@ constexpr float64_t kMaxMemorySizeRatio = (26.0 + 5.0) / 32.0;
 constexpr uint32_t kDefaultDeviceId = 0U;
 const std::string kFeatureMemoryKey = std::to_string(0) + "_f";
 
-enum class SessionVersion {
+enum class SessionVersion : std::int32_t
+{
   ClOUD_VERSION = 0,
   MINI_VERSION = 1,
   OTHER_VERSION = 2,
@@ -147,15 +148,15 @@ class VarResource {
 
   bool IsVarExist(const std::string &var_name) const;
 
-  bool IsVarAddr(const int64_t &offset) const;
+  bool IsVarAddr(const int64_t offset) const;
 
-  rtMemType_t GetVarMemType(const int64_t &offset);
+  rtMemType_t GetVarMemType(const int64_t offset);
 
   VarDevAddrMgr *GetVarMgrInfo(const int64_t offset);
 
   std::unordered_map<uint64_t, VarDevAddrMgr> &GetAllVarMgrInfo() { return var_dev_addr_mgr_map_; }
 
-  ge::Status CheckLogicAddrVaild(uint8_t *const logic_addr, uint64_t &inner_offset_tmp, uint64_t &logic_addr_tmp);
+  ge::Status CheckLogicAddrVaild(const uint8_t *const logic_addr, uint64_t &inner_offset_tmp, uint64_t &logic_addr_tmp);
 
   Status SetVarMgrDevAddr(const int64_t offset, uint8_t *dev_addr);
 
@@ -206,11 +207,11 @@ class MemResource {
 
  private:
   MemResource(MemResource const &) = delete;
-  MemResource &operator=(MemResource const &) = delete;
+  MemResource &operator=(MemResource const &) & = delete;
 
  protected:
-  uint64_t total_size_;
-  uint64_t var_mem_size_;
+  uint64_t total_size_ = 0U;
+  uint64_t var_mem_size_ = 0U;
 };
 
 class HbmMemResource : public MemResource {
@@ -328,16 +329,16 @@ class VarManager {
 
   bool IsVarExist(const std::string &var_name) const;
 
-  bool IsVarAddr(const int64_t &offset) const;
+  bool IsVarAddr(const int64_t offset) const;
 
-  rtMemType_t GetVarMemType(const int64_t &offset);
+  rtMemType_t GetVarMemType(const int64_t offset);
 
   uint8_t *GetVarMemoryBase(const rtMemType_t memory_type, const uint32_t device_id = kDefaultDeviceId);
 
   uint8_t *GetVarMemoryAddr(uint8_t *const logic_addr, const rtMemType_t memory_type,
                             const uint32_t device_id = kDefaultDeviceId);
 
-  uint8_t *GetAutoMallocVarAddr(uint8_t *const logic_addr, const rtMemType_t memory_type,
+  uint8_t *GetAutoMallocVarAddr(const uint8_t *const logic_addr, const rtMemType_t memory_type,
                                 const uint32_t device_id);
 
   uint8_t *GetRdmaPoolMemory(const rtMemType_t memory_type, const size_t mem_size);
@@ -373,14 +374,14 @@ class VarManager {
 
  private:
   bool var_mem_auto_malloc_ = true;
-  SessionVersion version_;
+  SessionVersion version_ = SessionVersion::OTHER_VERSION;
   uint64_t session_id_;
-  uint32_t device_id_;
-  uint64_t job_id_;
-  uint64_t graph_mem_max_size_;
-  uint64_t var_mem_max_size_;
-  uint64_t var_mem_logic_base_;
-  uint64_t use_max_mem_size_;
+  uint32_t device_id_ = kDefaultDeviceId;
+  uint64_t job_id_ = 0U;
+  uint64_t graph_mem_max_size_ = kGraphMemoryManagerMallocMaxSize;
+  uint64_t var_mem_max_size_ = kMemoryVarManagerMallocSize;
+  uint64_t var_mem_logic_base_ = kMemoryVarLogicBase;
+  uint64_t use_max_mem_size_ = kUseMaxMemorySize;
   std::shared_ptr<ge::VarResource> var_resource_;
   std::map<rtMemType_t, std::shared_ptr<MemResource>> mem_resource_map_;
   mutable std::recursive_mutex mutex_;

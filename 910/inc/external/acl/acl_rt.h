@@ -53,7 +53,7 @@ typedef enum aclrtEventRecordedStatus {
 typedef enum aclrtEventWaitStatus {
     ACL_EVENT_WAIT_STATUS_COMPLETE  = 0,
     ACL_EVENT_WAIT_STATUS_NOT_READY = 1,
-    ACL_EVENT_WAIT_STATUS_RESERVED  = 0xffff,
+    ACL_EVENT_WAIT_STATUS_RESERVED  = 0xFFFF,
 } aclrtEventWaitStatus;
 
 typedef enum aclrtCallbackBlockType {

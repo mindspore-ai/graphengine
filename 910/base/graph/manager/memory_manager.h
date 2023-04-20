@@ -28,7 +28,7 @@ class MemoryManager {
   virtual ~MemoryManager() = default;
 
   MemoryManager(const MemoryManager &) = delete;
-  MemoryManager &operator=(const MemoryManager &) = delete;
+  MemoryManager &operator=(const MemoryManager &) & = delete;
 
   virtual uint8_t *MallocMemory(rtMemType_t memory_type, const std::string &purpose, const std::string &memory_key,
                                 size_t memory_size, uint32_t device_id) = 0;

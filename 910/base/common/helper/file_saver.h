@@ -57,7 +57,7 @@ class FileSaver {
 
   static void PrintModelSaveLog();
 
-  static void SetHostPlatformParamInitialized(bool host_platform_param_initialized) {
+  static void SetHostPlatformParamInitialized(const bool host_platform_param_initialized) {
     host_platform_param_initialized_ = host_platform_param_initialized;
   }
 

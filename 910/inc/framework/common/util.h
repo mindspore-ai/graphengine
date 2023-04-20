@@ -258,6 +258,14 @@ GE_FUNC_VISIBILITY extern int64_t GetFileLength(const std::string &input_file);
 /// @return true success
 GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char_t *const file_name, char_t **const buffer, int32_t &length);
 
+///@ingroup domi_common
+/// @brief  Get binary file from file
+/// @param [in] path  file path.
+/// @param [out] buffer char[] used to store file data
+/// @param [out] data_len store read size
+/// @return graphStatus GRAPH_SUCCESS: success, OTHERS: fail
+GE_FUNC_VISIBILITY graphStatus GetBinFromFile(const std::string &path, char_t *buffer, size_t &data_len);
+
 /// @ingroup domi_common
 /// @brief Recursively Creating a Directory
 /// @param [in] directory_path  Path, which can be a multi-level directory.

@@ -27,27 +27,27 @@ class ExternalWeightManager {
  public:
   static ExternalWeightManager &GetInstance();
 
-  ~ExternalWeightManager();
+  ~ExternalWeightManager() = default;
 
-  bool CanReuseExternalWeight(std::string &file_name, const uint8_t *data, const size_t data_length);
+  bool CanReuseExternalWeight(std::string &file_name, const uint8_t *const data, const size_t data_length);
 
   bool IsWeightExist(std::string &file_name);
 
-  void RemoveExternalWeightFile(const std::string &file_name);
+  bool IsWeightLoaded(const std::string &file_name);
 
-  std::set<std::string> &GetExternalWeightFiles();
+  void SetWeightLoaded(const std::string &file_name);
 
-  void Destroy() noexcept;
+  void Finalize() noexcept;
 
  private:
   ExternalWeightManager() = default;
 
-  static bool CheckFilesSame(const std::string &exist_file_name,
+  static bool CheckFilesSame(const std::string &file_name,
                              const uint8_t *data,
                              const size_t data_length);
 
   std::mutex mutex_;
-  std::set<std::string> external_weight_files_;
+  std::set<std::string> loaded_external_weight_files;
   std::map<size_t, std::vector<std::string>> hash_to_files_;
   std::map<std::string, std::string> file_to_exist_file_;
 };

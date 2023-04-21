@@ -19,13 +19,13 @@
 #include "external/graph/types.h"
 
 namespace ge {
-extern const char_t* kAttrNameSingleOpType;
+constexpr char const *kAttrNameSingleOpType = "GE_INNER_SINGLE_OP_TYPE";
 // profiling name
-extern const char_t *const kProfilingDeviceConfigData;
-extern const char_t *const kProfilingIsExecuteOn;
+constexpr char const *kProfilingDeviceConfigData = "PROFILING_DEVICE_CONFIG_DATA";
+constexpr char const *kProfilingIsExecuteOn = "PROFILING_IS_EXECUTE_ON";
 // helper option
-extern const char_t *const kHostMasterPidName;
-extern const char_t *const kExecutorDevId;
+constexpr char const *kHostMasterPidName = "HOST_MASTER_PID";
+constexpr char const *kExecutorDevId = "EXECUTOR_DEVICE_ID";
 // runtime 2.0
 constexpr char const *kRequestWatcher = "_request_watcher";
 constexpr char const *kWatcherAddress = "_watcher_address";

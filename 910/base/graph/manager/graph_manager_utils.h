@@ -48,7 +48,7 @@ namespace ge {
 using GraphId = uint32_t;
 using ConstGraphPtr = std::shared_ptr<const ge::Graph>;
 
-constexpr uint64_t INVALID_SESSION_ID = 0xFFFFFFFFFFFFFFFFUL;
+constexpr uint64_t INVALID_SESSION_ID = 0xFFFFFFFFFFFFFFFFULL;
 constexpr uint32_t kMaxLoadNum = 8U;
 
 struct ModelIdInfo {
@@ -205,8 +205,8 @@ class GraphModelListener : public ge::ModelListener {
   Status ResetResult() override;
 
  private:
-  uint32_t result_code_;
-  bool is_finished_;
+  uint32_t result_code_ = 0U;
+  bool is_finished_ = false;
 
   std::mutex mutex_;
   std::condition_variable condition_;

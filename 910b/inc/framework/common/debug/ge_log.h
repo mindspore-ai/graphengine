@@ -122,6 +122,14 @@ inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
       GELOGI("MallocMemory, func=%s, size=%" PRIu64 ", purpose=%s", (#FUNC), static_cast<size_t>(SIZE), (PURPOSE)); \
     }                                                                                                       \
   } while (false)
+
+#define GELOG_DEPRECATED(option)                                                                                \
+  do {                                                                                                          \
+    std::cout << "[WARNING][GE] Option " << (option) << " is deprecated and will be removed in future version." \
+                 " Please do not configure this option in the future." << std::endl;                            \
+  } while (false)
+
+
 #ifdef __cplusplus
 }
 #endif

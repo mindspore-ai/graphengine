@@ -21,9 +21,9 @@
 
 namespace ge {
 
-const int32_t CC_FUSION_OP_MAX = 32;
+constexpr int32_t CC_FUSION_OP_MAX = 32;
 
-enum class ccStatus_t {
+enum class ccStatus_t : uint32_t {
   CC_STATUS_SUCCESS = 0,         /**< succ */
   CC_STATUS_NOT_INITIALIZED = 1, /**< not init */
   CC_STATUS_ALLOC_FAILED = 2,    /**< alloc mem failed */
@@ -36,7 +36,7 @@ enum class ccStatus_t {
   CC_STATUS_RESERVED      = 8,   /**< just for check */
 };
 
-enum class ccKernelType {
+enum class ccKernelType : uint32_t {
   CCE_AI_CORE = 0, /* cce aicore */
   CCE_AI_CPU = 1,  /* cce aicpu */
   TE = 2,          /* te operator */
@@ -69,13 +69,13 @@ using ccOpContext = struct tagOpContext {
   uint64_t l2ctrlSize;
 };
 
-enum class tagOpTensorFormat {
+enum class tagOpTensorFormat : uint32_t {
   OP_TENSOR_FORMAT_NC1HWC0 = 0,
   OP_TENSOR_FORMAT_ND,
   OP_TENSOR_FORMAT_RESERVED
 };
 
-enum class tagOpDataType {
+enum class tagOpDataType : uint32_t {
   OP_DATA_FLOAT = 0,            /**< float type */
   OP_DATA_HALF,                 /**< fp16 type */
   OP_DATA_INT8,                 /**< int8 type */

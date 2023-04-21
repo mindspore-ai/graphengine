@@ -54,7 +54,7 @@ typedef enum {
 * Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of other processes
 *
-* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param phyDeviceId [IN] type #unsigned int. Physical device ID
 * @param rankSize [IN] type #unsigned int. The rankSize of the training.
 * The default value is 1. When rankSize is greater than 1,
 * HCCP will be pulled to perform set communication related operations.
@@ -66,7 +66,7 @@ typedef enum {
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t logicDeviceId, const uint32_t rankSize);
+TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t phyDeviceId, const uint32_t rankSize);
 
 /**
 * @ingroup Open
@@ -77,7 +77,7 @@ TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t logicDeviceId, const uint32_t ran
 * Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of other processes
 *
-* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param phyDeviceId [IN] type #unsigned int. Physical device ID
 * @param rankSize [IN] type #unsigned int. The rankSize of the training.
 * The default value is 1. When rankSize is greater than 1,
 * HCCP will be pulled to perform set communication related operations.
@@ -89,7 +89,7 @@ TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t logicDeviceId, const uint32_t ran
 * @par Dependency
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t logicDeviceId, const uint32_t rankSize, const uint32_t deviceMode);
+TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t phyDeviceId, const uint32_t rankSize, const uint32_t deviceMode);
 
 /**
 * @ingroup InitialQs
@@ -100,7 +100,7 @@ TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t logicDeviceId, const uint32_t r
 * Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of other processes
 *
-* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param phyDeviceId [IN] type #unsigned int. Physical device ID
 * @param groupName [IN] type #char pointer. qs group name send by host process
 * @retval TDT_OK Success
 * @retval OtherValues Failure
@@ -110,7 +110,7 @@ TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t logicDeviceId, const uint32_t r
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT uint32_t TsdInitQs(const uint32_t logicDeviceId, const char_t * const groupName = nullptr);
+TDT_LIB_EXPORT uint32_t TsdInitQs(const uint32_t phyDeviceId, const char_t * const groupName = nullptr);
 
 /**
 * @ingroup InitFlowGw
@@ -121,7 +121,7 @@ TDT_LIB_EXPORT uint32_t TsdInitQs(const uint32_t logicDeviceId, const char_t * c
 * Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of other processes
 *
-* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @param phyDeviceId [IN] type #unsigned int. Physical device ID
 * @param initInfo [IN] type #InitFlowGwInfo pointer. Initialization parameters
 * @retval TDT_OK Success
 * @retval OtherValues Failure
@@ -131,7 +131,7 @@ TDT_LIB_EXPORT uint32_t TsdInitQs(const uint32_t logicDeviceId, const char_t * c
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT uint32_t TsdInitFlowGw(const uint32_t logicDeviceId, const InitFlowGwInfo * const initInfo);
+TDT_LIB_EXPORT uint32_t TsdInitFlowGw(const uint32_t phyDeviceId, const InitFlowGwInfo * const initInfo);
 
 /**
 * @ingroup Close
@@ -150,7 +150,7 @@ TDT_LIB_EXPORT uint32_t TsdInitFlowGw(const uint32_t logicDeviceId, const InitFl
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT uint32_t TsdClose(const uint32_t logicDeviceId);
+TDT_LIB_EXPORT uint32_t TsdClose(const uint32_t phyDeviceId);
 
 /**
 * @ingroup UpdateProfilingMode
@@ -168,7 +168,7 @@ TDT_LIB_EXPORT uint32_t TsdClose(const uint32_t logicDeviceId);
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT uint32_t UpdateProfilingMode(const uint32_t logicDeviceId, const uint32_t flag);
+TDT_LIB_EXPORT uint32_t UpdateProfilingMode(const uint32_t phyDeviceId, const uint32_t flag);
 
 /**
 * @ingroup TsdSetMsprofReporterCallback
@@ -215,22 +215,22 @@ TDT_LIB_EXPORT uint32_t TsdSetAttr(const char * const attrKey, const char * cons
 * @retval TDT_OK Success
 * @retval OtherValues Failure
 */
-TDT_LIB_EXPORT uint32_t TsdCapabilityGet(const uint32_t logicDeviceId, const int32_t type, const uint64_t ptr);
+TDT_LIB_EXPORT uint32_t TsdCapabilityGet(const uint32_t phyDeviceId, const int32_t type, const uint64_t ptr);
 
 
 /**
 * @ingroup GetHdcConctStatus
 * @brief used to get hdc connection status
 *
-* @par logicDeviceId
-* logic device id
+* @par phyDeviceId
+* Physical device id
 *
 * @par hdcSessStat
 * hdc session status, DRV_ERROR_SOCKET_CONNECT or DRV_ERROR_SOCKET_CLOSE
 * @retval TDT_OK Success
 * @retval OtherValues Failure
 */
-TDT_LIB_EXPORT uint32_t GetHdcConctStatus(const uint32_t logicDeviceId, int32_t *hdcSessStat);
+TDT_LIB_EXPORT uint32_t GetHdcConctStatus(const uint32_t phyDeviceId, int32_t *hdcSessStat);
 
 #ifdef __cplusplus
 }

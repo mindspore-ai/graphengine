@@ -54,7 +54,6 @@ enum {
   kAclMatchStaticOpModel,
   kAclMatchDynamicOpModel,
   kAclExecuteAsync,
-  kAclExecuteSync,
   kAclLoadSingleOp,
   kAclBuildOpModel,
   kStaticSingleOpExecute,

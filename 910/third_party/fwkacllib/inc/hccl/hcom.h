@@ -5,8 +5,8 @@
  * Create: 2019-01-16
  */
 
-#ifndef HCOM_H_
-#define HCOM_H_
+#ifndef HCOM_H
+#define HCOM_H
 
 #include <hccl/base.h>
 #include <hccl/hccl_types.h>
@@ -17,14 +17,12 @@
 extern "C" {
 #endif // __cplusplus
 
-
-
 /**
  * @brief Get the rank number in the group.
  *
  * @param group A string identifying the group name.
  * @param rankSize A pointer identifying the rank number.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomGetRankSize(const char *group, u32 *rankSize);
 
@@ -33,7 +31,7 @@ HcclResult HcomGetRankSize(const char *group, u32 *rankSize);
  *
  * @param group A string identifying the group name.
  * @param localRankSize A pointer identifying the rank number.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomGetLocalRankSize(const char *group, u32 *localRankSize);
 
@@ -42,7 +40,7 @@ HcclResult HcomGetLocalRankSize(const char *group, u32 *localRankSize);
  *
  * @param group A string identifying the group name.
  * @param rankId A pointer identifying the rank id.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomGetRankId(const char *group, u32 *rankId);
 
@@ -51,7 +49,7 @@ HcclResult HcomGetRankId(const char *group, u32 *rankId);
  *
  * @param group A string identifying the group name.
  * @param localRankId A pointer identifying the local rank id.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomGetLocalRankId(const char *group, u32 *localRankId);
 
@@ -61,7 +59,7 @@ HcclResult HcomGetLocalRankId(const char *group, u32 *localRankId);
  * @param group A string identifying the group name.
  * @param groupRank An integer(u32) identifying the group rank id.
  * @param worldRank A pointer identifying the world rank id.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomGetWorldRankFromGroupRank(const char *group, u32 groupRank, u32 *worldRank);
 
@@ -71,7 +69,7 @@ HcclResult HcomGetWorldRankFromGroupRank(const char *group, u32 groupRank, u32 *
  * @param worldRank An integer(u32) identifying the world rank id.
  * @param group A string identifying the group name.
  * @param groupRank A pointer identifying the group rank id.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomGetGroupRankFromWorldRank(u32 worldRank, const char *group, u32 *groupRank);
 
@@ -81,7 +79,7 @@ HcclResult HcomGetGroupRankFromWorldRank(u32 worldRank, const char *group, u32 *
  * @param group A string identifying the group name.
  * @param rankNum An integer(u32) identifying the number of ranks in the group.
  * @param rankIds A list identifying the ranks in the group.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomCreateGroup(const char *group, u32 rankNum, u32 *rankIds);
 
@@ -89,7 +87,7 @@ HcclResult HcomCreateGroup(const char *group, u32 rankNum, u32 *rankIds);
  * @brief Destroy group
  *
  * @param group A string identifying the group name.
- * @return HcclResult 
+ * @return HcclResult
  */
 HcclResult HcomDestroyGroup(const char *group);
 
@@ -194,4 +192,4 @@ extern HcclResult HcomBcastByOS(void* buf, uint64_t count, HcclDataType dataType
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif // HCOM_H_
+#endif // HCOM_H

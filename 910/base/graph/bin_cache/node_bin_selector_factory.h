@@ -26,20 +26,20 @@ namespace ge {
 class NodeBinSelectorFactory {
  public:
   static NodeBinSelectorFactory &GetInstance();
-  NodeBinSelector *GetNodeBinSelector(NodeBinMode node_bin_type);
+  NodeBinSelector *GetNodeBinSelector(const fuzz_compile::NodeBinMode node_bin_type);
 
   template <typename T>
   class Register {
    public:
-    explicit Register(const NodeBinMode node_bin_mode) {
-      if (node_bin_mode < kNodeBinModeEnd) {
+    explicit Register(const fuzz_compile::NodeBinMode node_bin_mode) {
+      if (node_bin_mode < fuzz_compile::kNodeBinModeEnd) {
         NodeBinSelectorFactory::GetInstance().selectors_[node_bin_mode] = MakeUnique<T>();
       }
     }
 
     template<typename... Args>
-    Register(const NodeBinMode node_bin_mode, Args... args) {
-      if (node_bin_mode < kNodeBinModeEnd) {
+    Register(const fuzz_compile::NodeBinMode node_bin_mode, Args... args) {
+      if (node_bin_mode < fuzz_compile::kNodeBinModeEnd) {
         NodeBinSelectorFactory::GetInstance().selectors_[node_bin_mode] = MakeUnique<T>(args...);
       }
     }
@@ -47,7 +47,7 @@ class NodeBinSelectorFactory {
 
  private:
   NodeBinSelectorFactory();
-  std::array<std::unique_ptr<NodeBinSelector>, kNodeBinModeEnd> selectors_;
+  std::array<std::unique_ptr<NodeBinSelector>, fuzz_compile::kNodeBinModeEnd> selectors_;
 };
 }  // namespace ge
 

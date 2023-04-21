@@ -702,6 +702,36 @@ REG_OP(EmbeddingApplyAdaGrad)
     .OP_END_FACTORY_REG(EmbeddingApplyAdaGrad)
 
 /**
+* @brief embedding compute var export. \n
+
+* @par Inputs:
+* @li file_path: A String, indicates the export file path.
+* @li ps_id: A Int, dtype is int32, indicates the ps server id.
+* @li table_id: A Int, dtype is int32, indicates the hashtable id.
+
+*/
+REG_OP(EmbeddingComputeVarExport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(ps_id, TensorType({DT_INT32}))
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingComputeVarExport)
+
+/**
+* @brief embedding compute var import. \n
+
+* @par Inputs:
+* @li file_path: A String, indicates the import file path.
+* @li ps_id: A Int, dtype is int32, indicates the ps server id.
+* @li table_id: A Int, dtype is int32, indicates the hashtable id.
+
+*/
+REG_OP(EmbeddingComputeVarImport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(ps_id, TensorType({DT_INT32}))
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingComputeVarImport)
+
+/**
 * @brief Computes the output as scale * (x + bias) if x+bias > 0 and scale * negative_slope * (x+bias)
 * if x+bias <= 0 . \n
 
@@ -1199,6 +1229,76 @@ REG_OP(Voxelization)
     .ATTR(max_voxels, Int, 20000)
     .ATTR(deterministic, Bool, true)
     .OP_END_FACTORY_REG(Voxelization)
+
+/**
+ * @brief Encoding the orientation information and generating orientation-sensitive features. \n
+
+ * @par Inputs:
+ * Two inputs, including:
+ * @li x: Input features with shape [num_output_planes, num_input_planes, num_orientations, H, W]. 
+ * @li indices: Indices with shape [num_orientations, H, W, num_rotations]. \n
+
+ * @par Outputs:
+ * One output, including:
+ * @li y: Refined features with shape [num_output_planes * num_rotations, num_input_planes * num_orientations, H, W]. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the mmcv operator ActiveRotatedFilter.\n
+ */
+REG_OP(ActiveRotatedFilter)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .INPUT(indices, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .OP_END_FACTORY_REG(ActiveRotatedFilter)
+
+/**
+ * @brief The backward of ActiveRotatedFilter. \n
+
+ * @par Inputs:
+ * Two inputs, including:
+ * @li y_grad: Input features with shape [num_output_planes * num_rotations, num_input_planes * num_orientations, H, W].
+ * @li indices: Indices with shape [num_orientations, H, W, num_rotations]. \n
+
+ * @par Outputs:
+ * One output, including:
+ * @li x_grad: Refined features with shape [num_output_planes, num_input_planes, num_orientations, H, W]. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the mmcv operator ActiveRotatedFilterGrad.\n
+ */
+REG_OP(ActiveRotatedFilterGrad)
+    .INPUT(y_grad, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .INPUT(indices, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .OP_END_FACTORY_REG(ActiveRotatedFilterGrad)
+
+/**
+* @brief Blend face iamge to the backgroud.
+*
+* @par Inputs:
+* @li face_img: A 3D Tensor, dtype is uint8 or float32, shape is (h, w, 3). The input face image.
+* @li face_rect: A 1D Tensor, dtype is int32, shape is (4,). The coordinates of the face image in the backgroud.
+* @li face_mask: A 3D Tensor, dtype is float32, shape is (h, w, 1).
+* @li acc_face: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li acc_mask: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li max_mask: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+*
+* @par Outputs:
+* @li acc_face: A 3D Tensor, Has the same type and shape as input "acc_face".
+* @li acc_mask: A 3D Tensor, Has the same type and shape as input "acc_mask".
+* @li max_mask: A 3D Tensor, Has the same type and shape as input "max_mask". \n
+*/
+REG_OP(BlendFaceBgPartOne)
+    .INPUT(face_img, TensorType({DT_UINT8, DT_FLOAT}))
+    .INPUT(face_rect, TensorType({DT_INT32}))
+    .INPUT(face_mask, TensorType({DT_FLOAT}))
+    .INPUT(acc_face, TensorType({DT_FLOAT}))
+    .INPUT(acc_mask, TensorType({DT_FLOAT}))
+    .INPUT(max_mask, TensorType({DT_FLOAT}))
+    .OUTPUT(acc_face, TensorType({DT_FLOAT}))
+    .OUTPUT(acc_mask, TensorType({DT_FLOAT}))
+    .OUTPUT(max_mask, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(BlendFaceBgPartOne)
 
 /**
 * @brief Convert the image from YUV to Raw.

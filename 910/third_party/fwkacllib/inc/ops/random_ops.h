@@ -446,6 +446,9 @@ REG_OP(RandomUniform)
 are set to be non-zero, the random number generator is seeded by the given 
 seed. Otherwise, it is seeded by a random seed.
 *@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
+* @li dtype: A type from: float16, float32, double. The default type is float32.
+* The corresponding relationshape between the enumeration values and real output type is :
+* 0(float32), 1(float16), 11(double).
 
 *@par Outputs:
 *y: A Tensor of types: float16, float32, double . A tensor of the specified shape
@@ -462,6 +465,7 @@ REG_OP(TruncatedNormal)
     .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
+    .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(TruncatedNormal)
 
 /**
@@ -514,7 +518,7 @@ include:
 *The output is aligned with 16
 
 *@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 
 *@see DropOutGenMaskV3()
 */

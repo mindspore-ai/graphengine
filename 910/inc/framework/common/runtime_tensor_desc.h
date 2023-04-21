@@ -30,7 +30,8 @@ struct RuntimeTensorDesc {
   int64_t original_shape[kMaxDimSize + 1]; // original_shape:Dim_Num|DIM0|DIM1|...|DIM31
   int64_t format;
   int64_t sub_format;
-  uint8_t reserved[456]; // padding to 1024 bytes
+  uint64_t data_size;
+  uint8_t reserved[448]; // padding to 1024 bytes
 };
 #pragma pack(pop)
 }  // namespace ge

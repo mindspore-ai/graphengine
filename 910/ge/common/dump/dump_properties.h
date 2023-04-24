@@ -32,7 +32,7 @@ class DumpProperties {
 
   DumpProperties(const DumpProperties &dump);
 
-  DumpProperties &operator=(const DumpProperties &dump);
+  DumpProperties &operator=(const DumpProperties &dump) &;
 
   Status InitByOptions();
 
@@ -84,7 +84,7 @@ class DumpProperties {
 
   bool IsSingleOpNeedDump() const;
 
-  void SetOpDebugMode(const uint32_t &op_debug_mode);
+  void SetOpDebugMode(const uint32_t op_debug_mode);
 
   uint32_t GetOpDebugMode() const { return op_debug_mode_; }
 

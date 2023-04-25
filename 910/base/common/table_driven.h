@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <utility>
+#include <array>
 
 namespace gert {
 template <size_t DIM1, size_t DIM2, typename TE>
@@ -58,7 +59,7 @@ class TableDriven2 {
 
  private:
   TE default_value_;
-  TE elements_[DIM1][DIM2];
+  std::array<std::array<TE, DIM2>, DIM1> elements_;
 };
 }  // namespace gert
 #endif  // AIR_CXX_RUNTIME_V2_OP_IMPL_TABLE_DRIVEN_H_

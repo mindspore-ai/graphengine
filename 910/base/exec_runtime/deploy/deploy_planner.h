@@ -67,6 +67,16 @@ class DeployPlan {
     uint32_t rank_id;
   };
 
+  struct EventInfo {
+    std::string name;
+    std::string model_instance_name;
+    std::string group_name;
+    std::string event_type;
+    int32_t tag;
+    int32_t logic_peer_rank;
+    int32_t peer_rank;
+  };
+
   enum class ProcessMode {
     kProcess,
     kThread
@@ -94,6 +104,8 @@ class DeployPlan {
     std::vector<int32_t> output_queue_indices;
     std::vector<int32_t> control_output_queue_indices;
     std::map<std::string, std::string> attrs;
+    // sync event info, to be unify to input_queue_indices/output_queue_indices
+    std::vector<std::shared_ptr<EventInfo>> event_infos;
     // key:invoke key
     std::map<std::string, InvokedModelQueueInfo> invoked_model_queue_infos;
   };
@@ -124,6 +136,7 @@ class DeployPlan {
   friend class DeployPlannerBase;
   std::string model_name_;
   std::vector<QueueInfo> queues_;
+  std::vector<EventInfo> events_;
   std::vector<std::pair<int32_t, int32_t>> queue_bindings_;
   std::map<int32_t, int32_t> dst_to_src_bindings_;
   SubmodelInfo root_model_info_;
@@ -182,15 +195,15 @@ class DeployPlannerBase {
   Status ResolveEnqueueFusion();
   Status ResolveDequeueFusion(int32_t src_endpoint_idx, int32_t dst_endpoint_idx);
   Status ResolveInputsPlacement(const std::string &model_instance_name,
-                                const ModelRelation::ModelQueueInfo &model_queue_info);
+                                const ModelRelation::ModelEndpointInfo &model_endpoint_info);
   Status ResolveModelFusion(const std::string &model_instance_name,
-                            const ModelRelation::ModelQueueInfo &model_queue_info);
+                            const ModelRelation::ModelEndpointInfo &model_endpoint_info);
   bool CanBeFused(const std::string &fusion_name, const std::string &endpoint_name);
   void UpdateFusionOffset(int32_t src_index, int32_t dst_index);
   void Mark2PgModels();
   Status ResolveDataFlows();
   Status ResolveModelInputs(const std::string &model_instance_name,
-                            const ModelRelation::ModelQueueInfo &model_queue_info);
+                            const ModelRelation::ModelEndpointInfo &model_endpoint_info);
   void AddEndpointBindings(int32_t src_index, int32_t dst_index);
   void LogDataFlow() const;
   Status ResolveReusableQueues();
@@ -228,7 +241,9 @@ class DeployPlannerBase {
   std::vector<std::string> ToEndpointDescs(const std::vector<int32_t> &endpoint_indices,
                                            const bool is_group_entry = false) const;
   std::string ToEndpointDesc(const int32_t endpoint_indices, const bool is_group_entry = false) const;
-  DeployPlan::QueueInfo BuildQueueInfo(const ModelRelation::QueueDef &queue_def,
+  static void BuildEventInfo(Endpoint &event_def, const std::string &model_instance_name,
+                             std::shared_ptr<DeployPlan::EventInfo> event_info);
+  DeployPlan::QueueInfo BuildQueueInfo(Endpoint &queue_def,
                                        const std::string &model_instance_name);
   std::string GetEndpointFullName(const DeployPlan::QueueInfo &endpoint_info, const ModelQueueIndex &model_queue_index);
   const std::string &GetSubmodelType(const std::string &name);
@@ -253,8 +268,8 @@ class DeployPlannerBase {
   // for creating incoming group
   std::map<int32_t, std::vector<int32_t>> input_groups_;
   // for unifying input/output queues
-  ModelRelation::ModelQueueInfo head_model_queue_info_;
-  ModelRelation::ModelQueueInfo tail_model_queue_info_;
+  ModelRelation::ModelEndpointInfo head_model_queue_info_;
+  ModelRelation::ModelEndpointInfo tail_model_queue_info_;
   DeployPlan::SubmodelInfo head_model_info_;
   DeployPlan::SubmodelInfo tail_model_info_;
   static std::atomic<int64_t> endpoint_name_id_gen_;
@@ -270,16 +285,17 @@ class ModelRelationFlattener {
   Status Flatten(ModelRelation &flattened_model_relation, std::map<std::string, PneModelPtr> &name_to_models);
   static Status Flatten(const PneModelPtr &root_model);
  private:
-  Status FlattenSubmodel(const ModelRelation::ModelQueueInfo &parent_model_queue_info,
+  Status FlattenSubmodel(const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
                          const PneModelPtr &pne_model,
                          const int32_t depth);
   void MergeQueueDefs(const std::map<std::string, std::string> &name_refs,
-                      const std::vector<ModelRelation::QueueDef> &queue_defs);
+                      const std::vector<Endpoint> &queue_defs);
   static void ReplaceQueueNames(const std::map<std::string, std::string> &name_refs, std::vector<std::string> &names);
-  static std::map<std::string, std::string> BuildNameRefs(const ModelRelation::ModelQueueInfo &parent_model_queue_info,
-                                                          const ModelRelation::ModelQueueInfo &root_model_queue_info);
-  static Status CheckConsistency(const ModelRelation::ModelQueueInfo &parent_model_queue_info,
-                                 const ModelRelation::ModelQueueInfo &root_model_queue_info);
+  static std::map<std::string, std::string> BuildNameRefs(
+      const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
+      const ModelRelation::ModelEndpointInfo &root_model_queue_info);
+  static Status CheckConsistency(const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
+                                 const ModelRelation::ModelEndpointInfo &root_model_queue_info);
 
   static bool NeedFlatten(const PneModelPtr &root_model);
 

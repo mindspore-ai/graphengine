@@ -33,19 +33,14 @@ struct EventNode {
   int32_t logic_peer_rank;
 };
 
-struct ModelEvents {
-  std::string model_instance_name;
-  int32_t rank_id;
-  std::vector<EventNode> event_nodes;
-};
-
 class ModelEventsBuilder {
  public:
   explicit ModelEventsBuilder(const std::string &event_table) : event_table_(event_table) {};
   ~ModelEventsBuilder() = default;
-  const ModelEvents *Build(int32_t rank_id);
+  Status Build();
+  const std::vector<EventNode> &GetModelEvents() const;
  private:
-  std::vector<ModelEvents> models_events_;
+  std::vector<EventNode> event_nodes_;
   std::string event_table_;
 };
 

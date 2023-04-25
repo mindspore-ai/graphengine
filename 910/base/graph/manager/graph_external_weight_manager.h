@@ -43,7 +43,7 @@ class ExternalWeightManager {
   ExternalWeightManager() = default;
 
   static bool CheckFilesSame(const std::string &file_name,
-                             const uint8_t *data,
+                             const uint8_t *const data,
                              const size_t data_length);
 
   std::mutex mutex_;

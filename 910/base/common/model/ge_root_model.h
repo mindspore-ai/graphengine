@@ -28,7 +28,7 @@ namespace ge {
  public:
   GeRootModel() = default;
   explicit GeRootModel(const ComputeGraphPtr &root_graph) : PneModel(root_graph) {};
-  ~GeRootModel() = default;
+  ~GeRootModel() override = default;
 
   void SetSubgraphInstanceNameToModel(const std::string &instance_name, const GeModelPtr &ge_model);
   void RemoveInstanceSubgraphModel(const std::string &instance_name);
@@ -121,7 +121,7 @@ namespace ge {
   ComputeGraphPtr flatten_graph_ = nullptr;
   OpSoStore op_so_store_;
   bool so_in_om_ = false;
-  SoInOmInfo so_info_;
+  SoInOmInfo so_info_ = {};
 };
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
 }  // namespace ge

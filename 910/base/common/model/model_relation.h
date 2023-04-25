@@ -17,41 +17,38 @@
 #define GE_COMMON_MODEL_MODEL_RELATION_H_
 #include <map>
 #include <vector>
+#include "endpoint.h"
 #include "external/graph/gnode.h"
 #include "graph/compute_graph.h"
 #include "external/ge/ge_api_error_codes.h"
 #include "external/ge/ge_api_types.h"
+#include "common/checker.h"
 
 namespace ge {
 /*lint -e148*/
 struct ModelRelation {
-  struct QueueDef {
-    std::string name;
-    uint32_t depth = 0U;
-    std::string enqueue_policy = "FIFO";
-    bool is_control_ = false;
-  };
-
   struct InvokedModelQueueInfo {
     std::vector<std::string> input_queue_names;
     std::vector<std::string> output_queue_names;
   };
 
-  struct ModelQueueInfo {
+  struct ModelEndpointInfo {
     std::string model_name;
-    std::vector<std::string> input_queue_names;
-    std::vector<std::string> output_queue_names;
+    std::vector<std::string> input_endpoint_names;
+    std::vector<std::string> output_endpoint_names;
     std::vector<std::string> external_output_queue_names;  // created by others
     std::vector<std::string> external_input_queue_names;
+    std::vector<std::string> p2p_input_node_names;
+    std::vector<std::string> p2p_output_node_names;
     std::vector<std::string> invoke_model_keys;
   };
 
-  std::vector<QueueDef> queue_defs;
+  std::vector<Endpoint> endpoints;
   // key: model_instance_name
-  std::map<std::string, ModelQueueInfo> submodel_queue_infos;
+  std::map<std::string, ModelEndpointInfo> submodel_endpoint_infos;
   // key: invoke model key
   std::map<std::string, InvokedModelQueueInfo> invoked_model_queue_infos;
-  ModelQueueInfo root_model_queue_info;
+  ModelEndpointInfo root_model_endpoint_info;
 };
 
 class ModelRelationBuilder {
@@ -72,17 +69,17 @@ class ModelRelationBuilder {
 
  private:
   Status DoBuild(const ComputeGraph &root_graph);
-  Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
+  Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int, std::string>> &paired_inputs,
                         const ComputeGraph &root_graph);
   Status DoBuildForPartitionedCall(const NodePtr &node, std::map<NodePtr,
                                    std::map<int32_t, std::string>> &paired_inputs);
   Status DoBuildForNetOutput(const NodePtr &node, const std::map<NodePtr,
                              std::map<int32_t, std::string>> &paired_inputs);
-  Status GetOrCreateModelQueueInfo(const OpDesc &op_desc, ModelRelation::ModelQueueInfo *&model_queue_info);
-  Status CheckNetOutputNode(const NodePtr &node) const;
   bool CheckInnerNode(const NodePtr &node) const;
+  Status GetOrCreateModelEndpointInfo(const OpDesc &op_desc, ModelRelation::ModelEndpointInfo *&model_endpoint_info);
+  Status CheckNetOutputNode(const NodePtr &node) const;
 
-  std::map<std::string, ModelRelation::QueueDef> queue_defs_;
+  std::map<std::string, Endpoint> endpoints_;
 };
 
 class ModelRelationReader {
@@ -92,27 +89,27 @@ class ModelRelationReader {
 
   Status Initialize();
 
-  Status BatchGetQueueDefs(const std::vector<std::string> &queue_names,
-                           std::vector<const ModelRelation::QueueDef *> &queue_defs) const;
+  Status BatchGetEndpoints(const vector<std::string> &queue_names,
+                           vector<const Endpoint *> &endpoints) const;
 
   const ModelRelation::InvokedModelQueueInfo *GetInvokedModelQueueInfo(const std::string &invoke_key) const;
 
-  const std::vector<const ModelRelation::QueueDef *> &GetInputQueueDefs() const {
-    return input_queue_defs_;
+  const std::vector<const Endpoint *> &GetInputEndpoints() const {
+    return input_endpoints_;
   }
-  const std::vector<const ModelRelation::QueueDef *> &GetOutputQueueDefs() const {
-    return output_queue_defs_;
+  const std::vector<const Endpoint *> &GetOutputEndpoints() const {
+    return output_endpoints_;
   }
 
-  const ModelRelation::QueueDef *GetQueueDef(const std::string &queue_name) const;
+  const Endpoint *GetEndpoint(const std::string &queue_name) const;
 
-  const ModelRelation::ModelQueueInfo *GetSubmodelQueueInfo(const std::string &model_name) const;
+  const ModelRelation::ModelEndpointInfo *GetSubmodelQueueInfo(const std::string &model_name) const;
 
  private:
   const ModelRelation &model_relation_;
-  std::map<std::string, const ModelRelation::QueueDef *> queue_defs_;
-  std::vector<const ModelRelation::QueueDef *> input_queue_defs_;
-  std::vector<const ModelRelation::QueueDef *> output_queue_defs_;
+  std::map<std::string, const Endpoint *> endpoints_;
+  std::vector<const Endpoint *> input_endpoints_;
+  std::vector<const Endpoint *> output_endpoints_;
 };
 }  // namespace ge
 

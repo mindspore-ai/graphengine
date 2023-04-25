@@ -148,7 +148,7 @@ inline Status CheckSizeTAddOverflow(const size_t a, const size_t b) {
 /// @param [in] a  addend
 /// @param [in] b  addend
 /// @return Status
-inline Status CheckFp16AddOverflow(const fp16_t a, const fp16_t b) {
+inline Status CheckFp16AddOverflow(const fp16_t &a, const fp16_t &b) {
   const fp16_t result = static_cast<fp16_t>(a) + static_cast<fp16_t>(b);
   if (Fp16IsInvalid(result.val)) {
     return FAILED;
@@ -293,7 +293,7 @@ inline Status CheckSizeTSubOverflow(const size_t a, const size_t b) {
 /// @param [in] a  addend
 /// @param [in] b  addend
 /// @return Status
-inline Status CheckFp16SubOverflow(const fp16_t a, const fp16_t b) {
+inline Status CheckFp16SubOverflow(const fp16_t &a, const fp16_t &b) {
   const fp16_t result = static_cast<fp16_t>(a) - static_cast<fp16_t>(b);
   if (Fp16IsInvalid(result.val)) {
     return FAILED;
@@ -603,7 +603,7 @@ inline Status CheckSizeTMulOverflow(const size_t a, const size_t b) {
 /// @param [in] a  addend
 /// @param [in] b  addend
 /// @return Status
-inline Status CheckFp16MulOverflow(const fp16_t a, const fp16_t b) {
+inline Status CheckFp16MulOverflow(const fp16_t &a, const fp16_t &b) {
   const fp16_t result = static_cast<fp16_t>(a) * static_cast<fp16_t>(b);
   if (Fp16IsInvalid(result.val)) {
     return FAILED;

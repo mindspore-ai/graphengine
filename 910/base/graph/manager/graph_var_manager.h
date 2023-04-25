@@ -53,7 +53,7 @@ constexpr float64_t kGraphMemoryManagerMallocRatio = 26.0 / 32.0;
 constexpr float64_t kVarMemoryManagerMallocRatio = 5.0 / 32.0;
 constexpr float64_t kMaxMemorySizeRatio = (26.0 + 5.0) / 32.0;
 constexpr uint32_t kDefaultDeviceId = 0U;
-const std::string kFeatureMemoryKey = std::to_string(0) + "_f";
+constexpr char_t kFeatureMemoryKey[] = "0_f";
 
 enum class SessionVersion : std::int32_t
 {
@@ -158,7 +158,7 @@ class VarResource {
 
   ge::Status CheckLogicAddrVaild(const uint8_t *const logic_addr, uint64_t &inner_offset_tmp, uint64_t &logic_addr_tmp);
 
-  Status SetVarMgrDevAddr(const int64_t offset, uint8_t *dev_addr);
+  Status SetVarMgrDevAddr(const int64_t offset, uint8_t *const dev_addr);
 
   std::unordered_map<std::string, ge::GeTensorDesc> GetAllVarDesc() const { return cur_var_tensor_desc_map_; }
 

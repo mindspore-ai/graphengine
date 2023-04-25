@@ -38,7 +38,7 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
   GeModel();
   ~GeModel() override = default;
   GeModel(const GeModel &other) = delete;
-  GeModel &operator=(const GeModel &other) = delete;
+  GeModel &operator=(const GeModel &other) & = delete;
 
   const ComputeGraphPtr &GetGraph() const;
   void SetGraph(const ComputeGraphPtr &graph);

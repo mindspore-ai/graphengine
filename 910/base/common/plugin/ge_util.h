@@ -22,7 +22,7 @@
 #include <utility>
 #include "common/util/mem_utils.h"
 #define GE_DELETE_ASSIGN_AND_COPY(Classname)        \
-  Classname &operator=(const Classname &) = delete; \
+  Classname &operator=(const Classname &) & = delete; \
   Classname(const Classname &) = delete
 
 namespace ge {

@@ -34,11 +34,11 @@ using CreateFn = ProcessNodeEngine *(*)();
 class ProcessNodeEngineManager {
  public:
   ProcessNodeEngineManager(const ProcessNodeEngineManager &other) = delete;
-  ProcessNodeEngineManager &operator=(const ProcessNodeEngineManager &other) = delete;
+  ProcessNodeEngineManager &operator=(const ProcessNodeEngineManager &other) & = delete;
   static ProcessNodeEngineManager &GetInstance();
   Status Initialize(const std::map<std::string, std::string> &options);
   Status Finalize();
-  Status RegisterEngine(const std::string &engine_id, const ProcessNodeEnginePtr engine, const CreateFn fn);
+  Status RegisterEngine(const std::string &engine_id, const ProcessNodeEnginePtr &engine, CreateFn const fn);
   ProcessNodeEnginePtr GetEngine(const std::string &engine_id) const;
   ProcessNodeEnginePtr CloneEngine(const std::string &engine_id) const;
   std::string GetEngineName(const std::string &engine_id, const ge::NodePtr &node_ptr);
@@ -59,10 +59,10 @@ class ProcessNodeEngineManager {
 
 class ProcessNodeEngineRegisterar {
 public:
-  ProcessNodeEngineRegisterar(const std::string &engine_id, const CreateFn fn) noexcept;
+  ProcessNodeEngineRegisterar(const std::string &engine_id, CreateFn const fn) noexcept;
   ~ProcessNodeEngineRegisterar() = default;
   ProcessNodeEngineRegisterar(const ProcessNodeEngineRegisterar &other) = delete;
-  ProcessNodeEngineRegisterar &operator=(const ProcessNodeEngineRegisterar &other) = delete;
+  ProcessNodeEngineRegisterar &operator=(const ProcessNodeEngineRegisterar &other) & = delete;
 };
 }  // namespace ge
 

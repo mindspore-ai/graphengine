@@ -37,7 +37,7 @@ class NodeBinSelector {
 
  protected:
   NodeBinSelector(const NodeBinSelector&) = delete;
-  NodeBinSelector& operator=(const NodeBinSelector&) = delete;
+  NodeBinSelector &operator=(const NodeBinSelector &) & = delete;
 };
 }  // namespace ge
 

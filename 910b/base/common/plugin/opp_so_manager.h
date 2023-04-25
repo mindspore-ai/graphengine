@@ -26,7 +26,7 @@ class OppSoManager {
   OppSoManager() = default;
   ~OppSoManager() = default;
   static OppSoManager &GetInstance();
-  void LoadOppPackage();
+  void LoadOppPackage() const;
 
  private:
   void LoadOpsProtoSo() const;

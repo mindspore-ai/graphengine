@@ -16,11 +16,15 @@
 
 #ifndef AIR_CXX_EXECUTOR_HYBRID_COMMON_BIN_CACHE_BIN_CACHE_DEF_H_
 #define AIR_CXX_EXECUTOR_HYBRID_COMMON_BIN_CACHE_BIN_CACHE_DEF_H_
+#include <cstdint>
 namespace ge {
-enum NodeBinMode {
+namespace fuzz_compile {
+enum NodeBinMode : std::int32_t
+{
   kOneNodeSingleBinMode,
   kOneNodeMultipleBinsMode,
   kNodeBinModeEnd
 };
+}
 }
 #endif // AIR_CXX_EXECUTOR_HYBRID_COMMON_BIN_CACHE_BIN_CACHE_DEF_H_

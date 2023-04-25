@@ -446,6 +446,9 @@ REG_OP(RandomUniform)
 are set to be non-zero, the random number generator is seeded by the given 
 seed. Otherwise, it is seeded by a random seed.
 *@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
+* @li dtype: A type from: float16, float32, double. The default type is float32.
+* The corresponding relationshape between the enumeration values and real output type is :
+* 0(float32), 1(float16), 11(double).
 
 *@par Outputs:
 *y: A Tensor of types: float16, float32, double . A tensor of the specified shape
@@ -462,28 +465,29 @@ REG_OP(TruncatedNormal)
     .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
+    .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(TruncatedNormal)
 
 /**
-* @brief Generate random bit mask for dropout . \n
+*@brief Generate random bit mask for dropout . \n
 
-* @par Inputs:
+*@par Inputs:
 include:
 * @li shape:The shape of the output tensor. Must be one of the following types: int32, int64 .
 * @li prob:0-D. Number of bit 1 . Must be one of the following types: float16, float32 . \n
 
-* @par Attributes:
+*@par Attributes:
 * @li seed: An optional int. If either seed or seed2 are set to be non-zero, the random number
 *generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
 * @li seed2: An optional int. A second seed to avoid seed collision . \n
 
-* @par Outputs:
+*@par Outputs:
 * y:Output (1-D) random number using uint data format . A Tensor of type uint8 . \n
 
-* @attention Constraints:
+*@attention Constraints:
 *The output is aligned with 128 bits
 
-* @see DropOutGenMask()
+*@see DropOutGenMask()
 */
 REG_OP(DropOutGenMask)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
@@ -514,7 +518,7 @@ include:
 *The output is aligned with 16
 
 *@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 
 *@see DropOutGenMaskV3()
 */
@@ -595,7 +599,7 @@ include:
 * @li offset: To avoid seed collision. \n
 
 * @par Attributes:
-* @li dtype: The data type for the elements of the output tensor. if not specifed, 
+* @li dtype: The data type for the elements of the output tensor. if not specifed,
 * we will use the data type of the input tensor. \n
 
 * @par Outputs:
@@ -808,30 +812,6 @@ REG_OP(DropoutV2)
     .OUTPUT(seed, TensorType({ DT_FLOAT }))
     .REQUIRED_ATTR(p, Float)
     .OP_END_FACTORY_REG(DropoutV2)
-
-/**
-* @brief The Bernoulli distribution with probability . \n
-
-* @par Inputs:
-* @li x: A ND Tensor. Must be one of the following data types: 
-         int8, uint8, int16, int32, int64, bool, float32, float64 . 
-* @li p: A ND Tensor. The probability of an element to be zeroed. 
-        Must be one of the following data types: float32, float64. \n
-
-* @par Attributes:
-* seed: An Integer, the seed of the random generator. Default value -1 
-    to use current timestamp, otherwise it should be a positive integer.
-
-* @par Outputs:
-* y: A tensor with the same shape and type as "x".
-*/
-
-REG_OP(Bernoulli)
-    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(p, TensorType({ DT_FLOAT, DT_DOUBLE }))
-    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
-    .ATTR(seed, Int, -1)
-    .OP_END_FACTORY_REG(Bernoulli)
 
 /**
  * @brief: Fill the input tensor with values drawn from the uniform distribution U(from, to). \n

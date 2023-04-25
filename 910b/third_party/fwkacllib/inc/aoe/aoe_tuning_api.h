@@ -58,6 +58,7 @@ const std::set<AscendString> GLOBAL_OPTION_SET = {
     AscendString(DETERMINISTIC),
     AscendString(OPTION_HOST_ENV_OS),
     AscendString(OPTION_HOST_ENV_CPU),
+    AscendString(COMPRESSION_OPTIMIZE_CONF),
 };
 
 // this set for session option key
@@ -95,6 +96,10 @@ const std::set<AscendString> TUNING_OPTION_SET = {
     AscendString(OP_PRECISION_MODE),
     AscendString(KEEP_DTYPE),
     AscendString(SINGLE_OP),
+    AscendString(TUNE_OPTIMIZATION_LEVEL),
+    AscendString(FEATURE_DEEPER_OPAT),
+    AscendString(FEATURE_NONHOMO_SPLIT),
+    AscendString(FEATURE_OP_FORMAT),
     AscendString(OUT_FILE_NAME),
     AscendString(HOST_ENV_OS),
     AscendString(HOST_ENV_CPU),

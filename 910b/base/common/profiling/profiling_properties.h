@@ -64,7 +64,7 @@ class ProfilingProperties {
   }
 
  private:
-  ProfilingProperties() noexcept : is_op_detail_profiling_(false) {}
+  ProfilingProperties() noexcept {}
   ~ProfilingProperties() = default;
   std::mutex mutex_;
   std::mutex point_mutex_;

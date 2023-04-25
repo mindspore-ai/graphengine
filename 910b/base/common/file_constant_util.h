@@ -53,8 +53,6 @@ Status ConvertFileConstToConst(const ComputeGraphPtr &compute_graph);
 
 Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph);
 
-Status UnloadFileConstantWeights(const ComputeGraphPtr &compute_graph);
-
 Status ChangeFilePath(const ComputeGraphPtr &compute_graph, const std::string &om_path);
 }
 

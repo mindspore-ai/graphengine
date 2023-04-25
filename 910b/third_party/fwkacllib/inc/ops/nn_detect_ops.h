@@ -101,10 +101,10 @@ REG_OP(BoundingBoxEncode)
 
 *@par Inputs:
 * Two inputs, including:
-*@li bbox_tensor: Bounding box. A 2D Tensor of type float16 with shape (N, 4).
+* @li bbox_tensor: Bounding box. A 2D Tensor of type float16 or float32 with shape (N, 4).
 * "N" indicates the number of bounding boxes, the value "4" indicates "x0",
 * "x1", "y0", and "y1".
-*@li img_metas: Valid boundary value of the image. A 1D Tensor of type float16
+* @li img_metas: Valid boundary value of the image. A 1D Tensor of type float16 or float32
 * with shape (16,)
 
 *@par Outputs:
@@ -116,8 +116,8 @@ REG_OP(BoundingBoxEncode)
 * valid, specifying the valid boundary (heights x ratio, weights x ratio).
 */
 REG_OP(CheckValid)
-    .INPUT(bbox_tensor, TensorType({DT_FLOAT16}))
-    .INPUT(img_metas, TensorType({DT_FLOAT16}))
+    .INPUT(bbox_tensor, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img_metas, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(valid_tensor, TensorType({DT_INT8}))
     .OP_END_FACTORY_REG(CheckValid)
 
@@ -136,7 +136,7 @@ REG_OP(CheckValid)
 
 * @par Attributes:
 * @li mode: Computation mode, a character string with the value range of [iou, iof].
-* @li eps: An optional float, prevent division by 0, default value is 1.0 . 
+* @li eps: An optional float, prevent division by 0, default value is 1.0 .
 * @li aligned: A bool value, if aligned is true, calculate the ious between each aligned pair of bboxes and gtboxes. \n
 
 * @par Outputs:

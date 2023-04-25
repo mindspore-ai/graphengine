@@ -21,7 +21,7 @@
 #include "ge/ge_api_types.h"
 #include "graph/node.h"
 #include "proto/task.pb.h"
-#include "graph/compile_cache_policy/compile_cache_policy.h"
+#include "graph/cache_policy/cache_policy.h"
 #include "register/op_tiling_info.h"
 
 namespace ge {
@@ -33,7 +33,8 @@ namespace {
   constexpr char_t const *kAttrOpParamSize = "op_para_size";
   constexpr char_t const *kAttrAtomicOpParamSize = "atomic_op_para_size";
 }
-enum class KernelLaunchBinType {
+enum class KernelLaunchBinType : std::uint32_t
+{
   kStubFunc = 0, // after register with stub name
   kWithHandle, // register with handle
   kBinTypeEnd
@@ -42,7 +43,7 @@ enum class KernelLaunchBinType {
 class NodeCompileCacheItem {
  public:
   NodeCompileCacheItem() = default;
-  ~NodeCompileCacheItem() {}
+  ~NodeCompileCacheItem() = default;
 
   static Status Build(const KernelLaunchBinType bin_type, const NodePtr &node, void *handle,
                       NodeCompileCacheItem &item);
@@ -83,7 +84,7 @@ class NodeCompileCacheModule {
   NodeCompileCacheItem *AddCompileCache(const NodePtr &node, NodeCompileCacheItem &item);
 
  private:
-  Status GetCompileCacheDescFromOp(const NodePtr &node, std::unique_ptr<CompileCacheDesc> &cache_desc,
+  Status GetCompileCacheDescFromOp(const NodePtr &node, std::shared_ptr<CompileCacheDesc> &cache_desc,
                                    const bool need_range) const;
   Status GetOpAttrMem(OpDesc &op_desc, CompileCacheDesc &cache_desc) const;
   Status CopyAttrToMem(const std::map<std::string, AnyValue> &all_attributes, std::unique_ptr<uint8_t[]> &attr_mem,
@@ -95,16 +96,16 @@ class NodeCompileCacheModule {
   size_t GetAttrSize(const AnyValue &attr_value) const;
   Status GetFusionOpCacheDesc(const NodePtr &node, CompileCacheDesc &cache_desc) const;
   Status GetInputConstTensor(const NodePtr &node, CompileCacheDesc &cache_desc) const;
-  void InsertCompileCacheDesc(const NodePtr &node, std::unique_ptr<CompileCacheDesc> &cache_desc);
-  CompileCacheDesc *GetCompileCacheDesc(const NodePtr &node);
+  void InsertCompileCacheDesc(const NodePtr &node, std::shared_ptr<CompileCacheDesc> &cache_desc);
+  std::shared_ptr<CompileCacheDesc> GetCompileCacheDesc(const NodePtr &node);
   void UpdateTensorInfos(const NodePtr &node, CompileCacheDesc &cache_desc) const;
 
  private:
-  std::unique_ptr<CompileCachePolicy> ccp_;
+  std::unique_ptr<CachePolicy> ccp_;
   std::mutex ids_to_cci_mu_;
   std::unordered_map<CacheItemId, NodeCompileCacheItem> ids_to_cci_;
   std::mutex node_to_cache_desc_map_mu_;
-  std::unordered_map<uintptr_t, std::unique_ptr<CompileCacheDesc>> node_to_cache_desc_map_;
+  std::unordered_map<uintptr_t, std::shared_ptr<CompileCacheDesc>> node_to_cache_desc_map_;
 };
 }  // namespace ge
 

@@ -340,14 +340,14 @@ REG_OP(TimeBatch)
 * @li padding: weather to pad when batch is insufficient.
 * @li slide_stride: sliding window step.
 */
-REG_OP(AutoBatch)
+REG_OP(CountBatch)
     .DYNAMIC_INPUT(x, TensorType::RealNumberType())
     .DYNAMIC_OUTPUT(y, TensorType::RealNumberType())
     .REQUIRED_ATTR(batch_size, Int)
     .ATTR(timeout, Int, 0)
     .ATTR(padding, Bool, false)
     .ATTR(slide_stride, Int, 0)
-    .OP_END_FACTORY_REG(AutoBatch)
+    .OP_END_FACTORY_REG(CountBatch)
 
 /**
 * @brief YUVToRGB
@@ -579,6 +579,49 @@ REG_OP(EmbeddingApplyAdam)
     .OP_END_FACTORY_REG(EmbeddingApplyAdam)
 
 /**
+* @brief embedding hashtable embedding applyadamW. \n
+
+* @par Inputs:
+* @li var_handle: The handle of embedding hashtable.
+* @li beta1_power: A Scalar, dtype is DT_FLOAT16 or DT_FLOAT. 0-D. indicates the beta1's power.
+* @li beta2_power: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta2's power.
+* @li lr: A Scalar, dtype is same as "beta1_power". 0-D. indicates the learning rate.
+* @li weight_decay: A Scalar, dtype is same as "beta1_power". 0-D. indicates the weight decay.
+* @li beta1: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta1 param.
+* @li beta2: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta2 param.
+* @li epsilon: A Scalar, dtype is same as "beta1_power". 0-D. indicates the small value param.
+* @li grad: A Tensor, dtype is same as "beta1_power". 1-D. indicates the grad.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li max_grad_norm: A mutable Tensor of the same type as "beta1_power", an optional input. \n
+
+* @par Outputs:
+* @li var_handle: The handle of embedding hashtable. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li amsgrad: An optional bool, indicates whether to use the AMSGrad variant of htis algorithm from
+*     the paper On the Convergence of Adam and Beyond(default:False).
+*     If "True", max_grad_norm input and output must be entered.
+* @li maximize: An optional bool, maximize the params based on the objective(default:False). \n
+*/
+REG_OP(EmbeddingApplyAdamW)
+    .INPUT(var_handle, TensorType({DT_RESOURCE}))
+    .INPUT(beta1_power, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta2_power, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(weight_decay, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(epsilon, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(max_grad_norm, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(amsgrad, Bool, false)
+    .ATTR(maximize, Bool, false)
+    .OP_END_FACTORY_REG(EmbeddingApplyAdamW)
+/**
 * @brief embedding hashtable export. \n
 
 * @par Inputs:
@@ -619,6 +662,20 @@ REG_OP(TableToResource)
     .OP_END_FACTORY_REG(TableToResource)
 
 /**
+* @brief embedding feature_id trans to offset_id. \n
+
+* @par Inputs:
+* @li feature_id: A Tensor, dtype is int64.
+
+* @par Outputs:
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32. \n
+*/
+REG_OP(EmbeddingFeatureMapping)
+    .INPUT(feature_id, TensorType({DT_INT64}))
+    .OUTPUT(offset_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingFeatureMapping)
+
+/**
 * @brief embedding hashtable resource applyadagrad. \n
 
 * @par Inputs:
@@ -643,6 +700,36 @@ REG_OP(EmbeddingApplyAdaGrad)
     .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .OP_END_FACTORY_REG(EmbeddingApplyAdaGrad)
+
+/**
+* @brief embedding compute var export. \n
+
+* @par Inputs:
+* @li file_path: A String, indicates the export file path.
+* @li ps_id: A Int, dtype is int32, indicates the ps server id.
+* @li table_id: A Int, dtype is int32, indicates the hashtable id.
+
+*/
+REG_OP(EmbeddingComputeVarExport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(ps_id, TensorType({DT_INT32}))
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingComputeVarExport)
+
+/**
+* @brief embedding compute var import. \n
+
+* @par Inputs:
+* @li file_path: A String, indicates the import file path.
+* @li ps_id: A Int, dtype is int32, indicates the ps server id.
+* @li table_id: A Int, dtype is int32, indicates the hashtable id.
+
+*/
+REG_OP(EmbeddingComputeVarImport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(ps_id, TensorType({DT_INT32}))
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingComputeVarImport)
 
 /**
 * @brief Computes the output as scale * (x + bias) if x+bias > 0 and scale * negative_slope * (x+bias)
@@ -1070,6 +1157,190 @@ REG_OP(HcomCollRemoteUpdate)
     .REQUIRED_ATTR(max_num, Int)
     .REQUIRED_ATTR(embedding_dim, Int)
     .OP_END_FACTORY_REG(HcomCollRemoteUpdate)
+
+/**
+* @brief Find a min polygon from the point set in the operator MinAreaPolygons. \n
+
+* @par Inputs:
+* @li pointsets: A 2D Tensor with shape (N, 18), format ND, dtype must be one
+ of the following types: float16, float32, double. \n
+
+* @par Outputs:
+* @li polygons: A 2D Tensor with shape (N, 8), format ND, dtype must be one of
+ the following types: float16, float32, double.  \n
+*/
+REG_OP(MinAreaPolygons)
+    .INPUT(pointsets, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(polygons, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(MinAreaPolygons)
+
+/**
+* @brief Calculate the index and distance of the nearest three point to the target point.
+* @par Inputs:
+* Two input:
+* xyz1: The set of target points.
+* xyz2: The set of compare points. \n
+
+* @par Outputs:
+* dist: A Tensor, the distance of the nearest point to the target point.
+* idx: A Tensor, the index of the nearest point to the target point. \n
+*/
+REG_OP(ThreeNN)
+    .INPUT(xyz1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(xyz2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(dist, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(idx, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(ThreeNN)
+
+/**
+ * @brief Calculate the voxels of cloud points \n
+
+ * @par Inputs:
+ * Three inputs, including:
+ * @li points: the shape is [M, C], points[:3] contain xyz points and points[3:] contain other information. 
+ * @li voxel_size: the size of voxel with the shape of [3]. 
+ * @li coors_range:the coordinate range of voxel with the shape of [6]. \n
+
+ * @par Outputs:
+ * Four outputs, including:
+ * @li voxels: the output voxels with the shape of [M, max_points, C].
+ * @li coors: the voxel coordinates with shape of [M, 3].
+ * @li num_points_per_voxel: the number of points per voxel with the shape of [M].
+ * @li voxel_num: the number of voxels. \n
+
+ * @par Attributes:
+ * Three attrs, including:
+ * @li max_points: maximum points contained in a voxel.
+ * @li max_voxels: maximum voxels this op create. 
+ * @li deterministic: An optional attr, only support true now, false is faster. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the mmcv operator Voxelization.\n
+ */
+REG_OP(Voxelization)
+    .INPUT(points, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .INPUT(voxel_size, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .INPUT(coors_range, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(voxels, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(coors, TensorType({DT_INT32}))
+    .OUTPUT(num_points_per_voxel, TensorType({DT_INT32}))
+    .OUTPUT(voxel_num, TensorType({DT_INT32}))
+    .ATTR(max_points, Int, 35)
+    .ATTR(max_voxels, Int, 20000)
+    .ATTR(deterministic, Bool, true)
+    .OP_END_FACTORY_REG(Voxelization)
+
+/**
+ * @brief Encoding the orientation information and generating orientation-sensitive features. \n
+
+ * @par Inputs:
+ * Two inputs, including:
+ * @li x: Input features with shape [num_output_planes, num_input_planes, num_orientations, H, W]. 
+ * @li indices: Indices with shape [num_orientations, H, W, num_rotations]. \n
+
+ * @par Outputs:
+ * One output, including:
+ * @li y: Refined features with shape [num_output_planes * num_rotations, num_input_planes * num_orientations, H, W]. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the mmcv operator ActiveRotatedFilter.\n
+ */
+REG_OP(ActiveRotatedFilter)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .INPUT(indices, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .OP_END_FACTORY_REG(ActiveRotatedFilter)
+
+/**
+ * @brief The backward of ActiveRotatedFilter. \n
+
+ * @par Inputs:
+ * Two inputs, including:
+ * @li y_grad: Input features with shape [num_output_planes * num_rotations, num_input_planes * num_orientations, H, W].
+ * @li indices: Indices with shape [num_orientations, H, W, num_rotations]. \n
+
+ * @par Outputs:
+ * One output, including:
+ * @li x_grad: Refined features with shape [num_output_planes, num_input_planes, num_orientations, H, W]. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the mmcv operator ActiveRotatedFilterGrad.\n
+ */
+REG_OP(ActiveRotatedFilterGrad)
+    .INPUT(y_grad, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .INPUT(indices, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .OP_END_FACTORY_REG(ActiveRotatedFilterGrad)
+
+/**
+* @brief Blend face iamge to the backgroud.
+*
+* @par Inputs:
+* @li face_img: A 3D Tensor, dtype is uint8 or float32, shape is (h, w, 3). The input face image.
+* @li face_rect: A 1D Tensor, dtype is int32, shape is (4,). The coordinates of the face image in the backgroud.
+* @li face_mask: A 3D Tensor, dtype is float32, shape is (h, w, 1).
+* @li acc_face: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li acc_mask: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li max_mask: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+*
+* @par Outputs:
+* @li acc_face: A 3D Tensor, Has the same type and shape as input "acc_face".
+* @li acc_mask: A 3D Tensor, Has the same type and shape as input "acc_mask".
+* @li max_mask: A 3D Tensor, Has the same type and shape as input "max_mask". \n
+*/
+REG_OP(BlendFaceBgPartOne)
+    .INPUT(face_img, TensorType({DT_UINT8, DT_FLOAT}))
+    .INPUT(face_rect, TensorType({DT_INT32}))
+    .INPUT(face_mask, TensorType({DT_FLOAT}))
+    .INPUT(acc_face, TensorType({DT_FLOAT}))
+    .INPUT(acc_mask, TensorType({DT_FLOAT}))
+    .INPUT(max_mask, TensorType({DT_FLOAT}))
+    .OUTPUT(acc_face, TensorType({DT_FLOAT}))
+    .OUTPUT(acc_mask, TensorType({DT_FLOAT}))
+    .OUTPUT(max_mask, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(BlendFaceBgPartOne)
+
+/**
+* @brief Convert the image from YUV to Raw.
+*
+* @par Inputs:
+* @li img_channel_0: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 0.
+* @li img_channel_1: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 1.
+* @li img_channel_2: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 2.
+* @li img_channel_3: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 3.
+* @li img_size: A 1D Tensor, dtype is int32, shape is (2,).
+*     The data is h_out and w_out, which indicates the output height and width.
+* @li gamma: A 1D Tensor, dtype is int32, shape is (4,).
+*
+* @par Outputs:
+* @li raw_img: A 2D Tensor, dtype is uint16, shape is (h_out, w_out). the output raw image. \n
+*/
+REG_OP(ImgRawDecodePostHandle)
+    .INPUT(img_channel_0, TensorType({DT_UINT16}))
+    .INPUT(img_channel_1, TensorType({DT_UINT16}))
+    .INPUT(img_channel_2, TensorType({DT_UINT16}))
+    .INPUT(img_channel_3, TensorType({DT_UINT16}))
+    .INPUT(img_size, TensorType({DT_INT32}))
+    .INPUT(gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(raw_img, TensorType({DT_UINT16}))
+    .OP_END_FACTORY_REG(ImgRawDecodePostHandle)
+
+/**
+* @brief RGB2YUV422. Convert the image from rgb to yuv422. \n
+
+* @par Inputs:
+* rgb: A Tensor of type uint8. \n
+* @par Outputs:
+* yuv: A Tensor of type uint8. \n
+
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+* interpretted as channels, and must be three . \n
+*/
+REG_OP(RGB2YUV422)
+    .INPUT(rgb, TensorType({DT_UINT8}))
+    .OUTPUT(yuv, TensorType({DT_UINT8}))
+    .OP_END_FACTORY_REG(RGB2YUV422)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

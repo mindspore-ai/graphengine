@@ -74,7 +74,6 @@ enum __attribute__((visibility("default"))) AICPUCustSubEvent {
     AICPU_SUB_EVENT_BIND_SD_PID = 10,     // cust-sd bind sd pid, Implemented by cust-sd
     AICPU_SUB_EVENT_OPEN_CUSTOM_SO,  // open costom so file, Implemented by cust-sd
     AICPU_SUB_EVENT_CUST_UPDATE_PROFILING_MODE,  // update profiling mode, Implemented by cust-sd
-    AICPU_SUB_EVENT_PRINT_LOG,  // print aicpu cust schedule's log
     AICPU_SUB_EVENT_ABNORMAL_LOG,  // print aicpu cust schedule's error log
 };
 
@@ -96,23 +95,6 @@ struct __attribute__((visibility("default"))) AICPUEndGraphInfo {
     uint32_t result;
 };
 
-struct __attribute__((visibility("default"))) AICPULogInfo {
-    uint32_t pid;
-    uint32_t tid;
-    uint32_t runningDuration;
-    char_t opName[OP_NAME_MAX_LEN];
-};
-
-struct __attribute__((visibility("default"))) CustAicpusdAbnormalInfo {
-    int32_t pid;
-    uint32_t lineNum;
-    char_t fileName[FILE_NAME_MAX_LEN]; // source file name
-    char_t moduleName[MODULE_NAME_MAX_LEN]; // error module: DRV  AICPU
-    char_t funcName[FUN_NAME_MAX_LEN]; // error occured function
-    char_t errorKeyInfo[ERROR_KEY_INFO_MAX_LEN]; // 1.error function called or 2.invalid variable name
-    int64_t errorValue; // 1.return error code or 2.invalid variable's value
-};
-
 struct __attribute__((visibility("default"))) AICPUSharderTaskInfo {
     uint32_t parallelId;
 
@@ -130,13 +112,6 @@ struct __attribute__((visibility("default"))) AICPUSubEventInfo {
         AICPULoadSoInfo loadSoInfo;
         AICPUEndGraphInfo endGraphInfo;
         AICPUSharderTaskInfo sharderTaskInfo;
-    } para;
-};
-
-struct __attribute__((visibility("default"))) AICPUCustSubEventInfo {
-    union {
-        AICPULogInfo logInfo;
-        CustAicpusdAbnormalInfo abnormalInfo;
     } para;
 };
 
@@ -179,18 +154,44 @@ struct __attribute__((visibility("default"))) AicpuPriInfo {
     int32_t eventPriority;
 }__attribute__((packed));
 
+struct __attribute__((visibility("default"))) ModelCommOpList {
+    uint64_t commOpDescsListAddr;
+    uint32_t opNum;
+}__attribute__((packed));
+
+// 配置类型，用于给AICPU控制不同的加载流程
+enum __attribute__((visibility("default"))) ModelType {
+    kModelWithEmbedding = 0,
+    kModelWithSyncEvent = 1,
+    kModelTypeNum
+};
+
+struct __attribute__((visibility("default"))) CommGroup {
+    const char *groupName;
+    uint32_t rankNum;
+    uint32_t *rankIds;
+}__attribute__((packed));
+
+struct __attribute__((visibility("default"))) CommGroups {
+    uint32_t groupNum;
+    CommGroup *groups;
+}__attribute__((packed));
+
 struct __attribute__((visibility("default"))) ModelCfgInfo {
-    uint16_t inBuffPoolSize;     // input buffer pool size
-    uint16_t outBuffPoolSize;    // output buffer pool size
-    uint64_t inBuffSize;         // input buffer size
-    uint64_t outBuffSize;        // output buffer size
-    int32_t tagId;               // tag id for hccl
-    int32_t rankId;              // rank id for hccl
-    uint64_t rankTableLen;       // rank table length
-    uint64_t rankTableAddr;       // rank table ptr
-    uint64_t roleTableLen;       // cluster spec length
-    uint64_t roleTableAddr;       // role table ptr
-    char rsv[128UL];
+    uint16_t inBuffPoolSize;       // input buffer pool size
+    uint16_t outBuffPoolSize;      // output buffer pool size
+    uint64_t inBuffSize;           // input buffer size
+    uint64_t outBuffSize;          // output buffer size
+    int32_t tagId;                 // tag id for hccl
+    int32_t rankId;                // rank id for hccl
+    uint64_t rankTableLen;         // rank table length
+    uint64_t rankTableAddr;        // rank table ptr
+    uint64_t roleTableLen;         // cluster spec length
+    uint64_t roleTableAddr;        // role table ptr
+    uint64_t modelCommOpListAddr;  // ModelCommOpList ptr
+    uint32_t modelType;
+    uint64_t commGroupsAddr;       // communication groups ptr
+    char rsv[108UL];
 } __attribute__((packed));
 
 struct __attribute__((visibility("default"))) ModelInfo {

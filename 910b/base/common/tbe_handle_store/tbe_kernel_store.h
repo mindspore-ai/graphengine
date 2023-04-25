@@ -22,8 +22,8 @@
 namespace ge {
 class TBEKernelStore : public KernelStore {
  public:
-  TBEKernelStore();
-  ~TBEKernelStore() override {}
+  using KernelStore::KernelStore;
+  ~TBEKernelStore() override = default;
   void AddTBEKernel(const TBEKernelPtr &kernel);
 
   void LoadTBEKernelBinToOpDesc(const std::shared_ptr<ge::OpDesc> &op_desc) const;

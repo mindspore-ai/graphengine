@@ -36,7 +36,8 @@ class Executor {
  public:
   Executor() = default;
   virtual ~Executor() = default;
-  GE_DELETE_ASSIGN_AND_COPY(Executor);
+  Executor &operator=(const Executor &) = delete;
+  Executor(const Executor &) = delete;
 
   /**
    * @ingroup ge
@@ -89,5 +90,5 @@ class Executor {
   virtual Status RunGraphWithStream(const GraphNodePtr &graph_node, const GraphId graph_id, const rtStream_t stream,
                                     const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs) = 0;
 };
-}
+}  // namespace ge
 #endif // GE_COMMON_EXECUTOR_H

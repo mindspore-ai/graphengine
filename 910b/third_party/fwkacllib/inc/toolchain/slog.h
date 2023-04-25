@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,6 @@ extern "C" {
 #define DEBUG_LOG_MASK      (0x00010000)
 #define SECURITY_LOG_MASK   (0x00100000)
 #define RUN_LOG_MASK        (0x01000000)
-#define OPERATION_LOG_MASK  (0x10000000)
 #define RESERVERD_LENGTH 52
 
 typedef struct {

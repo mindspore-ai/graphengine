@@ -40,6 +40,12 @@ void AicpuPulseNotify();
  */
 int32_t RegisterPulseNotifyFunc(const char_t * const name, const PulseNotifyFunc func);
 
+/**
+ * aicpu pulse notify.
+ * call once when aicpu work end.
+ */
+void ClearPulseNotifyFunc();
+
 #ifdef __cplusplus
 }
 #endif

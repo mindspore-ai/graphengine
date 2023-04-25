@@ -48,7 +48,7 @@ class KernelStore {
   virtual ~KernelStore() = default;
   virtual bool Build();
 
-  virtual bool Load(const uint8_t *const data, const size_t &len);
+  virtual bool Load(const uint8_t *const data, const size_t len);
 
   virtual const uint8_t *Data() const;
   virtual size_t DataSize() const;

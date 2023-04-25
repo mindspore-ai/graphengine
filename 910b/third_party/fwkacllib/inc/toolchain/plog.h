@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _PLOG_H_
-#define _PLOG_H_
+#ifndef PLOG_H_
+#define PLOG_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,4 +56,4 @@ DLL_EXPORT int DlogReportFinalize(void);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif // D_PLOG_H_
+#endif // PLOG_H_

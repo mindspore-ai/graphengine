@@ -39,6 +39,10 @@ extern "C" {
 #define ACL_DYNAMIC_AIPP_NAME "ascend_dynamic_aipp_data"
 #define ACL_ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES "_datadump_original_op_names"
 
+/* used for ACL_MDL_WORKSPACE_MEM_OPTIMIZE */
+#define ACL_WORKSPACE_MEM_OPTIMIZE_DEFAULT 0
+#define ACL_WORKSPACE_MEM_OPTIMIZE_INPUTOUTPUT 1
+
 typedef struct aclmdlDataset aclmdlDataset;
 typedef struct aclmdlDesc aclmdlDesc;
 typedef struct aclmdlAIPP aclmdlAIPP;
@@ -47,20 +51,20 @@ typedef struct aclmdlConfigHandle aclmdlConfigHandle;
 
 typedef enum {
     ACL_YUV420SP_U8 = 1,
-    ACL_XRGB8888_U8,
-    ACL_RGB888_U8,
-    ACL_YUV400_U8,
-    ACL_NC1HWC0DI_FP16,
-    ACL_NC1HWC0DI_S8,
-    ACL_ARGB8888_U8,
-    ACL_YUYV_U8,
-    ACL_YUV422SP_U8,
-    ACL_AYUV444_U8,
-    ACL_RAW10,
-    ACL_RAW12,
-    ACL_RAW16,
-    ACL_RAW24,
-    ACL_AIPP_RESERVED = 0xffff,
+    ACL_XRGB8888_U8 = 2,
+    ACL_RGB888_U8 = 3,
+    ACL_YUV400_U8 = 4,
+    ACL_NC1HWC0DI_FP16 = 5,
+    ACL_NC1HWC0DI_S8 = 6,
+    ACL_ARGB8888_U8 = 7,
+    ACL_YUYV_U8 = 8,
+    ACL_YUV422SP_U8 = 9,
+    ACL_AYUV444_U8 = 10,
+    ACL_RAW10 = 11,
+    ACL_RAW12 = 12,
+    ACL_RAW16 = 13,
+    ACL_RAW24 = 14,
+    ACL_AIPP_RESERVED = 0xFFFF,
 } aclAippInputFormat;
 
 typedef enum {
@@ -76,7 +80,8 @@ typedef enum {
     ACL_MDL_INPUTQ_NUM_SIZET,
     ACL_MDL_INPUTQ_ADDR_PTR, /**< pointer to inputQ with shallow copy */
     ACL_MDL_OUTPUTQ_NUM_SIZET,
-    ACL_MDL_OUTPUTQ_ADDR_PTR /**< pointer to outputQ with shallow copy */
+    ACL_MDL_OUTPUTQ_ADDR_PTR, /**< pointer to outputQ with shallow copy */
+    ACL_MDL_WORKSPACE_MEM_OPTIMIZE
 } aclmdlConfigAttr;
 
 typedef enum {

@@ -21,6 +21,7 @@
 #include <vector>
 #include "pne/model/flow_model.h"
 #include "common/plugin/ge_util.h"
+#include "common/model/model_relation.h"
 #include "external/ge/ge_api_error_codes.h"
 
 namespace ge {
@@ -30,6 +31,7 @@ struct DeployResult {
   std::vector<uint32_t> output_queue_ids;
   std::vector<uint32_t> control_input_queue_ids;
   std::vector<uint32_t> control_output_queue_ids;
+  std::vector<Endpoint> event_relations;
   std::function<Status(void)> dev_stat_callback;
   size_t replica_num = 1U;
   std::string input_model_name;

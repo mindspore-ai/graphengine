@@ -57,10 +57,10 @@ float16, float32, bfloat16.
  * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclAllReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType, 
-HcclReduceOp op, HcclComm comm, aclrtStream stream);
+extern HcclResult HcclAllReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType,
+    HcclReduceOp op, HcclComm comm, aclrtStream stream);
 
 /**
  * @brief Broadcast operator.
@@ -72,10 +72,10 @@ uint8, uint16, uint32, uint64, float16, float32, float64, bfloat16.
  * @param root An integer(u32) identifying the the root rank in the operator.
  * @param comm A pointer identifying the communication resource based on
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclBroadcast(void *buf, uint64_t count, HcclDataType dataType, uint32_t root, HcclComm comm, 
-aclrtStream stream);
+extern HcclResult HcclBroadcast(void *buf, uint64_t count, HcclDataType dataType, uint32_t root, HcclComm comm,
+    aclrtStream stream);
 
 /**
  * @brief ReduceScatter operator.
@@ -88,10 +88,10 @@ aclrtStream stream);
  * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType, 
-HcclReduceOp op, HcclComm comm, aclrtStream stream);
+extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType,
+    HcclReduceOp op, HcclComm comm, aclrtStream stream);
 
 /**
  * @brief AllGather operator.
@@ -103,16 +103,16 @@ HcclReduceOp op, HcclComm comm, aclrtStream stream);
 uint8, uint16, uint32, uint64, float16, float32, float64, bfloat16.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount, HcclDataType dataType, 
-HcclComm comm, aclrtStream stream);
+extern HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount, HcclDataType dataType,
+    HcclComm comm, aclrtStream stream);
 /**
  * @brief Get the rank size of this comm.
  *
  * @param comm A pointer identifying the communication resource based on.
  * @param rankSize  A pointer identifying the rank size.
- * @return HcclResult 
+ * @return HcclResult
  */
 extern HcclResult HcclGetRankSize(HcclComm comm, uint32_t *rankSize);
 
@@ -121,7 +121,7 @@ extern HcclResult HcclGetRankSize(HcclComm comm, uint32_t *rankSize);
  *
  * @param comm A pointer identifying the communication resource based on.
  * @param rankSize  A pointer identifying the rank id.
- * @return HcclResult 
+ * @return HcclResult
  */
 extern HcclResult HcclGetRankId(HcclComm comm, uint32_t *rank);
 /**
@@ -129,7 +129,7 @@ extern HcclResult HcclGetRankId(HcclComm comm, uint32_t *rank);
  *
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
 extern HcclResult HcclBarrier(HcclComm comm, aclrtStream stream);
 
@@ -167,12 +167,14 @@ extern HcclResult HcclRecv(void* recvBuf, uint64_t count, HcclDataType dataType,
  *
  * @param sendBuff A pointer identifying the input data address of the operator.
  * @param sendCounts Integer array, where entry i specifies the number of elements to send to rank i.
- * @param sdispls Integer array, where entry i specifies the displacement (offset from sendbuf, in units of sendtype) from which to send data to rank i.
+ * @param sdispls Integer array, where entry i specifies the displacement (offset from sendbuf, in units of sendtype)
+from which to send data to rank i.
  * @param sendType Datatype of send buffer elements, must be one of the following types: int8, int16, int32, int64,
 uint8, uint16, uint32, uint64, float16, float32, float64, bfloat16.
  * @param recvBuf A pointer identifying the output data address of the operator.
  * @param recvCounts Integer array, where entry j specifies the number of elements to receive from rank j.
- * @param rdispls Integer array, where entry j specifies the displacement (offset from recvbuf, in units of recvtype) to which data from rank j should be written.
+ * @param rdispls Integer array, where entry j specifies the displacement (offset from recvbuf, in units of recvtype)
+ to which data from rank j should be written.
  * @param recvType Datatype of receive buffer elements, must be one of the following types: int8, int16, int32, int64,
 uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param comm A pointer identifying the communication resource based on.
@@ -190,12 +192,13 @@ extern HcclResult HcclAlltoAllV(const void *sendBuf, const void *sendCounts, con
  * @param sendBuf A pointer identifying the input data address of the operator.
  * @param recvBuf A pointer identifying the output data address of the operator.
  * @param count An integer(u64) identifying the number of the output data.
- * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, float16, float32, bfloat16.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, float16,
+ float32, bfloat16.
  * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
  * @param root An integer(u32) identifying the the root rank in the operator.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
 extern HcclResult HcclReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType,
                              HcclReduceOp op, uint32_t root, HcclComm comm, aclrtStream stream);
@@ -212,4 +215,4 @@ extern HcclResult HcclCommDestroy(HcclComm comm);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif // HCCL_H_
+#endif // HCCL_H

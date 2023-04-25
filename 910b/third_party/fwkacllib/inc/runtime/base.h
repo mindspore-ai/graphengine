@@ -492,6 +492,15 @@ RTS_API rtError_t rtGetMaxModelNum(uint32_t *maxModelCount);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtStreamSetMode(rtStream_t stm, const uint64_t stmMode);
+
+/**
+ * @ingroup dvrt_base
+ * @brief get stream mode
+ * @param [in] stm  stream needed to get its mode
+ * @param [out] stmMode mode pointer
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtStreamGetMode(rtStream_t const stm, uint64_t * const stmMode);
 #if defined(__cplusplus)
 }
 #endif

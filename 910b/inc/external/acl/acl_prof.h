@@ -1,7 +1,7 @@
 /**
  * @file acl_prof.h
  *
- * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2023. All rights reserved.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -48,6 +48,7 @@ typedef enum {
     ACL_AICORE_RESOURCE_CONFLICT_RATIO = 4,
     ACL_AICORE_MEMORY_UB = 5,
     ACL_AICORE_L2_CACHE = 6,
+    ACL_AICORE_PIPE_EXECUTE_UTILIZATION = 7,
     ACL_AICORE_NONE = 0xFF
 } aclprofAicoreMetrics;
 

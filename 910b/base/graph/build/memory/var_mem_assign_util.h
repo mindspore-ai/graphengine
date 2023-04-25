@@ -34,8 +34,6 @@ class VarMemAssignUtil {
   static Status AssignData2Fp32Var(const ge::NodePtr &node, const uint64_t session_id);
 
  private:
-  static Status AssignMemory2VariableNode(const ge::ComputeGraphPtr &compute_graph);
-
   static Status SetOutVariableAttr(const ge::NodePtr &node, const ge::NodePtr &var_node, const size_t index,
                                    const uint64_t session_id);
   static Status DealExportVariableNode(const ge::NodePtr &node, const ge::NodePtr &var_node, const uint64_t session_id,

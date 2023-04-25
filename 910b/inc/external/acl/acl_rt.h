@@ -53,7 +53,7 @@ typedef enum aclrtEventRecordedStatus {
 typedef enum aclrtEventWaitStatus {
     ACL_EVENT_WAIT_STATUS_COMPLETE  = 0,
     ACL_EVENT_WAIT_STATUS_NOT_READY = 1,
-    ACL_EVENT_WAIT_STATUS_RESERVED  = 0xffff,
+    ACL_EVENT_WAIT_STATUS_RESERVED  = 0xFFFF,
 } aclrtEventWaitStatus;
 
 typedef enum aclrtCallbackBlockType {
@@ -1127,6 +1127,17 @@ ACL_FUNC_VISIBILITY aclError aclrtGetMemInfo(aclrtMemAttr attr, size_t *free, si
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtSetOpWaitTimeout(uint32_t timeout);
+
+/**
+ * @ingroup AscendCL
+ * @brief Set the timeout interval for op executing
+ *
+ * @param timeout [IN]   op execute timeout
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetOpExecuteTimeOut(uint32_t timeout);
 
 /**
  * @ingroup AscendCL

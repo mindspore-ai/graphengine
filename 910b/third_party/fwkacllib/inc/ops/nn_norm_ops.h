@@ -69,10 +69,10 @@ Has the same type as "features" . \n
 *Compatible with the TensorFlow operator SparseSoftmaxCrossEntropyWithLogits.
 */
 REG_OP(SparseSoftmaxCrossEntropyWithLogits)
-    .INPUT(features, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(features, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
     .INPUT(labels, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(backprop, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(backprop, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(SparseSoftmaxCrossEntropyWithLogits)
 
 /**
@@ -1795,7 +1795,7 @@ REG_OP(GroupNormRelu)
 
 * @par Inputs:
 * Two inputs, including:
-* @li y_grad: A mutable Tensor. The type only support float16.
+* @li y_grad: A mutable Tensor. The type support float16 float32.
 * @li mask: A mutable Tensor. Must met all of the following rules:
 *     shape of mask should be 1D.
 *     dtype of mask should be uint8.
@@ -1803,7 +1803,7 @@ REG_OP(GroupNormRelu)
 *     value = (size(x) + 128 - 1) // 128 * 128
 * @li softmax_output: A mutable Tensor. Must met all of the following rules:
 *     shape of softmax_output should be NZ.
-*     dtype of softmax_output should be float16.
+*     dtype of softmax_output should be float16 float32.
 *     it is the output of softmax
 
 * @par Attributes:
@@ -1821,10 +1821,10 @@ REG_OP(GroupNormRelu)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(DropoutWithMulsAndSoftmaxGrad)
-    .INPUT(y_grad, TensorType({ DT_FLOAT16 }))
+    .INPUT(y_grad, TensorType({ DT_FLOAT16, DT_FLOAT }))
     .INPUT(mask, TensorType({ DT_UINT8 }))
-    .INPUT(softmax_output, TensorType({ DT_FLOAT16 }))
-    .OUTPUT(x_grad, TensorType({ DT_FLOAT16 }))
+    .INPUT(softmax_output, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .OUTPUT(x_grad, TensorType({ DT_FLOAT16, DT_FLOAT }))
     .REQUIRED_ATTR(input_keep_prob, Float)
     .REQUIRED_ATTR(alpha, Float)
     .ATTR(axes, ListInt, { -1 })

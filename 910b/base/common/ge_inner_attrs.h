@@ -19,22 +19,22 @@
 #include "external/graph/types.h"
 
 namespace ge {
-extern const char_t* kAttrNameSingleOpType;
+constexpr char_t const *kAttrNameSingleOpType = "GE_INNER_SINGLE_OP_TYPE";
 // profiling name
-extern const char_t *const kProfilingDeviceConfigData;
-extern const char_t *const kProfilingIsExecuteOn;
+constexpr char_t const *kProfilingDeviceConfigData = "PROFILING_DEVICE_CONFIG_DATA";
+constexpr char_t const *kProfilingIsExecuteOn = "PROFILING_IS_EXECUTE_ON";
 // helper option
-extern const char_t *const kHostMasterPidName;
-extern const char_t *const kExecutorDevId;
+constexpr char_t const *kHostMasterPidName = "HOST_MASTER_PID";
+constexpr char_t const *kExecutorDevId = "EXECUTOR_DEVICE_ID";
 // runtime 2.0
-constexpr char const *kRequestWatcher = "_request_watcher";
-constexpr char const *kWatcherAddress = "_watcher_address";
-constexpr char const *kSubgraphInput = "_subgraph_input";
-constexpr char const *kSubgraphOutput = "_subgraph_output";
-constexpr char const *kKnownSubgraph = "_known_subgraph";
-constexpr char const *kRelativeBranch = "branch";
-constexpr char const *kConditionGraph = "CondGraph";
-constexpr char const *kThenGraph = "then_graph";
-constexpr char const *kElseGraph = "else_graph";
+constexpr char_t const *kRequestWatcher = "_request_watcher";
+constexpr char_t const *kWatcherAddress = "_watcher_address";
+constexpr char_t const *kSubgraphInput = "_subgraph_input";
+constexpr char_t const *kSubgraphOutput = "_subgraph_output";
+constexpr char_t const *kKnownSubgraph = "_known_subgraph";
+constexpr char_t const *kRelativeBranch = "branch";
+constexpr char_t const *kConditionGraph = "CondGraph";
+constexpr char_t const *kThenGraph = "then_graph";
+constexpr char_t const *kElseGraph = "else_graph";
 }
 #endif // AIR_CXX_BASE_COMMON_GE_INNER_ATTRS_H_

@@ -22,8 +22,8 @@
 namespace ge {
 class CustAICPUKernelStore : public KernelStore {
  public:
-  CustAICPUKernelStore();
-  ~CustAICPUKernelStore() override {}
+  using KernelStore::KernelStore;
+  ~CustAICPUKernelStore() override = default;
 
   void AddCustAICPUKernel(const CustAICPUKernelPtr &kernel);
 

@@ -31,8 +31,8 @@ class OverflowManager {
   void Finalize();
 
  private:
-  OverflowManager();
-  ~OverflowManager();
+  OverflowManager() = default;
+  ~OverflowManager() = default;
   static void *overflow_addr_;
   static size_t globalworkspace_overflow_size_;
   static std::mutex overflow_manager_mutex_;

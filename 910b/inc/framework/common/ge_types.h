@@ -67,6 +67,8 @@ enum OpEngineType {
 
 enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
 
+enum OfflineModelFormat { OM_FORMAT_DEFAULT, OM_FORMAT_NANO };
+
 const char_t *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 
@@ -96,12 +98,17 @@ const std::string kEngineNameDsa = "DSAEngine";
 const std::string kAtomicOpType = "DynamicAtomicAddrClean";
 const char_t *const kAICpuKernelLibName = "aicpu_kernel_lib_name";
 const char_t *const kPartiallySupported = "partially_supported";
+
 // runtime2.0 lowering func
+const std::string kAttrLowingFunc = "_ge_attr_lowering_func";
 const std::string kFFTSAiCoreLowerFunc = "ffts_ai_core_lower_func";
 const std::string kFFTSGraphLowerFunc = "ffts_graph_lower_func";
+const std::string kFFTSStaticGraphLowerFunc = "ffts_static_graph_lower_func";
 const std::string kFFTSMixL2LowerFunc = "ffts_mix_l2_lower_func";
 // runtime2.0 calculate func
+const std::string kAttrCalcArgsSizeFunc = "_ge_attr_calculate_func";
 const std::string kFFTSMixL2CalcFunc = "ffts_mix_l2_calc_func";
+
 const std::string kInputTensorIndexs = "input_tensor_indexs";
 const std::string kOutputTensorIndexs = "output_tensor_indexs";
 const std::string kShapeTypeStatic = "static";
@@ -127,6 +134,9 @@ const std::set<std::string> kValidValues = {"", kBalanceMode, kMemoryPriority};
 
 const uint32_t kManualThread = 0U;
 const uint32_t kAutoThread = 1U;
+
+// model deploy mode
+const std::string kModelDeployModeSpmd = "SPMD";
 
 // ffts plus
 constexpr size_t kDSASetInputAddr = 0U;
@@ -421,6 +431,7 @@ struct ModelQueueParam {
   uint32_t group_policy{0U};
   std::vector<uint32_t> input_queues;
   std::vector<uint32_t> output_queues;
+  std::vector<int32_t> input_fusion_offsets;
 };
 
 // internal options
@@ -445,6 +456,8 @@ const char_t *const OPTION_TOPOSORTING_MODE = "ge.topoSortingMode";
 const char_t *const OPTION_EXEC_RANK_TABLE = "ge.exec.rankTable";
 const char_t *const OPTION_EXEC_HCOM_GROUPLIST = "ge.exec.hcomGrouplist";
 const char_t *const OPTION_EXEC_HCOM_RANK_MAPPING = "ge.exec.hcomRankMapping";
+
+const char_t *const OPTION_NUMA_CONFIG = "ge.numaConfig";
 
 const std::set<std::string> ir_builder_suppported_options_inner = {EVALUATE_GRAPH_RESOURCE_MODE,
                                                                    ENABLE_GRAPH_PARALLEL,

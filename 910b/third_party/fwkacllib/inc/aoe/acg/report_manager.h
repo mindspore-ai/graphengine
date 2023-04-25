@@ -114,6 +114,14 @@ public:
      */
     AoeStatus ChangeReportResult(const std::string &tag);
 
+    /**
+     * @brief       : Check whether new repo is added or updated.
+     * @param [in]  : tag       tag, unified use job_id
+     * @param [in]  : priority  report messsage priority, limit: 0-100
+     * @return      : true or flase
+     */
+    bool IsUpdateRepo(const std::string &tag, const uint32_t priority);
+
 private:
     std::mutex mgrMtx_;
     std::map<std::string, ReportPtr> runtimeReports_;

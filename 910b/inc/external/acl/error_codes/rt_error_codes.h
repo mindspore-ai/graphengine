@@ -112,7 +112,8 @@ static const int32_t ACL_ERROR_RT_EVENT_SYNC_TIMEOUT         = 507047; // event 
 static const int32_t ACL_ERROR_RT_FFTS_PLUS_TIMEOUT          = 507048; // ffts+ timeout
 static const int32_t ACL_ERROR_RT_FFTS_PLUS_EXCEPTION        = 507049; // ffts+ exception
 static const int32_t ACL_ERROR_RT_FFTS_PLUS_TRAP_EXCEPTION   = 507050; // ffts+ trap exception
-
+static const int32_t ACL_ERROR_RT_SEND_MSG                   = 507051; // hdc send msg fail
+static const int32_t ACL_ERROR_RT_COPY_DATA                  = 507052; // copy data fail
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR         = 507899; // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR       = 507900; // aicpu internal error
 static const int32_t ACL_ERROR_RT_SOCKET_CLOSE               = 507901; // hdc disconnect

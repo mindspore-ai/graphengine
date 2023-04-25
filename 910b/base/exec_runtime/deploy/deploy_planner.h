@@ -54,6 +54,7 @@ class DeployPlan {
     std::string enqueue_policy;
     bool owned = true;
     bool is_control = false;
+    int32_t fusion_offset = 0;
   };
 
   struct InvokedModelQueueInfo {
@@ -66,6 +67,16 @@ class DeployPlan {
     uint32_t rank_id;
   };
 
+  struct EventInfo {
+    std::string name;
+    std::string model_instance_name;
+    std::string group_name;
+    std::string event_type;
+    int32_t tag;
+    int32_t logic_peer_rank;
+    int32_t peer_rank;
+  };
+
   enum class ProcessMode {
     kProcess,
     kThread
@@ -73,6 +84,7 @@ class DeployPlan {
 
   enum class LoadMode {
     kLoadWithQ,
+    kLoadWithEvent,
     kLoadOnline
   };
 
@@ -92,6 +104,8 @@ class DeployPlan {
     std::vector<int32_t> output_queue_indices;
     std::vector<int32_t> control_output_queue_indices;
     std::map<std::string, std::string> attrs;
+    // sync event info, to be unify to input_queue_indices/output_queue_indices
+    std::vector<std::shared_ptr<EventInfo>> event_infos;
     // key:invoke key
     std::map<std::string, InvokedModelQueueInfo> invoked_model_queue_infos;
   };
@@ -122,12 +136,15 @@ class DeployPlan {
   friend class DeployPlannerBase;
   std::string model_name_;
   std::vector<QueueInfo> queues_;
+  std::vector<EventInfo> events_;
   std::vector<std::pair<int32_t, int32_t>> queue_bindings_;
+  std::map<int32_t, int32_t> dst_to_src_bindings_;
   SubmodelInfo root_model_info_;
   // key: model_instance_name
   std::map<std::string, SubmodelInfo> submodels_;
   // key is group queue index, value is sub queue index list
   std::map<int32_t, std::vector<int32_t>> groups_;
+  std::map<std::string, int32_t> groups_key_to_idx_;
   std::vector<QueueInfo> group_entries_;
   std::vector<HcomCommGroup> comm_groups_;
 };
@@ -175,10 +192,19 @@ class DeployPlannerBase {
   void UpdateForOutputControlIo();
   void UpdateRelationForControlIo();
   Status AssignEnqueueQueues();
+  Status ResolveEnqueueFusion();
+  Status ResolveDequeueFusion(int32_t src_endpoint_idx, int32_t dst_endpoint_idx);
+  Status ResolveInputsPlacement(const std::string &model_instance_name,
+                                const ModelRelation::ModelEndpointInfo &model_endpoint_info);
+  Status ResolveModelFusion(const std::string &model_instance_name,
+                            const ModelRelation::ModelEndpointInfo &model_endpoint_info);
+  bool CanBeFused(const std::string &fusion_name, const std::string &endpoint_name);
+  void UpdateFusionOffset(int32_t src_index, int32_t dst_index);
   void Mark2PgModels();
   Status ResolveDataFlows();
   Status ResolveModelInputs(const std::string &model_instance_name,
-                            const ModelRelation::ModelQueueInfo &model_queue_info);
+                            const ModelRelation::ModelEndpointInfo &model_endpoint_info);
+  void AddEndpointBindings(int32_t src_index, int32_t dst_index);
   void LogDataFlow() const;
   Status ResolveReusableQueues();
   Status AssignDequeueQueues();
@@ -199,19 +225,28 @@ class DeployPlannerBase {
   Status GetOrCreateInputEndpoint(const ModelQueueIndex &model_queue_index,
                                   const DeployPlan::QueueInfo &queue_info,
                                   int32_t &endpoint_index);
+  bool IsOneToMany(const int32_t src_endpoint_idx);
+  bool IsManyToOne(const int32_t dst_endpoint_idx);
   Status CreateTags(const int32_t src_endpoint_idx,
                     const int32_t dst_endpoint_idx,
                     const ModelQueueIndex &model_queue_loc,
                     const DeployPlan::QueueInfo &queue_info);
+  Status CreateOutputTags(const int32_t src_endpoint_idx,
+                          const DeployPlan::QueueInfo &dst_queue_info,
+                          int32_t &src_tag_idx,
+                          int32_t &dst_tag_idx);
   Status CreateTransferInfo(const std::string &route_name,
                             const DeployPlan::DeviceInfo &src_device_info,
                             const DeployPlan::DeviceInfo &dst_device_info);
   std::vector<std::string> ToEndpointDescs(const std::vector<int32_t> &endpoint_indices,
                                            const bool is_group_entry = false) const;
   std::string ToEndpointDesc(const int32_t endpoint_indices, const bool is_group_entry = false) const;
-  DeployPlan::QueueInfo BuildQueueInfo(const ModelRelation::QueueDef &queue_def,
+  static void BuildEventInfo(Endpoint &event_def, const std::string &model_instance_name,
+                             std::shared_ptr<DeployPlan::EventInfo> event_info);
+  DeployPlan::QueueInfo BuildQueueInfo(Endpoint &queue_def,
                                        const std::string &model_instance_name);
   std::string GetEndpointFullName(const DeployPlan::QueueInfo &endpoint_info, const ModelQueueIndex &model_queue_index);
+  const std::string &GetSubmodelType(const std::string &name);
 
   DeployPlan deploy_plan_;
   ModelRelation model_relation_;
@@ -219,20 +254,29 @@ class DeployPlannerBase {
   std::map<std::string, std::vector<int32_t>> src_endpoint_indices_;
   // {key: src_endpoint_index, value: {key: model_and_in_queue, value: queue_infos}
   std::map<int32_t, std::map<ModelQueueIndex, std::vector<DeployPlan::QueueInfo>>> endpoint_pairs_;
+  // {key：dst endpoint name, value: src_endpoint_index set}
+  std::map<std::string, std::set<int32_t>> relation_dst_to_src_;
   std::set<int32_t> reusable_queue_indices_;
   std::map<std::pair<ModelQueueIndex, std::string>, int32_t> input_endpoint_indices_;
+  // {key: src_endpoint_index, value: {key: model_and_in_queue, value: dst_endpoint_index}
+  std::map<int32_t, std::map<std::string, int32_t>> dequeue_ref_indices_;
   // for creating outgoing group, entries are ordered by device key
   std::map<int32_t, std::map<ModelQueueIndex, std::map<std::string, int32_t>>> output_groups_;
+  std::map<int32_t, std::map<std::string, std::pair<int32_t, int32_t>>> output_tags_;
+  std::map<std::string, std::set<std::string>> dequeue_placements_;
+  std::set<std::string> disable_fusion_queues_;
   // for creating incoming group
   std::map<int32_t, std::vector<int32_t>> input_groups_;
   // for unifying input/output queues
-  ModelRelation::ModelQueueInfo head_model_queue_info_;
-  ModelRelation::ModelQueueInfo tail_model_queue_info_;
+  ModelRelation::ModelEndpointInfo head_model_queue_info_;
+  ModelRelation::ModelEndpointInfo tail_model_queue_info_;
   DeployPlan::SubmodelInfo head_model_info_;
   DeployPlan::SubmodelInfo tail_model_info_;
   static std::atomic<int64_t> endpoint_name_id_gen_;
   std::map<std::string, std::string> short_names_;
-  std::set<std::string> deploy_to_devlist_;
+  std::map<std::string, std::string> instance_to_model_name_;
+  std::map<std::string, std::set<std::string>> deploy_to_devlist_;
+  static std::atomic<int64_t> plan_id_gen_;
 };
 
 class ModelRelationFlattener {
@@ -241,16 +285,17 @@ class ModelRelationFlattener {
   Status Flatten(ModelRelation &flattened_model_relation, std::map<std::string, PneModelPtr> &name_to_models);
   static Status Flatten(const PneModelPtr &root_model);
  private:
-  Status FlattenSubmodel(const ModelRelation::ModelQueueInfo &parent_model_queue_info,
+  Status FlattenSubmodel(const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
                          const PneModelPtr &pne_model,
                          const int32_t depth);
   void MergeQueueDefs(const std::map<std::string, std::string> &name_refs,
-                      const std::vector<ModelRelation::QueueDef> &queue_defs);
+                      const std::vector<Endpoint> &queue_defs);
   static void ReplaceQueueNames(const std::map<std::string, std::string> &name_refs, std::vector<std::string> &names);
-  static std::map<std::string, std::string> BuildNameRefs(const ModelRelation::ModelQueueInfo &parent_model_queue_info,
-                                                          const ModelRelation::ModelQueueInfo &root_model_queue_info);
-  static Status CheckConsistency(const ModelRelation::ModelQueueInfo &parent_model_queue_info,
-                                 const ModelRelation::ModelQueueInfo &root_model_queue_info);
+  static std::map<std::string, std::string> BuildNameRefs(
+      const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
+      const ModelRelation::ModelEndpointInfo &root_model_queue_info);
+  static Status CheckConsistency(const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
+                                 const ModelRelation::ModelEndpointInfo &root_model_queue_info);
 
   static bool NeedFlatten(const PneModelPtr &root_model);
 

@@ -54,10 +54,30 @@ enum {
   kAclMatchStaticOpModel,
   kAclMatchDynamicOpModel,
   kAclExecuteAsync,
+  kAclExecuteSync,
   kAclLoadSingleOp,
   kAclBuildOpModel,
+  // inherit from rt2
+  kModelExecute,
+  kInitInferShapeContext,
+  kTiling,
+  kUpdateShape,
+  kAllocMem,
+  kAtomic,
+  kOpExecute,
+  kKernelLaunchPrepare,
+  kInitHybridExecuteArgs,
+  kKnownGetAddrAndPrefCnt,
+  kKernelGetAddrAndPrefCnt,
+  kUpdateAddrAndPrefCnt,
+  kRtEventCreateRecord,
+  kRtEventSync,
+  kRtEventDestroy,
+  // static single op
   kStaticSingleOpExecute,
   kStaticSingleOpKernelLaunch,
+  kStaticSingleOpCopyH2D,
+  // model v2 executor
   kModel,
   kExecute,
   // Default
@@ -219,9 +239,9 @@ class ProfilingContext {
   void UpdateHashByStr(const std::string &str, const uint64_t hash);
 
  private:
-  bool inited_;
-  bool enabled_;
-  int64_t str_index_;
+  bool inited_ = false;
+  bool enabled_ = false;
+  int64_t str_index_ = kProfilingIndexEnd;
   std::unordered_map<std::string, int64_t> strings_to_index_;
   std::mutex strings_to_index_mutex_;
   std::unique_ptr<Profiler> profiler_;

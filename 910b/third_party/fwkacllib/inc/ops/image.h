@@ -93,6 +93,256 @@ REG_OP(LUT3D)
     .INPUT(lut_table, TensorType({DT_UINT8, DT_FLOAT}))
     .OUTPUT(lut_img, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(LUT3D)
+
+/**
+* @Adjust the brightness of one or more images . \n
+
+* @Inputs:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three. Inputs include:
+* @ images:A Tensor of type float32 or float16. Images to adjust. At least 3-D.
+* @ delta:A Tensor of type float32. Add delta to all components of the tensor image . \n
+
+* @ Outputs:
+* y:A Tensor of type float32 or float16 . \n
+
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
+
+* @ Third-party framework compatibility
+* Compatible with tensorflow AdjustBrightness operator.
+*/
+REG_OP(AdjustBrightness)
+    .INPUT(images, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(delta, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(AdjustBrightness)
+
+/**
+* @ Adjust the brightnessV2 of one or more images . \n
+
+* @ Inputs:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three. Inputs include:
+* @ images:A Tensor of type uint8. Images to adjust. At least 3-D.
+* @ factor:A Tensor of type float. Multiply factor to all components of the tensor image . \n
+
+* @ Outputs:
+* y:A Tensor of type uint8 . \n
+
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
+
+* @ Third-party framework compatibility
+* Compatible with tensorflow AdjustBrightness operator.
+*/
+REG_OP(AdjustBrightnessV2)
+    .INPUT(images, TensorType({DT_UINT8}))
+    .INPUT(factor, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .OP_END_FACTORY_REG(AdjustBrightnessV2)
+
+/**
+* @brief Adjust the contrast of images for DVPP with mean, need mean input. \n
+
+* @par Inputs:
+* Input images is a tensor of at least 3 dimensions. The last 3 dimensions are
+interpreted as '[height, width, channels]'. Inputs include:
+* @li images: A Tensor of type float. Images to adjust. At least 3-D. The format
+must be NHWC.
+* @li mean: A Tensor of type float.Indicates the average value of each channel. \n
+* @li contrast_factor: A Tensor of type float. A float multiplier for adjusting contrast . \n
+
+* @par Outputs:
+* y: A Tensor of type float. The format must be NHWC. \n
+
+* @par Attributes:
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+Value used for inferring real format of images.
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow AdjustContrast operator.
+*/
+REG_OP(AdjustContrastWithMean)
+    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .INPUT(mean, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .INPUT(contrast_factor, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .ATTR(data_format, String, "HWC")
+    .OP_END_FACTORY_REG(AdjustContrastWithMean)
+
+/**
+* @brief Convert an RGB image to a gray image. \n
+
+* @par Inputs:
+* Input images is a tensor of at least 3 dimensions. The last 3 dimensions are
+interpreted as '[height, width, channels]'. Inputs include:
+* @li images: A Tensor of type float. Images to adjust. At least 3-D. The format
+must be NHWC or NCHW.
+* @li mean: A Tensor of type float.Indicates the average value of each channel. \n
+* @li contrast_factor: A Tensor of type float. A float multiplier for adjusting contrast . \n
+
+* @par Outputs:
+* y: A Tensor of type float. The format must be NHWC or NCHW. \n
+
+* @par Attributes:
+* @li num_output_channels: An optional int. Could be 1 or 3. Defaults to 1.
+Value used for different mean mode.
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+Value used for inferring real format of images.
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
+
+* @par Third-party framework compatibility
+* Compatible with tensorflow AdjustContrast operator.
+*/
+REG_OP(RgbToGrayScale)
+    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .ATTR(data_format, String, "HWC")
+    .ATTR(num_output_channels, Int, 1)
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+    .OP_END_FACTORY_REG(RgbToGrayScale)
+
+/**
+* @ Another method to adjust the saturation of one or more images. \n
+
+* @ Inputs:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three. Inputs include:
+* @ images:A Tensor of type uint8. Images to adjust. At least 3-D. The format
+could be NHWC or NCHW.
+* @ scale:A Tensor of type float. A float scale used in blending operation to adjust the saturation . \n
+
+* @ Outputs:
+* y:A Tensor of type uint8. The format could be NHWC or NCHW. \n
+
+* @attention Constraints:
+* Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
+
+* @ Third-party framework compatibility
+* Compatible with Pytorch AdjustSaturation operator.
+*/
+
+REG_OP(AdjustSaturationV2)
+    .INPUT(images, TensorType({DT_UINT8}))
+    .INPUT(scale, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .ATTR(data_format, String, "CHW")
+    .OP_END_FACTORY_REG(AdjustSaturationV2)
+
+/**
+* @brief Resize images to size using trilinear interpolation . \n
+
+* @par Inputs:
+* Input images must be a 5-D tensor. Inputs include:
+* @li x: 5-D tensor. Must set the format, supported format list ["NCDHW, NDHWC"]
+* @li size: A 1-D int32 Tensor of 3 elements: new_depth, new_height, new_width. The new
+size for the images . \n
+
+* @par Attributes:
+* @li align_corners: If true, the centers of the 8 corner pixels of the input and
+output tensors are aligned, preserving the values at the corner pixels.
+Defaults to false .
+* @li half_pixel_centers: An optional bool. Defaults to false . \n
+* @par Outputs:
+* y: 5-D with shape [batch, channels, new_depth, new_height, new_width] . \n
+
+* @par Third-party framework compatibility
+* Compatible with onnx Resize operator using trilinear interpolation.
+*/
+
+REG_OP(ResizeTrilinear)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(size, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(align_corners, Bool, false)
+    .ATTR(half_pixel_centers, Bool, false)
+    .OP_END_FACTORY_REG(ResizeTrilinear)
+
+/**
+* @brief Applies a affine transformation to an image. \n
+
+* @par Inputs:
+* @li x: An HWC tensor of type float32 or uint8.
+* @li matrix: transformation matrix, format ND , shape must be (2, 3), type must be float32. \n
+
+* @par Attributes:
+* @li dst_size: Required int32 and int64, shape must be (1, 2), specifying the size of the output image.
+* Must be greater than "0".
+* @li interpolation: Interpolation type, only support "bilinear"/"nearst"/"cubic"/"area", default "bilinear".
+* @li border_type: Pixel extension method, only support "constant".
+* @li border_value: Used when border_type is "constant". Data type is the same as that of the original picture.
+*                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 . \n
+
+* @par Outputs:
+* y: output tensor, HWC, type must be float32 or uint8.
+*/
+REG_OP(WarpAffineV2)
+    .INPUT(x, TensorType({DT_FLOAT, DT_UINT8}))
+    .INPUT(matrix, TensorType({DT_FLOAT}))
+    .INPUT(dst_size, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8}))
+    .ATTR(interpolation, String, "bilinear")
+    .ATTR(border_type, String, "constant")
+    .ATTR(border_value, Float, 0.0)
+    .OP_END_FACTORY_REG(WarpAffineV2)
+
+/**
+* @brief change an image size. \n
+
+* @par Inputs:
+* @li x: An HWC tensor of type float32 or uint8.
+* @li dst_size: Required int32 and int64, shape must be (1, 2), specifying the size of the output image. \n
+
+* @par Attributes:
+* @li interpolation: Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area", default "nearest".
+
+* @par Outputs:
+* y: output tensor, HWC, type must be float32 or uint8.
+*/
+REG_OP(ResizeV2)
+    .INPUT(x, TensorType({DT_FLOAT, DT_UINT8}))
+    .INPUT(dst_size, TensorType({DT_INT32,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8}))
+    .ATTR(interpolation, String, "nearest")
+    .OP_END_FACTORY_REG(ResizeV2)
+
+/**
+* @brief Applies a gaussian blur to an image. \n
+
+* @par Inputs:
+* @li x: An NCHW or NHWC tensor of type T. \n
+* @li matrix: transformation matrix, format ND , shape must be (2, 3), type must be float32. \n
+
+* @par Attributes:
+* @li kernel_size: An required ListInt.
+* contain 2 elements: [size_width, size_height].
+* every element must be 1 or 3 or 5.
+* @li sigma: A required ListFloat.
+* contain 2 elements: [sigma_x, sigma_y].
+* @li padding_mode: padding mode, only support "constant" and "reflect", default "constant". \n
+
+* @par DataType:
+* @li T: type of uint8 or float32. \n
+
+* @par Outputs:
+* y: output tensor, has the same type and shape as input x.
+*/
+REG_OP(GaussianBlur)
+    .INPUT(x, "T")
+    .OUTPUT(y, "T")
+    .REQUIRED_ATTR(kernel_size, ListInt)
+    .REQUIRED_ATTR(sigma, ListFloat)
+    .ATTR(padding_mode, String, "constant")
+    .DATATYPE(T, TensorType({DT_UINT8, DT_FLOAT}))
+    .OP_END_FACTORY_REG(GaussianBlur)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_H_

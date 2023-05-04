@@ -120,6 +120,9 @@ const char_t *const OPTION_GRAPH_COMPILER_CACHE_DIR = "ge.graph_compiler_cache_d
 // graph unique key
 const char_t *const OPTION_GRAPH_KEY = "ge.graph_key";
 
+// optimizations to disable, split by comma
+const char_t *const OPTION_DISABLE_OPTIMIZATIONS = "ge.disableOptimizations";
+
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
 const char_t *const HEAD_STREAM = "ge.headStream";
@@ -432,6 +435,8 @@ const char_t *const FILE_CONSTANT_PATH = "ge.exec.value_bins";
 const std::string EXTERNAL_WEIGHT = "ge.externalWeight";
 
 const std::string DETERMINISTIC = "ge.deterministic";
+
+constexpr char_t EVENT[] = "ge.event";
 
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };

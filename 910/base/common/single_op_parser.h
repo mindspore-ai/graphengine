@@ -32,7 +32,6 @@ struct SingleOpTensorDesc {
 public:
   bool GetValidFlag() const { return is_valid_; }
   void SetValidFlag(bool is_valid) { is_valid_ = is_valid; }
-public:
   std::string name;
   std::vector<int64_t> dims;
   std::vector<int64_t> ori_dims;

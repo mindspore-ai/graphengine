@@ -23,13 +23,13 @@ namespace ge {
 class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelSaveHelper {
  public:
   NanoModelSaveHelper() = default;
-  virtual ~NanoModelSaveHelper() override = default;
+  ~NanoModelSaveHelper() override = default;
 
-  virtual Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
-                                   ModelBufferData &model, const bool is_unknown_shape) override;
+  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
+                           ModelBufferData &model, const bool is_unknown_shape) override;
 
-  virtual Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
-                               ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
+  Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
+                       ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
   void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
@@ -37,7 +37,7 @@ class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelSaveHelper {
  private:
   bool is_offline_ = true;
   NanoModelSaveHelper(const NanoModelSaveHelper &) = default;
-  NanoModelSaveHelper &operator=(const NanoModelSaveHelper &) = default;
+  NanoModelSaveHelper &operator=(const NanoModelSaveHelper &) & = default;
   Status SaveToDbg(const GeModelPtr &ge_model, const std::string &output_file) const;
 };
 }  // namespace ge

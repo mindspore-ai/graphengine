@@ -239,6 +239,13 @@ the output will be output = [[0, 3] [3, 2] [1, 3]]
 *@par Attributes:
 *boundaries:A sorted list of floats gives the boundary of the buckets . \n
 
+*@par Attributes:
+*dtype: An optional int32 or int64. The output data type. Defaults to int32. \n
+
+*@par Attributes:
+*right: An optional true or false. If true, return unpperbound index. If false return lowerbound index.
+*If the corresponding location is not found, return 0. \n
+
 *@par Outputs:
 *y:Same shape with 'input', each value of input replaced with bucket index . \n
 
@@ -248,8 +255,10 @@ the output will be output = [[0, 3] [3, 2] [1, 3]]
 
 REG_OP(Bucketize)
     .INPUT(x, TensorType({DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(boundaries, ListFloat)
+    .ATTR(dtype, Type, DT_INT32)
+    .ATTR(right, Bool, true)
     .OP_END_FACTORY_REG(Bucketize)
 
 /**

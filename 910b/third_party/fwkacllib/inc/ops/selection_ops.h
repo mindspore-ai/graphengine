@@ -2732,7 +2732,9 @@ REG_OP(NonMaxSuppressionBucketize)
 * @li sorted_sequence: A Tensor of {DT_FLOAT16,DT_FLOAT,DT_INT16,DT_INT8,DT_UINT8,DT_INT32,DT_INT64}, 
                        the values of the last dim are sorted by ascending order.
 * @li values: the inserted Tensor. Must have the same type as input. only the last dim can be different from 
-              the sorted_sequence.  \n
+              the sorted_sequence.
+* @li sorter:  if provided, a tensor matching the shape of the unsorted sorted_sequence containing a sequence of indices
+               that sort it in the ascending order on the innermost dimension  \n
 
 * @par Outputs:
 * @li out: output tensor of the op, which is the same shape as input "values". Dtype is int32 or int64. \n
@@ -2753,6 +2755,7 @@ REG_OP(SearchSorted)
                                 DT_UINT8, DT_INT32, DT_INT64}))
     .INPUT(values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT16, DT_INT8, 
                                 DT_UINT8, DT_INT32, DT_INT64}))
+    .OPTIONAL_INPUT(sorter, TensorType({DT_INT64}))
     .OUTPUT(out, TensorType(DT_INT32, DT_INT64))
     .ATTR(dtype, Type, DT_INT64)
     .ATTR(right, Bool, false)

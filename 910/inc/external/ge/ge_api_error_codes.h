@@ -69,15 +69,15 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
   std::string GetErrDesc(const uint32_t err) {
     const std::map<uint32_t, std::string>::const_iterator iter_find = err_desc_.find(err);
-    if (iter_find == err_desc_.end()) {
+    if (iter_find == err_desc_.cend()) {
       return "";
     }
     return iter_find->second;
   }
 
  protected:
-  StatusFactory() {}
-  ~StatusFactory() {}
+  StatusFactory() = default;
+  ~StatusFactory() = default;
 
  private:
   std::map<uint32_t, std::string> err_desc_;

@@ -69,7 +69,7 @@ class ModelRelationBuilder {
 
  private:
   Status DoBuild(const ComputeGraph &root_graph);
-  Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int, std::string>> &paired_inputs,
+  Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
                         const ComputeGraph &root_graph);
   Status DoBuildForPartitionedCall(const NodePtr &node, std::map<NodePtr,
                                    std::map<int32_t, std::string>> &paired_inputs);
@@ -93,13 +93,6 @@ class ModelRelationReader {
                            vector<const Endpoint *> &endpoints) const;
 
   const ModelRelation::InvokedModelQueueInfo *GetInvokedModelQueueInfo(const std::string &invoke_key) const;
-
-  const std::vector<const Endpoint *> &GetInputEndpoints() const {
-    return input_endpoints_;
-  }
-  const std::vector<const Endpoint *> &GetOutputEndpoints() const {
-    return output_endpoints_;
-  }
 
   const Endpoint *GetEndpoint(const std::string &queue_name) const;
 

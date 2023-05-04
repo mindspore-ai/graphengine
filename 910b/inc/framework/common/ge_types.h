@@ -148,8 +148,8 @@ constexpr size_t k32Bits = 32U;
 
 // Data cache, including data address and length
 struct DataBuffer {
-  void *data;       // Data address
-  uint64_t length;  // Data length
+  void *data = nullptr;       // Data address
+  uint64_t length = 0UL;  // Data length
   bool isDataSupportMemShare = false;
   uint32_t placement = 0U;
 
@@ -158,7 +158,7 @@ struct DataBuffer {
                                                    isDataSupportMemShare(is_support_mem_share),
                                                    placement(data_placement) {}
 
-  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false), placement(0U) {}
+  DataBuffer() = default;
 };
 
 ///
@@ -294,16 +294,16 @@ struct ModelData {
 };
 
 struct ModelParam {
-  ModelParam() : priority(0), mem_base(0U), mem_size(0U), weight_base(0U), weight_size(0U) {}
+  ModelParam() = default;
   ModelParam(const int32_t pri, const uintptr_t m_base, const size_t m_len, const uintptr_t w_base, const size_t w_len)
       : priority(pri), mem_base(m_base), mem_size(m_len), weight_base(w_base), weight_size(w_len) {}
-  ~ModelParam() = default;
+  virtual ~ModelParam() = default;
 
-  int32_t priority;
-  uintptr_t mem_base;
-  size_t mem_size;
-  uintptr_t weight_base;
-  size_t weight_size;
+  int32_t priority = 0;
+  uintptr_t mem_base = 0U;
+  size_t mem_size = 0U;
+  uintptr_t weight_base = 0U;
+  size_t weight_size = 0U;
 };
 
 // The definition of Model information
@@ -319,10 +319,10 @@ struct ModelInfo {
 // Asynchronous callback interface, implemented by the caller
 class GE_FUNC_VISIBILITY ModelListener {
  public:
-  virtual ~ModelListener() {}
+  virtual ~ModelListener() = default;
   ModelListener() = default;
   ModelListener(const ModelListener &) = delete;
-  ModelListener& operator=(const ModelListener &) = delete;
+  ModelListener& operator=(const ModelListener &) & = delete;
   ///
   /// @brief Asynchronous callback interface
   /// @param [in] model_id   Model ID of the callback

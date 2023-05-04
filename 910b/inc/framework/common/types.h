@@ -434,7 +434,9 @@ REGISTER_OPTYPE_DECLARE(STREAMMERGE, "StreamMerge");
 REGISTER_OPTYPE_DECLARE(ENDGRAPH, "EndGraph");
 REGISTER_OPTYPE_DECLARE(MODELEXIT, "ModelExit");
 REGISTER_OPTYPE_DECLARE(SEND, "Send");
+REGISTER_OPTYPE_DECLARE(SENDNOTIFY, "SendNotify");
 REGISTER_OPTYPE_DECLARE(RECV, "Recv");
+REGISTER_OPTYPE_DECLARE(RECVNOTIFY, "RecvNotify");
 REGISTER_OPTYPE_DECLARE(ENDOFSEQUENCE, "EndOfSequence");
 REGISTER_OPTYPE_DECLARE(STARTOFSEQUENCE, "StartOfSequence");
 REGISTER_OPTYPE_DECLARE(NPUGETFLOATSTATUS, "NPUGetFloatStatus");
@@ -754,9 +756,15 @@ typedef enum tagDomiActivationMode {
   DOMI_ACTIVATION_RESERVED
 } domiActivationMode_t;
 
-enum class MemorySizeCalcType { NORMAL = 0, ALWAYS_EMPTY };
+enum class MemorySizeCalcType {
+  NORMAL = 0,
+  ALWAYS_EMPTY
+};
 
-enum AicpuWorkSpaceType { CUST_LOG = 0, INVALID_TYPE };
+enum AicpuWorkSpaceType {
+  CUST_LOG = 0,
+  INVALID_TYPE
+};
 }  // namespace ge
 
 namespace domi {

@@ -28,9 +28,11 @@
 
 #include "proto/op_mapping.pb.h"
 #include "proto/task.pb.h"
-#include "framework/common/tlv/lite_dbg_desc.h"
 
 namespace ge {
+constexpr size_t kAddrLength = sizeof(uint64_t);
+constexpr size_t kDumpL1FusionOpMByteSize = 2U * 1042U * 1024U;
+
 struct LiteDbgOutputDesc {
   int32_t data_type;
   int32_t format;
@@ -95,22 +97,17 @@ struct LiteDbgOpDesc {
   std::vector<LiteDbgMemInfoDesc> mem_info_list;
 };
 
-namespace {
-constexpr size_t kAddrLength = sizeof(uint64_t);
-constexpr size_t kDumpL1FusionOpMByteSize = 2U * 1042U * 1024U;
-}
-
 class LiteDbgData {
  public:
   explicit LiteDbgData(const GeModelPtr &ge_model);
   ~LiteDbgData() = default;
-  LiteDbgData &operator=(const LiteDbgData &dbg) = delete;
+  LiteDbgData &operator=(const LiteDbgData &dbg) & = delete;
   LiteDbgData(const LiteDbgData &dbg) = delete;
 
   Status Init();
 
   const void *GetDbgData() const {
-    return static_cast<const void *>(buff_.get());
+    return static_cast<const void *>(buff_.data());
   }
 
   uint64_t GetDbgDataSize() const {
@@ -160,7 +157,7 @@ class LiteDbgData {
   uint8_t *des_addr_ = nullptr;
   size_t des_size_ = 0U;
   size_t buff_size_ = 0U;
-  std::shared_ptr<uint8_t> buff_ = nullptr;
+  std::vector<uint8_t> buff_;
 };
 } // namespace ge
 #endif  // AIR_BASE_COMMON_MODEL_LITE_DBG_DATA_H_

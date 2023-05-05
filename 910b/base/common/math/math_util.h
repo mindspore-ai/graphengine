@@ -726,7 +726,7 @@ inline Status CheckInt32DivOverflow(const int32_t a, const int32_t b) {
   }
 
 #define FMK_FP16_ADDCHECK(a, b)                                                      \
-  if (ge::CheckFp16AddOverflow(static_cast<float>(a), static_cast<float>(b)) != SUCCESS) { \
+  if (ge::CheckFp16AddOverflow(static_cast<fp16_t>(a), static_cast<fp16_t>(b)) != SUCCESS) { \
     GELOGW("Fp16 %f and %f addition can result in overflow!", static_cast<float>(a), \
            static_cast<float>(b));                                                   \
     return INTERNAL_ERROR;                                                           \
@@ -817,7 +817,7 @@ inline Status CheckInt32DivOverflow(const int32_t a, const int32_t b) {
   }
 
 #define FMK_FP16_SUBCHECK(a, b)                                                         \
-  if (ge::CheckFp16SubOverflow(static_cast<float>(a), static_cast<float>(b)) != SUCCESS) { \
+  if (ge::CheckFp16SubOverflow(static_cast<fp16_t>(a), static_cast<fp16_t>(b)) != SUCCESS) { \
     GELOGW("Fp16 %f and %f subtraction can result in overflow!", static_cast<float>(a), \
            static_cast<float>(b));                                                      \
     return INTERNAL_ERROR;                                                              \
@@ -908,7 +908,7 @@ inline Status CheckInt32DivOverflow(const int32_t a, const int32_t b) {
   }
 
 #define FMK_FP16_MULCHECK(a, b)                                                            \
-  if (ge::CheckFp16MulOverflow(static_cast<float>(a), static_cast<float>(b)) != SUCCESS) { \
+  if (ge::CheckFp16MulOverflow(static_cast<fp16_t>(a), static_cast<fp16_t>(b)) != SUCCESS) { \
     GELOGW("Fp16 %f and %f multiplication can result in overflow!", static_cast<float>(a), \
            static_cast<float>(b));                                                         \
     return INTERNAL_ERROR;                                                                 \

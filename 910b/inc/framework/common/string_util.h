@@ -33,7 +33,9 @@ class GE_FUNC_VISIBILITY StringUtils {
  public:
   static std::string &Ltrim(std::string &s) {
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](const int32_t c) { return std::isspace(c) == 0; }));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                                          [](const int32_t c) {
+                                            return std::isspace(static_cast<unsigned char>(c)) == 0; }));
 #else
     (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(),
                                           std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))));
@@ -44,7 +46,8 @@ class GE_FUNC_VISIBILITY StringUtils {
   static std::string &Rtrim(std::string &s) {  /*lint !e618*/
 #if __cplusplus >= 201103L
     (void)s.erase(std::find_if(s.rbegin(), s.rend(),
-                               [](const int32_t c) { return std::isspace(c) == 0; }).base(), s.end());
+                               [](const int32_t c) {
+                                 return std::isspace(static_cast<unsigned char>(c)) == 0; }).base(), s.end());
 #else
     (void)s.erase(std::find_if(s.rbegin(), s.rend(),
                                std::not1(std::ptr_fun<int32_t, int32_t>(std::isspace))).base(), s.end());
@@ -136,7 +139,7 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] str_x prefix
   ///  @return if the value is a prefix, true is returned. Otherwise, false is returned
   ///
-  static bool StartWith(const std::string &str, const std::string str_x) {
+  static bool StartWith(const std::string &str, const std::string &str_x) {
     return ((str.size() >= str_x.size()) && (str.compare(0U, str_x.size(), str_x) == 0));
   }
 

@@ -22,25 +22,51 @@
 #include "proto/flow_model.pb.h"
 
 namespace ge {
+namespace attr {
+constexpr bool kDefaultBool = false;
+constexpr char_t kDefaultStrVal[] = "";
+constexpr int64_t kDefaultInt64Val = -1;
+struct GetDefaultValue {
+  operator bool() const {
+    return kDefaultBool;
+  }
+  operator std::string() const {
+    return kDefaultStrVal;
+  }
+  operator std::int64_t() const {
+    return kDefaultInt64Val;
+  }
+};
+}
 using AttrValueMap = ::google::protobuf::Map<string, ge::flow_model::proto::ModelRelationDef::AttrValue>;
-enum class EndpointType : std::uint32_t { kQueue = 0, kEvent = 1, kMaxEndpointTypeNum };
+enum class EndpointType : std::uint32_t { kQueue = 0, kEvent, kMaxEndpointTypeNum };
 
 class Endpoint {
  public:
-  Endpoint(std::string name, EndpointType endpoint_type) : name_(std::move(name)), endpoint_type_(endpoint_type){};
+  Endpoint(const string &name, const EndpointType endpoint_type) : name_(name), endpoint_type_(endpoint_type){};
   ~Endpoint() = default;
   EndpointType GetEndpointType() const;
   const std::string &GetName() const;
   std::string &MutableName();
   Endpoint &SetName(const std::string &name);
-  Endpoint &SetEndpointType(EndpointType endpoint_type);
-  template <typename T>
-  void SetAttr(const std::string &name, const T &value);
+  Endpoint &SetEndpointType(const EndpointType endpoint_type);
   void SetAnyValueByName(const std::string &name, const AnyValue &value);
+
   template <typename T>
-  const T GetAttr(const std::string &name) const;
+  void SetAttr(const std::string &name, const T &value) {
+    (void)attrs_.SetByName(name, value);
+  }
+
   template <typename T>
-  const T GetDefaultAttr() const;
+  const T GetAttr(const std::string &name) const {
+    const auto result_attr = attrs_.GetByName<T>(name);
+    return (result_attr != nullptr) ? *result_attr : GetDefaultAttr<T>();
+  }
+
+  template <typename T>
+  const T GetDefaultAttr() const {
+    return attr::GetDefaultValue();
+  }
 
   // function for serialize
   std::map<std::string, AnyValue> GetAllAttrs() const;
@@ -72,14 +98,14 @@ class P2pNodeUtils {
   explicit P2pNodeUtils(Endpoint &endpoint) : endpoint_(endpoint){};
   P2pNodeUtils &SetType(const std::string &event_type);
   P2pNodeUtils &SetGroupName(const std::string &group_name);
-  P2pNodeUtils &SetTag(int64_t tag);
-  P2pNodeUtils &SetPeerRank(int64_t peer_rank);
-  P2pNodeUtils &SetLogicPeerRank(int64_t logic_peer_rank);
+  P2pNodeUtils &SetTag(const int64_t tag);
+  P2pNodeUtils &SetPeerRank(const int64_t peer_rank);
+  P2pNodeUtils &SetLogicPeerRank(const int64_t logic_peer_rank);
   P2pNodeUtils &SetDeviceIndices(const std::string &indices);
-  P2pNodeUtils &SetIsOutput(bool is_output);
+  P2pNodeUtils &SetIsOutput(const bool is_output);
   // flow : need deploy
   // p2p_node : if send/recv nodes is in the graph, does not need deploy, else need deploy
-  P2pNodeUtils &SetNeedDeploy(bool nee_deploy = false);
+  P2pNodeUtils &SetNeedDeploy(const bool nee_deploy);
   std::string GetType() const;
   std::string GetGroupName() const;
   int64_t GetTag() const;
@@ -89,7 +115,7 @@ class P2pNodeUtils {
   bool IsOutput() const;
   bool GetNeedDeploy() const;
   // should called after wrapped partitioned call node
-  Status GetNameByWrappedPartitionedCall(NodePtr &src_node, std::string &new_endpoint_name) const;
+  Status GetNameByWrappedPartitionedCall(const NodePtr &src_node, std::string &new_endpoint_name) const;
 
  private:
   Endpoint &endpoint_;
@@ -98,9 +124,9 @@ class P2pNodeUtils {
 class QueueNodeUtils {
  public:
   explicit QueueNodeUtils(Endpoint &endpoint) : endpoint_(endpoint){};
-  QueueNodeUtils &SetDepth(int64_t depth);
+  QueueNodeUtils &SetDepth(const int64_t depth);
   QueueNodeUtils &SetEnqueuePolicy(const std::string &enqueue_policy);
-  QueueNodeUtils &SetIsControl(bool is_control = true);
+  QueueNodeUtils &SetIsControl(const bool is_control = true);
   int64_t GetDepth() const;
   std::string GetEnqueuePolicy() const;
   bool GetIsControl() const;

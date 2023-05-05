@@ -248,6 +248,7 @@ struct GraphManagerOptions {
   int32_t dynamic_node_type = -1;
   std::set<std::string> exclude_engines;
   std::string build_inner_model = "true";
+  std::string event = "event";
   GraphManagerOptions()
       : stream_num(1),
         perf_level(domi::GEN_TASK_WITHOUT_FUSION),

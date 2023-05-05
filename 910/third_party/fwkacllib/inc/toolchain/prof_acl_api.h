@@ -27,6 +27,7 @@ constexpr uint64_t PROF_MSPROFTX       = 0x00000080ULL;
 constexpr uint64_t PROF_RUNTIME_API    = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW      = 0x00000400ULL;
+constexpr uint64_t PROF_TASK_TIME_L1   = 0x00000800ULL;
 
 // system profilinig switch
 constexpr uint64_t PROF_CPU                  = 0x00010000ULL;
@@ -64,6 +65,7 @@ constexpr uint64_t PROF_MSPROFTX_MASK       = 0x00000080ULL;
 constexpr uint64_t PROF_RUNTIME_API_MASK    = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK_MASK = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW_MASK      = 0x00000400ULL;
+constexpr uint64_t PROF_TASK_TIME_L1_MASK   = 0x00000800ULL;
 
 // system profilinig mask
 constexpr uint64_t PROF_CPU_MASK                  = 0x00010000ULL;

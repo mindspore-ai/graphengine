@@ -243,7 +243,7 @@ REG_OP(ConcatV2D)
 *@par Inputs:
 * Two inputs, including:
 *@li Dynamic input "x" is A ND Tensor.
-*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
+* Must be one of the following types: bool, float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 *@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
 
 *@par Attributes:
@@ -259,9 +259,9 @@ REG_OP(ConcatV2D)
 * Compatible with the TensorFlow operator ConcatV2.
 */
 REG_OP(ConcatV2)
-    .DYNAMIC_INPUT(x, TensorType::BasicType())
+    .DYNAMIC_INPUT(x, TensorType({BasicType(), DT_BOOL}))
     .INPUT(concat_dim, TensorType::IndexNumberType())
-    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL}))
     .ATTR(N, Int, 1)
     .OP_END_FACTORY_REG(ConcatV2)
 

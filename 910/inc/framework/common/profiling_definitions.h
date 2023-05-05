@@ -194,13 +194,13 @@ class ProfilingContext {
   }
 
   void RecordCurrentThread(const int64_t element, const int64_t event, const EventType et,
-                           const std::chrono::time_point<std::chrono::system_clock> time_point) {
+                           const std::chrono::time_point<std::chrono::system_clock> time_point) noexcept {
     if (IsEnabled()) {
       profiler_->RecordCurrentThread(element, event, et, time_point);
     }
   }
 
-  void RecordCurrentThread(const int64_t element, const int64_t event, const EventType et) {
+  void RecordCurrentThread(const int64_t element, const int64_t event, const EventType et) noexcept {
     RecordCurrentThread(element, event, et, std::chrono::system_clock::now());
   }
 

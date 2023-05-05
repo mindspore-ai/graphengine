@@ -33,13 +33,13 @@ namespace ge {
 class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  public:
   ModelHelper() = default;
-  ~ModelHelper();
+  virtual ~ModelHelper() = default;
 
-  Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
+  virtual Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
                        ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
   Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
                          const size_t mode_index, const bool is_dyn_root) const;
-  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
+  virtual Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
                            ModelBufferData &model, const bool is_unknown_shape) override;
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
@@ -50,7 +50,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
-  void SetSaveMode(const bool val) override {
+  virtual void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
 
@@ -96,7 +96,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   bool is_repack_so_ = false;
   static std::string output_file_name_;
   ModelHelper(const ModelHelper &) = default;
-  ModelHelper &operator=(const ModelHelper &) = default;
+  ModelHelper &operator=(const ModelHelper &) & = default;
   static Status GetOppVersion(std::string &version);
   static Status EnsureKernelBuilt(const GeModelPtr &model);
 

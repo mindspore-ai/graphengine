@@ -21,6 +21,7 @@
 #include <set>
 #include <mutex>
 #include <vector>
+#include "external/ge/ge_api_types.h"
 
 namespace ge {
 class ExternalWeightManager {
@@ -42,9 +43,10 @@ class ExternalWeightManager {
  private:
   ExternalWeightManager() = default;
 
-  static bool CheckFilesSame(const std::string &file_name,
-                             const uint8_t *const data,
-                             const size_t data_length);
+  static Status CheckFilesSame(const std::string &file_name,
+                               const uint8_t *const data,
+                               const size_t data_length,
+                               bool &is_content_same);
 
   std::mutex mutex_;
   std::set<std::string> loaded_external_weight_files;

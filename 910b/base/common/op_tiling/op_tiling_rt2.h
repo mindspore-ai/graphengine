@@ -29,16 +29,16 @@ namespace optiling {
 using OutputsConvertorFun = std::function<ge::graphStatus(gert::KernelContext *kernel_context)>;
 bool EnableRt2Tiling(const ge::OpDescPtr &op_desc);
 bool EnableAtomicRt2Tiling(const ge::OpDescPtr &op_desc);
-ge::graphStatus RtParseAndTiling(const ge::Operator &op, const char * const compile_info,
-                                 const fe::PlatFormInfos &platform_infos, const OutputsConvertorFun callback,
-                                 const gert::OpImplSpaceRegistryPtr space_registry);
+ge::graphStatus RtParseAndTiling(const ge::Operator &op, const char_t * const compile_info,
+                                 const fe::PlatFormInfos &platform_infos, const OutputsConvertorFun &callback,
+                                 const gert::OpImplSpaceRegistryPtr &space_registry);
 ge::graphStatus AicoreRtParseAndTiling(const ge::Operator &op, const fe::PlatFormInfos &platform_infos,
                                        OpRunInfoV2 &run_info);
 ge::graphStatus AtomicRtParseAndTiling(const ge::Operator &op, const fe::PlatFormInfos &platform_infos,
                                        OpRunInfoV2 &run_info);
 ge::graphStatus SoftSyncOpRtParseAndTiling(const ge::Operator &op, fe::PlatFormInfos &platform_infos,
                                            rtArgsEx_t &args_ex, OpRunInfoV2 &run_info,
-                                           const gert::OpImplSpaceRegistryPtr space_registry);
+                                           const gert::OpImplSpaceRegistryPtr &space_registry);
 ge::graphStatus FftsRtParseAndTiling(const ge::Operator &op, const fe::PlatFormInfos &platform_infos,
                                      std::vector<OpRunInfoV2> &op_run_infos);
 }  // namespace optiling

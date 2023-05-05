@@ -442,7 +442,17 @@ REG_OP(UninitPartitionMap)
 * @li embedding_dim: A Int, indicates the length of embedding. \n
 * @li bucket_size: A Int, Defaults to "0". \n
 * @li dtype: A Type for data, Defaults to "DT_FLOAT". \n
-* @li random_alg: A String, "random_uniform" or "truncated_normal" or "", Defaults to "". \n
+* @li initializer_mode: A String of "random_uniform", "truncated_normal" , "constant" or "".
+* indicates the algo of init method. Defaults to "".
+* @li constant_value: A Float, used when initializer_mode is "constant", Defaults to "0". \n
+* @li min: A Float, used when initializer_mode is "truncated_normal", the minimum value of the random number.
+* Defaults to "-2".
+* @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
+* Defaults to "2".
+* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
+* Defaults to "0".
+* @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
+* Defaults to "1".
 * @li seed: A Int, Defaults to "0". \n
 * @li seed2: A Int, Defaults to "0". \n
 */
@@ -452,7 +462,12 @@ REG_OP(InitEmbeddingHashmap)
     .REQUIRED_ATTR(value_total_len, Int)
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(dtype, Type, DT_FLOAT)
-    .ATTR(random_alg, String, "")
+    .ATTR(initializer_mode, String, "")
+    .ATTR(constant_value, Float, 0)
+    .ATTR(min, Float, -2)
+    .ATTR(max, Float, 2)
+    .ATTR(mu, Float, 0)
+    .ATTR(sigma, Float, 1)
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
     .OP_END_FACTORY_REG(InitEmbeddingHashmap)
@@ -526,8 +541,17 @@ REG_OP(UninitEmbeddingHashmap)
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding var value in hashtable.
 * @li value_total_len: A Int, indicates the dim of embedding var+m+v or var+accum values in hashtable
-* @li random_alg: A String of "random_uniform" or "truncated_normal", indicates the algo of init method.
-* Defaults to "random_uniform".
+* @li initializer_mode: A String of "random_uniform", "truncated_normal" or "constant".
+* indicates the algo of init method, Defaults to "random_uniform".
+* @li constant_value: A Float, used when initializer_mode is "constant", Defaults to "0".
+* @li min: A Float, used when initializer_mode is "truncated_normal", the minimum value of the random number.
+* Defaults to "-2".
+* @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
+* Defaults to "2".
+* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal. 
+* Defaults to "0".
+* @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
+* Defaults to "1".
 * @li seed: An Int, Used to create a random seed, Defaults to "0".
 * @li seed2: An Int, Used to create a random seed, Defaults to "0". \n
 */
@@ -537,7 +561,12 @@ REG_OP(EmbeddingTableFindAndInit)
     .OUTPUT(values, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .REQUIRED_ATTR(value_total_len, Int)
-    .ATTR(random_alg, String, "random_uniform")
+    .ATTR(initializer_mode, String, "random_uniform")
+    .ATTR(constant_value, Float, 0)
+    .ATTR(min, Float, -2)
+    .ATTR(max, Float, 2)
+    .ATTR(mu, Float, 0)
+    .ATTR(sigma, Float, 1)
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
     .OP_END_FACTORY_REG(EmbeddingTableFindAndInit)
@@ -583,15 +612,15 @@ REG_OP(EmbeddingApplyAdam)
 
 * @par Inputs:
 * @li var_handle: The handle of embedding hashtable.
-* @li beta1_power: A Scalar, dtype is DT_FLOAT16 or DT_FLOAT. 0-D. indicates the beta1's power.
-* @li beta2_power: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta2's power.
-* @li lr: A Scalar, dtype is same as "beta1_power". 0-D. indicates the learning rate.
-* @li weight_decay: A Scalar, dtype is same as "beta1_power". 0-D. indicates the weight decay.
-* @li beta1: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta1 param.
-* @li beta2: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta2 param.
-* @li epsilon: A Scalar, dtype is same as "beta1_power". 0-D. indicates the small value param.
+* @li beta1_power: A Tensor, dtype is float16 or float. 0-D. indicates the beta1's power.
+* @li beta2_power: A Tensor, dtype is same as "beta1_power". 0-D. indicates the beta2's power.
+* @li lr: A Tensor, dtype is same as "beta1_power". 0-D. indicates the learning rate.
+* @li weight_decay: A Tensor, dtype is same as "beta1_power". 0-D. indicates the weight decay.
+* @li beta1: A Tensor, dtype is same as "beta1_power". 0-D. indicates the beta1 param.
+* @li beta2: A Tensor, dtype is same as "beta1_power". 0-D. indicates the beta2 param.
+* @li epsilon: A Tensor, dtype is same as "beta1_power". 0-D. indicates the small value param.
 * @li grad: A Tensor, dtype is same as "beta1_power". 1-D. indicates the grad.
-* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li keys: A Tensor, dtype is int64. 1-D. indicates the hashtable key.
 * @li max_grad_norm: A mutable Tensor of the same type as "beta1_power", an optional input. \n
 
 * @par Outputs:

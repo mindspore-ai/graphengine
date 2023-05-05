@@ -70,15 +70,18 @@ class ModelSaveHelperFactory {
 
   std::map<OfflineModelFormat, ModelSaveHelperCreatorFun> creator_map_;
 };
+}  // namespace ge
 
 #define REGISTER_MODEL_SAVE_HELPER(type, clazz)                                                                      \
   namespace {                                                                                                        \
   ModelSaveHelperPtr Creator_##type##_Model_Save_Helper() {                                                          \
-    std::shared_ptr<clazz> ptr = nullptr;                                                                            \
-    ptr = MakeShared<clazz>();                                                                                       \
-    return ptr;                                                                                                      \
+    try {                                                                                                            \
+      return std::make_shared<clazz>();                                                                              \
+    } catch (...) {                                                                                                  \
+      return nullptr;                                                                                                \
+    }                                                                                                                \
   }                                                                                                                  \
   ModelSaveHelperFactory::Registerar g_##type##_Model_Save_Helper_Creator(type, Creator_##type##_Model_Save_Helper); \
   }  // namespace
-}  // namespace ge
+
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_SAVE_HELPER_H_

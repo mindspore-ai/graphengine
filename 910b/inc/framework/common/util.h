@@ -45,18 +45,18 @@
 
 // new ge marco
 // Encapsulate common resource releases
-#define GE_MAKE_GUARD_RTMEM(var)        \
-  GE_MAKE_GUARD(var, [&] {              \
-    if ((var) != nullptr) {             \
-      GE_CHK_RT(rtFreeHost(var));       \
-    }                                   \
+#define GE_MAKE_GUARD_RTMEM(var)  \
+  GE_MAKE_GUARD(var, [&]() {      \
+    if ((var) != nullptr) {       \
+      GE_CHK_RT(rtFreeHost(var)); \
+    }                             \
   })
 
-#define GE_MAKE_GUARD_RTSTREAM(var)     \
-  GE_MAKE_GUARD(var, [&] {              \
-    if ((var) != nullptr) {             \
-      GE_CHK_RT(rtStreamDestroy(var));  \
-    }                                   \
+#define GE_MAKE_GUARD_RTSTREAM(var)    \
+  GE_MAKE_GUARD(var, [&]() {           \
+    if ((var) != nullptr) {            \
+      GE_CHK_RT(rtStreamDestroy(var)); \
+    }                                  \
   })
 
 // For propagating errors when calling a function.

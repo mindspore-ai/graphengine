@@ -136,8 +136,8 @@ inline uint16_t Fp16ExtracExp(const uint16_t x) {
 /// @ingroup fp16 basic operator
 /// @brief   get mantissa of fp16
 inline uint16_t Fp16ExtracMan(const uint16_t x) {
-  uint16_t result = (((x >> 10U) & 0x1FU) > 0U) ? 1U : 0U;
-  return (((x >> 0U) & 0x3FFU) | (result * 0x400U));
+  const uint8_t result = ((static_cast<uint32_t>(x >> 10U) & 0x1FU) > 0U) ? 1U : 0U;
+  return static_cast<uint16_t>(((x >> 0U) & 0x3FFU) | (result * 0x400U));
 }
 /// @ingroup fp16 basic operator
 /// @brief   constructor of fp16 from sign exponent and mantissa
@@ -238,7 +238,7 @@ enum class TagFp16RoundMode : uint32_t {
 ///          bit15:       1 bit SIGN      +---+-----+------------+
 ///          bit14-10:    5 bit EXP       | S |EEEEE|MM MMMM MMMM|
 ///          bit0-9:      10bit MAN       +---+-----+------------+
-using fp16_t = class TagFp16 {
+using fp16_t = class TagFp16 final {
  public:
   uint16_t val;
 
@@ -257,44 +257,44 @@ using fp16_t = class TagFp16 {
   /// @param [in] fp fp16_t object to be added
   /// @brief   Override addition operator to performing fp16_t addition
   /// @return  Return fp16_t result of adding this and fp
-  TagFp16 operator+(const TagFp16 &fp) const;
+  TagFp16 operator+(const TagFp16 fp) const;
   /// @ingroup fp16_t math operator
   /// @param [in] fp fp16_t object to be subtracted
   /// @brief   Override addition operator to performing fp16_t subtraction
   /// @return  Return fp16_t result of subtraction fp from this
-  TagFp16 operator-(const TagFp16 &fp) const;
+  TagFp16 operator-(const TagFp16 fp) const;
   /// @ingroup fp16_t math operator
   /// @param [in] fp fp16_t object to be multiplied
   /// @brief   Override multiplication operator to performing fp16_t multiplication
   /// @return  Return fp16_t result of multiplying this and fp
-  TagFp16 operator*(const TagFp16 &fp) const;
+  TagFp16 operator*(const TagFp16 fp) const;
 
   /// @ingroup fp16_t math compare operator
   /// @param [in] fp fp16_t object to be compared
   /// @brief   Override basic comparison operator to performing fp16_t if-equal comparison
   /// @return  Return boolean result of if-equal comparison of this and fp.
-  friend bool operator==(const TagFp16 &lhs, const TagFp16 &rhs) noexcept;
+  friend bool operator==(const TagFp16 lhs, const TagFp16 rhs) noexcept;
   /// @ingroup fp16_t math compare operator
   /// @param [in] fp fp16_t object to be compared
   /// @brief   Override basic comparison operator to performing fp16_t greater-than comparison
   /// @return  Return boolean result of greater-than comparison of this and fp.
-  friend bool operator>(const TagFp16 &lhs, const TagFp16 &rhs) noexcept;
+  friend bool operator>(const TagFp16 lhs, const TagFp16 rhs) noexcept;
   /// @ingroup fp16_t math compare operator
   /// @param [in] fp fp16_t object to be compared
   /// @brief   Override basic comparison operator to performing fp16_t greater-equal comparison
   /// @return  Return boolean result of greater-equal comparison of this and fp.
-  friend bool operator>=(const TagFp16 &lhs, const TagFp16 &rhs) noexcept;
+  friend bool operator>=(const TagFp16 lhs, const TagFp16 rhs) noexcept;
   /// @ingroup fp16_t math compare operator
   /// @param [in] fp fp16_t object to be compared
   /// @brief   Override basic comparison operator to performing fp16_t less-equal comparison
   /// @return  Return boolean result of less-equal comparison of this and fp.
-  friend bool operator<=(const TagFp16 &lhs, const TagFp16 &rhs) noexcept;
+  friend bool operator<=(const TagFp16 lhs, const TagFp16 rhs) noexcept;
 
   /// @ingroup fp16_t math evaluation operator
   /// @param [in] fp fp16_t object to be copy to fp16_t
   /// @brief   Override basic evaluation operator to copy fp16_t to a new fp16_t
   /// @return  Return fp16_t result from fp
-  TagFp16 &operator=(const TagFp16 &fp) &;
+  TagFp16 &operator=(const TagFp16 &fp) & = default;
   /// @ingroup fp16_t math evaluation operator
   /// @param [in] f_val float object to be converted to fp16_t
   /// @brief   Override basic evaluation operator to convert float to fp16_t
@@ -420,10 +420,10 @@ auto MinMan(const int16_t e_a, T m_a, const int16_t e_b, T m_b) -> T {
 /// @return  Return right-shift mantissa
 template <typename T>
 auto RightShift(T man, const int16_t shift) -> T {
-  constexpr int32_t bits = static_cast<int32_t>(sizeof(T) * 8U);  // one byte have 8 bits
-  const T mask = static_cast<T>(1U) << (static_cast<uint64_t>(bits) - 1U);
+  constexpr uint64_t bits = static_cast<uint64_t>(sizeof(T) * 8U);  // one byte have 8 bits
+  constexpr T mask = static_cast<T>(1U) << (bits - 1U);
   int16_t loop_cnt = shift;
-  while (loop_cnt--) {
+  while (loop_cnt-- != 0) {
     man = ((man & mask) | (man >> 1U));
   }
   return man;
@@ -440,7 +440,7 @@ auto GetManSum(const int16_t e_a, const T &m_a, const int16_t e_b, const T &m_b)
   T sum = 0U;
   if (e_a != e_b) {
     T m_tmp = 0U;
-    const int16_t e_tmp = static_cast<int16_t>(std::abs(e_a - e_b));
+    const int16_t e_tmp = static_cast<int16_t>(std::abs(static_cast<int32_t>(e_a - e_b)));
     if (e_a > e_b) {
       m_tmp = m_b;
       m_tmp = RightShift(m_tmp, e_tmp);
@@ -465,8 +465,8 @@ auto GetManSum(const int16_t e_a, const T &m_a, const int16_t e_b, const T &m_b)
 /// @return   Returns true if round 1,otherwise false;
 template <typename T>
 auto ManRoundToNearest(const bool bit0, const bool bit1, const bool bitLeft, T man, const uint16_t shift = 0U) -> T {
-  auto mark = (bit1 && (bitLeft || bit0)) ? 1 : 0;
-  man = (man >> shift) + mark;
+  const uint32_t mark = (bit1 && (bitLeft || bit0)) ? 1U : 0U;
+  man = static_cast<uint32_t>(man >> shift) + mark;
   return man;
 }
 /// @ingroup fp16_t public method

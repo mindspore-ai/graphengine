@@ -63,8 +63,8 @@ class GE_FUNC_VISIBILITY StatusFactory {
   std::string GetErrDesc(const uint32_t err);
 
  protected:
-  StatusFactory() {}
-  ~StatusFactory() {}
+  StatusFactory() = default;
+  virtual ~StatusFactory() = default;
 
  private:
   std::map<uint32_t, std::string> err_desc_;

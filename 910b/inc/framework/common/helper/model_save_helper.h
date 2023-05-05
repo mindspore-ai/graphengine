@@ -47,6 +47,9 @@ class GE_FUNC_VISIBILITY ModelSaveHelper {
                                const GeRootModelPtr &ge_root_model = nullptr) = 0;
 
   virtual void SetSaveMode(const bool val) = 0;
+ protected:
+  ModelSaveHelper(const ModelSaveHelper &) = default;
+  ModelSaveHelper &operator=(const ModelSaveHelper &) & = default;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_SAVE_HELPER_H_

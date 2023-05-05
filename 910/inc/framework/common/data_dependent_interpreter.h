@@ -51,10 +51,11 @@ class DataDependentInterpreter {
    * @param is_data_dependent
    * @return
    */
-  ge::graphStatus IsDataDependent(int32_t index, bool &is_data_dependent) const;
+  ge::graphStatus IsDataDependent(const int32_t index, bool &is_data_dependent) const;
 
  private:
-  ge::graphStatus IsDataDependentByImplOp(const ge::NodePtr &node, int32_t input_index, bool &is_data_dependent) const;
+  ge::graphStatus IsDataDependentByImplOp(const ge::NodePtr &node,
+                                          const int32_t input_index, bool &is_data_dependent) const;
   ge::graphStatus IsDataDependentByIr(int32_t index, bool &is_data_dependent) const;
   bool GetByIr(bool by_1_0, bool by_2_0, int32_t index_for_log) const;
 

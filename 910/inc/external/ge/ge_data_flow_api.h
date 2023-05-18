@@ -33,8 +33,8 @@ class GE_FUNC_VISIBILITY DataFlowInfo {
 
   DataFlowInfo(const DataFlowInfo &context) = delete;
   DataFlowInfo(const DataFlowInfo &&context) = delete;
-  DataFlowInfo &operator=(const DataFlowInfo &context) = delete;
-  DataFlowInfo &operator=(const DataFlowInfo &&context) = delete;
+  DataFlowInfo &operator=(const DataFlowInfo &context)& = delete;
+  DataFlowInfo &operator=(const DataFlowInfo &&context)& = delete;
 
   void SetStartTime(const uint64_t start_time);
   uint64_t GetStartTime() const;

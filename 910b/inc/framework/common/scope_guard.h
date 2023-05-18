@@ -36,7 +36,7 @@ class GE_FUNC_VISIBILITY ScopeGuard {
   ScopeGuard(ScopeGuard const &) = delete;
   ScopeGuard &operator=(ScopeGuard const &) & = delete;
 
-  explicit ScopeGuard(const std::function<void()> &on_exit_scope) : on_exit_scope_(on_exit_scope) {}
+  explicit ScopeGuard(const std::function<void()> &on_exit_scope) : on_exit_scope_(on_exit_scope), dismissed_(false) {}
 
   ~ScopeGuard() {
     if (!dismissed_) {
@@ -53,7 +53,7 @@ class GE_FUNC_VISIBILITY ScopeGuard {
 
  private:
   std::function<void()> on_exit_scope_;
-  bool dismissed_ = false;
+  bool dismissed_ ;
 };
 }  // namespace ge
 

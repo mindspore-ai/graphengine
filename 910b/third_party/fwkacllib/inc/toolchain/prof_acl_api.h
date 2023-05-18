@@ -51,7 +51,7 @@ constexpr uint64_t PROF_AICPU_MODEL          = 0x4000000000000000ULL;
 constexpr uint64_t PROF_MODEL_LOAD           = 0x8000000000000000ULL;
 
 constexpr uint64_t PROF_TASK_TRACE = (PROF_MODEL_EXECUTE | PROF_RUNTIME_TRACE | PROF_TRAINING_TRACE |
-                                      PROF_HCCL_TRACE | PROF_TASK_TIME);
+                                      PROF_HCCL_TRACE | PROF_TASK_TIME | PROF_TASK_TIME_L1);
 
 // DataTypeConfig MASK
 constexpr uint64_t PROF_ACL_API_MASK        = 0x00000001ULL;

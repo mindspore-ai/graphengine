@@ -32,7 +32,7 @@
 namespace ge {
 class TbeHandleInfo {
  public:
-  TbeHandleInfo(void *handle, const OpKernelBinPtr &kernel) : handle_(handle), kernel_(kernel) {}
+  TbeHandleInfo(void *const handle, const OpKernelBinPtr &kernel) : handle_(handle), kernel_(kernel) {}
 
   ~TbeHandleInfo() { handle_ = nullptr; }
 
@@ -91,7 +91,7 @@ class TBEHandleStore {
 class KernelHolder {
  public:
   KernelHolder(const char_t *const stub_func,
-               const std::shared_ptr<OpKernelBin> kernel_bin);
+               const std::shared_ptr<OpKernelBin> &kernel_bin);
 
   ~KernelHolder();
 

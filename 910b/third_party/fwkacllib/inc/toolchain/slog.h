@@ -136,6 +136,7 @@ typedef struct {
  * @ingroup slog
  *
  * module id
+ * if a module needs to be added, add the module at the end and before INVLID_MOUDLE_ID
  */
 enum {
     SLOG,          /**< Slog */
@@ -210,7 +211,7 @@ enum {
     HICAID,
     TSYNC,
     AUDIO,
-    INVLID_MOUDLE_ID
+    INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 
 /**

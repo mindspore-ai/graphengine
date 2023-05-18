@@ -32,14 +32,14 @@
 namespace ge {
 class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  public:
-  ModelHelper() = default;
-  virtual ~ModelHelper() = default;
+  ModelHelper() noexcept = default;
+  virtual ~ModelHelper() override = default;
 
-  virtual Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
+  Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
                        ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
   Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
                          const size_t mode_index, const bool is_dyn_root) const;
-  virtual Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
+  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
                            ModelBufferData &model, const bool is_unknown_shape) override;
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
@@ -50,7 +50,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
-  virtual void SetSaveMode(const bool val) override {
+  void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
 

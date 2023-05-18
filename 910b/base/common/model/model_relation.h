@@ -71,13 +71,16 @@ class ModelRelationBuilder {
   Status DoBuild(const ComputeGraph &root_graph);
   Status DoBuildForData(const NodePtr &node, std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
                         const ComputeGraph &root_graph);
-  Status DoBuildForPartitionedCall(const NodePtr &node, std::map<NodePtr,
+  Status DoBuildForPartitionedCall(const ComputeGraph &subgraph,
+                                   const NodePtr &node, std::map<NodePtr,
                                    std::map<int32_t, std::string>> &paired_inputs);
   Status DoBuildForNetOutput(const NodePtr &node, const std::map<NodePtr,
                              std::map<int32_t, std::string>> &paired_inputs);
   bool CheckInnerNode(const NodePtr &node) const;
   Status GetOrCreateModelEndpointInfo(const OpDesc &op_desc, ModelRelation::ModelEndpointInfo *&model_endpoint_info);
   Status CheckNetOutputNode(const NodePtr &node) const;
+  Status CreateExternalEndpointInfo(const ComputeGraph &subgraph,
+                                    ModelRelation::ModelEndpointInfo *&model_endpoint_info);
 
   std::map<std::string, Endpoint> endpoints_;
 };

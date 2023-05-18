@@ -85,7 +85,8 @@ class DeployPlan {
   enum class LoadMode {
     kLoadWithQ,
     kLoadWithEvent,
-    kLoadOnline
+    kLoadOnline,
+    kLoadWithSyncEvent
   };
 
   struct LoadInfo {
@@ -211,14 +212,17 @@ class DeployPlannerBase {
   Status BindRemoteOutputGroupToInput();
   Status BindOutputToRemoteInputs();
   void UpdateDeployPlan();
-  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info, int32_t &queue_idx);
+  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info, int32_t &endpoint_index);
+  Status CreateEndpointInfo(std::shared_ptr<DeployPlan::EventInfo> event_info, const std::string &model_instance_name);
   Status CreateGroupEntry(const DeployPlan::QueueInfo &queue_info, int32_t &entry_index);
   Status CreateGroupInfo(const DeployPlan::QueueInfo &queue_info,
                          const std::vector<int32_t> &grouped_indices,
                          int32_t &group_index);
-  Status CreateOutputEndpoints(const std::string &model_instance_name,
+  Status CreateOutputQueueDefs(const std::string &model_instance_name,
                                const std::vector<std::string> &queue_names,
                                const bool is_owned = true);
+  Status CreateInputOutputEventDefs(const std::string &model_instance_name,
+                                    const std::vector<std::string> &endpoint_names);
   Status CreateFeedEndpoints(const std::string &model_instance_name,
                              const std::vector<std::string> &queue_names,
                              const std::string &invoke_key);
@@ -288,8 +292,8 @@ class ModelRelationFlattener {
   Status FlattenSubmodel(const ModelRelation::ModelEndpointInfo &parent_model_queue_info,
                          const PneModelPtr &pne_model,
                          const int32_t depth);
-  void MergeQueueDefs(const std::map<std::string, std::string> &name_refs,
-                      const std::vector<Endpoint> &queue_defs);
+  void MergeEndpoints(const std::map<std::string, std::string> &name_refs,
+                      const std::vector<Endpoint> &endpoints);
   static void ReplaceQueueNames(const std::map<std::string, std::string> &name_refs, std::vector<std::string> &names);
   static std::map<std::string, std::string> BuildNameRefs(
       const ModelRelation::ModelEndpointInfo &parent_model_queue_info,

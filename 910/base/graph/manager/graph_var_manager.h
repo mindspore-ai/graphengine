@@ -273,6 +273,10 @@ class VarManager {
   Status MallocVarMemory(const uint64_t memory_size = kMemoryVarManagerMallocSize,
                          const uint32_t device_id = kDefaultDeviceId);
 
+  std::string GenerateMemoryKey(const uint64_t &session_id, const uint64_t &logic_addr) {
+    return "session" + std::to_string(session_id) + "logic" + std::to_string(logic_addr);
+  }
+
   Status FreeVarMemory();
 
   Status SetTransRoad(const std::string &var_name, const VarTransRoad &trans_road);

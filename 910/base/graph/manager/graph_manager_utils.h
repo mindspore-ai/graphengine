@@ -41,6 +41,8 @@
 #include "pne/model/flow_model.h"
 #include "external/register/register_fmk_types.h"
 #include "external/ge/ge_api_types.h"
+#include "external/ge/ge_graph_compile_summary.h"
+#include "external/graph/types.h"
 #include "framework/common/util.h"
 
 namespace ge {
@@ -67,9 +69,9 @@ class SubGraphInfo {
   void SetEngineName(const std::string &engine_name) { engine_name_ = engine_name; }
   const std::string &GetEngineName() const { return engine_name_; }
 
-  void SetInputFlag(const std::vector<bool> &input_flag) { input_flag_ = input_flag; }
+  void SetInputFlag(const vector_bit_t &input_flag) { input_flag_ = input_flag; }
 
-  void SetOutputFlag(const std::vector<bool> &output_flag) { output_flag_ = output_flag; }
+  void SetOutputFlag(const vector_bit_t &output_flag) { output_flag_ = output_flag; }
 
   void SetOutputContext(const std::string &output) { output_names_ = output; }
 
@@ -85,8 +87,8 @@ class SubGraphInfo {
  private:
   ComputeGraphPtr subgraph_ptr_;
   std::string engine_name_;
-  std::vector<bool> input_flag_;
-  std::vector<bool> output_flag_;
+  vector_bit_t input_flag_;
+  vector_bit_t output_flag_;
   ModelIdInfo model_id_info_;
   GeModelPtr ge_model_ptr_;
   std::string output_names_;
@@ -117,6 +119,7 @@ class RunAsyncListener : public ModelListener {
   BlockingQueue<uint8_t> sem_;
 };
 
+using InputMemoryBaseInfo = std::pair<const void *, size_t>; // <mem_base, mem_size>
 // single graph node info
 class GraphNode {
  public:
@@ -140,6 +143,8 @@ class GraphNode {
   bool IsAsync() const { return async_; }
   void SetAsync(const bool flag) { async_ = flag; }
 
+  bool GetCompiledFlag() const { return compiled_flag_; }
+  void SetCompiledFlag(const bool flag) { compiled_flag_ = flag; }
   bool GetBuildFlag() const { return build_flag_; }
   void SetBuildFlag(const bool buildFlag) { build_flag_ = buildFlag; }
   bool GetLoadFlag() const { return load_flag_; }
@@ -162,6 +167,18 @@ class GraphNode {
   void SetLoadRecord(const uint32_t record) { load_record_ = record; }
   void IncreaseLoadCount();
   void SetLoaded();
+  void SetFeatureBaseRefreshable(bool refreshable) { is_feature_base_refreshable_ = refreshable; }
+  bool IsFeatureBaseRefreshable() const { return is_feature_base_refreshable_; }
+  void SetConstMemoryBase(const void * const memory, const size_t size) {
+    const_mem_ = std::make_pair(memory, size);
+  }
+  const InputMemoryBaseInfo &GetConstMemoryBase() const { return const_mem_; }
+  void SetFeatureMemoryBase(const void * const memory, const size_t size) {
+    feature_mem_ = std::make_pair(memory, size);
+  }
+  const InputMemoryBaseInfo &GetFeatureMemoryBase() const { return feature_mem_; }
+  CompiledGraphSummaryPtr GetCompiledGraphSummary() const { return compiled_summary_; }
+  void SaveCompiledGraphSummary(const CompiledGraphSummaryPtr &summary) { compiled_summary_ = summary; }
 
  private:
   GraphId graph_id_;
@@ -173,6 +190,8 @@ class GraphNode {
 
   GraphPtr graph_;
   ComputeGraphPtr compute_graph_;
+  // set true only when Session::CompileGraph is called
+  bool compiled_flag_{false};
   bool build_flag_{false};
   // load_flag_ is true if more than 1 model were loaded
   bool load_flag_{false};
@@ -186,6 +205,11 @@ class GraphNode {
   // total times of loading a graph with same graph_id.
   uint32_t load_record_{0U};
   std::mutex load_count_mu_;
+  bool is_feature_base_refreshable_ = false;
+
+  InputMemoryBaseInfo const_mem_;
+  InputMemoryBaseInfo feature_mem_;
+  CompiledGraphSummaryPtr compiled_summary_{nullptr};
 };
 
 using GraphNodePtr = std::shared_ptr<GraphNode>;
@@ -213,10 +237,10 @@ class GraphModelListener : public ge::ModelListener {
 };
 
 struct GraphManagerOptions {
-  int32_t stream_num;
-  int32_t perf_level;
-  int32_t encrypt_mode;
-  int32_t framework_type;
+  int32_t stream_num{1};
+  int32_t perf_level{domi::GEN_TASK_WITHOUT_FUSION};
+  int32_t encrypt_mode{-1};
+  int32_t framework_type{domi::TENSORFLOW};
   std::string ek_file;
   std::string cert_file;
   std::string hw_key_file;
@@ -228,18 +252,18 @@ struct GraphManagerOptions {
   std::string func_bin_path;
   std::string input_nodes_set_fp16;
   std::string core_type;
-  bool compress_flag;
-  bool run_graph_flag;
-  bool train_graph_flag;
-  bool local_fmk_op_flag;
-  bool hcom_parallel;
-  bool enable_print_op_pass;
-  bool is_single_op;
+  bool compress_flag{false};
+  bool run_graph_flag{false};
+  bool train_graph_flag{false};
+  bool local_fmk_op_flag{false};
+  bool hcom_parallel{false};
+  bool enable_print_op_pass{false};
+  bool is_single_op{false};
   std::string dynamic_image_size;
   std::map<std::string, int32_t> stream_max_parallel_num;
   std::string output_datatype;
   std::string original_model_file;
-  std::string save_original_model;
+  std::string save_original_model{"false"};
   std::string build_mode;
   std::string build_step;
   std::string tuning_path;
@@ -247,34 +271,9 @@ struct GraphManagerOptions {
   std::string dynamic_dims;
   int32_t dynamic_node_type = -1;
   std::set<std::string> exclude_engines;
-  std::string build_inner_model = "true";
-  std::string event = "event";
-  GraphManagerOptions()
-      : stream_num(1),
-        perf_level(domi::GEN_TASK_WITHOUT_FUSION),
-        encrypt_mode(-1),
-        framework_type(domi::TENSORFLOW),
-        ek_file(""),
-        cert_file(""),
-        hw_key_file(""),
-        private_key_file(""),
-        calibration_conf_file(""),
-        insert_op_file(""),
-        input_format(""),
-        output_node_name(""),
-        func_bin_path(""),
-        core_type(""),
-        compress_flag(false),
-        run_graph_flag(false),
-        train_graph_flag(false),
-        local_fmk_op_flag(false),
-        hcom_parallel(false),
-        enable_print_op_pass(true),
-        is_single_op(false),
-        save_original_model("false"),
-        build_mode(""),
-        build_step(""),
-        tuning_path("") {}
+  std::string build_inner_model{"true"};
+  std::string event{"event"};
+  GraphManagerOptions() {}
 };
 }  // namespace ge
 

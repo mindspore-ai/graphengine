@@ -138,27 +138,28 @@ const uint32_t kAutoThread = 1U;
 // model deploy mode
 const std::string kModelDeployModeSpmd = "SPMD";
 
-// ffts plus
+// dsa
 constexpr size_t kDSASetInputAddr = 0U;
 constexpr size_t kDSAOutputAddrSize = 1U;
 constexpr size_t kDSAWorkspaceAddrSize = 2U;
 constexpr size_t kDSAInputAddrSize = 3U;
 constexpr size_t kDSAArgsInputAddrSize = 4U;
+constexpr size_t kDSAStateInputAddrSize = 5U;
 constexpr size_t k32Bits = 32U;
 
 // Data cache, including data address and length
 struct DataBuffer {
-  void *data = nullptr;       // Data address
-  uint64_t length = 0UL;  // Data length
-  bool isDataSupportMemShare = false;
-  uint32_t placement = 0U;
+  void *data;       // Data address
+  uint64_t length;  // Data length
+  bool isDataSupportMemShare;
+  uint32_t placement;
 
   DataBuffer(void *const data_in, const uint64_t data_len, const bool is_support_mem_share = false,
              const uint32_t data_placement = 0U) : data(data_in), length(data_len),
                                                    isDataSupportMemShare(is_support_mem_share),
                                                    placement(data_placement) {}
-
-  DataBuffer() = default;
+  DataBuffer() : data(nullptr), length(0UL), isDataSupportMemShare(false),
+                 placement(0U) {}
 };
 
 ///
@@ -294,16 +295,16 @@ struct ModelData {
 };
 
 struct ModelParam {
-  ModelParam() = default;
+  ModelParam() : priority(0), mem_base(0U), mem_size(0U), weight_base(0U), weight_size(0U) {}
   ModelParam(const int32_t pri, const uintptr_t m_base, const size_t m_len, const uintptr_t w_base, const size_t w_len)
       : priority(pri), mem_base(m_base), mem_size(m_len), weight_base(w_base), weight_size(w_len) {}
   virtual ~ModelParam() = default;
 
-  int32_t priority = 0;
-  uintptr_t mem_base = 0U;
-  size_t mem_size = 0U;
-  uintptr_t weight_base = 0U;
-  size_t weight_size = 0U;
+  int32_t priority;
+  uintptr_t mem_base;
+  size_t mem_size;
+  uintptr_t weight_base;
+  size_t weight_size;
 };
 
 // The definition of Model information
@@ -363,6 +364,7 @@ struct Options {
 
 // Profiling info of task
 struct TaskDescInfo {
+  uint64_t prof_time;
   std::string model_name;
   std::string op_name;
   std::string op_type;
@@ -394,6 +396,7 @@ struct OpDescInfo {
   std::string tvm_magic;
   uint32_t tiling_key = 0U;
   uintptr_t args = 0U;
+  size_t args_size = 0UL;
   std::string tiling_data;
   bool is_mem_log;
   std::vector<void *> space_addrs;
@@ -409,6 +412,9 @@ struct OpDescInfo {
   std::vector<DataType> output_data_type;
   std::vector<void *> output_addrs;
   std::vector<int64_t> output_size;
+  bool is_host_args{false};
+  std::string all_attrs;
+  std::string args_before_execute;
 };
 struct ModelDumpConfig {
   std::string model_name;

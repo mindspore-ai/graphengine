@@ -77,12 +77,14 @@ const char_t *const OPTION_EXEC_GRAPH_EXEC_TIMEOUT = "ge.exec.graphExecTimeout";
 const char_t *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
 const char_t *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
 const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyMemory";
+const char_t *const OPTION_INPUT_REUSE_MEM_INDEXES = "ge.exec.inputReuseMemIndexes";
+const char_t *const OPTION_OUTPUT_REUSE_MEM_INDEXES = "ge.exec.outputReuseMemIndexes";
 
 const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const std::string MEMORY_OPTIMIZATION_POLICY = "ge.exec.memoryOptimizationPolicy";
 const std::string STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
-const std::string OPTION_FEATURE_BASE_REFRESHABLE = "ge.featureBaseRefreshable";
-const std::string OPTION_CONST_LIFECYCLE = "ge.constLifecycle";
+const char_t *const OPTION_FEATURE_BASE_REFRESHABLE = "ge.featureBaseRefreshable";
+const char_t *const OPTION_CONST_LIFECYCLE = "ge.constLifecycle";
 
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
@@ -439,7 +441,7 @@ const std::string DETERMINISTIC = "ge.deterministic";
 constexpr char_t EVENT[] = "ge.event";
 
 // Graph run mode
-enum GraphRunMode { PREDICTION = 0, TRAIN };
+enum GraphRunMode : std::int32_t { PREDICTION = 0, TRAIN };
 // Input/Output tensor info
 struct InputTensorInfo {
   uint32_t data_type;         // data type
@@ -449,15 +451,13 @@ struct InputTensorInfo {
 };
 
 struct OutputTensorInfo {
-  uint32_t data_type;               // data type
+  uint32_t data_type{};             // data type
   std::vector<int64_t> dims;        // shape description
   std::unique_ptr<uint8_t[]> data;  // tensor data
-  int64_t length;                   // tensor length
-  OutputTensorInfo() : data_type(0U), dims({}), data(nullptr), length(0) {}
-  OutputTensorInfo(OutputTensorInfo &&out)
-      : data_type(out.data_type), dims(out.dims), data(std::move(out.data)), length(out.length) {}
+  int64_t length{};                 // tensor length
+  OutputTensorInfo() : dims({}), data(nullptr) {}
 
-  OutputTensorInfo &operator=(OutputTensorInfo &&out) {
+  OutputTensorInfo &operator=(OutputTensorInfo &&out)& noexcept {
     if (this != &out) {
       data_type = out.data_type;
       dims = out.dims;
@@ -467,7 +467,7 @@ struct OutputTensorInfo {
     return *this;
   }
   OutputTensorInfo(const OutputTensorInfo &) = delete;
-  OutputTensorInfo &operator=(const OutputTensorInfo &) = delete;
+  OutputTensorInfo &operator=(const OutputTensorInfo &)& = delete;
 };
 
 using Status = uint32_t;

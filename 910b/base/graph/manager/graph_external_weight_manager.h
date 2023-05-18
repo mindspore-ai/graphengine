@@ -26,7 +26,7 @@
 namespace ge {
 class ExternalWeightManager {
  public:
-  static ExternalWeightManager &GetInstance();
+  explicit ExternalWeightManager(const uint64_t session_id);
 
   ~ExternalWeightManager() = default;
 
@@ -41,17 +41,36 @@ class ExternalWeightManager {
   void Finalize() noexcept;
 
  private:
-  ExternalWeightManager() = default;
-
   static Status CheckFilesSame(const std::string &file_name,
                                const uint8_t *const data,
                                const size_t data_length,
                                bool &is_content_same);
 
   std::mutex mutex_;
+  uint64_t session_id_;
   std::set<std::string> loaded_external_weight_files;
   std::map<size_t, std::vector<std::string>> hash_to_files_;
   std::map<std::string, std::string> file_to_exist_file_;
+};
+
+using ExternalWeightManagerPtr = std::shared_ptr<ExternalWeightManager>;
+
+class ExternalWeightManagerPool {
+ public:
+  static ExternalWeightManagerPool &Instance();
+
+  ~ExternalWeightManagerPool();
+
+  ExternalWeightManagerPtr GetManager(const uint64_t session_id);
+
+  void RemoveManager(const uint64_t session_id);
+
+  void Destroy() noexcept;
+
+ private:
+  ExternalWeightManagerPool() = default;
+  std::mutex mutex_;
+  std::map<uint64_t, ExternalWeightManagerPtr> session_id_to_manager_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_EXTERNAL_WEIGHT_MANAGER_H_

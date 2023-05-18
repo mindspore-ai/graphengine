@@ -18,6 +18,7 @@
 #define INC_EXTERNAL_GE_GE_API_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -25,6 +26,7 @@
 #include "ge/ge_api_types.h"
 #include "ge/ge_data_flow_api.h"
 #include "ge/ge_continuous_tensor_list_api.h"
+#include "ge/ge_graph_compile_summary.h"
 #include "graph/graph.h"
 #include "graph/tensor.h"
 
@@ -246,6 +248,40 @@ class GE_FUNC_VISIBILITY Session {
   /// @return Status result of function
   Status FetchDataFlowGraph(uint32_t graph_id, const std::vector<uint32_t> &indexes, std::vector<Tensor> &outputs,
                             DataFlowInfo &info, int32_t timeout);
+
+  /// @ingroup ge_graph
+  /// @brief compile graph in the session with specific session id
+  /// @param [in] graphId: graph id
+  /// @return Status result of function
+  Status CompileGraph(uint32_t graph_id);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief get graph resource summary after compiled
+  /// @param [in] graphId: graph id
+  /// @return share_ptr of CompiledGraphSummary
+  ///
+  CompiledGraphSummaryPtr GetCompiledGraphSummary(uint32_t graph_id);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief set const memory base after compiled and before loaded, only allows setting once
+  /// @param [in] graphId graph id
+  /// @param [in] memory const memory base
+  /// @param [out] size const memory size
+  /// @return Status result of function
+  ///
+  Status SetGraphConstMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief set or update fearture memory base after compiled
+  /// @param [in] graphId graph id
+  /// @param [in] memory feature map memory base, without input and output mem
+  /// @param [out] size feature map memory size
+  /// @return Status result of function
+  ///
+  Status UpdateGraphFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
 
  private:
   uint64_t sessionId_;

@@ -25,5 +25,13 @@ namespace tsd {
 #endif
     // success code
     constexpr TSD_StatusT TSD_OK = 0U;
+    // 区分TSD不对外的枚举，对外枚举ID从100开始
+    enum ErroCodeExt : TSD_StatusT {
+        TSD_SUBPROCESS_NUM_EXCEED_THE_LIMIT = 100U,
+        TSD_SUBPROCESS_BINARY_FILE_DAMAGED = 101U,
+        TSD_DEVICE_DISCONNECTED = 102U,
+        TSD_VERIFY_OPP_FAIL = 103U,
+        TSD_ADD_AICPUSD_TO_CGROUP_FAILED = 104U,
+    };
 }
 #endif  // INC_TDT_STATUS_H

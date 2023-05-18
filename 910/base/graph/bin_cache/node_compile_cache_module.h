@@ -88,7 +88,7 @@ class NodeCompileCacheModule {
                                    const bool need_range) const;
   Status GetOpAttrMem(OpDesc &op_desc, CompileCacheDesc &cache_desc) const;
   Status CopyAttrToMem(const std::map<std::string, AnyValue> &all_attributes, std::unique_ptr<uint8_t[]> &attr_mem,
-    const std::set<string> &ordered_origin_attr_name, const size_t attr_size) const;
+                       const std::set<string> &ordered_origin_attr_name, const size_t attr_size) const;
   Status GetAttrTotalSize(const std::map<std::string, AnyValue> &all_attributes,
     const std::set<string> &ordered_origin_attr_name, size_t &attr_size) const;
 

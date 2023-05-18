@@ -747,7 +747,7 @@ REG_OP(Conv2DBackpropFilterD)
 * @li offset_w: Reserved.
 *\n
 *\n
-* The following are the supported data types and data formats:
+* The following are the supported data types and data formats (except Ascend035):
 *\n
 *\n
 | Tensor    | x       | filter  | bias    | y       |\n
@@ -763,6 +763,15 @@ REG_OP(Conv2DBackpropFilterD)
 *\n
 * For float32 type, the actual calculation on the chip is based on
 * float16.
+*\n
+*\n
+* Data types for Ascend035:
+| Tensor    | x       | filter  | bias    | y       |\n
+| :-------: | :-----: | :-----: | :-----: | :-----: |\n
+| Data Type | int16   | int8    | int32   | int32   |\n
+|           | int8    | int8    | int32   | int32   |\n
+| Format    | NCHW    | NCHW    | ND      | NCHW    |\n
+|           | NHWC    | HWCN    | ND      | NHWC    |\n
 *\n
 *
 * @par Attributes:
@@ -1704,6 +1713,7 @@ REG_OP(Dilation)
  * @li eltwise_mode: An optional string from "ADD", "SUB" and "".
 *@par Outputs:
  * output: A Tensor. A Tensor of type float16, bfloat16, float32, int32, int8, int4.
+ * In Ascend035, output should be float16 or int16
 */
 REG_OP(FixPipe)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32}))

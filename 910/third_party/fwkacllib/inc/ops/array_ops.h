@@ -1650,6 +1650,28 @@ REG_OP(UniqueWithCountsAndSorting)
     .ATTR(return_counts, Bool, false)
     .ATTR(sorted, Bool, true)
     .OP_END_FACTORY_REG(UniqueWithCountsAndSorting)
+
+/**
+* @brief Input data for other operators.
+        It could be overwritten by ref ops, acting like a variable. \n
+
+* @par Inputs:
+* x: A tensor. \n
+
+* @par Attributes:
+* index: Index of the input tensor.The data type must be int32 or int64.
+  Assume that net has two data nodes and one ref_data node, previous two data index set as (0, 1),
+  and the left ref_data should be set 2. \n
+
+* @par Outputs:
+* x: A tensor. Same with input name, which means ref with input. \n
+*/
+REG_OP(RefData)
+    .INPUT(x, "T")
+    .OUTPUT(y, "T")
+    .ATTR(index, Int, 0)
+    .DATATYPE(T, TensorType::ALL())
+    .OP_END_FACTORY_REG(RefData)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

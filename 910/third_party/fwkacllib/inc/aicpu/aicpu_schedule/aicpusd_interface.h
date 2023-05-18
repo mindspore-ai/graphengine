@@ -158,7 +158,7 @@ __attribute__((weak)) __attribute__((visibility("default"))) uint32_t AicpuGetTa
  * @brief Check if the scheduling module stops running
  * @return true or false
  */
-__attribute__((weak)) bool AicpuIsStoped();
+__attribute__((weak)) __attribute__((visibility("default"))) bool AicpuIsStoped();
 
 /**
  * @brief it is used to register last word.

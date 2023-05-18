@@ -276,7 +276,7 @@ REG_OP(ResizeTrilinear)
 * @par Attributes:
 * @li dst_size: Required int32 and int64, shape must be (1, 2), specifying the size of the output image.
 * Must be greater than "0".
-* @li interpolation: Interpolation type, only support "bilinear"/"nearst"/"cubic"/"area", default "bilinear".
+* @li interpolation: Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area", default "bilinear".
 * @li border_type: Pixel extension method, only support "constant".
 * @li border_value: Used when border_type is "constant". Data type is the same as that of the original picture.
 *                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 . \n

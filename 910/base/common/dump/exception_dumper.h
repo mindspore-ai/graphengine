@@ -28,12 +28,16 @@ namespace ge {
 struct ExtraOpInfo {
   std::string node_info;
   std::string tiling_data;
+  std::string args_before_execute;
   bool has_memory_log{false};
-  uint32_t tiling_key = 0U;
-  uintptr_t args = 0U;
+  uint32_t tiling_key{0U};
+  uintptr_t args{0UL};
+  size_t args_size{0UL};
   std::vector<void *> input_addrs;
   std::vector<void *> output_addrs;
   std::vector<void *> space_addrs;
+  std::vector<int64_t> workspace_bytes{};
+  bool is_host_args{false};
 };
 
 class ExceptionDumper {
@@ -45,6 +49,7 @@ class ExceptionDumper {
                       const ExtraOpInfo &extra_op_info);
   Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos);
   void LogExceptionTvmOpInfo(const OpDescInfo &op_desc_info) const;
+  void LogExceptionArgs(const OpDescInfo &op_desc_info) const;
   bool GetOpDescInfo(const uint32_t stream_id, const uint32_t task_id, OpDescInfo &op_desc_info,
                      const uint32_t context_id = UINT32_MAX);
   OpDescInfo *MutableOpDescInfo(const uint32_t task_id, const uint32_t stream_id);
@@ -57,12 +62,18 @@ class ExceptionDumper {
     return op_desc_info_;
   }
 
+  void Clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    op_desc_info_.clear();
+  }
+
  private:
   void RefreshAddrs(OpDescInfo &op_desc_info) const;
   void SaveOpDescInfo(const OpDescPtr &op, const uint32_t task_id, const uint32_t stream_id,
                       OpDescInfo &op_desc_info) const;
   Status DumpExceptionInput(const OpDescInfo &op_desc_info, const std::string &dump_file) const;
   Status DumpExceptionOutput(const OpDescInfo &op_desc_info, const std::string &dump_file) const;
+  Status DumpExceptionWorkspace(const OpDescInfo &op_desc_info, const std::string &dump_file) const;
   std::mutex mutex_;
   std::vector<OpDescInfo> op_desc_info_;
   size_t op_desc_info_idx_{0UL};

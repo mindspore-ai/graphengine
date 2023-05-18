@@ -16,15 +16,35 @@
 #include <memory>
 #include "graph/graph.h"
 #include "ge/ge_api.h"
+#include "external/aoe_errcodes.h"
 
 namespace Aoe {
-using AoeStatus = int32_t;
+
+// aoe 框架参数 （包括SGAT/OPAT等调优参数）
 const char * const WORK_PATH                                 = "work_path";
 const char * const SERVER_IP                                 = "ip";
 const char * const SERVER_PORT                               = "port";
 const char * const TUNING_PARALLEL_NUM                       = "tuning_parallel_num";
-const char * const SOC_VER                                   = "soc_version";
 const char * const DEVICE                                    = "device";
+const char * const JOB_TYPE                                  = "job_type";
+const char * const RUN_LOOP                                  = "run_loop";
+const char * const OUTPUT                                    = "output";
+const char * const FRAMEWORK                                 = "framework";
+const char * const MODEL_PATH                                = "model_path";
+const char * const TUNE_OPS_FILE                             = "tune_ops_file";
+const char * const SINGLE_OP                                 = "singleop";
+const char * const TUNE_OPTIMIZATION_LEVEL                   = "tune_optimization_level";
+const char * const FEATURE_DEEPER_OPAT                       = "Fdeeper_opat";
+const char * const FEATURE_NONHOMO_SPLIT                     = "Fnonhomo_split";
+const char * const FEATURE_OP_FORMAT                         = "Fop_format";
+const char * const RELOAD                                    = "reload";
+const char * const MODEL                                     = "model";
+const char * const WEIGHT                                    = "weight";
+const char * const HELP                                      = "help";
+const char * const PROGRESS                                  = "progress_bar";
+
+// aoe 命令行支持的GE参数 (包括parser)
+const char * const SOC_VER                                   = "soc_version"; // AOE命令行不支持，内部通过acl接口获取
 const char * const CORE_TYPE                                 = "core_type";
 const char * const BUFFER_OPTIMIZE                           = "buffer_optimize";
 const char * const ENABLE_COMPRESS_WEIGHT                    = "enable_compress_weight";
@@ -39,12 +59,6 @@ const char * const OP_SELECT_IMPL_MODE                       = "op_select_implmo
 const char * const OPTYPELIST_FOR_IMPLMODE                   = "optypelist_for_implmode";
 const char * const ENABLE_SCOPE_FUSION_PASSES                = "enable_scope_fusion_passes";
 const char * const OP_DEBUG_LEVEL                            = "op_debug_level";
-const char * const JOB_ID                                    = "job_id";
-const char * const JOB_TYPE                                  = "job_type";
-const char * const RUN_LOOP                                  = "run_loop";
-const char * const RELOAD                                    = "reload";
-const char * const OUTPUT                                    = "output";
-const char * const TUNING_NAME                               = "tuning_name";
 const char * const INPUT_FORMAT                              = "input_format";
 const char * const INPUT_SHAPE                               = "input_shape";
 const char * const INPUT_SHAPE_RANGE                         = "input_shape_range";
@@ -57,18 +71,25 @@ const char * const OUT_NODES                                 = "out_nodes";
 const char * const INPUT_FP16_NODES                          = "input_fp16_nodes";
 const char * const LOG_LEVEL                                 = "log";
 const char * const INSERT_OP_FILE                            = "insert_op_conf";
-const char * const GE_INPUT_SHAPE_RANGE                      = "ge.exec.dataInputsShapeRange";
-const char * const OPAT_BUILD_RUN_KEY                        = "opat_build_run_key";
-const char * const FRAMEWORK                                 = "framework";
-const char * const MODEL_PATH                                = "model_path";
 const char * const VIRTUAL_TYPE                              = "virtual_type";
-const char * const TUNE_OPS_FILE                             = "tune_ops_file";
-const char * const NO_DYNAMIC_PARAM                          = "no_dynamic_param";
 const char * const COMPRESSION_OPTIMIZE_CONF                 = "compression_optimize_conf";
-const char * const RESOURCE_CONFIG_PATH                      = "ge.resourceConfigPath";
-const char * const RECOMPUTE                                 = "ge.recompute";
-const char * const AOE_CONFIG_FILE                           = "ge.aoe_config_file";
 const char * const SPARSITY                                  = "sparsity";
+const char * const OP_PRECISION_MODE                         = "op_precision_mode";
+const char * const MODIFY_MIXLIST                            = "modify_mixlist";
+const char * const KEEP_DTYPE                                = "keep_dtype"; // 转换成图属性， 不需要传给ACL
+const char * const CUSTOMIZE_DTYPES                          = "customize_dtypes";
+const char * const HOST_ENV_OS                               = "host_env_os";
+const char * const HOST_ENV_CPU                              = "host_env_cpu";
+const char * const IS_INPUT_ADJUST_HW_LAYOUT                 = "is_input_adjust_hw_layout"; // parser only
+const char * const IS_OUTPUT_ADJUST_HW_LAYOUT                = "is_output_adjust_hw_layout"; // parser only
+
+// tf only
+const char * const AOE_CONFIG_FILE                           = "ge.aoe_config_file";
+
+// aoe 内部参数
+const char * const JOB_ID                                    = "job_id";
+const char * const TUNING_NAME                               = "tuning_name";
+const char * const OPAT_BUILD_RUN_KEY                        = "opat_build_run_key"; // opat
 const char * const PLUGIN_OPTION_TUNING_GRAPH                = "tuning_graph";
 const char * const PLUGIN_OPTION_TUNING_DEPEND_GRAPH         = "tuning_depend_graph";
 const char * const PLUGIN_OPTION_GRAPH_INPUTS                = "graph_inputs";
@@ -77,19 +98,13 @@ const char * const PLUGIN_OPTION_GE_SESSION                  = "ge_session";
 const char * const PLUGIN_OPTION_IS_SINGLE_OP                = "is_singleop";
 const char * const PLUGIN_OPTION_IS_TF_OFFLINE               = "is_tfoffline";
 const char * const PLUGIN_OPTION_SESSION_ID                  = "session_id";
-const char * const OP_PRECISION_MODE                         = "op_precision_mode";
-const char * const MODIFY_MIXLIST                            = "modify_mixlist";
-const char * const KEEP_DTYPE                                = "keep_dtype";
-const char * const CUSTOMIZE_DTYPES                          = "customize_dtypes";
-const char * const SINGLE_OP                                 = "singleop";
-const char * const TUNE_OPTIMIZATION_LEVEL                   = "tune_optimization_level";
-const char * const FEATURE_DEEPER_OPAT                       = "Fdeeper_opat";
-const char * const FEATURE_NONHOMO_SPLIT                     = "Fnonhomo_split";
-const char * const FEATURE_OP_FORMAT                         = "Fop_format";
 const char * const FEATURE                                   = "feature";
 const char * const OUT_FILE_NAME                             = "out_file_name";
-const char * const HOST_ENV_OS                               = "host_env_os";
-const char * const HOST_ENV_CPU                              = "host_env_cpu";
+
+// aoe API透传的GE参数
+const char * const GE_INPUT_SHAPE_RANGE                      = "ge.exec.dataInputsShapeRange";
+const char * const RESOURCE_CONFIG_PATH                      = "ge.resourceConfigPath";
+const char * const RECOMPUTE                                 = "ge.recompute";
 const char * const AUTO_TUNE_MODE                            = "ge.autoTuneMode";
 const char * const DEBUG_DIR                                 = "ge.debugDir";
 const char * const DETERMINISTIC                             = "ge.deterministic";
@@ -108,42 +123,26 @@ const char * const OP_BANK_PATH                              = "ge.op_bank_path"
 const char * const TUNE_DEVICE_IDS                           = "ge.exec.tuneDeviceIds";
 
 
-const AoeStatus AOE_SUCCESS                                         = 0;
-const AoeStatus AOE_FAILURE                                         = -1;
-const AoeStatus AOE_ERROR_UNKOWN_ERROR                              = 1;
-const AoeStatus AOE_ERROR_UNINITIALIZED                             = 3;
-const AoeStatus AOE_ERROR_REPEAT_INITIALIZE                         = 4;
-const AoeStatus AOE_NO_ERROR                                        = 5;
+// 其他常量定义
+constexpr char NO_DYNAMIC_PARAM[] = "no_dynamic_param";
 
-const AoeStatus AOE_ERROR_INVALID_PARAM                             = 10;
-const AoeStatus AOE_ERROR_INVALID_GRAPH                             = 11;
-const AoeStatus AOE_ERROR_NO_AICORE_GRAPH                           = 12;
-const AoeStatus AOE_ERROR_NON_OPTIMIZE_GRAPH                        = 12;
-const AoeStatus AOE_ERROR_REPEAT_GRAPH                              = 13;
-const AoeStatus AOE_ERROR_DYNAMIC_GRAPH                             = 14;
-const AoeStatus AOE_ERROR_NO_DEVICE                                 = 20;
-const AoeStatus AOE_ERROR_NO_SUPPORT                                = 21;
-const AoeStatus AOE_ERROR_BUSY                                      = 22;
-const AoeStatus AOE_ERROR_PARAM_EXCP                                = 23;
-const AoeStatus AOE_ERROR_DYNAMIC_SHAPE_RANGE                       = 24;
+const AoeStatus AOE_ERROR_NO_AICORE_GRAPH                           = AOE_ERROR_NON_OPTIMIZE_GRAPH; // for sgat
 
-/* load library return code */
-const AoeStatus AOE_ERROR_LIB_ACCESS                                = 90;
-const AoeStatus AOE_ERROR_LIB_SYMBOL                                = 91;
-const AoeStatus AOE_ERROR_LIB_OPEN                                  = 92;
-const AoeStatus AOE_ERROR_LIB_CLOSE                                 = 93;
+/* system api error code */
+const AoeStatus AOE_ERROR_LIB_ACCESS                                = 201;  // 内部状态码
+const AoeStatus AOE_ERROR_LIB_SYMBOL                                = 202;
+const AoeStatus AOE_ERROR_MEMORY_OPERATION                          = 203;
+const AoeStatus AOE_ERROR_CHECK_MEMORY                              = 204;
 
-/* memory opearater*/
-const AoeStatus AOE_ERROR_MEMORY_ALLOC                              = 400;
-const AoeStatus AOE_ERROR_MEMORY_OPERATION                          = 401;
-const AoeStatus AOE_ERROR_CHECK_MEMORY                              = 402;
+/* aoe cmd error code */
+const AoeStatus AOE_NO_ERROR                                        = 301;  // --help
+const AoeStatus AOE_ERROR_NO_SUPPORT                                = 302;  // not support model
+const AoeStatus AOE_ERROR_PARAM_EXCP                                = 303;  // param exception
 
-/* aoe session return code */
-const AoeStatus AOE_ERROR_INVALID_SESSION                           = 500;
-
-/* aoe tuning return code */
-const AoeStatus AOE_ERROR_BANK_INFO_NO_UPDATE                       = 1001;
-const AoeStatus AOE_ERROR_BANK_INFO_UPDATE_FAILED                   = 1002;
+/* aoe library error code */
+const AoeStatus AOE_ERROR_REPEAT_GRAPH                              = 401;
+const AoeStatus AOE_ERR_PLUGIN_LIBRARY_LOAD                         = 402;
+const AoeStatus AOE_ERR_PLUGIN_LIBRARY_UNLOAD                       = 403;
 
 /* aoe executor compiler return code */
 const AoeStatus AOE_ERROR_EXECUTE_COMPILER                          = 2000;
@@ -162,13 +161,6 @@ const AoeStatus AOE_ERROR_PROF_PARSER                               = 3203;
 /* network(nca) return code */
 const AoeStatus AOE_ERROR_NET_DOWN                                  = 3300;
 const AoeStatus AOE_ERROR_NET_UNREACH                               = 3301;
-
-/* aoe plugin return code */
-const AoeStatus AOE_ERR_PLUGIN_LIBRARY_LOAD                         = 4000;
-const AoeStatus AOE_ERR_PLUGIN_LIBRARY_UNLOAD                       = 4001;
-
-/* aoe TF offline code */
-const AoeStatus AOE_ERR_INVALID_ATTR_OPTION                         = 4100;
 
 enum class RunMode : uint32_t {
     DEFAULT_RUN_MODE = 0,

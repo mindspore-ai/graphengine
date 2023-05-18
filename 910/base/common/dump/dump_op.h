@@ -33,7 +33,7 @@ class DumpOp {
 
   void SetDumpInfo(const DumpProperties &dump_properties, const OpDescPtr &op_desc,
                    const std::vector<uintptr_t> &input_addrs, const std::vector<uintptr_t> &output_addrs,
-                   const rtStream_t stream);
+                   rtStream_t const stream);
   Status LaunchDumpOp(bool is_single_op_dump);
   void SetLoopAddr(const uintptr_t global_step, const uintptr_t loop_per_iter, const uintptr_t loop_cond);
   void SetDynamicModelInfo(const std::string &dynamic_model_name, const std::string &dynamic_om_name,
@@ -44,7 +44,7 @@ class DumpOp {
   void SetWorkspaceAddrs(const std::vector<uint64_t> &workspace_addr) {
     space_addrs_.assign(workspace_addr.cbegin(), workspace_addr.cend());
   }
-  void SetStreamId(uint32_t stream_id) {
+  void SetStreamId(const uint32_t stream_id) {
     stream_id_ = stream_id;
   }
   Status UpdateAddrs(const std::vector<uintptr_t> &input_addrs,
@@ -55,6 +55,8 @@ class DumpOp {
   Status DumpOutput(toolkit::aicpu::dump::Task &task);
   Status DumpInput(toolkit::aicpu::dump::Task &task);
   Status SetDumpModelName();
+  Status ProtoMallocAndMemcpy(const size_t proto_size, const std::string &proto_msg);
+  Status LaunchDump(toolkit::aicpu::dump::Task &task);
 
   DumpProperties dump_properties_;
   OpDescPtr op_desc_;

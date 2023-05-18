@@ -36,7 +36,7 @@ class Executor {
  public:
   Executor() = default;
   virtual ~Executor() = default;
-  Executor &operator=(const Executor &) = delete;
+  Executor &operator=(const Executor &)& = delete;
   Executor(const Executor &) = delete;
 
   /**
@@ -89,6 +89,21 @@ class Executor {
    */
   virtual Status RunGraphWithStream(const GraphNodePtr &graph_node, const GraphId graph_id, const rtStream_t stream,
                                     const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs) = 0;
+
+  /**
+   * @ingroup ge
+   * @brief Update graph feature memory base after load model
+   * @param [in] graph_node: node of graph.
+   * @param [in] mem_base: graph feature memory base(without input and output).
+   * @param [in] size: memory size.
+   * @return Status result of function
+   */
+  virtual Status UpdateFeatureMemoryBase(const GraphNodePtr &graph_node, const uintptr_t mem_base, const size_t size) {
+    (void)graph_node;
+    (void)mem_base;
+    (void)size;
+    return SUCCESS;
+  }
 };
 }  // namespace ge
 #endif // GE_COMMON_EXECUTOR_H

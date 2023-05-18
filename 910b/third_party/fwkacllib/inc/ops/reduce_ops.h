@@ -1257,7 +1257,7 @@ REG_OP(GNTrainingUpdate)
 *@par Inputs:
 include:
 *@li input:A Tensor of type string. The text to be processed.
-*@li reduction_indices:A Tensor of type int. The text to be processed. 
+*@li reduction_indices:A Tensor of type int. The text to be processed.
 
 *@par Attributes:
 *@li keep_dims:A bool, An optional bool. Defaults to False. If True, retain reduced dimensions with length 1..
@@ -1349,6 +1349,7 @@ REG_OP(ReduceStdWithMean)
     .ATTR(keepdim, Bool, false)
     .ATTR(invert, Bool, false)
     .ATTR(epsilon, Float, 0.001)
+    .ATTR(correction, Int, 1)
     .OP_END_FACTORY_REG(ReduceStdWithMean)
 
 /**
@@ -1408,7 +1409,7 @@ REG_OP(ReduceStdV2Update)
     .ATTR(unbiased, Bool, true)
     .ATTR(keepdim, Bool, false)
     .OP_END_FACTORY_REG(ReduceStdV2Update)
-    
+
 /**
 *@brief Computes the log and sum and exp of elements across dimensions of a tensor.
 * Reduces "x" along the dimensions given in "axes".

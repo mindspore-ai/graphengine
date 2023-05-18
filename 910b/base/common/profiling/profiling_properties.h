@@ -27,6 +27,16 @@
 #include "common/profiling_definitions.h"
 
 namespace ge {
+struct DeviceSubsInfo {
+  uint64_t module;
+  uint32_t subscribe_count;
+};
+
+struct ProfSubscribeInfo {
+  bool is_subscribe;
+  uint64_t prof_switch;
+  uint32_t graph_id;
+};
 class ProfilingProperties {
  public:
   static ProfilingProperties &Instance();
@@ -62,7 +72,33 @@ class ProfilingProperties {
     // task event profiling need reinit profiling context
     profiling::ProfilingContext::GetInstance().Init();
   }
+  void UpdateSubscribeDeviceModuleMap(const std::string &prof_type, const uint32_t device_id, const uint64_t module);
+  void UpdateDeviceIdModuleMap(const std::string &prof_type, const uint64_t module,
+                               const std::vector<int32_t> &device_list);
+  bool ProfilingSubscribeOn();
+  void SetSubscribeInfo(const uint64_t prof_switch, const uint32_t model_id, const bool is_subscribe);
+  void CleanSubscribeInfo();
+  void ClearDeviceIdMap();
+  void InsertSubscribeGraphId(const uint32_t graph_id);
+  void RemoveSubscribeGraphId(const uint32_t graph_id);
+  const std::map<uint32_t, DeviceSubsInfo> &GetDeviceSubInfo() {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    return subs_dev_module_;
+  }
 
+  const ProfSubscribeInfo &GetSubscribeInfo() {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    return subscribe_info_;
+  }
+
+  std::atomic<uint32_t> &MutableSubscribeCount() {
+    return subscribe_count_;
+  }
+
+  const std::set<uint32_t> &GetSubscribeGraphId() {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    return subscribe_graph_id_;
+  }
  private:
   ProfilingProperties() noexcept {}
   ~ProfilingProperties() = default;
@@ -78,6 +114,11 @@ class ProfilingProperties {
   std::atomic<bool> is_task_event_profiling_{false};
   std::string fp_point_;
   std::string bp_point_;
+  std::atomic<uint32_t> subscribe_count_{0UL};
+  std::map<int32_t, uint64_t> device_id_module_map_; // key: device_id, value: profiling on module
+  std::map<uint32_t, DeviceSubsInfo> subs_dev_module_; // key: device_id, value: profiling on module
+  ProfSubscribeInfo subscribe_info_{false, 0U, 0U};
+  std::set<uint32_t> subscribe_graph_id_;
 };
 }  // namespace ge
 

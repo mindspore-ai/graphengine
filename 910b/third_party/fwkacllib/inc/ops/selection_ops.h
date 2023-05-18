@@ -830,7 +830,7 @@ REG_OP(SegmentMaxD)
 */
 REG_OP(OneHot)
     .INPUT(x, TensorType({DT_UINT8, DT_INT32, DT_INT64}))
-    .INPUT(depth, TensorType({DT_INT32}))
+    .INPUT(depth, TensorType({DT_INT32, DT_INT64}))
     .INPUT(on_value, TensorType::BasicType())
     .INPUT(off_value, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())

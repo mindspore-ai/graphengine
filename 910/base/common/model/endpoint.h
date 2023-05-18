@@ -22,22 +22,6 @@
 #include "proto/flow_model.pb.h"
 
 namespace ge {
-namespace attr {
-constexpr bool kDefaultBool = false;
-constexpr char_t kDefaultStrVal[] = "";
-constexpr int64_t kDefaultInt64Val = -1;
-struct GetDefaultValue {
-  operator bool() const {
-    return kDefaultBool;
-  }
-  operator std::string() const {
-    return kDefaultStrVal;
-  }
-  operator std::int64_t() const {
-    return kDefaultInt64Val;
-  }
-};
-}
 using AttrValueMap = ::google::protobuf::Map<string, ge::flow_model::proto::ModelRelationDef::AttrValue>;
 enum class EndpointType : std::uint32_t { kQueue = 0, kEvent, kMaxEndpointTypeNum };
 
@@ -58,14 +42,9 @@ class Endpoint {
   }
 
   template <typename T>
-  const T GetAttr(const std::string &name) const {
+  const T GetAttr(const std::string &name, const T &default_value) const {
     const auto result_attr = attrs_.GetByName<T>(name);
-    return (result_attr != nullptr) ? *result_attr : GetDefaultAttr<T>();
-  }
-
-  template <typename T>
-  const T GetDefaultAttr() const {
-    return attr::GetDefaultValue();
+    return (result_attr != nullptr) ? *result_attr : default_value;
   }
 
   // function for serialize

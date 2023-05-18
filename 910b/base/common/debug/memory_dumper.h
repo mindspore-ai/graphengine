@@ -34,7 +34,7 @@ class MemoryDumper {
   ~MemoryDumper();
 
   // Assignment/copy is not allowed to avoid repeated release
-  MemoryDumper &operator=(const MemoryDumper &dumper) = delete;
+  MemoryDumper &operator=(const MemoryDumper &dumper)& = delete;
   MemoryDumper(const MemoryDumper &dumper) = delete;
 
   /** @ingroup domi_common

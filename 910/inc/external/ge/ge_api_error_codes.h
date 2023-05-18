@@ -68,7 +68,7 @@ class GE_FUNC_VISIBILITY StatusFactory {
   }
 
   std::string GetErrDesc(const uint32_t err) {
-    const std::map<uint32_t, std::string>::const_iterator iter_find = err_desc_.find(err);
+    const auto iter_find = static_cast<const std::map<uint32_t, std::string>::const_iterator>(err_desc_.find(err));
     if (iter_find == err_desc_.cend()) {
       return "";
     }
@@ -91,7 +91,7 @@ class GE_FUNC_VISIBILITY ErrorNoRegisterar {
   ErrorNoRegisterar(const uint32_t err, const char *const desc) noexcept {
     StatusFactory::Instance()->RegisterErrorNo(err, desc);
   }
-  ~ErrorNoRegisterar() {}
+  ~ErrorNoRegisterar() = default;
 };
 
 // General error code

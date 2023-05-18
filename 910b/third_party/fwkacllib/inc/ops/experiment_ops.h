@@ -299,57 +299,6 @@ REG_OP(AvgPoolUpdate)
     .OP_END_FACTORY_REG(AvgPoolUpdate)
 
 /**
-* @brief batch input by time
-* @par Inputs:
-* x: A list of input tensors. It's a dynamic input
-
-* @par Attributes:
-* @li window: time window, [-1, int64_max], if -1 will batch by input data flag,
-* else will batch by input timestamp and data flag.
-* @li batch_dim: [-1, input_shape_range), if -1 input shape:[x, ..., x] ---> output shape:[-1, x, ..., x],
-* else output shape:[x, ..., -1(batch_dim), ..., x];
-* @li drop_remainder: a bool flag, take effect when window > -1,
-* if true when batch data window < window, will drop data.
-
-* @par Outputs:
-* y: A list of output tensors. It's a dynamic input, the same size as "x".
-
-* @attention Constraints:
-* @li Only support in helper udf
-*/
-REG_OP(TimeBatch)
-    .DYNAMIC_INPUT(x, TensorType::RealNumberType())
-    .DYNAMIC_OUTPUT(y, TensorType::RealNumberType())
-    .REQUIRED_ATTR(window, Int)
-    .ATTR(batch_dim, Int, -1)
-    .ATTR(drop_remainder, Bool, false)
-    .OP_END_FACTORY_REG(TimeBatch)
-
-/**
-* @brief Auto Batch process. \n
-
-* @par Inputs:
-* @li x: A list of input tensor objects. It's a dynamic input. \n
-
-* @par Outputs:
-* @li y: A list of output tensor objects. It's a dynamic output. \n
-
-* @par Attributes:
-* @li batch_size: auto batch size.
-* @li timeout: auto batch wait timeout(unit:ms).
-* @li padding: weather to pad when batch is insufficient.
-* @li slide_stride: sliding window step.
-*/
-REG_OP(CountBatch)
-    .DYNAMIC_INPUT(x, TensorType::RealNumberType())
-    .DYNAMIC_OUTPUT(y, TensorType::RealNumberType())
-    .REQUIRED_ATTR(batch_size, Int)
-    .ATTR(timeout, Int, 0)
-    .ATTR(padding, Bool, false)
-    .ATTR(slide_stride, Int, 0)
-    .OP_END_FACTORY_REG(CountBatch)
-
-/**
 * @brief YUVToRGB
 
 * @par Inputs:
@@ -477,9 +426,8 @@ REG_OP(InitEmbeddingHashmap)
 
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string. 0-D. indicates embedding filepath.
-* @li file_name: A Tensor, dtype is string. 0-D. indicates embedding filename.
 * @li ps_id: A Tensor, dtype is int32. 0-D. indicates the id of ps.
-* @li table_id: A Tensor, dtype is int32. 0-D. indicates the id of hashtable. \n
+* @li table_id: A Tensor, dtype is int32. 1-D. indicates the id of hashtable. \n
 
 * @par Attributes:
 * @li embedding_dim: A Int. indicates the hashtable value number.
@@ -489,7 +437,6 @@ REG_OP(InitEmbeddingHashmap)
 */
 REG_OP(EmbeddingTableImport)
     .INPUT(file_path, TensorType({DT_STRING}))
-    .INPUT(file_name, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
@@ -655,23 +602,23 @@ REG_OP(EmbeddingApplyAdamW)
 
 * @par Inputs:
 * @li file_path: A String, indicates the export file path.
-* @li file_name: A String, indicates the export file name.
 * @li ps_id: A Int, dtype is DT_INT32, indicates the ps server id.
-* @li table_id: A Int, dtype is DT_INT32, indicates the hashtable id.
+* @li table_id: A Tensor, 1D, dtype is DT_INT32, indicates the hashtable id.
 
 * @par Attributes:
 * @li embedding_dim: A Int. indicates the hashtable value number.
 * @li value_total_length: A Int. indicates the hashtable total length, inclue m+v or accum.
+* @li export_mode: A String. export mode, Defaults to "all".
 * @li only_var: A Bool. only export var, Defaults to "false".
 * @li file_type: A String. indicates the export file, Defaults to "bin". \n
 */
 REG_OP(EmbeddingTableExport)
     .INPUT(file_path, TensorType({DT_STRING}))
-    .INPUT(file_name, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .REQUIRED_ATTR(value_total_len, Int)
+    .ATTR(export_mode, String, "all")
     .ATTR(only_var_flag, Bool, false)
     .ATTR(file_type, String, "bin")
     .OP_END_FACTORY_REG(EmbeddingTableExport)
@@ -1188,6 +1135,26 @@ REG_OP(HcomCollRemoteUpdate)
     .OP_END_FACTORY_REG(HcomCollRemoteUpdate)
 
 /**
+ * @brief Calculate that aggregates input data
+ * @par Inputs:
+ * @li x: A tensor of type float32, int32, int8, int16, float16, int64, uint64
+ * @par Outputs:
+ * @li y: A tensor of type float32, int32, int8, int16, float16, int64, uint64.
+ * @par Attributes:
+ * @li tag: A required integer identifying the hccl operator root_rank.
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+ * @li rank_size: A required integer identifying the rank size.
+ */
+REG_OP(HcomGather)
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .REQUIRED_ATTR(root_rank, Int)
+    .REQUIRED_ATTR(group, String)
+    .REQUIRED_ATTR(rank_size, Int)
+    .OP_END_FACTORY_REG(HcomGather)
+
+/**
 * @brief Find a min polygon from the point set in the operator MinAreaPolygons. \n
 
 * @par Inputs:
@@ -1330,6 +1297,30 @@ REG_OP(BlendFaceBgPartOne)
     .OP_END_FACTORY_REG(BlendFaceBgPartOne)
 
 /**
+* @brief Blend face iamge to the backgroud Part Two.
+*
+* @par Inputs:
+* @li acc_face: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li acc_mask: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li max_mask: A 3D Tensor, dtype is float32, shape is (H, W, 3).
+* @li bg_img: A 3D Tensor, dtype is float32 or uint8, shape is (H, W, 3), the input background image.
+*
+* @par Attributes:
+* @li epsilon: A scalar of the same type as "var".
+*
+* @par Outputs:
+* @li fused_img: A 3D Tensor, Has the same type and shape as input "acc_face". \n
+*/
+REG_OP(BlendFaceBgPartTwo)
+    .INPUT(acc_face, TensorType({DT_FLOAT}))
+    .INPUT(acc_mask, TensorType({DT_FLOAT}))
+    .INPUT(max_mask, TensorType({DT_FLOAT}))
+    .INPUT(bg_img, TensorType({DT_UINT8, DT_FLOAT}))
+    .OUTPUT(fused_img, TensorType({DT_FLOAT}))
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(BlendFaceBgPartTwo)
+
+/**
 * @brief Convert the image from YUV to Raw.
 *
 * @par Inputs:
@@ -1339,7 +1330,7 @@ REG_OP(BlendFaceBgPartOne)
 * @li img_channel_3: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 3.
 * @li img_size: A 1D Tensor, dtype is int32, shape is (2,).
 *     The data is h_out and w_out, which indicates the output height and width.
-* @li gamma: A 1D Tensor, dtype is int32, shape is (4,).
+* @li gamma: A 1D Tensor, dtype is float32, shape is (4,).
 *
 * @par Outputs:
 * @li raw_img: A 2D Tensor, dtype is uint16, shape is (h_out, w_out). the output raw image. \n
@@ -1353,6 +1344,36 @@ REG_OP(ImgRawDecodePostHandle)
     .INPUT(gamma, TensorType({DT_FLOAT}))
     .OUTPUT(raw_img, TensorType({DT_UINT16}))
     .OP_END_FACTORY_REG(ImgRawDecodePostHandle)
+
+/**
+* @brief Convert the image from YUV to Raw.
+*
+* @par Inputs:
+* @li img_channel_0: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 0.
+* @li img_channel_1: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 1.
+* @li img_channel_2: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 2.
+* @li img_channel_3: A 2D Tensor, dtype is uint16, shape is (h, w). The input image of channel 3.
+* @li gamma: A 1D Tensor, dtype is float32, shape is (4,).
+* @li bayer_coordinate: A 1D Tensor, dtype is int32, shape is (4,).
+*     The data is the left top and right bottom coordinates, [lt_x, lt_y, rb_x, rb_y].
+* @li bayer_params: A 1D Tensor, dtype is float32, shape is (8,).
+*     The data is bayer params, [r_gain, g_gain, b_gain, iso, ev_gain, iso_long, evSL, exposure_gain].
+* @li bayer_ptn: A 1D Tensor, dtype is int32, shape is (4,).
+*
+* @par Outputs:
+* @li raw_img: A 2D Tensor, dtype is float32, shape is (h_out, w_out). the output raw image. \n
+*/
+REG_OP(ImgRawDecodePostHandleV2)
+    .INPUT(img_channel_0, TensorType({DT_UINT16}))
+    .INPUT(img_channel_1, TensorType({DT_UINT16}))
+    .INPUT(img_channel_2, TensorType({DT_UINT16}))
+    .INPUT(img_channel_3, TensorType({DT_UINT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT}))
+    .INPUT(bayer_coordinate, TensorType({DT_INT32}))
+    .INPUT(bayer_params, TensorType({DT_FLOAT}))
+    .INPUT(bayer_ptn, TensorType({DT_INT32}))
+    .OUTPUT(raw_img, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(ImgRawDecodePostHandleV2)
 
 /**
 * @brief RGB2YUV422. Convert the image from rgb to yuv422. \n
@@ -1370,6 +1391,140 @@ REG_OP(RGB2YUV422)
     .INPUT(rgb, TensorType({DT_UINT8}))
     .OUTPUT(yuv, TensorType({DT_UINT8}))
     .OP_END_FACTORY_REG(RGB2YUV422)
+    
+/**
+* @brief Function FlashAttentionScore. \n
+
+* @par Inputs:
+* six inputs, including:
+* @li query: A matrix Tensor. The type support float16 and float32.
+* @li key: A matrix Tensor. The type support float16 and float32.
+* @li value: A matrix Tensor. The type support float16 and float32.
+* @li real_shift: A matrix Tensor. The type support float16 and float32.
+* @li drop_mask: A matrix Tensor. The type support float16 and float32.
+* @li padding_mask: A matrix Tensor. The type support float16 and float32.
+* @li atten_mask: A matrix Tensor. The type support float16 and float32.
+
+* @par Attributes:
+* @li keep_prob: A mutable Tensor. Must met all of the following rules:
+ shape of "keep_prob" should be (1,) or [1,].
+* @li query_transpose: A bool. If True, changes the shape of "query" from [K, M] to
+ [M, K].
+* @li key_transpose: A bool. If True, changes the shape of "key" from [N, K] to
+ [K, N].
+* @li value_transpose: A bool. If True, changes the shape of "mid_data" from [K, M] to
+ [M, K].
+* @li scale_value: A float.
+* @li keep_prob: A float. 
+ * @li is_transpose_out: A bool. If True, changes the shape of "value" from [N, K] to
+ [K, N].
+ * @li is_flash: A bool. If True, changes the shape of "value" from [N, K] to
+ [K, N].
+*
+* @par Outputs:
+* softmax_max: A matrix Tensor. The type support float16 and float32.
+* softmax_sum: A matrix Tensor. The type support float16 and float32.
+* softmax_out: A matrix Tensor. The type support float16 and float32.
+* attention_out: A matrix Tensor. The type support float16 and float32.
+
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(FlashAttentionScore)
+    .INPUT(query, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(key, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(value, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1,DT_UINT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(softmax_max, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(softmax_sum, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(softmax_out, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .ATTR(query_transpose, Bool, false)
+    .ATTR(key_transpose, Bool, false)
+    .ATTR(value_transpose, Bool, false)
+    .ATTR(scale_value, Float, 1.0)
+    .ATTR(keep_prob, Float, 1.0)
+    .REQUIRED_ATTR(is_transpose_out, Bool)
+    .REQUIRED_ATTR(is_flash, Bool)
+    .OP_END_FACTORY_REG(FlashAttentionScore)
+
+
+/**
+* @brief Function FlashAttentionScore. \n
+
+* @par Inputs:
+* six inputs, including:
+* @li query: A matrix Tensor. The type support float16 and float32.
+* @li key: A matrix Tensor. The type support float16 and float32.
+* @li value: A matrix Tensor. The type support float16 and float32.
+* @li dy: A matrix Tensor. The type support float16 and float32.
+* @li real_shift: A scalar. The type support float16 and float32.
+* @li drop_mask: A matrix Tensor. The type support float16 and float32.
+* @li padding_mask: A matrix Tensor. The type support float16 and float32.
+* @li atten_mask: A matrix Tensor. The type support float16 and float32.
+* @li softmax_max: A matrix Tensor. The type support float16 and float32.
+* @li softmax_sum: A matrix Tensor. The type support float16 and float32.
+* @li softmax_in: A matrix Tensor. The type support float16 and float32.
+* @li attention_in: A matrix Tensor. The type support float16 and float32.
+
+
+* @par Attributes:
+* @li scale_value: A mutable Tensor. Must met all of the following rules:
+ shape of "keep_prob" should be (1,) or [1,].
+* @li keep_prob: A bool. If True, changes the shape of "query" from [K, M] to
+ [M, K].
+* @li query_transpose: A bool. If True, changes the shape of "key" from [N, K] to
+ [K, N].
+* @li key_transpose: A bool. If True, changes the shape of "key" from [N, K] to
+ [K, N].
+* @li value_transpose: A bool. If True, changes the shape of "mid_data" from [K, M] to
+ [M, K].
+* @li dy_transpose: A bool. If True, changes the shape of "value" from [N, K] to
+ [K, N].
+* @li is_transpose_attention: A bool. If True, changes the shape of "mid_data" from [K, M] to
+ [M, K].
+ * @li is_flash: A bool. If True, changes the shape of "value" from [N, K] to
+ [K, N].
+
+
+* @par Outputs:
+* dq: A matrix Tensor. The type support float16 and float32.
+* dk: A matrix Tensor. The type support float16 and float32.
+* dv: A matrix Tensor. The type support float16 and float32.
+
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(FlashAttentionScoreGrad)
+    .INPUT(query, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(key, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(value, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(dy, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1,DT_UINT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))    
+    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(dq, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(dk, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OUTPUT(dv, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .ATTR(scale_value, Float, 1.0)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(query_transpose, Bool, false)
+    .ATTR(key_transpose, Bool, false)
+    .ATTR(value_transpose, Bool, false)
+    .ATTR(dy_transpose, Bool, false)
+    .ATTR(is_transpose_attention, Bool, false)
+    .REQUIRED_ATTR(is_flash, Bool)
+    .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

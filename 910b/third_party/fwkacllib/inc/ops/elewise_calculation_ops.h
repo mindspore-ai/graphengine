@@ -3523,7 +3523,8 @@ REG_OP(KLDiv)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool. \n
+* @li x: A Tensor. Must be one of the following types: 
+        float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, bool \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -3534,8 +3535,10 @@ REG_OP(KLDiv)
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(TensorMove)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, 
+                            DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, 
+                            DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL}))
     .OP_END_FACTORY_REG(TensorMove)
 
 /**
@@ -3825,7 +3828,8 @@ REG_OP(Dot)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A tensor. Must be one of the following types:
-*     float16, float32, int32. \n
+*     float16, float, double, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool. \n
+
 * @li x2: A tensor with the same type and shape of x1's. \n
 
 *@par Attributes:
@@ -3840,8 +3844,8 @@ REG_OP(Dot)
 *Compatible with the Pytorch operator isclose. \n
 */
 REG_OP(IsClose)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x1, TensorType({BasicType(), DT_BOOL}))
+    .INPUT(x2, TensorType({BasicType(), DT_BOOL}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .ATTR(rtol, Float, 1e-05)
     .ATTR(atol, Float, 1e-08)

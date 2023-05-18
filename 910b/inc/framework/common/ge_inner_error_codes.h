@@ -223,7 +223,7 @@ GE_ERRORNO_GRAPH(GE_GRAPH_NO_OUTPUT_DESC_INFO, 52, "No output desc info.");     
 GE_ERRORNO_GRAPH(GE_GRAPH_OUTPUT_DESCINFO_TENSOR_NUM_MISMATCH, 53,
                  "Number of output descinfo and tensor mismatch.");                                        // 1343242293
 GE_ERRORNO_GRAPH(GE_GRAPH_FILENAMEPREFIX_INVALID, 54, "Graph Save Model fileNamePrefix is invalid.");      // 1343242294
-GE_ERRORNO_GRAPH(GE_GRAPH_NOT_BUILT, 55, "Graph is not built before SaveModel.");                          // 1343242295
+GE_ERRORNO_GRAPH(GE_GRAPH_NOT_BUILT, 55, "Graph is not built.");                          // 1343242295
 GE_ERRORNO_GRAPH(GE_GRAPH_SAVEMODEL_FAILED, 56, "Graph SaveModel failed.");                                // 1343242296
 GE_ERRORNO_GRAPH(GE_GRAPH_MEMORY_ALLOC_FAILED, 57, "Failed allocating memory for model file header.");     // 1343242297
 GE_ERRORNO_GRAPH(GE_GRAPH_NODE_SEARCHER_REMOVE_GRAPH_FAILED, 58, "Failed remove graph in node seacher.");  // 1343242298
@@ -233,16 +233,15 @@ GE_ERRORNO_GRAPH(GE_GRAPH_NODE_SEARCHER_GET_GRAPH_REBUILD_FAILED, 60,
 GE_ERRORNO_GRAPH(GE_GRAPH_NODE_SEARCHER_SET_GRAPH_FINISH_REBUILD_GRAPH_FAILED, 61,
                  "Failed set graph finish rebuild in node searcher.");                   // 1343242301
 GE_ERRORNO_GRAPH(GE_GRAPH_VARIABLE_OP_PASS_FAILED, 62, "Failed to run variable pass.");  // 1343242302
+GE_ERRORNO_GRAPH(TO_BE_DELETED, 63, "The node of the graph to be deleted.");             // 1343242303
+GE_ERRORNO_GRAPH(NOT_CHANGED, 64, "The node of the graph no changed.");                  // 1343242304
+GE_ERRORNO_GRAPH(SUSPEND, 65, "The optimize operation is suspended.");                   // 1343242305
+GE_ERRORNO_GRAPH(GE_GRAPH_REPEAT_OPERATE, 66, "Repeat operate is not allowed.");         // 1343242306
 
 // Engine_manager module error code definition
 GE_ERRORNO_ENGINE(GE_ENG_INIT_FAILED, 0, "Failed to initialize engine.");                             // 1343246336
 GE_ERRORNO_ENGINE(GE_ENG_FINALIZE_FAILED, 1, "Engine finalize failed.");                              // 1343246337
 GE_ERRORNO_ENGINE(GE_ENG_MEMTYPE_ERROR, 2, "Memory type HBM is necessary when engine is in device");  // 1343246338
-
-// Optimize errocode
-GE_ERRORNO_GRAPH(TO_BE_DELETED, 63, "The node of the graph to be deleted.");          // 1343242303
-GE_ERRORNO_GRAPH(NOT_CHANGED, 64, "The node of the graph no changed.");               // 1343242304
-GE_ERRORNO_GRAPH(SUSPEND, 65, "The optimize operation is suspended.");                           // 1343242305
 
 // Ops module error code definition
 GE_ERRORNO_OPS(GE_OPS_KERNEL_STORE_INIT_FAILED, 0, "Failed to initialize OpsKernelInfoStore.");  // 1343250432

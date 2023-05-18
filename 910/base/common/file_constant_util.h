@@ -49,6 +49,8 @@ Status SetFileConstantPath(const OpDescPtr &op_desc, const std::string &file_pat
 
 Status SetExternalPath(const OpDescPtr &op_desc, const std::string &om_path);
 
+std::string GetTmpWeightDir(const int32_t pid, const uint64_t session_id);
+
 Status ConvertFileConstToConst(const ComputeGraphPtr &compute_graph);
 
 Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph);

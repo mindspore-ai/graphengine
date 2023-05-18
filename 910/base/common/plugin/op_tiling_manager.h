@@ -18,6 +18,7 @@
 #define GE_COMMON_GE_OP_TILING_MANAGER_H_
 
 #include <map>
+#include <string>
 
 namespace ge {
 

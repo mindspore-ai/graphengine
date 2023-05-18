@@ -70,7 +70,7 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
   void SetPlatformVersion(const std::string &platform_version);
   void SetPlatformType(const uint8_t platform_type);
 
-  void SetAttr(const ProtoAttrMap &attrs);
+  void SetAttrMap(const ProtoAttrMap &attrs);
 
   ProtoAttrMap &MutableAttrMap() override;
 

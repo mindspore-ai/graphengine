@@ -137,7 +137,7 @@ inline uint16_t Fp16ExtracExp(const uint16_t x) {
 /// @brief   get mantissa of fp16
 inline uint16_t Fp16ExtracMan(const uint16_t x) {
   const uint8_t result = ((static_cast<uint32_t>(x >> 10U) & 0x1FU) > 0U) ? 1U : 0U;
-  return static_cast<uint16_t>(((x >> 0U) & 0x3FFU) | (result * 0x400U));
+  return static_cast<uint16_t>((static_cast<uint32_t>(x >> 0U) & 0x3FFU) | (result * 0x400U));
 }
 /// @ingroup fp16 basic operator
 /// @brief   constructor of fp16 from sign exponent and mantissa
@@ -422,7 +422,7 @@ template <typename T>
 auto RightShift(T man, const int16_t shift) -> T {
   constexpr uint64_t bits = static_cast<uint64_t>(sizeof(T) * 8U);  // one byte have 8 bits
   constexpr T mask = static_cast<T>(1U) << (bits - 1U);
-  int16_t loop_cnt = shift;
+  int32_t loop_cnt = static_cast<int32_t>(shift);
   while (loop_cnt-- != 0) {
     man = ((man & mask) | (man >> 1U));
   }

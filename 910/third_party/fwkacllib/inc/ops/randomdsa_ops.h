@@ -84,6 +84,36 @@ REG_OP(DSARandomTruncatedNormal)
     .OP_END_FACTORY_REG(DSARandomTruncatedNormal)
 
 /**
+* @brief Generate DSA stateless truncatenormal data in random. \n
+
+* @par Inputs:
+include:
+* @li count: The shape of the input tensor.
+* @li seed: If seed is set to be non-zero, the random number
+* generator is seeded by the given seed. Otherwise, it is seeded by a random seed
+* @li mean: A Tensor. Must be one of the following types: float16, float32, double
+* @li stdev: A Tensor. Must be one of the following types: float16, float32, double. \n
+* @li counter: Counter of RNG algorithm. Shape[2] for philox, shape[1] for threefry. \n
+
+* @par Attributes:
+* @li random_algorithm:The default value is "Philox". \n
+
+* @par Outputs:
+* y:Output (1-D) random number using float and bf data format . \n
+
+* @see DSAStatelessRandomTruncatedNormal()
+*/
+REG_OP(DSAStatelessRandomTruncatedNormal)
+    .INPUT(count, TensorType({DT_INT64}))
+    .INPUT(seed, TensorType({DT_UINT64}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(stdev, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(counter, TensorType({DT_UINT64}))
+    .OUTPUT(out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .ATTR(random_algorithm, String, "Philox")
+    .OP_END_FACTORY_REG(DSAStatelessRandomTruncatedNormal)
+
+/**
 * @brief Generate DSA normal data in random. \n
 
 * @par Inputs:
@@ -110,6 +140,95 @@ REG_OP(DSARandomNormal)
     .OUTPUT(out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .ATTR(random_algorithm, String, "Philox")
     .OP_END_FACTORY_REG(DSARandomNormal)
+
+/**
+* @brief Generate State less DSA dropout data in random. \n
+
+* @par Inputs:
+include:
+* @li count: The shape of the input tensor.
+* @li seed: If seed is set to be non-zero, the random number
+* generator is seeded by the given seed. Otherwise, it is seeded by a random seed
+* @li dropout: A Tensor. Must be one of the following types: float16, float32, bfloat16
+* @li offset: A Tensor. Must be one of the following types: uint64. \n
+
+* @par Attributes:
+* @li random_algorithm:The default value is "Philox". \n
+
+* @par Outputs:
+* y:Output (1-D) random number using float and bf data format . \n
+
+* @see DSAStatelessGenBitMask()
+*/
+REG_OP(DSAStatelessGenBitMask)
+    .INPUT(count, TensorType({DT_INT64}))
+    .INPUT(seed, TensorType({DT_UINT64}))
+    .INPUT(dropout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(offset, TensorType({DT_UINT64}))
+    .OUTPUT(out, TensorType({DT_UINT1, DT_UINT8}))
+    .ATTR(random_algorithm, String, "Philox")
+    .ATTR(output_dtype, String, "uint8")
+    .OP_END_FACTORY_REG(DSAStatelessGenBitMask)
+
+/**
+ * @brief Generate State less DSA normal data in random. \n
+
+    * @par Inputs:
+    include:
+    * @li count: The shape of the input tensor.
+    * @li seed: If seed is set to be non-zero, the random number
+    * generator is seeded by the given seed. Otherwise, it is seeded by a random seed
+    * @li mean: A Tensor, value should be 0. Must be one of the following types: float16, float32, bfloat16.
+    * @li stdev: A Tensor, value should be 1. Must be one of the following types: float16, float32, bfloat16.
+    * @li counter: A Tensor. Must be one of the following types: uint64. \n
+
+    * @par Attributes:
+    * @li random_algorithm:The default value is "Philox". \n
+
+    * @par Outputs:
+    * y:Output (1-D) random number using float and bf data format . \n
+
+    * @see DSAStatelessRandomNormal()
+    */
+REG_OP(DSAStatelessRandomNormal)
+    .INPUT(count, TensorType({DT_INT64}))
+    .INPUT(seed, TensorType({DT_UINT64}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(stdev, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(counter, TensorType({DT_UINT64}))
+    .OUTPUT(out, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .ATTR(random_algorithm, String, "Philox")
+    .OP_END_FACTORY_REG(DSAStatelessRandomNormal)
+
+/**
+* @brief Generate State less DSA uniform data in random. \n
+
+* @par Inputs:
+include:
+* @li count: The shape of the input tensor.
+* @li seed: If seed is set to be non-zero, the random number
+* generator is seeded by the given seed. Otherwise, it is seeded by a random seed
+* @li low: A Tensor, value should be 0.. Must be one of the following types: float16, float32, bfloat16.
+* @li high: A Tensor, value should be 1.. Must be one of the following types: float16, float32, bfloat16.
+* @li counter: A Tensor. Must be one of the following types: uint64. \n
+
+* @par Attributes:
+* @li random_algorithm:The default value is "Philox". \n
+
+* @par Outputs:
+* y:Output (1-D) random number using float and bf data format . \n
+
+* @see DSAStatelessRandomUniform()
+*/
+REG_OP(DSAStatelessRandomUniform)
+    .INPUT(count, TensorType({DT_INT64}))
+    .INPUT(seed, TensorType({DT_UINT64}))
+    .INPUT(low, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64}))
+    .INPUT(high, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64}))
+    .INPUT(counter, TensorType({DT_UINT64}))
+    .OUTPUT(out, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64}))
+    .ATTR(random_algorithm, String, "Philox")
+    .OP_END_FACTORY_REG(DSAStatelessRandomUniform)
 
 /**
 * @brief Generate DSA uniform data in random. \n

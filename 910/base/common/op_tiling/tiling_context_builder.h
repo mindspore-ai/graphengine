@@ -36,7 +36,7 @@ class TilingContextBuilder {
 
  private:
   ge::graphStatus GetDependInputTensorAddr(const ge::Operator &op, const size_t input_idx, TensorAddress &address);
-  ge::graphStatus BuildRtTensor(const ge::GeTensorDesc &tensor_desc, const TensorAddress address,
+  ge::graphStatus BuildRtTensor(const ge::GeTensorDesc &tensor_desc, ConstTensorAddressPtr address,
                                 std::unique_ptr<uint8_t[]> &rt_tensor_holder) const;
   ge::graphStatus BuildRTInputTensors(const ge::Operator &op);
   ge::graphStatus BuildRTOutputShapes(const ge::Operator &op);

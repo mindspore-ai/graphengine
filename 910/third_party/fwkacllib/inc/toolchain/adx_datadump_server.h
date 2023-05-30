@@ -13,13 +13,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
+#define ADX_API __declspec(dllexport)
+#else
+#define ADX_API __attribute__((visibility("default")))
+#endif
+
 /**
  * @brief initialize server for normal datadump function.
  * @return
  *      IDE_DAEMON_OK:    datadump server init success
  *      IDE_DAEMON_ERROR: datadump server init failed
  */
-int AdxDataDumpServerInit();
+ADX_API int AdxDataDumpServerInit();
 
 /**
  * @brief uninitialize server for normal datadump function.
@@ -27,7 +34,7 @@ int AdxDataDumpServerInit();
  *      IDE_DAEMON_OK:    datadump server uninit success
  *      IDE_DAEMON_ERROR: datadump server uninit failed
  */
-int AdxDataDumpServerUnInit();
+ADX_API int AdxDataDumpServerUnInit();
 
 #ifdef __cplusplus
 }

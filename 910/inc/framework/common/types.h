@@ -706,7 +706,8 @@ enum ModelPartitionType {
   CUST_AICPU_KERNELS = 4,
   SO_BINS = 5,
   FLOW_MODEL = 6,
-  FLOW_SUBMODEL = 7
+  FLOW_SUBMODEL = 7,
+  MODEL_INOUT_INFO = 8
 };
 
 struct TinyModelPartitionMemInfo {

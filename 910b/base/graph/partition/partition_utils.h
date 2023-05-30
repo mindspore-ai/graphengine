@@ -31,6 +31,10 @@ class PartitionUtils {
                                         const ComputeGraphPtr &subgraph);
   static bool IsOutNode(const NodePtr &node);
   static graphStatus SetSubgraphLogicDeviceId(const ComputeGraphPtr &root_graph, const ComputeGraphPtr &subgraph);
+  static graphStatus GetParentDataAndOutIdx(const NodePtr &sub_data, int32_t &in_idx,
+                                            NodePtr &root_data, int32_t &out_idx);
+  static graphStatus GetParentNetoutputAndInIdx(const NodePtr &sub_netoutput, const uint32_t in_tensor_idx,
+                                                NodePtr &root_netoutput, int32_t &in_idx);
 };
 } // namespace ge
 #endif  // D_BASE_GRAPH_PARTITION_PARTITION_UTILS_H

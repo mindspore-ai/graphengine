@@ -46,7 +46,7 @@
 // new ge marco
 // Encapsulate common resource releases
 #define GE_MAKE_GUARD_RTMEM(var)  \
-  GE_MAKE_GUARD(var, [&]() {      \
+  GE_MAKE_GUARD(var, [&var]() { \
     if ((var) != nullptr) {       \
       GE_CHK_RT(rtFreeHost(var)); \
     }                             \
@@ -316,6 +316,8 @@ GE_FUNC_VISIBILITY bool CheckOutputPathValid(const std::string &file_path, const
 GE_FUNC_VISIBILITY bool ValidateStr(const std::string &file_path, const std::string &mode);
 
 GE_FUNC_VISIBILITY Status ConvertToInt32(const std::string &str, int32_t &val);
+
+GE_FUNC_VISIBILITY std::string GetErrorNumStr(int32_t errorNum);
 }  // namespace ge
 
 #endif  // AIR_INC_FRAMEWORK_COMMON_UTIL_H_

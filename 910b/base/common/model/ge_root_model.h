@@ -61,7 +61,7 @@ namespace ge {
 
   std::string GetLogicDeviceId() const override;
 
-  Status SetLogicDeviceId(const std::string &logical_device_id);
+  Status SetLogicDeviceId(const std::string &logical_device_id) override;
 
   void SetWeightSize(const int64_t weight_size) { total_weight_size_ = weight_size; }
   int64_t GetWeightSize() const { return total_weight_size_; }

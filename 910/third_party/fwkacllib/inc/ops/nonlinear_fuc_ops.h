@@ -758,7 +758,7 @@ REG_OP(EluGrad)
 
 *@par Inputs:
 * One input:
-* x: A Tensor. Must be one of the following types: float32, float16, double.
+* x: A Tensor. Must be one of the following types: float32, float16.
 *
 *@par Attributes:
 *negative_slope: A float32. Defaults to "0.0".
@@ -1240,6 +1240,51 @@ REG_OP(ThresholdV2)
      .OPTIONAL_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
      .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
      .OP_END_FACTORY_REG(ThresholdV2)
-} // namespace ge
 
+/**
+* @brief Activation function called Gated Linear Unit, calculate result by input ND tensor x and integer dim.
+*
+* @par Inputs:
+* x: ND input tensor
+*
+* @par Attributes:
+* dim: the dimension will be chunked into halves, default to be -1, the dimension itself must be even.
+*
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+
+* @par Third-party framework compatibility
+* Compatible with caffe correlation custom operator.
+*/
+
+REG_OP(GLU)
+      .INPUT(x, TensorType::FloatingDataType())
+      .OUTPUT(y, TensorType::FloatingDataType())
+      .ATTR(dim, Int, -1)
+      .OP_END_FACTORY_REG(GLU)
+
+/**
+* @brief Calculates the backward outputs of the function "GLU". \n
+
+* @par Inputs:
+* @li y_grad: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor of the same type as `y_grad`, but with a size that is twice as large as `y_grad` along the axis `dim`.
+
+* @par Attributes:
+* dim: An optional int, specifying the dimension along which the GLU is performed. 
+* It should be in the range [-rank(x), rank(x)). Defaults to -1.
+* @par Outputs:
+* x_grad: A Tensor of the same type as `y_grad` and of the same shape as `x`.
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator GLUGrad.
+*/
+
+REG_OP(GLUGrad)
+      .INPUT(y_grad, TensorType::FloatingDataType())
+      .INPUT(x, TensorType::FloatingDataType())
+      .OUTPUT(x_grad, TensorType::FloatingDataType())
+      .ATTR(dim, Int, -1)
+      .OP_END_FACTORY_REG(GLUGrad)
+} // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_

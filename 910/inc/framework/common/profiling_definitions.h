@@ -229,7 +229,6 @@ class ProfilingContext {
   int64_t RegisterString(const std::string &str);
   int64_t RegisterStringHash(const uint64_t hash_id, const std::string &str);
   void UpdateElementHashId();
-  static Status QueryHashId(const std::string &src_str, uint64_t &hash_id);
   size_t GetRegisterStringNum() const {
     return strings_to_index_.size();
   }

@@ -48,6 +48,7 @@ typedef struct aclmdlDesc aclmdlDesc;
 typedef struct aclmdlAIPP aclmdlAIPP;
 typedef struct aclAippExtendInfo aclAippExtendInfo;
 typedef struct aclmdlConfigHandle aclmdlConfigHandle;
+typedef struct aclmdlExecConfigHandle aclmdlExecConfigHandle;
 
 typedef enum {
     ACL_YUV420SP_U8 = 1,
@@ -83,6 +84,11 @@ typedef enum {
     ACL_MDL_OUTPUTQ_ADDR_PTR, /**< pointer to outputQ with shallow copy */
     ACL_MDL_WORKSPACE_MEM_OPTIMIZE
 } aclmdlConfigAttr;
+
+typedef enum {
+    ACL_MDL_STREAM_SYNC_TIMEOUT = 0,
+    ACL_MDL_EVENT_SYNC_TIMEOUT
+} aclmdlExecConfigAttr;
 
 typedef enum {
     ACL_DATA_WITHOUT_AIPP = 0,
@@ -248,6 +254,25 @@ ACL_FUNC_VISIBILITY size_t aclmdlGetInputSizeByIndex(aclmdlDesc *modelDesc, size
  * @retval Specify the size of the output
  */
 ACL_FUNC_VISIBILITY size_t aclmdlGetOutputSizeByIndex(aclmdlDesc *modelDesc, size_t index);
+
+/**
+ * @ingroup AscendCL
+ * @brief Create config handle of execute
+ *
+ * @retval the aclmdlCreateExecConfigHandle pointer
+ */
+ACL_FUNC_VISIBILITY aclmdlExecConfigHandle *aclmdlCreateExecConfigHandle();
+
+/**
+ * @ingroup AscendCL
+ * @brief Destroy config handle of model execute
+ *
+ * @param  handle [IN]  Pointer to aclmdlExecConfigHandle to be destroyed
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlDestroyExecConfigHandle(const aclmdlExecConfigHandle *handle);
 
 /**
  * @ingroup AscendCL
@@ -466,6 +491,22 @@ ACL_FUNC_VISIBILITY aclError aclmdlLoadFromMemWithQ(const void *model, size_t mo
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclmdlExecute(uint32_t modelId, const aclmdlDataset *input, aclmdlDataset *output);
+
+/**
+ * @ingroup AscendCL
+ * @brief Execute model synchronous inference until the inference result is returned
+ *
+ * @param  modelId [IN]   ID of the model to perform inference
+ * @param  input [IN]     Input data for model inference
+ * @param  output [OUT]   Output data for model inference
+ * @param  stream [IN]   stream
+ * @param  handle [IN]   config of model execute
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlExecuteV2(uint32_t modelId, const aclmdlDataset *input, aclmdlDataset *output,
+                                             aclrtStream stream, const aclmdlExecConfigHandle *handle);
 
 /**
  * @ingroup AscendCL
@@ -1241,6 +1282,21 @@ ACL_FUNC_VISIBILITY aclError aclmdlDestroyConfigHandle(aclmdlConfigHandle *handl
  */
 ACL_FUNC_VISIBILITY aclError aclmdlSetConfigOpt(aclmdlConfigHandle *handle, aclmdlConfigAttr attr,
     const void *attrValue, size_t valueSize);
+
+/**
+ * @ingroup AscendCL
+ * @brief set config for model execute
+ *
+ * @param handle [OUT]    pointer to model execute config handle
+ * @param attr [IN]       config attr in model execute config handle to be set
+ * @param attrValue [IN]  pointer to model execute config value
+ * @param valueSize [IN]  memory size of attrValue
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlSetExecConfigOpt(aclmdlExecConfigHandle *handle, aclmdlExecConfigAttr attr,
+                                                    const void *attrValue, size_t valueSize);
 
 /**
  * @ingroup AscendCL

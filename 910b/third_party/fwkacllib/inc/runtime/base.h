@@ -74,6 +74,12 @@ typedef enum tagRtCondition {
     RT_LESS_OR_EQUAL
 } rtCondition_t;
 
+typedef struct tagRtTaskCfgInfo {
+    uint8_t qos;
+    uint8_t partId;
+    uint8_t res[2]; // res
+} rtTaskCfgInfo_t;
+
 /**
  * @ingroup dvrt_base
  * @brief Data Type of Extensible Switch Task.
@@ -143,6 +149,24 @@ typedef rtError_t (*rtProfCtrlHandle)(uint32_t dataType, void *data, uint32_t da
  * @brief stream handle.
  */
 typedef void *rtStream_t;
+
+/**
+ * @ingroup dvrt_base
+ * @brief Program handle.
+ */
+typedef void *rtBinHandle;
+
+/**
+ * @ingroup dvrt_base
+ * @brief Kernel handle.
+ */
+typedef void *rtFuncHandle;
+
+/**
+ * @ingroup dvrt_base
+ * @brief Args handle.
+ */
+typedef void *rtLaunchArgsHandle;
 
 /**
  * @ingroup dvrt_base

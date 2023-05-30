@@ -17,6 +17,7 @@
 #define GE_COMMON_MODEL_MODEL_DEPLOY_RESOURCE_H_
 #include <string>
 #include <vector>
+#include <map>
 
 namespace ge {
 struct ModelDeployResource {
@@ -29,6 +30,11 @@ struct ModelDeployResource {
 struct HcomCommGroup {
   std::string group_name;
   std::vector<uint32_t> group_rank_list;
+};
+
+struct ModelCompileResource {
+  std::string host_resource_type;
+  std::map<std::string, std::string> logic_dev_id_to_res_type;
 };
 }  // namespace ge
 

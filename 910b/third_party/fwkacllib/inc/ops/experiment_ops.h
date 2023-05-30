@@ -404,6 +404,7 @@ REG_OP(UninitPartitionMap)
 * Defaults to "1".
 * @li seed: A Int, Defaults to "0". \n
 * @li seed2: A Int, Defaults to "0". \n
+* @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter". \n
 */
 REG_OP(InitEmbeddingHashmap)
     .INPUT(table_id, TensorType({DT_INT32}))
@@ -419,6 +420,7 @@ REG_OP(InitEmbeddingHashmap)
     .ATTR(sigma, Float, 1)
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
+    .ATTR(filter_mode, String, "no_filter")
     .OP_END_FACTORY_REG(InitEmbeddingHashmap)
 
 /**
@@ -500,7 +502,12 @@ REG_OP(UninitEmbeddingHashmap)
 * @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
 * Defaults to "1".
 * @li seed: An Int, Used to create a random seed, Defaults to "0".
-* @li seed2: An Int, Used to create a random seed, Defaults to "0". \n
+* @li seed2: An Int, Used to create a random seed, Defaults to "0". 
+* @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
+* @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
+* @li default_key_or_value: A bool, indicates the default value get way.
+* @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
+* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.\n
 */
 REG_OP(EmbeddingTableFindAndInit)
     .INPUT(table_id, TensorType({DT_INT32}))
@@ -516,6 +523,11 @@ REG_OP(EmbeddingTableFindAndInit)
     .ATTR(sigma, Float, 1)
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
+    .ATTR(filter_mode, String, "no_filter")
+    .ATTR(filter_freq, Int, 0)
+    .ATTR(default_key_or_value, Bool, false)
+    .ATTR(default_key, Int, 0)
+    .ATTR(default_value, Float, 0)
     .OP_END_FACTORY_REG(EmbeddingTableFindAndInit)
 
 /**

@@ -84,12 +84,12 @@
 #ifdef CONFIG_CPU_MAX_NUM
 #undef CONFIG_CPU_MAX_NUM
 #endif
-#define SYSTEM_CONFIG_PLAT_BASE __ULL(0x104D5FE000)      /* 0x4D500000 - last 8K */
+#define SYSTEM_CONFIG_PLAT_BASE __ULL(0x1036EFE000)      /* 0x36E00000 - last 8K */
 #define CONFIG_CPU_MAX_NUM      8
 #endif
 
 #ifdef DAVINCI_CLOUD_V2_FFTS
-#define SYSTEM_CONFIG_PLAT_BASE __ULL(0x104D5FE000)      /* 0x4D500000 - last 8K */
+#define SYSTEM_CONFIG_PLAT_BASE __ULL(0x1036EFE000)      /* 0x36E00000 - last 8K */
 #define CONFIG_CPU_MAX_NUM      8
 #endif
 

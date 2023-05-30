@@ -72,19 +72,19 @@ class Endpoint {
   AttrStore attrs_;
 };
 
-class P2pNodeUtils {
+class P2pNode {
  public:
-  explicit P2pNodeUtils(Endpoint &endpoint) : endpoint_(endpoint){};
-  P2pNodeUtils &SetType(const std::string &event_type);
-  P2pNodeUtils &SetGroupName(const std::string &group_name);
-  P2pNodeUtils &SetTag(const int64_t tag);
-  P2pNodeUtils &SetPeerRank(const int64_t peer_rank);
-  P2pNodeUtils &SetLogicPeerRank(const int64_t logic_peer_rank);
-  P2pNodeUtils &SetDeviceIndices(const std::string &indices);
-  P2pNodeUtils &SetIsOutput(const bool is_output);
+  explicit P2pNode(Endpoint &endpoint) : endpoint_(endpoint){};
+  P2pNode &SetType(const std::string &event_type);
+  P2pNode &SetGroupName(const std::string &group_name);
+  P2pNode &SetTag(const int64_t tag);
+  P2pNode &SetPeerRank(const int64_t peer_rank);
+  P2pNode &SetLogicPeerRank(const int64_t logic_peer_rank);
+  P2pNode &SetDeviceIndices(const std::string &indices);
+  P2pNode &SetIsOutput(const bool is_output);
   // flow : need deploy
   // p2p_node : if send/recv nodes is in the graph, does not need deploy, else need deploy
-  P2pNodeUtils &SetNeedDeploy(const bool nee_deploy);
+  P2pNode &SetNeedDeploy(const bool need_deploy);
   std::string GetType() const;
   std::string GetGroupName() const;
   int64_t GetTag() const;

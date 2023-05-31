@@ -26,6 +26,25 @@
 #include "runtime/mem.h"
 
 namespace ge {
+struct RealAddressAndSize {
+  uint64_t address;
+  uint64_t size;
+};
+
+struct Context {
+  uint32_t context_id;
+  uint32_t thread_id;
+  std::vector<RealAddressAndSize> input;
+  std::vector<RealAddressAndSize> output;
+};
+
+struct FftsPlusDumpInfo {
+  std::shared_ptr<OpDesc> op;
+  std::vector<Context> context;
+  std::vector<uintptr_t> input_addrs;
+  std::vector<uintptr_t> output_addrs;
+};
+
 class DumpOp {
  public:
   DumpOp() = default;
@@ -34,11 +53,16 @@ class DumpOp {
   void SetDumpInfo(const DumpProperties &dump_properties, const OpDescPtr &op_desc,
                    const std::vector<uintptr_t> &input_addrs, const std::vector<uintptr_t> &output_addrs,
                    rtStream_t const stream);
-  Status LaunchDumpOp(bool is_single_op_dump);
+  Status LaunchDumpOp(const bool is_single_op_dump);
   void SetLoopAddr(const uintptr_t global_step, const uintptr_t loop_per_iter, const uintptr_t loop_cond);
   void SetDynamicModelInfo(const std::string &dynamic_model_name, const std::string &dynamic_om_name,
                            const uint32_t dynamic_model_id);
-  void SetTaskId(uint32_t task_id) {
+  void SaveFftsSubOpInfo(const OpDescPtr &op_desc, const std::vector<Context> &context,
+                         const std::vector<uintptr_t> &input_addrs,
+                         const std::vector<uintptr_t> &output_addrs);
+  Status GenerateFftsDump(const DumpProperties &dump_properties, void *&load_dump_info, uint32_t &load_dump_len,
+                          void *&unload_dump_info, uint32_t &unload_dump_len);
+  void SetTaskId(const uint32_t task_id) {
     task_id_ = task_id;
   }
   void SetWorkspaceAddrs(const std::vector<uint64_t> &workspace_addr) {
@@ -54,18 +78,23 @@ class DumpOp {
   void DumpWorkspace(toolkit::aicpu::dump::Task &task);
   Status DumpOutput(toolkit::aicpu::dump::Task &task);
   Status DumpInput(toolkit::aicpu::dump::Task &task);
+  void DumpTask(toolkit::aicpu::dump::Task &task, const uint32_t task_id);
   Status SetDumpModelName();
   Status ProtoMallocAndMemcpy(const size_t proto_size, const std::string &proto_msg);
   Status LaunchDump(toolkit::aicpu::dump::Task &task);
+  Status BuildFftsSubOpTask(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status BuildUnLoadFftsDumpInfo(void *&unload_dump_info, uint32_t &unload_dump_len);
 
   DumpProperties dump_properties_;
   OpDescPtr op_desc_;
   std::vector<uintptr_t> input_addrs_;
   std::vector<uintptr_t> output_addrs_;
   std::vector<uint64_t> space_addrs_;
+  std::vector<FftsPlusDumpInfo> ffts_sub_op_list_;
 
   void *proto_dev_mem_ = nullptr;
   void *proto_size_dev_mem_ = nullptr;
+  void *dev_mem_unload_{nullptr};
   toolkit::aicpu::dump::OpMappingInfo op_mapping_info_;
   rtStream_t stream_;
   uintptr_t global_step_ = 0U;

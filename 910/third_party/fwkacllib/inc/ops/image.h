@@ -182,32 +182,32 @@ REG_OP(AdjustContrastWithMean)
 * @par Inputs:
 * Input images is a tensor of at least 3 dimensions. The last 3 dimensions are
 interpreted as '[height, width, channels]'. Inputs include:
-* @li images: A Tensor of type float. Images to adjust. At least 3-D. The format
+* @li images: A Tensor of type T. Images to adjust. At least 3-D. The format
 must be NHWC or NCHW.
-* @li mean: A Tensor of type float.Indicates the average value of each channel. \n
-* @li contrast_factor: A Tensor of type float. A float multiplier for adjusting contrast . \n
 
 * @par Outputs:
-* y: A Tensor of type float. The format must be NHWC or NCHW. \n
+* y: A Tensor of type T. The format must be NHWC or NCHW. \n
 
 * @par Attributes:
-* @li num_output_channels: An optional int. Could be 1 or 3. Defaults to 1.
+* @li output_channels: An optional int. Could be 1 or 3. Defaults to 1.
 Value used for different mean mode.
 * @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
 Value used for inferring real format of images.
+
+* @par DataType:
+* @li T: type of uint8 or float32. \n
+
 * @attention Constraints:
 * Input images is a tensor of at least 3 dimensions. The last dimension is
-interpretted as channels, and must be three . \n
-
-* @par Third-party framework compatibility
-* Compatible with tensorflow AdjustContrast operator.
+interpretted as channels, and must be three. \n
 */
-REG_OP(RgbToGrayScale)
-    .INPUT(images, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
+REG_OP(RgbToGrayscale)
+    .INPUT(images, "T")
     .ATTR(data_format, String, "HWC")
-    .ATTR(num_output_channels, Int, 1)
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_UINT8}))
-    .OP_END_FACTORY_REG(RgbToGrayScale)
+    .ATTR(output_channels, Int, 1)
+    .OUTPUT(y, "T")
+    .DATATYPE(T, TensorType({DT_UINT8, DT_FLOAT}))
+    .OP_END_FACTORY_REG(RgbToGrayscale)
 
 /**
 * @ Another method to adjust the saturation of one or more images. \n
@@ -270,7 +270,7 @@ REG_OP(ResizeTrilinear)
 * @brief Applies a affine transformation to an image. \n
 
 * @par Inputs:
-* @li x: An HWC tensor of type float32 or uint8.
+* @li x: An tensor of at least 3 dimensions, type must be float32 or uint8.
 * @li matrix: transformation matrix, format ND , shape must be (2, 3), type must be float32. \n
 
 * @par Attributes:
@@ -279,10 +279,12 @@ REG_OP(ResizeTrilinear)
 * @li interpolation: Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area", default "bilinear".
 * @li border_type: Pixel extension method, only support "constant".
 * @li border_value: Used when border_type is "constant". Data type is the same as that of the original picture.
-*                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 . \n
+*                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 .
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+                   Value used for inferring real format of images. \n
 
 * @par Outputs:
-* y: output tensor, HWC, type must be float32 or uint8.
+* y: output tensor of at least 3 dimensions, type must be float32 or uint8.
 */
 REG_OP(WarpAffineV2)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8}))
@@ -292,26 +294,30 @@ REG_OP(WarpAffineV2)
     .ATTR(interpolation, String, "bilinear")
     .ATTR(border_type, String, "constant")
     .ATTR(border_value, Float, 0.0)
+    .ATTR(data_format, String, "HWC")
     .OP_END_FACTORY_REG(WarpAffineV2)
 
 /**
 * @brief change an image size. \n
 
 * @par Inputs:
-* @li x: An HWC tensor of type float32 or uint8.
+* @li x: An tensor of at least 3 dimensions, type must be float32 or uint8.
 * @li dst_size: Required int32 and int64, shape must be (1, 2), specifying the size of the output image. \n
 
 * @par Attributes:
 * @li interpolation: Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area", default "nearest".
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+                   Value used for inferring real format of images. \n
 
 * @par Outputs:
-* y: output tensor, HWC, type must be float32 or uint8.
+* y: output tensor of at least 3 dimensions, type must be float32 or uint8.
 */
 REG_OP(ResizeV2)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8}))
     .INPUT(dst_size, TensorType({DT_INT32,DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8}))
     .ATTR(interpolation, String, "nearest")
+    .ATTR(data_format, String, "HWC")
     .OP_END_FACTORY_REG(ResizeV2)
 
 /**
@@ -343,6 +349,44 @@ REG_OP(GaussianBlur)
     .ATTR(padding_mode, String, "constant")
     .DATATYPE(T, TensorType({DT_UINT8, DT_FLOAT}))
     .OP_END_FACTORY_REG(GaussianBlur)
+
+/**
+* @brief Applies a rotate to an image. \n
+
+* @par Inputs:
+* @li x: An NHWC or NCHW tensor of type T. \n
+
+* @par Attributes:
+* @li angle: An required float attr. In degress counter clockwise.
+* @li center: Optional center of rotation. Origin is the upper left corner. Default is the center of the image.
+* @li expand: Optional expansion flag. If true, expands the output image to make it large enough to hold the
+              entire rotated image. If false or omitted, make the output image the same size as the input image.
+              Note that the expand flag assumes rotation around the center and no translation.
+* @li interpolation: Interpolation type, only support "bilinear"/"nearest", default "nearest".
+* @li padding_mode: Pixel extension method, only support "constant" and "edge", default "constant".
+* @li padding_mode: Used when padding_mode is "constant". Data type is the same as that of the original picture.
+*                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 . \n
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
+Value used for inferring real format of images.
+
+* @par Outputs:
+* y: output tensor, NHWC or NCHW, type must be T.
+
+* @par DataType:
+* @li T: type of uint8 or float32. \n
+*/
+REG_OP(Rotate)
+    .INPUT(x, "T")
+    .OUTPUT(y, "T")
+    .REQUIRED_ATTR(angle, Float)
+    .ATTR(center, ListInt, {})
+    .ATTR(expand, Bool, false)
+    .ATTR(interpolation, String, "nearest")
+    .ATTR(padding_mode, String, "constant")
+    .ATTR(padding_value, Float, 0.0)
+    .ATTR(data_format, String, "HWC")
+    .DATATYPE(T, TensorType({DT_UINT8, DT_FLOAT}))
+    .OP_END_FACTORY_REG(Rotate)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_H_

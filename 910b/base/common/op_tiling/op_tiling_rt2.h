@@ -37,8 +37,7 @@ ge::graphStatus AicoreRtParseAndTiling(const ge::Operator &op, const fe::PlatFor
 ge::graphStatus AtomicRtParseAndTiling(const ge::Operator &op, const fe::PlatFormInfos &platform_infos,
                                        OpRunInfoV2 &run_info);
 ge::graphStatus SoftSyncOpRtParseAndTiling(const ge::Operator &op, fe::PlatFormInfos &platform_infos,
-                                           rtArgsEx_t &args_ex, OpRunInfoV2 &run_info,
-                                           const gert::OpImplSpaceRegistryPtr &space_registry);
+                                           OpRunInfoV2 &run_info, const gert::OpImplSpaceRegistryPtr &space_registry);
 ge::graphStatus FftsRtParseAndTiling(const ge::Operator &op, const fe::PlatFormInfos &platform_infos,
                                      std::vector<OpRunInfoV2> &op_run_infos);
 }  // namespace optiling

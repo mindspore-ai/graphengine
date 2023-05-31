@@ -30,7 +30,7 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
   class SummaryData;
 
   ~CompiledGraphSummary();
-  CompiledGraphSummary &operator=(const CompiledGraphSummary &) = delete;
+  CompiledGraphSummary &operator=(const CompiledGraphSummary &) & = delete;
   CompiledGraphSummary(const CompiledGraphSummary &) = delete;
 
   ///

@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 #include "external/ge/ge_api_error_codes.h"
+#include "common/model/model_deploy_resource.h"
 #include "exec_runtime/deploy/model_deployer.h"
 #include "exec_runtime/deploy/exchange_service.h"
 
@@ -67,6 +68,9 @@ class ExecutionRuntime {
   /// @return                       pointer to the instance of ExchangeService
   virtual ExchangeService &GetExchangeService() = 0;
 
+  virtual const std::string &GetCompileHostResourceType() const;
+
+  virtual const std::map<std::string, std::string> &GetCompileDeviceInfo() const;
   static const int32_t kRuntimeTypeHeterogeneous = 1;
  private:
   static Status LoadHeterogeneousLib();

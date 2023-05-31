@@ -41,6 +41,7 @@ constexpr uint64_t kGraphMemoryManagerMallocMaxSize = 27917287424U; // 26UL * 10
 constexpr uint64_t kMemoryVarManagerMallocSize = 5368709120U; // 5UL * 1024UL * 1024UL * 1024UL;
 constexpr uint64_t kMemoryVarLogicBase = 34359738368U; // 32UL * 1024UL * 1024UL * 1024UL;
 constexpr uint64_t kMemoryHostFeatureMapLogicBase = 68719476736U; // 64UL * 1024UL * 1024UL * 1024UL;
+constexpr uint64_t kMemoryVarAddressSize = kMemoryHostFeatureMapLogicBase - kMemoryVarLogicBase;
 constexpr uint64_t kMemoryHostSVMFeatureMapLogicBase = 137438953472U; // 128UL * 1024UL * 1024UL * 1024UL;
 constexpr uint64_t kUseMaxMemorySize = kGraphMemoryManagerMallocMaxSize + kMemoryVarManagerMallocSize;
 constexpr uint64_t kGraphMemoryBuffer = 34359738368U; // 32UL * 1024UL * 1024UL * 1024UL;
@@ -114,7 +115,13 @@ class VarResource {
 
   ge::Status GetCurVarDesc(const std::string &var_name, ge::GeTensorDesc &tensor_desc);
 
+  ge::Status RecordStagedVarDesc(const uint32_t graph_id, const std::string &var_name, const GeTensorDesc &tensor_desc);
+
+  const std::map<std::string, GeTensorDesc> &GetStagedVarDescs(const uint32_t graph_id) const;
+
   ge::Status RenewCurVarDesc(const std::string &var_name, const ge::OpDescPtr &op_desc);
+
+  Status RenewCurVarDesc(const std::string &var_name, const GeTensorDesc &tensor_desc);
 
   void SaveBroadCastInfo(const uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
 
@@ -131,12 +138,20 @@ class VarResource {
 
   Status SetChangedGraphId(const std::string &var_name, const uint32_t graph_id) {
     var_names_to_changed_graph_id_[var_name] = graph_id;
+    (void) graph_id_to_changed_var_names_[graph_id].emplace(var_name);
     return SUCCESS;
   }
 
   Status GetChangedGraphId(const std::string &var_name, uint32_t &graph_id) const;
 
+  std::set<std::string> GetChangedVarNames(const uint32_t graph_id) const;
+
   void RemoveChangedGraphId(const std::string &var_name) {
+    const auto graph_id = var_names_to_changed_graph_id_[var_name];
+    (void)graph_id_to_changed_var_names_[graph_id].erase(var_name);
+    if (graph_id_to_changed_var_names_[graph_id].empty()) {
+      (void)graph_id_to_changed_var_names_.erase(graph_id);
+    }
     (void)var_names_to_changed_graph_id_.erase(var_name);
     (void)var_names_to_changed_graph_id_.erase(GetBatchVarKeyName(var_name));
   }
@@ -168,6 +183,8 @@ class VarResource {
 
   Status VarResourceToSerial(deployer::VarResourceInfo *const var_resource_info) const;
 
+  Status VarDescInfoToSerial(deployer::VarDescInfo &desc_info) const;
+
   Status VarResourceToDeserial(const deployer::VarResourceInfo *const var_resource_info);
 
   void SetBatchVariablesKeyName(const std::string &batch_var_name, const std::string &key_name);
@@ -186,6 +203,8 @@ class VarResource {
   std::unordered_map<std::string, std::vector<TransNodeInfo>> var_to_trans_road_;
   std::unordered_map<uint64_t, VarDevAddrMgr> var_dev_addr_mgr_map_;
   std::map<std::string, uint32_t> var_names_to_changed_graph_id_;
+  std::map<uint32_t, std::set<std::string>> graph_id_to_changed_var_names_;
+  std::map<uint32_t, std::map<std::string, ge::GeTensorDesc>> graph_id_to_staged_var_desc_;
   std::map<std::string, uint32_t> var_names_to_allocated_graph_id_;
   std::map<uint32_t, std::unordered_map<std::string, VarBroadCastInfo>> var_broad_cast_info_;
   std::set<std::string> var_is_instance_;
@@ -268,14 +287,16 @@ class VarManager {
 
   Status GetCurVarDesc(const std::string &var_name, GeTensorDesc &tensor_desc);
 
+  Status RecordStagedVarDesc(const uint32_t graph_id, const std::string &var_name, const GeTensorDesc &tensor_desc);
+
+  const std::map<std::string, GeTensorDesc> &GetStagedVarDescs(const uint32_t graph_id);
+
   Status RenewCurVarDesc(const std::string &var_name, OpDescPtr op_desc);
+
+  Status RenewCurVarDesc(const std::string &var_name, const GeTensorDesc &tensor_desc);
 
   Status MallocVarMemory(const uint64_t memory_size = kMemoryVarManagerMallocSize,
                          const uint32_t device_id = kDefaultDeviceId);
-
-  std::string GenerateMemoryKey(const uint64_t &session_id, const uint64_t &logic_addr) {
-    return "session" + std::to_string(session_id) + "logic" + std::to_string(logic_addr);
-  }
 
   Status FreeVarMemory();
 
@@ -286,6 +307,8 @@ class VarManager {
   Status SetChangedGraphId(const std::string &var_name, const uint32_t graph_id);
 
   Status GetChangedGraphId(const std::string &var_name, uint32_t &graph_id) const;
+
+  std::set<std::string> GetChangedVarNames(const uint32_t graph_id) const;
 
   Status SetMemoryMallocSize(const std::map<std::string, std::string> &options, const size_t total_mem_size);
 
@@ -317,7 +340,12 @@ class VarManager {
 
   const uint64_t &GetVarMemLogicBase() const { return var_mem_logic_base_; }
 
-  const uint64_t &GetUseMaxMemorySize() const { return use_max_mem_size_; }
+  uint64_t GetUseMaxMemorySize() const {
+    if (GetEvaluateMode()) {
+      return std::numeric_limits<uint64_t>::max();
+    }
+    return use_max_mem_size_;
+  }
 
   void RemoveChangedGraphId(const std::string &var_name);
 
@@ -356,6 +384,8 @@ class VarManager {
 
   Status VarManagerToSerial(const uint64_t session_id, deployer::VarManagerInfo &info) const;
 
+  Status VarDescInfoToSerial(const uint64_t session_id, deployer::VarDescInfo &info) const;
+
   Status VarManagerToDeserial(const uint64_t session_id, const deployer::VarManagerInfo &info);
 
   void UpdateMemoryConfig(const size_t graph_mem_max_size, const size_t var_mem_max_size,
@@ -390,8 +420,6 @@ class VarManager {
   std::map<rtMemType_t, std::shared_ptr<MemResource>> mem_resource_map_;
   mutable std::recursive_mutex mutex_;
   MemoryManager *mem_manager_{nullptr};
-
-  Status ParseMemoryMallocSize(const std::string &memory_size, uint64_t &target_size) const;
 };
 
 class VarManagerPool {

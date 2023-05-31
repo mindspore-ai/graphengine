@@ -113,6 +113,9 @@ const char_t *const OPTION_EXECUTE_TIMES = "ge.execute_times";
 const char_t *const OPTION_MAX_KEY_NUM = "ge.max_num";
 const char_t *const OPTION_EMBEDDING_DIM = "ge.embedding_dim";
 
+// Option key: Offload
+constexpr char_t const OPTION_EXEC_RANK_MAP[] = "ge.exec.rankMap";
+
 // Option key: host env os & cpu
 const char_t *const OPTION_HOST_ENV_OS = "ge.host_env_os";
 const char_t *const OPTION_HOST_ENV_CPU = "ge.host_env_cpu";

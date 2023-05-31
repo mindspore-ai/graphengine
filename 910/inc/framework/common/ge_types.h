@@ -438,6 +438,8 @@ struct ModelQueueParam {
   std::vector<uint32_t> input_queues;
   std::vector<uint32_t> output_queues;
   std::vector<int32_t> input_fusion_offsets;
+  std::vector<uint64_t> input_events;
+  std::vector<uint64_t> output_events;
 };
 
 // internal options
@@ -455,6 +457,7 @@ const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
 
 // 5: auto recompute attribute
 const char_t *const RECOMPUTE = "ge.recompute";
+const char_t *const GRAPH_SLICE_MODE = "ge.graphSliceMode";
 
 // 6: Topological Sorting Mode
 const char_t *const OPTION_TOPOSORTING_MODE = "ge.topoSortingMode";

@@ -23,6 +23,7 @@
 #include "framework/common/ge_types.h"
 #include "framework/common/util.h"
 #include "framework/common/types.h"
+#include "framework/common/ge_model_inout_info.h"
 
 namespace ge {
 class ModelParserBase {
@@ -51,6 +52,20 @@ class ModelParserBase {
   static Status ParseModelContent(const ModelData &model, uint8_t *&model_data, uint64_t &model_len);
 
   static bool IsDynamicModel(const ModelFileHeader &file_header);
+
+  static Status GetModelInputDesc(const uint8_t *data, size_t size, ModelInOutInfo &info);
+
+  static Status GetModelOutputDesc(const uint8_t *data, size_t size, ModelInOutInfo &info);
+
+  static Status GetDynamicBatch(const uint8_t *data, size_t size, ModelInOutInfo &info);
+
+  static Status GetDynamicHW(const uint8_t *data, size_t size, ModelInOutInfo &info);
+
+  static Status GetDynamicDims(const uint8_t *data, size_t size, ModelInOutInfo &info);
+
+  static Status GetDataNameOrder(const uint8_t *data, size_t size, ModelInOutInfo &info);
+
+  static Status GetDynamicOutShape(const uint8_t *data, size_t size, ModelInOutInfo &info);
 };
 }  //  namespace ge
 #endif  // GE_COMMON_MODEL_PARSER_BASE_H_

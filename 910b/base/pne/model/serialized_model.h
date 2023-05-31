@@ -36,8 +36,9 @@ class SerializedModel : public PneModel {
     return SUCCESS;
   }
 
-  void SetLogicDeviceId(const std::string &logic_device_id) {
+  Status SetLogicDeviceId(const std::string &logic_device_id) override {
     logic_device_id_ = logic_device_id;
+    return SUCCESS;
   }
 
   std::string GetLogicDeviceId() const override {

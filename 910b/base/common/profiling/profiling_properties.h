@@ -75,7 +75,7 @@ class ProfilingProperties {
   void UpdateSubscribeDeviceModuleMap(const std::string &prof_type, const uint32_t device_id, const uint64_t module);
   void UpdateDeviceIdModuleMap(const std::string &prof_type, const uint64_t module,
                                const std::vector<int32_t> &device_list);
-  bool ProfilingSubscribeOn();
+  bool ProfilingSubscribeOn() const;
   void SetSubscribeInfo(const uint64_t prof_switch, const uint32_t model_id, const bool is_subscribe);
   void CleanSubscribeInfo();
   void ClearDeviceIdMap();
@@ -114,7 +114,7 @@ class ProfilingProperties {
   std::atomic<bool> is_task_event_profiling_{false};
   std::string fp_point_;
   std::string bp_point_;
-  std::atomic<uint32_t> subscribe_count_{0UL};
+  std::atomic<uint32_t> subscribe_count_{0U};
   std::map<int32_t, uint64_t> device_id_module_map_; // key: device_id, value: profiling on module
   std::map<uint32_t, DeviceSubsInfo> subs_dev_module_; // key: device_id, value: profiling on module
   ProfSubscribeInfo subscribe_info_{false, 0U, 0U};

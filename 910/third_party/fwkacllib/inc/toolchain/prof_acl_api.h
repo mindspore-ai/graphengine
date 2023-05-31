@@ -28,6 +28,7 @@ constexpr uint64_t PROF_RUNTIME_API    = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW      = 0x00000400ULL;
 constexpr uint64_t PROF_TASK_TIME_L1   = 0x00000800ULL;
+constexpr uint64_t PROF_TASK_MEMORY    = 0x00001000ULL;
 
 // system profilinig switch
 constexpr uint64_t PROF_CPU                  = 0x00010000ULL;
@@ -40,6 +41,7 @@ constexpr uint64_t PROF_AIVECTORCORE_SAMPLE  = 0x00400000ULL;
 constexpr uint64_t PROF_INSTR                = 0x00800000ULL;
 
 constexpr uint64_t PROF_MODEL_EXECUTE        = 0x0000001000000ULL;
+constexpr uint64_t PROF_PURE_CPU             = 0x0000002000000ULL;
 constexpr uint64_t PROF_RUNTIME_TRACE        = 0x0000004000000ULL;
 constexpr uint64_t PROF_SCHEDULE_TIMELINE    = 0x0000008000000ULL;
 constexpr uint64_t PROF_SCHEDULE_TRACE       = 0x0000010000000ULL;
@@ -66,6 +68,7 @@ constexpr uint64_t PROF_RUNTIME_API_MASK    = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK_MASK = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW_MASK      = 0x00000400ULL;
 constexpr uint64_t PROF_TASK_TIME_L1_MASK   = 0x00000800ULL;
+constexpr uint64_t PROF_TASK_MEMORY_MASK    = 0x00001000ULL;
 
 // system profilinig mask
 constexpr uint64_t PROF_CPU_MASK                  = 0x00010000ULL;

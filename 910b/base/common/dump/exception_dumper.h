@@ -31,7 +31,7 @@ struct ExtraOpInfo {
   std::string args_before_execute;
   bool has_memory_log{false};
   uint32_t tiling_key{0U};
-  uintptr_t args{0UL};
+  uintptr_t args{0U};
   size_t args_size{0UL};
   std::vector<void *> input_addrs;
   std::vector<void *> output_addrs;
@@ -42,7 +42,7 @@ struct ExtraOpInfo {
 
 class ExceptionDumper {
  public:
-  ExceptionDumper() = default;
+  ExceptionDumper() noexcept = default;
   ~ExceptionDumper();
 
   void SaveDumpOpInfo(const OpDescPtr &op, const uint32_t task_id, const uint32_t stream_id,
@@ -63,7 +63,7 @@ class ExceptionDumper {
   }
 
   void Clear() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    const std::lock_guard<std::mutex> lock(mutex_);
     op_desc_info_.clear();
   }
 

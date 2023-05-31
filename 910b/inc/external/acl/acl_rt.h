@@ -578,6 +578,19 @@ ACL_FUNC_VISIBILITY aclError aclrtSynchronizeEvent(aclrtEvent event);
 
 /**
  * @ingroup AscendCL
+ * @brief Block Host Running, wait event to be complete
+ *
+ * @param  event [IN]   event to wait
+ * @param  timeout [IN]  timeout value,the unit is milliseconds
+ * -1 means waiting indefinitely, 0 means check whether synchronization is immediately completed
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSynchronizeEventWithTimeout(aclrtEvent event, int32_t timeout);
+
+/**
+ * @ingroup AscendCL
  * @brief computes the elapsed time between events.
  *
  * @param ms [OUT]     time between start and end in ms

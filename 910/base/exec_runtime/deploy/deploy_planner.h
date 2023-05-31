@@ -201,7 +201,7 @@ class DeployPlannerBase {
                             const ModelRelation::ModelEndpointInfo &model_endpoint_info);
   bool CanBeFused(const std::string &fusion_name, const std::string &endpoint_name);
   void UpdateFusionOffset(int32_t src_index, int32_t dst_index);
-  void Mark2PgModels();
+  void MarkMultiDeployedModels();
   Status ResolveDataFlows();
   Status ResolveModelInputs(const std::string &model_instance_name,
                             const ModelRelation::ModelEndpointInfo &model_endpoint_info);
@@ -212,7 +212,7 @@ class DeployPlannerBase {
   Status BindRemoteOutputGroupToInput();
   Status BindOutputToRemoteInputs();
   void UpdateDeployPlan();
-  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info, int32_t &endpoint_index);
+  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info, int32_t &queue_idx);
   Status CreateEndpointInfo(std::shared_ptr<DeployPlan::EventInfo> event_info, const std::string &model_instance_name);
   Status CreateGroupEntry(const DeployPlan::QueueInfo &queue_info, int32_t &entry_index);
   Status CreateGroupInfo(const DeployPlan::QueueInfo &queue_info,
@@ -245,7 +245,7 @@ class DeployPlannerBase {
   std::vector<std::string> ToEndpointDescs(const std::vector<int32_t> &endpoint_indices,
                                            const bool is_group_entry = false) const;
   std::string ToEndpointDesc(const int32_t endpoint_indices, const bool is_group_entry = false) const;
-  static void BuildEventInfo(Endpoint &event_def, const std::string &model_instance_name,
+  static void BuildEventInfo(Endpoint &endpoint, const std::string &model_instance_name,
                              std::shared_ptr<DeployPlan::EventInfo> event_info);
   DeployPlan::QueueInfo BuildQueueInfo(Endpoint &queue_def,
                                        const std::string &model_instance_name);

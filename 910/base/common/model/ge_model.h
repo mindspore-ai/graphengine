@@ -83,6 +83,8 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
 
   Status GetSessionId(const uint32_t model_id, uint64_t &session_id) const;
 
+  void SetModelInOutInfo(const std::shared_ptr<uint8_t> &buff) { model_in_out_info_ = buff; }
+
  protected:
   ConstProtoAttrMap &GetAttrMap() const override;
 
@@ -104,6 +106,7 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
   uint8_t platform_type_ = {0U};
   uint32_t model_id_ = INVALID_MODEL_ID;
   std::map<uint32_t, uint64_t> model_id_to_session_id_map_;
+  std::shared_ptr<uint8_t> model_in_out_info_;
 };
 using GeModelPtr = std::shared_ptr<ge::GeModel>;
 }  // namespace ge

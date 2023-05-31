@@ -17,6 +17,7 @@
 #ifndef D_SYSLOG_H_
 #define D_SYSLOG_H_
 
+#include <stdarg.h>
 static const int TMP_LOG = 0;
 
 #ifdef __cplusplus
@@ -46,58 +47,16 @@ extern "C" {
 /**
  * @ingroup slog
  *
- * debug level id
+ * log level id
  */
-#define DLOG_DEBUG 0
-
-/**
- * @ingroup slog
- *
- * info level id
- */
-#define DLOG_INFO 1
-
-/**
- * @ingroup slog
- *
- * warning level id
- */
-#define DLOG_WARN 2
-
-/**
- * @ingroup slog
- *
- * error level id
- */
-#define DLOG_ERROR 3
-
-/**
- * @ingroup slog
- *
- * don't print log
- */
-#define DLOG_NULL 4
-
-/**
- * @ingroup slog
- *
- * trace log print level id
- */
-#define DLOG_TRACE 5
-
-/**
- * @ingroup slog
- *
- * oplog log print level id
- */
-#define DLOG_OPLOG 6
-
-/**
- * @ingroup slog
- *
- * event log print level id
- */
-#define DLOG_EVENT 0x10
+#define DLOG_DEBUG 0x0      // debug level id
+#define DLOG_INFO  0x1      // info level id
+#define DLOG_WARN  0x2      // warning level id
+#define DLOG_ERROR 0x3      // error level id
+#define DLOG_NULL  0x4      // don't print log
+#define DLOG_TRACE 0x5      // trace log print level id
+#define DLOG_OPLOG 0x6      // oplog log print level id
+#define DLOG_EVENT 0x10     // event log print level id
 
 /**
  * @ingroup slog
@@ -105,15 +64,16 @@ extern "C" {
  * max log length
  */
 #define MSG_LENGTH 1024
-#define DEBUG_LOG_MASK      (0x00010000)
-#define SECURITY_LOG_MASK   (0x00100000)
-#define RUN_LOG_MASK        (0x01000000)
-#define RESERVERD_LENGTH 52
 
-typedef struct {
-    const char *cName;
-    int cVal;
-} DCODE;
+/**
+ * @ingroup slog
+ *
+ * log mask
+ */
+#define DEBUG_LOG_MASK      (0x00010000)    // print log to directory debug
+#define SECURITY_LOG_MASK   (0x00100000)    // print log to directory security
+#define RUN_LOG_MASK        (0x01000000)    // print log to directory run
+#define STDOUT_LOG_MASK     (0x10000000)    // print log to stdout
 
 typedef struct tagKV {
     char *kname;
@@ -129,7 +89,7 @@ typedef struct {
     ProcessType type;
     unsigned int pid;
     unsigned int deviceId;
-    char reserved[RESERVERD_LENGTH];
+    char reserved[52];      // reserve 52 bytes, align to 64 bytes
 } LogAttr;
 
 /**
@@ -148,11 +108,7 @@ enum {
     DVPP,          /**< DVPP */
     RUNTIME,       /**< Runtime */
     CCE,           /**< CCE */
-#if (OS_TYPE == LINUX)
-    HDC,         /**< HDC */
-#else
-    HDCL,
-#endif // OS_TYPE
+    HDC,           /**< HDC */
     DRV,           /**< Driver */
     MDCFUSION,     /**< Mdc fusion */
     MDCLOCATION,   /**< Mdc location */
@@ -211,6 +167,8 @@ enum {
     HICAID,
     TSYNC,
     AUDIO,
+    FFRT,
+    HDCL,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 
@@ -261,6 +219,16 @@ DLL_EXPORT int CheckLogLevel(int moduleId, int logLevel);
 DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
 
 /**
+ * @ingroup     : slog
+ * @brief       : print log, need va_list variable, exec CheckLogLevel() before call this function
+ * @param[in]   : moduleId      module id, eg: CCE
+ * @param[in]   : level         (0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param[in]   : fmt           log content
+ * @param[in]   : list          variable list of log content
+ */
+DLL_EXPORT void DlogVaList(int moduleId, int level, const char *fmt, va_list list);
+
+/**
  * @ingroup slog
  * @brief dlog_error: print error log
  *
@@ -271,6 +239,12 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     do {                                                                          \
         DlogErrorInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
     } while (TMP_LOG != 0)
+
+/**
+ * @ingroup slog
+ * @brief DlogFlush: flush log buffer to file
+ */
+DLL_EXPORT void DlogFlush(void);
 
 /**
  * @ingroup slog
@@ -380,23 +354,18 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
         }                                                                                                           \
     } while (TMP_LOG != 0)
 
-/**
- * @ingroup slog
- * @brief DlogFlush: flush log buffer to file
- */
-DLL_EXPORT void DlogFlush(void);
 
 /**
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
-void DlogErrorInner(int moduleId, const char *fmt, ...);
-void DlogWarnInner(int moduleId, const char *fmt, ...);
-void DlogInfoInner(int moduleId, const char *fmt, ...);
-void DlogDebugInner(int moduleId, const char *fmt, ...);
-void DlogEventInner(int moduleId, const char *fmt, ...);
-void DlogInner(int moduleId, int level, const char *fmt, ...);
-void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+DLL_EXPORT void DlogErrorInner(int moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogWarnInner(int moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogInfoInner(int moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogDebugInner(int moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogEventInner(int moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogInner(int moduleId, int level, const char *fmt, ...);
+DLL_EXPORT void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -509,8 +478,8 @@ DLL_EXPORT void DlogFlushForC(void);
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
-void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
-void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+DLL_EXPORT void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
+DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

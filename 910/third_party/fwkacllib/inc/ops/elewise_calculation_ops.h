@@ -3992,7 +3992,7 @@ REG_OP(CosineSimilarity)
 * @li beta2: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li epsilon: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li grad: A Tensor. Datatype and shape are same as exp_avg.\n
-* @li max_grad_norm: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li max_grad_norm: A Optional Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li global_grad_norm: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li weight_decay: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
 * @li step_size: A Optional Tensor. Datatype is same as exp_avg. Shape (1, ).\n
@@ -4015,7 +4015,7 @@ REG_OP(ApplyAdamV2)
     .INPUT(beta2, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .INPUT(epsilon, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .INPUT(grad, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .INPUT(max_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OPTIONAL_INPUT(max_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .INPUT(global_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .INPUT(weight_decay, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .OPTIONAL_INPUT(step_size, TensorType({ DT_FLOAT, DT_FLOAT16 }))

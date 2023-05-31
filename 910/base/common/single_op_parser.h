@@ -28,7 +28,7 @@
 #include "common/fp16_t.h"
 
 namespace ge {
-struct SingleOpTensorDesc {
+class SingleOpTensorDesc {
 public:
   bool GetValidFlag() const { return is_valid_; }
   void SetValidFlag(const bool is_valid) { is_valid_ = is_valid; }

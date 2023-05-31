@@ -55,6 +55,9 @@ class ModelRelationBuilder {
  public:
   Status BuildFromRootGraph(const ComputeGraph &root_graph, std::unique_ptr<ModelRelation> &model_relation);
   Status BuildForSingleModel(const ComputeGraph &root_graph, ModelRelation &model_relation);
+  static Status SetLogicPeerRankForEndpoints(
+      const std::map<std::string, std::vector<uint32_t>> &device_id_and_engine_to_rank_ids,
+      const std::unique_ptr<ModelRelation> &model_relation);
   virtual ~ModelRelationBuilder() = default;
 
  protected:
@@ -81,7 +84,10 @@ class ModelRelationBuilder {
   Status CheckNetOutputNode(const NodePtr &node) const;
   Status CreateExternalEndpointInfo(const ComputeGraph &subgraph,
                                     ModelRelation::ModelEndpointInfo *&model_endpoint_info);
-
+  Status CreateP2pNode(const std::string &p2p_node_name, const Endpoint &p2p_node);
+  Status GetP2pNodeAndSetEndpoint(
+      const NodePtr &node,
+      const std::map<std::string, std::map<std::string, std::vector<Endpoint>>> &all_endpoints_by_graph);
   std::map<std::string, Endpoint> endpoints_;
 };
 
@@ -92,7 +98,7 @@ class ModelRelationReader {
 
   Status Initialize();
 
-  Status BatchGetEndpoints(const vector<std::string> &queue_names,
+  Status BatchGetEndpoints(const vector<std::string> &endpoint_names,
                            vector<const Endpoint *> &endpoints) const;
 
   const ModelRelation::InvokedModelQueueInfo *GetInvokedModelQueueInfo(const std::string &invoke_key) const;
@@ -100,6 +106,7 @@ class ModelRelationReader {
   const Endpoint *GetEndpoint(const std::string &queue_name) const;
 
   const ModelRelation::ModelEndpointInfo *GetSubmodelQueueInfo(const std::string &model_name) const;
+  static void LogDebugString(const ModelRelation &model_relation);
 
  private:
   const ModelRelation &model_relation_;

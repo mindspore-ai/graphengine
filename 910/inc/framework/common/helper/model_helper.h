@@ -47,6 +47,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   static Status GetModelFileHead(const ge::ModelData &model_data, const ModelFileHeader *&file_header);
   static void SetModelToGeModel(const GeModelPtr &ge_model, Model &model);
   static std::string GetOutputFileName() { return output_file_name_; }
+  Status LoadPartInfoFromModel(const ge::ModelData &model_data, ModelPartition &partition);
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
@@ -129,6 +130,8 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
                           Buffer &task_buffer, const size_t model_index = 0U) const;
   Status SaveModelHeader(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                          const size_t model_num = 1U, bool need_check_os_cpu = false) const;
+  Status SaveModelIntroduction(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                               const GeModelPtr &ge_model, const size_t model_index = 0U) const;
   Status SaveAllModelPartiton(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                               Buffer &model_buffer, Buffer &task_buffer, const size_t model_index = 0U) const;
 

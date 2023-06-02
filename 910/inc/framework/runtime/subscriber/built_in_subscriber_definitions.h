@@ -23,6 +23,7 @@
 #include "framework/common/ge_visibility.h"
 #include "exe_graph/runtime/kernel_run_context.h"
 #include "graph/anchor.h"
+#include "framework/common/profiling_definitions.h"
 namespace ge {
 class GeRootModel;
 }
@@ -32,19 +33,24 @@ constexpr size_t kInitSize = 10UL * 1024UL;
 constexpr size_t kDouble = 2UL;
 using EquivalentDataAnchorsPtr = std::map<ge::Anchor *, ge::Anchor *> *;
 using SymbolsToValuePtr = std::unordered_map<ge::Anchor *, AsyncAnyValue *> *;
+static_assert(kInitSize > static_cast<uint64_t>(gert::profiling::kProfilingIndexEnd),
+              "The max init size is less than kProfilingIndexEnd.");
 enum class BuiltInSubscriberType {
   kGeProfiling,
-  kCannProfiling,
   kDumper,
   kTracer,
+  kCannProfilerV2,
+  kCannHostProfiler,
   kNum
 };
 
 enum class ProfilingType {
   kCannHost = 0,  // 打开Host侧调度的profiling
   kDevice = 1,
-  kGeHost = 2,       // 打开GE Host侧调度的profiling
-  kNum = 3,
+  kGeHost = 2,  // 打开GE Host侧调度的profiling
+  kTrainingTrace = 3,
+  kTaskTime = 4,
+  kNum,
   kAll = kNum
 };
 static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),

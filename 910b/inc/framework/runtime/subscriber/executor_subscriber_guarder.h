@@ -16,6 +16,7 @@
 
 #ifndef AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBER_GUARDER_H_
 #define AIR_CXX_INC_FRAMEWORK_RUNTIME_EXECUTOR_SUBSCRIBER_GUARDER_H_
+
 #include "framework/common/ge_visibility.h"
 #include "common/checker.h"
 #include "executor_subscriber_c.h"
@@ -52,6 +53,20 @@ class VISIBILITY_EXPORT ExecutorSubscriberGuarder {
     DeleteArg();
   }
 
+  void SetEnabledFunc(const std::function<bool()> &enabled_func) {
+    enabled_func_ = enabled_func;
+  }
+
+  bool IsEnabled() const {
+    if (enabled_func_ == nullptr) {
+      return true;
+    }
+    if (enabled_func_()) {
+      return true;
+    }
+    return false;
+  }
+
   ExecutorSubscriberGuarder(const ExecutorSubscriberGuarder &) = delete;
   ExecutorSubscriberGuarder &operator=(const ExecutorSubscriberGuarder &) = delete;
 
@@ -60,17 +75,21 @@ class VISIBILITY_EXPORT ExecutorSubscriberGuarder {
     if (arg_deleter_ != nullptr) {
       arg_deleter_(subscriber_.arg);
     }
+    enabled_func_ = nullptr;
   }
   void MoveAssignment(ExecutorSubscriberGuarder &other) {
     subscriber_ = other.subscriber_;
     arg_deleter_ = other.arg_deleter_;
+    enabled_func_ = other.enabled_func_;
     other.subscriber_ = {nullptr, nullptr};
     other.arg_deleter_ = nullptr;
+    other.enabled_func_ = nullptr;
   }
 
  private:
   ExecutorSubscriber subscriber_{nullptr, nullptr};
   ArgDeleter arg_deleter_{nullptr};
+  std::function<bool()> enabled_func_{nullptr};
 };
 using ExecutorSubscriberGuarderPtr = std::shared_ptr<ExecutorSubscriberGuarder>;
 }  // namespace gert

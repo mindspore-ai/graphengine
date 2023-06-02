@@ -18,6 +18,7 @@
 #define INC_FRAMEWORK_MEMORY_MEMORY_API_H_
 
 #include "external/ge/ge_api_error_codes.h"
+#include "graph/compute_graph.h"
 #include "runtime/mem.h"
 
 namespace ge {
@@ -61,6 +62,13 @@ GE_FUNC_VISIBILITY Status MallocSharedMemory(const TensorInfo &tensor_info, uint
 /// \param var_size [out] var_size memory_size of host variable.
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status GetVarBaseAddrAndSize(const std::string &var_name, uint64_t &base_addr, uint64_t &var_size);
+
+/*
+ * @brief
+ * @param [in]  graph
+ * @param [out] available_mem:graph mem size
+ */
+GE_FUNC_VISIBILITY Status GetGraphAvailableMemory(const ComputeGraphPtr &graph, uint64_t &available_mem);
 
 /*
  * @brief

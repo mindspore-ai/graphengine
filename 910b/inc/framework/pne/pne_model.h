@@ -27,7 +27,7 @@
 #include "framework/common/ge_types.h"
 #include "framework/engine/dnnengine.h"
 #include "external/ge/ge_ir_build.h"
-
+#include "common/model/model_deploy_resource.h"
 namespace ge {
 const std::string PNE_ID_NPU = "NPU";
 const std::string PNE_ID_CPU = "HOST_CPU";
@@ -45,7 +45,7 @@ class PneModel {
   PneModel &operator=(const PneModel &other) = delete;
 
  public:
-  inline Status AddSubModel(const shared_ptr<PneModel> &submodel, std::string type = "") {
+  inline Status AddSubModel(const shared_ptr<PneModel> &submodel, const std::string &type = "") {
     if (submodel == nullptr) {
       GELOGE(INTERNAL_ERROR, "submodel is nullptr, type = %s", type.c_str());
       return INTERNAL_ERROR;
@@ -81,7 +81,7 @@ class PneModel {
 
   inline const std::string &GetModelName() const { return model_name_; }
 
-  inline void SetRootGraph(const ComputeGraphPtr graph) { root_graph_ = graph; }
+  inline void SetRootGraph(const ComputeGraphPtr &graph) { root_graph_ = graph; }
 
   inline const ComputeGraphPtr &GetRootGraph() const { return root_graph_; }
 
@@ -97,6 +97,11 @@ class PneModel {
 
   inline const std::shared_ptr<ModelDeployResource> GetDeployResource() const { return deploy_resource_; }
 
+  inline void SetCompileResource(std::shared_ptr<ModelCompileResource> compile_resource) {
+    compile_resource_ = std::move(compile_resource);
+  }
+
+  inline const std::shared_ptr<ModelCompileResource> GetCompileResource() const { return compile_resource_; }
  public:
   virtual Status SerializeModel(ModelBufferData &model_buff) = 0;
 
@@ -108,10 +113,16 @@ class PneModel {
 
   virtual std::string GetLogicDeviceId() const { return ""; }
 
+  virtual Status SetLogicDeviceId(const std::string &logic_device_id) {
+    (void)logic_device_id;
+    return SUCCESS;
+  };
+
  private:
   std::map<std::string, std::shared_ptr<PneModel>> submodels_;
   std::shared_ptr<ModelRelation> model_relation_;
   std::shared_ptr<ModelDeployResource> deploy_resource_;
+  std::shared_ptr<ModelCompileResource> compile_resource_;
   ComputeGraphPtr root_graph_ = nullptr;
   std::string model_name_;
   std::string model_type_;

@@ -55,7 +55,8 @@ class GE_FUNC_VISIBILITY GeGenerator {
   Status Finalize();
 
   Status GenerateOfflineModel(const Graph &graph, const std::string &file_name_prefix,
-                              const std::vector<GeTensor> &inputs = std::vector<GeTensor>());
+                              const std::vector<GeTensor> &inputs = std::vector<GeTensor>(),
+                              OfflineModelFormat om_format = OM_FORMAT_DEFAULT);
 
   Status GenerateOnlineModel(const Graph &graph, const std::vector<GeTensor> &inputs, ge::ModelBufferData &model);
 
@@ -114,7 +115,8 @@ class GE_FUNC_VISIBILITY GeGenerator {
 
  private:
   Status GenerateModel(const Graph &graph, const std::string &file_name_prefix, const std::vector<GeTensor> &inputs,
-                       ge::ModelBufferData &model, bool is_offline = true);
+                       ge::ModelBufferData &model, bool is_offline = true,
+                       OfflineModelFormat om_format = OM_FORMAT_DEFAULT);
   Status BuildSingleOp(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs,
                        const std::string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                        ComputeGraphPtr &comp_graph, bool is_offline = true, int32_t compile_flag = 0,
@@ -138,9 +140,12 @@ class GE_FUNC_VISIBILITY GeGenerator {
   void SetFuzzCompile(const std::vector<GeTensor> &inputs, int32_t compile_flag);
   bool IsFuzzCompileEnable();
   void ConvertOpInfosToOptions(const OpDescPtr &op_desc);
-  Status ResetInputOutputShape(const ComputeGraphPtr &graph, std::vector<GeTensor> &inputs_dynamic,
+  Status ResetInputOutputShape(const ComputeGraphPtr &graph,
+                               const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
+                               std::vector<GeTensor> &inputs_dynamic,
                                std::vector<GeTensor> &outputs_dynamic);
-  Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic);
+  Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic,
+                         std::vector<std::pair<int64_t, int64_t>> &dynamic_shape_range);
 
   class Impl;
   std::shared_ptr<Impl> impl_;

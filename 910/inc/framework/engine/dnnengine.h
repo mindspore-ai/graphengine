@@ -26,7 +26,7 @@
 #include "graph/types.h"
 
 namespace ge {
-enum class PriorityEnum {
+enum class PriorityEnum : uint32_t {
   COST_0 = 0,
   COST_1 = 1,
   COST_2 = 2,

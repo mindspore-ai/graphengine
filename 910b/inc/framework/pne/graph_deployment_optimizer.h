@@ -17,15 +17,17 @@
 #ifndef AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_
 #define AIR_INC_FRAMEWORK_PNE_GRAPH_DEPLOYMENT_OPTIMIZER_H_
 
-#include <map>
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
+#include "graph/parallelism/tensor_parallel_attrs.h"
 
 namespace ge {
 class GraphDeploymentOptimizer {
  public:
   static Status OptimizeForAutoDeploy(const ComputeGraphPtr &compute_graph, ComputeGraphPtr &optimized_graph);
   static Status OptimizeByRecomputation(const ComputeGraphPtr &graph);
+  static Status OptimizeByGraphSlicing(const std::vector<std::pair<NodePtr, tp::NodeSliceStrategy>> &nodes_sliced_infos,
+                                       const ComputeGraphPtr &compute_graph);
 };
 }  // namespace ge
 

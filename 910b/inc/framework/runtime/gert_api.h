@@ -41,6 +41,12 @@ std::unique_ptr<ModelV2Executor> LoadExecutorFromFile(const ge::char_t *model_pa
 VISIBILITY_EXPORT
 std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
                                                            ge::graphStatus &error_code);
+
+VISIBILITY_EXPORT
+std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
+                                                           const ExecutorOption &executor_option,
+                                                           ge::graphStatus &error_code);
+
 VISIBILITY_EXPORT
 std::unique_ptr<StreamExecutor> LoadStreamExecutorFromModelData(const ge::ModelData &model_data, const void *weight_ptr,
                                                                 const size_t weight_size, ge::graphStatus &error_code);

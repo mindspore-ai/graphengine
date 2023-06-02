@@ -31,6 +31,7 @@
 #include "framework/runtime/rt_session.h"
 #include "register/op_impl_space_registry.h"
 #include "framework/common/ge_types.h"
+#include "framework/runtime/executor_option/executor_option.h"
 
 namespace gert {
 enum class ExecutorState {
@@ -87,6 +88,7 @@ class VISIBILITY_EXPORT ModelV2Executor {
   static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph, const ge::ModelData &model_data,
                                                  const std::shared_ptr<ge::GeRootModel> &root_model);
   static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph);
+  static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph, const ExecutorOption &option);
 
   ge::graphStatus Load();
   /**
@@ -146,6 +148,7 @@ class VISIBILITY_EXPORT ModelV2Executor {
     return &graphs_[static_cast<size_t>(type)];
   }
   ExecutorSubscribersScheduler &GetSubscribers();
+  uint32_t GetIterationNum() const;
   const ExecutorSubscribersScheduler &GetSubscribers() const;
   ge::graphStatus ArrangeModelLoadArg(const ModelLoadArg &arg, std::vector<void *> &const_inputs) const;
 
@@ -180,7 +183,7 @@ class VISIBILITY_EXPORT ModelV2Executor {
   ModelV2Executor();
 
  private:
-  ResourceGuard resource_guard_;
+  TopologicalResourceGuard resource_guard_;
   std::array<ExeGraphExecutor, kSubExeGraphTypeEnd> graphs_;
   ModelDesc *model_desc_ = nullptr;
   rtStream_t default_stream_ = nullptr;

@@ -27,6 +27,7 @@
 #include "framework/common/types.h"
 #include "graph/tensor.h"
 #include "graph/ge_tensor.h"
+#include "framework/common/ge_model_inout_info.h"
 
 namespace ge {
 class SingleOp;
@@ -75,6 +76,8 @@ class GE_FUNC_VISIBILITY GeExecutor {
   Status GetModelDescInfo(const uint32_t model_id, std::vector<TensorDesc> &input_desc,
                           std::vector<TensorDesc> &output_desc, const bool new_model_desc = false);
 
+  Status GetModelDescInfoFromMem(const ModelData &model_data, ModelInOutInfo &info) const;
+  
   ///
   /// @ingroup ge
   /// @brief Set dynamic batch size
@@ -325,7 +328,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
 
   static Status ReleaseSingleOpResource(void *const stream);
 
-  static Status ClearCustomAicpuSo(const uint32_t &device_id);
+  static Status ClearCustomAicpuSo(const uint32_t device_id);
 
   static Status GetDeviceIdByModelId(const uint32_t model_id, uint32_t &device_id);
 

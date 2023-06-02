@@ -21,6 +21,7 @@
 #include "framework/common/ge_visibility.h"
 #include "graph/compute_graph.h"
 #include "runtime/base.h"
+#include "common/debug/ge_log.h"
 
 namespace ge {
 class ExceptionDumper;
@@ -40,9 +41,9 @@ class VISIBILITY_EXPORT GlobalDumper {
 
   static void OnGlobalDumperSwitch(void *ins, uint64_t enable_flags);
 
-  void AddExceptionInfo(const rtExceptionInfo &exception_data) const;
+  void AddExceptionInfo(const rtExceptionInfo &exception_data);
 
-  ge::ExceptionDumper *MutableExceptionDumper() const;
+  ge::ExceptionDumper *MutableExceptionDumper();
 
   void SetEnableFlags(const uint64_t enable_flags) {
     enable_flags_ = enable_flags;
@@ -56,9 +57,30 @@ class VISIBILITY_EXPORT GlobalDumper {
     return static_cast<bool>(enable_flags_ & BuiltInSubscriberUtil::EnableBit<DumpType>(dump_type));
   }
 
+  std::set<ge::ExceptionDumper *> &GetInnerExceptionDumpers() {
+    std::lock_guard<std::mutex> lk(mutex_);
+    return exception_dumpers_;
+  }
+
+  void ClearInnerExceptionDumpers() {
+    std::lock_guard<std::mutex> lk(mutex_);
+    exception_dumpers_.clear();
+  }
+
+  void SaveInnerExceptionDumpers(ge::ExceptionDumper *exception_dumper) {
+    std::lock_guard<std::mutex> lk(mutex_);
+    const auto ret = exception_dumpers_.insert(exception_dumper);
+    if (!ret.second) {
+      GELOGW("[Dumper] Save exception dumper of davinci model failed.");
+    }
+  }
+
  private:
   GlobalDumper();
   uint64_t enable_flags_{0UL};
+  // each davinci model has own exception dumper
+  std::set<ge::ExceptionDumper *> exception_dumpers_{};
+  std::mutex mutex_;
 };
 }  // namespace gert
 #endif

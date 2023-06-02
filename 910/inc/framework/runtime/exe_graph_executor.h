@@ -23,6 +23,7 @@
 #include "subscriber/executor_subscriber_c.h"
 namespace gert {
 enum SubExeGraphType { kInitExeGraph, kMainExeGraph, kDeInitExeGraph, kSubExeGraphTypeEnd };
+using ResourceGuardPtr = std::unique_ptr<ResourceGuard>;
 class VISIBILITY_EXPORT ExeGraphExecutor {
  public:
   using ExecuteFunc = UINT32 (*)(void *);
@@ -45,11 +46,9 @@ class VISIBILITY_EXPORT ExeGraphExecutor {
   const void *GetExecutionData() const {
     return execution_data_;
   }
-  void *SetExecutionData(std::unique_ptr<uint8_t[]> execution_data);
+  void SetExecutionData(void *execution_data, ResourceGuardPtr resource_guard);
 
   void SetExecuteFunc(ExecuteFunc execute_func, ExecuteWithCallbackFunc callback_func);
-
-  ResourceGuard &GetResourceGuard();
 
  private:
   friend class ModelV2ExecutorTestHelper;
@@ -57,7 +56,7 @@ class VISIBILITY_EXPORT ExeGraphExecutor {
   void *execution_data_{nullptr};
   ExecuteFunc execute_func_{nullptr};
   ExecuteWithCallbackFunc execute_with_callback_func_{nullptr};
-  ResourceGuard resource_guard_;
+  ResourceGuardPtr resource_guard_;
 };
 }  // namespace gert
 #endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_EXE_GRAPH_EXECUTOR_H_

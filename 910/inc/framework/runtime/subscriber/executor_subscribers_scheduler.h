@@ -43,10 +43,10 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   void Init(const SubscriberExtendInfo &extend_info);
   ExecutorSubscribersScheduler(const ExecutorSubscribersScheduler &) = delete;
   ExecutorSubscribersScheduler &operator=(const ExecutorSubscribersScheduler &) = delete;
-  ExecutorSubscriber &GetSubscriber() {
-    return subscriber_wrapper_;
+  ExecutorSubscriber &GetSubscriber(SubExeGraphType sub_exe_graph_type);
+  const std::vector<ExecutorSubscriberGuarderPtr> &GetWorkingSubscribers() const {
+    return working_sub_exe_graph_subscribers_;
   }
-
   /**
    * 为所有子图类型设置订阅者，订阅者需要实现一个static方法，原型为：
    * ```c++
@@ -96,13 +96,60 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
     return ins;
   }
 
+  template <typename T, typename... Args>
+  T *AddSubscriber(SubExeGraphType sub_exe_graph_type, const std::function<bool()> &enabled_func, Args... args) {
+    auto ins = AddSubscriberGuarder<T>(args...);
+    if (ins == nullptr) {
+      return nullptr;
+    }
+    auto &subscriber_guarder = subscribers_holder_[subscribers_holder_.size() - 1U];
+    subscriber_guarder->SetEnabledFunc(enabled_func);
+    sub_exe_graph_subscribers_[sub_exe_graph_type].emplace_back(subscriber_guarder);
+    return ins;
+  }
+
+  template <typename T, typename... Args>
+  T *AddSubscriber(const std::function<bool()> &enabled_func, Args... args) {
+    auto ins = AddSubscriberGuarder<T>(args...);
+    if (ins == nullptr) {
+      return nullptr;
+    }
+    for (size_t i = 0U; i < kSubExeGraphTypeEnd; ++i) {
+      auto &subscriber_guarder = subscribers_holder_[subscribers_holder_.size() - 1U];
+      subscriber_guarder->SetEnabledFunc(enabled_func);
+      sub_exe_graph_subscribers_[i].emplace_back(subscriber_guarder);
+    }
+    return ins;
+  }
   /**
    * 添加一个内置的subscriber
    * 内置subscriber较少，当前没有使用注册机制，后续如果需要扩展，那么可以考虑通过注册机制自动注册。
    * 为了易用性，在本类提供了获取内置subscriber的指针的接口。而自注册的subscriber将丢失此能力。
    * @param subscriber_type
    */
-  void AddBuiltIn(BuiltInSubscriberType subscriber_type, uint64_t enable_flag, const SubscriberExtendInfo &extend_info);
+  template <typename T>
+  void AddBuiltIn(BuiltInSubscriberType subscriber_type, uint64_t enable_flag, const SubscriberExtendInfo &extend_info,
+                  SubExeGraphType sub_graph_type, const std::function<bool()> &enabled_func) {
+    (void)enable_flag;
+    if (subscriber_type >= BuiltInSubscriberType::kNum) {
+      GELOGW("Unexpected built-in subscriber type %zu", static_cast<size_t>(subscriber_type));
+      return;
+    }
+
+    auto subscriber_index = static_cast<size_t>(subscriber_type);
+    if (built_in_subscribers_ptr_[subscriber_index] != nullptr) {
+      GELOGW("The built in subscriber %zu already exists, ignore the add operation", subscriber_index);
+      return;
+    }
+
+    void *ins;
+    if (sub_graph_type == kSubExeGraphTypeEnd) {
+      ins = AddSubscriber<T>(enabled_func, extend_info);
+    } else {
+      ins = AddSubscriber<T>(sub_graph_type, enabled_func, extend_info);
+    }
+    built_in_subscribers_ptr_[subscriber_index] = ins;
+  }
   void RemoveSubscriber(const void *subscriber_ptr) {
     for (auto iter = subscribers_holder_.begin(); iter != subscribers_holder_.end(); ++iter) {
       if ((*iter)->GetSubscriber().arg == subscriber_ptr) {
@@ -127,7 +174,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
 
   template <typename T>
-  inline const T *GetBuiltInSubscriber(const BuiltInSubscriberType type) {
+  inline const T *GetBuiltInSubscriber(const BuiltInSubscriberType type) const {
     return static_cast<T *>(built_in_subscribers_ptr_[static_cast<size_t>(type)]);
   }
 
@@ -184,8 +231,10 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
   }
  private:
   bool enabled_{false};
-  std::array<void *, static_cast<size_t>(BuiltInSubscriberType::kNum)> built_in_subscribers_ptr_;
+  std::array<void *, static_cast<size_t>(BuiltInSubscriberType::kNum)>
+      built_in_subscribers_ptr_;
   std::array<std::vector<ExecutorSubscriberGuarderPtr>, kSubExeGraphTypeEnd> sub_exe_graph_subscribers_;
+  std::vector<ExecutorSubscriberGuarderPtr> working_sub_exe_graph_subscribers_{};
   std::vector<ExecutorSubscriberGuarderPtr> subscribers_holder_;
   ExecutorSubscriber subscriber_wrapper_;
 };

@@ -25,7 +25,7 @@
 namespace gert {
 namespace memory {
 struct MemAllocator {
-  virtual Block *Malloc(size_t size, bool independence = false) = 0;
+  virtual Block *Malloc(size_t size) = 0;
   virtual ~MemAllocator() = default;
 };
 
@@ -33,7 +33,7 @@ struct MemSynchronizer {
   MemSynchronizer() = default;
   virtual ~MemSynchronizer() = default;
   // Wait until the memory is actually freed after task completed
-  virtual void Synchronize() const = 0;
+  virtual ge::Status Synchronize() const = 0;
 };
 }
 

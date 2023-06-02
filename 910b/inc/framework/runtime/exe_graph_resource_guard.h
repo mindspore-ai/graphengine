@@ -26,6 +26,20 @@ namespace gert {
 class VISIBILITY_EXPORT ResourceGuard {
  public:
   void *ResetExecutionData(std::unique_ptr<uint8_t[]> execution_data);
+  void *GetExecutionData();
+  virtual ~ResourceGuard() = default;
+
+ private:
+  std::unique_ptr<uint8_t[]> execution_data_holder_;
+};
+
+/*
+* 这里将原来的resource guard平移为子类，
+* 若后续有诉求需要拆分model上使用的resource guarder和sub exe graph上使用的resource guard
+* 可以再行拆分
+*/
+class VISIBILITY_EXPORT TopologicalResourceGuard : public ResourceGuard {
+ public:
   void ResetAnyValue(std::unique_ptr<uint8_t[]> any_values, size_t count);
   void PushNode(void *node);
   void PushWatcher(void *watcher);
@@ -42,14 +56,13 @@ class VISIBILITY_EXPORT ResourceGuard {
   void *ResetKernelExtendInfo(std::unique_ptr<uint8_t[]> kernel_extend_info);
   void *ResetModelDesc(std::unique_ptr<uint8_t[]> model_desc);
 
-  ~ResourceGuard();
+  ~TopologicalResourceGuard() override;
 
  private:
-  std::unique_ptr<uint8_t[]> execution_data_holder_;
   size_t any_values_num_;
   std::unique_ptr<uint8_t[]> any_values_guard_;
-
   std::vector<std::unique_ptr<void, decltype(&free)>> nodes_guarder_;
+
   std::vector<std::unique_ptr<void, decltype(&free)>> watchers_guarder_;
   std::unique_ptr<uint8_t[]> continuous_buffer_guarder_;
   std::unique_ptr<uint8_t[]> buffer_guarder_;

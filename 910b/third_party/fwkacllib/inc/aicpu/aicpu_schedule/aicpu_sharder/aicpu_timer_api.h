@@ -2,8 +2,8 @@
  * Copyright (c) Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
  */
 
-#ifndef AICPU_SHARDER_TIMER_API_H
-#define AICPU_SHARDER_TIMER_API_H
+#ifndef AICPU_TIMER_API_H
+#define AICPU_TIMER_API_H
 
 #include <functional>
 

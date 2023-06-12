@@ -152,7 +152,7 @@ struct MsprofGeProfInferData {
     uint8_t  reserve[MSPROF_GE_INFER_DATA_RESERVE_BYTES];
 };
 
-constexpr int32_t MSPROF_GE_TASK_DATA_RESERVE_BYTES = 12;
+const int32_t MSPROF_GE_TASK_DATA_RESERVE_BYTES = 12;
 #define MSPROF_GE_OP_TYPE_LEN 56
 enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_AI_CORE = 0,
@@ -164,6 +164,7 @@ enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_FFTS_PLUS,
     MSPROF_GE_TASK_TYPE_DSA,
     MSPROF_GE_TASK_TYPE_DVPP,
+    MSPROF_GE_TASK_TYPE_HCCL,
     MSPROF_GE_TASK_TYPE_INVALID
 };
 
@@ -349,6 +350,8 @@ struct MsprofAicpuModelProfData {
 #define MSPROF_DP_DATA_RESERVE_BYTES 16
 #define MSPROF_DP_DATA_ACTION_LEN 16
 #define MSPROF_DP_DATA_SOURCE_LEN 64
+#define MSPROF_CTX_ID_MAX_NUM 55
+
 struct MsprofDpProfData {
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_DP_DATA_TAG;
@@ -449,12 +452,107 @@ struct MsprofHcclProfData {
         MsprofHcclProfFlag flag;
     } args;
 };
+
+#define MSPROF_HCCL_INVALID_UINT 0xFFFFFFFF
+struct MsprofHcclInfo {
+    uint64_t itemId;
+    uint64_t cclTag;
+    uint64_t groupName;
+    uint32_t localRank;
+    uint32_t remoteRank;
+    uint32_t rankSize;
+    uint32_t workFlowMode;
+    uint32_t planeID;
+    uint32_t reserve1;
+    uint64_t notifyID;
+    uint32_t stage;
+    uint32_t role; // role {0: dst, 1:src}
+    double durationEstimated;
+    uint64_t srcAddr;
+    uint64_t dstAddr;
+    uint64_t dataSize; // bytes
+    uint32_t opType; // {0: sum, 1: mul, 2: max, 3: min}
+    uint32_t dataType; // data type {0: INT8, 1: INT16, 2: INT32, 3: FP16, 4:FP32, 5:INT64, 6:UINT64}
+    uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
+    uint32_t transportType; // transport type {0: SDMA, 1: RDMA, 2:LOCAL}
+    uint32_t rdmaType; // RDMA type {0: RDMASendNotify, 1:RDMASendPayload}
+    uint32_t reserve2;
+    MsprofHcclInfo() : role(MSPROF_HCCL_INVALID_UINT), opType(MSPROF_HCCL_INVALID_UINT),
+        dataType(MSPROF_HCCL_INVALID_UINT), linkType(MSPROF_HCCL_INVALID_UINT),
+        transportType(MSPROF_HCCL_INVALID_UINT), rdmaType(MSPROF_HCCL_INVALID_UINT)
+    {
+    }
+};
+
+const uint16_t MSPROF_MULTI_THREAD_MAX_NUM = 25;
+struct MsprofMultiThread {
+    uint32_t threadNum;
+    uint32_t threadId[MSPROF_MULTI_THREAD_MAX_NUM];
+};
+#pragma pack()
+
+
+#pragma pack(1)
+struct MsprofNodeBasicInfo {
+    uint64_t opName;
+    uint32_t taskType;
+    uint64_t opType;
+    uint32_t blockDim;
+    uint32_t opFlag;
+};
+
+struct MsrofTensorData {
+    uint32_t tensorType;
+    uint32_t format;
+    uint32_t dataType;
+    uint32_t shape[MSPROF_GE_TENSOR_DATA_SHAPE_LEN];
+};
+
+struct MsprofTensorInfo {
+    uint64_t opName;
+    uint32_t tensorNum;
+    MsrofTensorData tensorData[MSPROF_GE_TENSOR_DATA_NUM];
+};
+
+struct ProfFusionOpInfo {
+uint64_t opName;
+uint32_t fusionOpNum;
+uint64_t inputMemsize;
+uint64_t outputMemsize;
+uint64_t weightMemSize;
+uint64_t workspaceMemSize;
+uint64_t totalMemSize;
+uint64_t fusionOpId[MSPROF_GE_FUSION_OP_NUM];
+};
+
+struct MsprofContextIdInfo {
+    uint64_t opName;
+    uint32_t ctxIdNum;
+    uint32_t ctxIds[MSPROF_CTX_ID_MAX_NUM];
+};
+
+struct MsprofGraphIdInfo {
+    uint64_t modelName;
+    uint32_t graphId;
+    uint32_t modelId;
+};
+
+struct MsprofMemoryInfo {
+    uint64_t addr;
+    int64_t size;
+    uint64_t nodeId;
+    uint64_t totalAllocateMemory;
+    uint64_t totalReserveMemory;
+    uint32_t deviceId;
+    uint32_t deviceType;
+};
 #pragma pack()
 
 /**
  * @name  MsprofStampInfo
  * @brief struct of data reported by msproftx
  */
+#define CALLSTACK_MAX_LENGTH 75
 struct MsprofStampInfo {
     uint16_t magicNumber;
     uint16_t dataTag;
@@ -475,12 +573,9 @@ struct MsprofStampInfo {
     uint64_t endTime;
     int32_t messageType;
     char message[128];
-    uint8_t reserve0[4];
-    uint8_t reserve1[72];
+    char callStack[CALLSTACK_MAX_LENGTH + 1];
 };
-
 #ifdef __cplusplus
 }
 #endif
-
 #endif  // MSPROFILER_PROF_COMMON_H_

@@ -108,7 +108,11 @@ enum {
     DVPP,          /**< DVPP */
     RUNTIME,       /**< Runtime */
     CCE,           /**< CCE */
-    HDC,           /**< HDC */
+#if (OS_TYPE == LINUX)
+    HDC,         /**< HDC */
+#else
+    HDCL,
+#endif // OS_TYPE
     DRV,           /**< Driver */
     MDCFUSION,     /**< Mdc fusion */
     MDCLOCATION,   /**< Mdc location */
@@ -168,7 +172,6 @@ enum {
     TSYNC,
     AUDIO,
     FFRT,
-    HDCL,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 

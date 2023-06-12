@@ -1271,7 +1271,7 @@ REG_OP(GLU)
 * @li x: A Tensor of the same type as `y_grad`, but with a size that is twice as large as `y_grad` along the axis `dim`.
 
 * @par Attributes:
-* dim: An optional int, specifying the dimension along which the GLU is performed. 
+* dim: An optional int, specifying the dimension along which the GLU is performed.
 * It should be in the range [-rank(x), rank(x)). Defaults to -1.
 * @par Outputs:
 * x_grad: A Tensor of the same type as `y_grad` and of the same shape as `x`.

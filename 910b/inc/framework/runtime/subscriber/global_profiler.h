@@ -56,6 +56,7 @@ enum class GeProfInfoType {
   kCompatibleTiling,
   kStreamSync,
   kStepInfo,
+  kTaskMemoryInfo,
   kEnd
 };
 
@@ -180,6 +181,9 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
                              MsprofEvent &prof_single_event);
   static ge::Status ReportApiInfo(const uint64_t begin_time, const uint64_t end_time, const uint64_t item_id,
                                   const uint32_t api_type);
+  static ge::Status ReportApiInfoModelLevel(const uint64_t begin_time, const uint64_t end_time, const uint64_t item_id,
+                                            const uint32_t api_type);
+  static ge::Status ReportTaskMemoryInfo(const std::string &node_name);
   static ge::Status ReportTensorInfo(const uint32_t tid, const bool is_aging, const ge::TaskDescInfo &task_desc_info);
   static void BuildNodeBasicInfo(const uint64_t prof_time, const uint32_t block_dim,
                                  const std::pair<uint64_t, uint64_t> &op_name_and_type_hash, const uint32_t task_type,
@@ -269,7 +273,7 @@ class VISIBILITY_EXPORT ProfilerRegistry {
 
 class ProfLaunchTypeRegistry {
  public:
-  explicit ProfLaunchTypeRegistry(const std::string &type) {
+  explicit ProfLaunchTypeRegistry(const std::string &type) noexcept {
     ProfilerRegistry::GetInstance().SaveRegistryType(type);
   }
 };

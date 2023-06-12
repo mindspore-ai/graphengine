@@ -121,6 +121,7 @@ const char * const EXEC_DISABLE_REUSED_MEMORY                = "ge.exec.disableR
 const char * const MDL_BANK_PATH                             = "ge.mdl_bank_path";
 const char * const OP_BANK_PATH                              = "ge.op_bank_path";
 const char * const TUNE_DEVICE_IDS                           = "ge.exec.tuneDeviceIds";
+const char * const OPTION_GRAPH_RUN_MODE                     = "ge.graphRunMode";
 
 
 // 其他常量定义

@@ -21,13 +21,14 @@
 #include <string>
 #include <vector>
 
+#include "ge/ge_allocator.h"
 #include "common/dynamic_aipp.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/ge_types.h"
 #include "framework/common/types.h"
 #include "graph/tensor.h"
 #include "graph/ge_tensor.h"
-#include "framework/common/ge_model_inout_info.h"
+#include "framework/common/ge_model_inout_types.h"
 
 namespace ge {
 class SingleOp;
@@ -339,6 +340,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
   Status GetOpDescInfo(const uint32_t device_id, const uint32_t stream_id, const uint32_t task_id,
                        OpDescInfo &op_desc_info);
 
+ static void SetAllocator(void *const stream, ge::Allocator *const external_allocator);
  private:
   static std::atomic_bool is_inited_;
 };

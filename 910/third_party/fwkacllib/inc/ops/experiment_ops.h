@@ -1183,6 +1183,23 @@ REG_OP(MinAreaPolygons)
     .OP_END_FACTORY_REG(MinAreaPolygons)
 
 /**
+* @brief Determine if the target points set is inside polygons. \n
+
+* @par Inputs:
+* @li points: A 2D Tensor with shape (N, 2), format ND, dtype must be float32. \n
+* @li polygons: A 2D Tensor with shape (M, 8), format ND, dtype must be float32.
+*     This parameter will be transposed to be (8, M) before passed to the operator. \n
+
+* @par Outputs:
+* @li output: A 2D Tensor with shape (N, M), format ND, dtype must be float32.  \n
+*/
+REG_OP(PointsInPolygons)
+.INPUT(points, TensorType({DT_FLOAT}))
+.INPUT(polygons, TensorType({DT_FLOAT}))
+.OUTPUT(output, TensorType({DT_FLOAT}))
+.OP_END_FACTORY_REG(PointsInPolygons)
+
+/**
 * @brief Calculate the index and distance of the nearest three point to the target point.
 * @par Inputs:
 * Two input:

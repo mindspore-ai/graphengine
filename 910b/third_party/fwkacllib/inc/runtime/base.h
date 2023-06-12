@@ -7,6 +7,7 @@
 #ifndef CCE_RUNTIME_BASE_H
 #define CCE_RUNTIME_BASE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "toolchain/prof_callback.h"
 

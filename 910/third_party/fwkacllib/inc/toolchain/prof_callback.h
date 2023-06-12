@@ -1,7 +1,7 @@
 /**
  * @file prof_callback.h
  *
- * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2023. All rights reserved.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -108,6 +108,7 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
     MSPROF_CTRL_FINALIZE,                   // stop profiling
     MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
+    MSPROF_CTRL_INIT_PURE_CPU,              // start profiling in pure cpu
     MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 
@@ -167,7 +168,8 @@ typedef int32_t (*ProfCommandHandle)(uint32_t type, void *data, uint32_t len);
  * @param [in] dataLen: Length of data
  * @return 0:SUCCESS, >0:FAILED
  */
-MSVP_PROF_API int32_t MsprofInit(uint32_t moduleId, void *data, uint32_t dataLen);
+MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
+
 /**
  * @name  profRegisterCallback
  * @brief register callback to profiling
@@ -175,6 +177,7 @@ MSVP_PROF_API int32_t MsprofInit(uint32_t moduleId, void *data, uint32_t dataLen
  * @param handle    [IN] the pointer of callback
  */
 MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
+
 /*
  * @name profReportData
  * @brief start reporter/stop reporter/report date
@@ -202,9 +205,7 @@ MSVP_PROF_API int32_t MsprofFinalize();
  * @param isOpenDevice  [IN] true: set device, false: reset device
  */
 MSVP_PROF_API int32_t MsprofNotifySetDevice(uint32_t chipId, uint32_t deviceId, bool isOpen);
-
 #ifdef __cplusplus
 }
 #endif
-
 #endif  // MSPROFILER_PROF_CALLBACK_H_

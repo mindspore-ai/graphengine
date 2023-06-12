@@ -2176,11 +2176,12 @@ REG_OP(IMGWarpOffsets)
 
 * @par Inputs:
 * @li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
-* @li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
+* @li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 3]`.
 
 * @par Attributes:
 * @li interpolation_mode: An optional string specifying the interpolation method.
 * @li padding_mode: An optional string specifying the pad method.
+* @li data_format: A String. data formats, defaults to "NCDHW".
 * @li align_corners: An optional bool. If "true", the centers of the corner
   pixels of the input and output tensors are aligned. Defaults to "false" .
 
@@ -2196,6 +2197,7 @@ REG_OP(GridSampler3D)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .ATTR(interpolation_mode, String, "bilinear")
     .ATTR(padding_mode, String, "zeros")
+    .ATTR(data_format, String, "NCDHW")
     .ATTR(align_corners, Bool, false)
     .OP_END_FACTORY_REG(GridSampler3D)
 

@@ -459,7 +459,7 @@ struct OutputTensorInfo {
   std::unique_ptr<uint8_t[]> data;  // tensor data
   int64_t length{};                 // tensor length
   OutputTensorInfo() : dims({}), data(nullptr) {}
-
+  OutputTensorInfo(OutputTensorInfo &&out) noexcept = default;
   OutputTensorInfo &operator=(OutputTensorInfo &&out)& noexcept {
     if (this != &out) {
       data_type = out.data_type;
@@ -571,7 +571,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
   INPUT_FP16_NODES, IS_INPUT_ADJUST_HW_LAYOUT, IS_OUTPUT_ADJUST_HW_LAYOUT, OUTPUT,
-  OUT_NODES,        ENABLE_SCOPE_FUSION_PASSES, INPUT_DATA_NAMES};
+  OUT_NODES, ENABLE_SCOPE_FUSION_PASSES, INPUT_DATA_NAMES, INPUT_SHAPE};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,

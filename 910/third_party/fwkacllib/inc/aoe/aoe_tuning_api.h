@@ -60,6 +60,7 @@ const std::set<ge::AscendString> GLOBAL_OPTION_SET = {
     ge::AscendString(OPTION_HOST_ENV_OS),
     ge::AscendString(OPTION_HOST_ENV_CPU),
     ge::AscendString(COMPRESSION_OPTIMIZE_CONF),
+    ge::AscendString(OPTION_GRAPH_RUN_MODE),
 };
 
 // this set for tuning option key

@@ -204,7 +204,8 @@ struct __attribute__((visibility("default"))) ModelInfo {
     int32_t abnormalEnqueue;
     AicpuPriInfo aicpuPriInfo;
     uint64_t cfgInfoPtr = 0;
-    char rsv[102];
+    int32_t abnormalEnable = 1;
+    char rsv[98];
 } __attribute__((packed));
 }
 #endif  // AICPUSD_AICPUSD_INFO_H

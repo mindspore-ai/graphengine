@@ -1081,7 +1081,7 @@ REG_OP(Conv3D)
  * [batch, in_depth, in_height, in_width, in_channels] or
  * [batch, in_channels, in_depth, in_height, in_width].
  * The in_height and in_width must be in [1, 4096].
- * @li filter: A 5-D Tensor. Must be one of the following types: float16, float32, double. 
+ * @li filter: A 5-D Tensor. Must be one of the following types: float16, float32, double.
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
@@ -1138,12 +1138,12 @@ REG_OP(Conv3DBackpropInput)
 /**
 *@brief Computes the gradients of convolution 3d with respect to the input.
 *@par Inputs:
- * @li filter: A 5-D Tensor. The type is float16. 
+ * @li filter: A 5-D Tensor. The type is float16.
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
  * The length of filter_height axis and filter_width axis must be in [1, 255].
- * @li out_backprop: A 5-D Tensor. The type is float16. 
+ * @li out_backprop: A 5-D Tensor. The type is float16.
  * The format of the out_backprop tensor must be one of the followings:
  * [batch, out_depth, out_height, out_width, out_channels] or
  * [batch, out_channels, out_depth, out_height, out_width].
@@ -1559,10 +1559,10 @@ REG_OP(Conv2DTranspose)
 *@brief Computes the transpose of convolution 2d with respect to the input.
 * @par Inputs:
  * Four inputs:
- * @li x: A Tensor of type float16, int8.
- * @li filter: A Tensor of type float16, int8. Must have the same type as "x".
+ * @li x: A Tensor of type float16, int8, int4.
+ * @li filter: A Tensor of type float16, int8, int4. Must have the same type as "x".
  * @li bias: An optional 1D tensor of the same type as "x".
- * @li offset_w: An optional 1D tensor for quantized inference. Type is int8.
+ * @li offset_w: An optional 1D tensor for quantized inference. Type is int8, int4.
 *@par Required Attributes:
  * @li input_size: A Tensor of type int32 or int64. An integer vector representing the
  * shape of input.
@@ -1588,10 +1588,10 @@ REG_OP(Conv2DTranspose)
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv2DTranspose instead.
 */
 REG_OP(Conv2DTransposeD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_FLOAT, DT_INT4}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8, DT_FLOAT, DT_INT4}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT}))
-    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT}))
     .REQUIRED_ATTR(input_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)

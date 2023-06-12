@@ -406,7 +406,9 @@ class VarManager {
 
   bool IsVarMemAutoMalloc() const { return var_mem_auto_malloc_; }
 
+  int64_t GetVarMallocMemSize() const { return var_malloc_mem_size_; }
  private:
+  int64_t var_malloc_mem_size_ = 0LL;
   bool var_mem_auto_malloc_ = true;
   SessionVersion version_ = SessionVersion::OTHER_VERSION;
   uint64_t session_id_;

@@ -317,7 +317,7 @@ GE_FUNC_VISIBILITY bool ValidateStr(const std::string &file_path, const std::str
 
 GE_FUNC_VISIBILITY Status ConvertToInt32(const std::string &str, int32_t &val);
 
-GE_FUNC_VISIBILITY std::string GetErrorNumStr(int32_t errorNum);
+GE_FUNC_VISIBILITY std::string GetErrorNumStr(const int32_t errorNum);
 }  // namespace ge
 
 #endif  // AIR_INC_FRAMEWORK_COMMON_UTIL_H_

@@ -182,6 +182,7 @@ const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
     OP_DEBUG_CONFIG,
     EXTERNAL_WEIGHT,
     EXCLUDE_ENGINES,
+    ge::OPTION_GRAPH_RUN_MODE,
 };
 
 /**

@@ -25,6 +25,12 @@ namespace ge {
 // abstract of subgraph
 class NodesCluster {
  public:
+  struct NodesClusterCmp {
+    bool operator()(const NodesCluster *a, const NodesCluster *b) const {
+      // AddInput & AddOutput has ensure a and b are not nullptr.
+      return a->Id() < b->Id();
+    }
+  };
   NodesCluster(const NodePtr &node, const size_t id) : nodes_{node}, id_(id) {}
   virtual ~NodesCluster() = default;
   void MergeFrom(NodesCluster &from);
@@ -36,17 +42,17 @@ class NodesCluster {
   size_t Id() const {
     return id_;
   }
-  const std::set<NodesCluster *> &Inputs() const {
+  const std::set<NodesCluster *, NodesClusterCmp> &Inputs() const {
     return inputs_;
   }
-  const std::set<NodesCluster *> &Outputs() const {
+  const std::set<NodesCluster *, NodesClusterCmp> &Outputs() const {
     return outputs_;
   }
   std::string DebugString() const;
  private:
   std::list<NodePtr> nodes_; // including all nodes of this cluster
-  std::set<NodesCluster *> inputs_; // including all inputs cluster of this cluster
-  std::set<NodesCluster *> outputs_; // including all outputs cluster of this cluster
+  std::set<NodesCluster *, NodesClusterCmp> inputs_; // including all inputs cluster of this cluster
+  std::set<NodesCluster *, NodesClusterCmp> outputs_; // including all outputs cluster of this cluster
   size_t id_; // unique id of cluster
 };
 using NodesClusterPtr = std::shared_ptr<NodesCluster>;

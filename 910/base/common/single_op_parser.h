@@ -28,10 +28,7 @@
 #include "common/fp16_t.h"
 
 namespace ge {
-class SingleOpTensorDesc {
-public:
-  bool GetValidFlag() const { return is_valid_; }
-  void SetValidFlag(const bool is_valid) { is_valid_ = is_valid; }
+struct SingleOpTensorDesc {
   std::string name;
   std::vector<int64_t> dims;
   std::vector<int64_t> ori_dims;
@@ -43,8 +40,7 @@ public:
   bool is_const = false;
   std::shared_ptr<uint8_t> const_value;
   std::uint64_t const_value_size;
-private:
-  bool is_valid_ = true;
+  bool is_valid = true;
 };
 
 struct SingleOpAttr {

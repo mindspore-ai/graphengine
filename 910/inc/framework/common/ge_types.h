@@ -468,11 +468,16 @@ const char_t *const OPTION_EXEC_HCOM_RANK_MAPPING = "ge.exec.hcomRankMapping";
 
 const char_t *const OPTION_NUMA_CONFIG = "ge.numaConfig";
 
+// 7: config format mode(expirimental option)
+const char_t *const OPTION_EXEC_FORMAT_MODEL = "ge.exec.formatMode";
+enum FormatModel { INNER_PRIVATE_FORMAT, ORIGINAL_FORMAT };
+
 const std::set<std::string> ir_builder_suppported_options_inner = {EVALUATE_GRAPH_RESOURCE_MODE,
                                                                    ENABLE_GRAPH_PARALLEL,
                                                                    RESOURCE_CONFIG_PATH,
                                                                    GRAPH_PARALLEL_OPTION_PATH,
                                                                    RECOMPUTE,
-                                                                   OPTION_TOPOSORTING_MODE};
+                                                                   OPTION_TOPOSORTING_MODE,
+                                                                   GRAPH_SLICE_MODE};
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

@@ -24,6 +24,7 @@
 #include "exe_graph/runtime/kernel_run_context.h"
 #include "graph/anchor.h"
 #include "framework/common/profiling_definitions.h"
+
 namespace ge {
 class GeRootModel;
 }
@@ -32,7 +33,8 @@ constexpr size_t kProfilingDataCap = 10UL * 1024UL * 1024UL;
 constexpr size_t kInitSize = 10UL * 1024UL;
 constexpr size_t kDouble = 2UL;
 using EquivalentDataAnchorsPtr = std::map<ge::Anchor *, ge::Anchor *> *;
-using SymbolsToValuePtr = std::unordered_map<ge::Anchor *, AsyncAnyValue *> *;
+using SymbolsToValue = std::unordered_map<ge::Anchor *, AsyncAnyValue *>;
+using SymbolsToValuePtr = SymbolsToValue *;
 static_assert(kInitSize > static_cast<uint64_t>(gert::profiling::kProfilingIndexEnd),
               "The max init size is less than kProfilingIndexEnd.");
 enum class BuiltInSubscriberType {
@@ -41,6 +43,7 @@ enum class BuiltInSubscriberType {
   kTracer,
   kCannProfilerV2,
   kCannHostProfiler,
+  kMemoryProfiler,
   kNum
 };
 
@@ -50,6 +53,7 @@ enum class ProfilingType {
   kGeHost = 2,  // 打开GE Host侧调度的profiling
   kTrainingTrace = 3,
   kTaskTime = 4,
+  kMemory = 5,
   kNum,
   kAll = kNum
 };
@@ -70,6 +74,8 @@ struct SubscriberExtendInfo {
   ge::ComputeGraphPtr exe_graph;
   ge::ModelData model_data;
   std::shared_ptr<ge::GeRootModel> root_model;
+  std::map<ge::Anchor *, ge::Anchor *> anchors_to_symbol;
+  SymbolsToValue symbols_to_value;
 };
 
 class VISIBILITY_EXPORT BuiltInSubscriberUtil {

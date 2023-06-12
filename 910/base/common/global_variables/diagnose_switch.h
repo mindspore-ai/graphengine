@@ -92,6 +92,8 @@ void EnableDeviceProfiling();
 
 void EnableCannHostProfiling();
 
+void EnableMemoryProfiling();
+
 void EnableProfiling(const std::vector<gert::ProfilingType> &prof_type);
 
 void DisableProfiling();

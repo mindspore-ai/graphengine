@@ -68,8 +68,8 @@ class DefaultSubgraphBuilder : public BaseSubgraphBuilder {
   std::vector<InDataAnchorPtr> inputs_;
   std::vector<OutDataAnchorPtr> outputs_;
   // control input/output
-  std::unordered_set<InControlAnchorPtr> control_inputs_;
-  std::unordered_set<OutControlAnchorPtr> control_outputs_;
+  std::vector<InControlAnchorPtr> control_inputs_;
+  std::vector<OutControlAnchorPtr> control_outputs_;
 
   // used for merge_inputs, key: peer_node_name + ":" + peer_node_index
   std::map<std::string, size_t> src_key_to_frame_input_index_;

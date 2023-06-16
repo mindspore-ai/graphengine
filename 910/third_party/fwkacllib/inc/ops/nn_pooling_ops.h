@@ -142,6 +142,8 @@ REG_OP(AvgPool)
 * @li ceil_mode: Use ceil or floor to calculate the output size when
 * padding_mode is "CALCULATED".
 * @li exclusive: Ignore padding area or not when calculating average.
+* @li divisor_override: An optional Int, its valid range is [1, 255], and the default value is zero.
+* if specified, it will be used as divisor, otherwise size of the pooling region will be used.
 
 * @par Outputs:
 * y: The average pooled output tensor. Has the same type and format as
@@ -175,6 +177,7 @@ REG_OP(AvgPoolV2)
     .ATTR(global_pooling, Bool, false)
     .ATTR(ceil_mode, Bool, false)
     .ATTR(exclusive, Bool, true)
+    .ATTR(divisor_override, Int, 0)
     .OP_END_FACTORY_REG(AvgPoolV2)
 
 /**
@@ -1745,7 +1748,7 @@ REG_OP(AdaptiveAvgPool2dGrad)
 REG_OP(MaxPoolGradWithArgmaxV1)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(argmax, TensorType({DT_UINT16}))
+    .INPUT(argmax, TensorType({DT_UINT16, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -1790,7 +1793,7 @@ REG_OP(MaxPoolGradWithArgmaxV1)
 REG_OP(MaxPoolWithArgmaxV1)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(argmax, TensorType({DT_UINT16}))
+    .OUTPUT(argmax, TensorType({DT_UINT16, DT_INT32}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)

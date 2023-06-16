@@ -340,7 +340,9 @@ class GE_FUNC_VISIBILITY GeExecutor {
   Status GetOpDescInfo(const uint32_t device_id, const uint32_t stream_id, const uint32_t task_id,
                        OpDescInfo &op_desc_info);
 
- static void SetAllocator(void *const stream, ge::Allocator *const external_allocator);
+ static Status SetAllocator(void *const stream, ge::Allocator *const external_allocator);
+
+ static Status ReleaseResource();
  private:
   static std::atomic_bool is_inited_;
 };

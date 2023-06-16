@@ -18,6 +18,7 @@
 #define AIR_CXX_STREAM_EXECUTOR_H
 #include <map>
 #include <memory>
+#include <mutex>
 #include "runtime/base.h"
 #include "common/checker.h"
 #include "model_v2_executor.h"
@@ -33,6 +34,7 @@ class VISIBILITY_EXPORT StreamExecutor {
   StreamExecutor &operator=(StreamExecutor &&) = delete;
   ~StreamExecutor();
   ModelV2Executor *GetOrCreateLoaded(rtStream_t stream, const ModelExecuteArg &arg) {
+    const std::lock_guard<std::mutex> lock(mutex_);
     const auto &iter = streams_to_executor_.find(stream);
     if (iter != streams_to_executor_.cend()) {
       return iter->second.get();
@@ -45,6 +47,7 @@ class VISIBILITY_EXPORT StreamExecutor {
   ModelV2Executor *CreateAndLoad(rtStream_t stream, const ModelExecuteArg &arg);
 
  private:
+  std::mutex mutex_;
   ModelV2ExecutorBuilder *builder_;
   std::map<rtStream_t, std::unique_ptr<ModelV2Executor>> streams_to_executor_;
 };

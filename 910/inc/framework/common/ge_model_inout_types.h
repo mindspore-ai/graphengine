@@ -64,7 +64,7 @@ namespace ge {
     size_t size = 0U;
     Format format;
     DataType dt;
-    uint32_t name_len = 0;
+    uint32_t name_len = 0U;
     uint32_t dims_len = 0U;
     uint32_t dimsV2_len = 0U;
     uint32_t shape_range_len = 0U;

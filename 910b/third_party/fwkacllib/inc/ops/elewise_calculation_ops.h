@@ -3523,7 +3523,7 @@ REG_OP(KLDiv)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: 
+*@li x: A Tensor. Must be one of the following types: 
         float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, bool \n
 
 *@par Outputs:
@@ -3535,10 +3535,10 @@ REG_OP(KLDiv)
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(TensorMove)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, 
-                            DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, 
-                            DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
+                           DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
+                           DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL}))
     .OP_END_FACTORY_REG(TensorMove)
 
 /**

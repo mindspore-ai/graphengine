@@ -32,7 +32,7 @@ namespace gert {
     static void AddTotalAllocateMemory(const uint64_t &num) { total_allocate_memory_ += num; }
     static void ReduceTotalAllocateMemory(const uint64_t &num) { total_allocate_memory_ -= num; }
     static void ClearReserveMemory() { total_reserve_memory_.store(0UL); }
-    static void SetRecorder(const void *addr, const int64_t size);
+    static void SetRecorder(const void *const addr, const int64_t size);
     static const MsprofMemoryInfo GetRecorder();
     static bool IsRecorderEmpty();
    private:

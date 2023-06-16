@@ -46,7 +46,6 @@ namespace ge {
 
 * @attention Constraints:
 * The 2nd-dim of input box_scores must be equal to 8.\n
-* Only supports 2864 input boxes at one time.\n
 
 */
 REG_OP(NMSWithMask)
@@ -56,6 +55,47 @@ REG_OP(NMSWithMask)
     .OUTPUT(selected_mask, TensorType({DT_UINT8}))
     .ATTR(iou_threshold, Float, 0.5)
     .OP_END_FACTORY_REG(NMSWithMask)
+
+/**
+* @brief Greedily selects a subset of bounding boxes in descending order of
+* score . \n
+
+* @par Inputs:
+* Input boxes and scores must be float type. Inputs include:
+* @li boxes: A 2-D float tensor of shape [num_boxes, 4]. They are expected to be in (x1, y1, x2, y2) format
+* with 0 <= x1 < x2 and 0 <= y1 < y2.
+* @li sorted_scores: A 1-D float tensor of shape [num_boxes] representing boxes' scores, which is sorted
+* by descending order.
+* @li input_indices: A 1-D integer tensor of shape [num_boxes] representing the indices for each row of
+* boxes that would sort row of boxes by scores in descending order.
+* @li max_output_size: A scalar integer tensor representing the maximum number
+* of boxes to be selected by non max suppression.
+* @li iou_threshold: A 0-D float tensor representing the threshold for deciding
+* whether boxes overlap too much with respect to IOU.
+* @li score_threshold: A 0-D float tensor representing the threshold for
+* deciding when to remove boxes based on score . \n
+
+* @par Attributes:
+* offset: An optional int. Defaults to 0. \n
+
+* @par Outputs:
+* @li selected_indices: A 1-D integer tensor of shape [M] representing the selected
+* indices from the boxes tensor, where M <= max_output_size . \n
+
+* @attention Constraints:
+* Input boxes and scores must be float type . \n
+*/
+
+REG_OP(SortedNMS)
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(sorted_scores, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(input_indices, TensorType({DT_INT32}))
+    .INPUT(max_output_size, TensorType({DT_INT32}))
+    .INPUT(iou_threshold, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(score_threshold, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(selected_indices, TensorType({DT_INT32}))
+    .ATTR(offset, Int, 0)
+    .OP_END_FACTORY_REG(SortedNMS)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RPN_OPS_H_

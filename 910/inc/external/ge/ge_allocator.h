@@ -17,7 +17,22 @@
 #ifndef AIR_CXX_INC_EXTERNAL_GE_ALLOCATOR_H_
 #define AIR_CXX_INC_EXTERNAL_GE_ALLOCATOR_H_
 #include <cstdlib>
+#include <memory>
 namespace ge {
+typedef void *(*AllocFunc)(void *obj, size_t size);
+typedef void (*FreeFunc)(void *obj, void *block);
+typedef void *(*AllocAdviseFunc)(void *obj, size_t size, void *addr);
+typedef void *(*GetAddrFromBlockFunc)(void *block);
+
+using AllocatorDesc = struct AllocatorDesc {
+    AllocFunc alloc_func;
+    FreeFunc free_func;
+    AllocAdviseFunc alloc_advise_func;
+    GetAddrFromBlockFunc get_addr_from_block_func;
+
+    void *obj;
+};
+
 class MemBlock;
 class Allocator {
  public:
@@ -74,5 +89,7 @@ class MemBlock {
   size_t count_;
   size_t block_size_;
 };
+
+using AllocatorPtr = std::shared_ptr<Allocator>;
 }  // namespace ge
 #endif  // AIR_CXX_INC_EXTERNAL_GE_ALLOCATOR_H_

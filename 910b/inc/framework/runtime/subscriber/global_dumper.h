@@ -75,6 +75,11 @@ class VISIBILITY_EXPORT GlobalDumper {
     }
   }
 
+  void RemoveInnerExceptionDumpers(ge::ExceptionDumper *exception_dumper) {
+    std::lock_guard<std::mutex> lk(mutex_);
+    (void)exception_dumpers_.erase(exception_dumper);
+  }
+
  private:
   GlobalDumper();
   uint64_t enable_flags_{0UL};

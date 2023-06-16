@@ -269,41 +269,6 @@ struct MsprofGeProfHostSchData {
 /**
  * @brief struct of data reported by RunTime
  */
-#define MSPROF_RUNTIME_API_DATA_RESERVE_BYTES 106
-#define MSPROF_RUNTIME_TASK_ID_NUM 10
-#define MSPROF_RUNTIME_API_NAME_LEN 64
-struct MsprofRuntimeProfApiData {
-    uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
-    uint16_t dataTag = MSPROF_RUNTIME_DATA_TAG_API;
-    uint32_t threadId;
-    uint64_t entryTime;
-    uint64_t exitTime;
-    uint64_t dataSize;
-    uint8_t  apiName[MSPROF_RUNTIME_API_NAME_LEN];
-    uint32_t retCode;
-    uint32_t streamId;
-    uint32_t taskNum;
-    uint32_t taskId[MSPROF_RUNTIME_TASK_ID_NUM];
-    uint16_t memcpyDirection;
-    uint8_t  reserve[MSPROF_RUNTIME_API_DATA_RESERVE_BYTES];
-};
-
-#define MSPROF_RUNTIME_TRACK_DATA_RESERVE_BYTES 10
-#define MSPROF_RUNTIME_TRACK_TASK_TYPE_LEN 32
-struct MsprofRuntimeProfTrackData {
-    uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
-    uint16_t dataTag = MSPROF_RUNTIME_DATA_TAG_TRACK;
-    uint32_t threadId;
-    uint64_t timeStamp;
-    char taskType[MSPROF_RUNTIME_TRACK_TASK_TYPE_LEN];
-    uint32_t taskId;
-    uint16_t streamId;
-    uint8_t  reserve[MSPROF_RUNTIME_TRACK_DATA_RESERVE_BYTES];
-};
-
-/**
- * @brief struct of data reported by RunTime
- */
 #define MSPROF_AICPU_DATA_RESERVE_BYTES 9
 struct MsprofAicpuProfData {
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
@@ -431,28 +396,6 @@ struct MsprofHcclProfFlag {
     uint32_t workFlowMode;
 };
 
-/**
- * @name MsprofHcclProfData
- * @brief struct of data reported by hccl
- */
-struct MsprofHcclProfData {
-    uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
-    uint16_t dataTag = MSPROF_HCCL_DATA_TAG;
-    uint32_t planeID;
-    uint32_t deviceID;
-    uint32_t streamID;
-    double ts;
-    char name[16];
-    union {
-        MsprofHcclProfNotify notify;
-        MsprofHcclProfReduce reduce;
-        MsprofHcclProfStageStep stageStep;
-        MsprofHcclProfMemcpy forMemcpy;
-        MsprofHcclProfRDMA RDMA;
-        MsprofHcclProfFlag flag;
-    } args;
-};
-
 #define MSPROF_HCCL_INVALID_UINT 0xFFFFFFFF
 struct MsprofHcclInfo {
     uint64_t itemId;
@@ -545,6 +488,13 @@ struct MsprofMemoryInfo {
     uint64_t totalReserveMemory;
     uint32_t deviceId;
     uint32_t deviceType;
+};
+
+#define MSPROF_PHYSIC_STREAM_ID_MAX_NUM 48
+struct MsprofLogicStreamInfo {
+    uint32_t logicStreamId;
+    uint32_t physicStreamNum;
+    uint16_t physicStreamId[MSPROF_PHYSIC_STREAM_ID_MAX_NUM];
 };
 #pragma pack()
 

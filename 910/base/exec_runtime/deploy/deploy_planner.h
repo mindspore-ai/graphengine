@@ -55,6 +55,8 @@ class DeployPlan {
     bool owned = true;
     bool is_control = false;
     int32_t fusion_offset = 0;
+    uint32_t instance_num;
+    uint32_t instance_idx;
   };
 
   struct InvokedModelQueueInfo {
@@ -179,6 +181,11 @@ class DeployPlannerBase {
     }
   };
 
+  struct InputGroupAttr {
+    uint32_t instance_num;
+    uint32_t instance_idx;
+  };
+
  protected:
   virtual Status PrepareModelsAndRelation(ModelRelation &model_relation) = 0;
   DeployPlan::SubmodelInfo &MutableSubmodelInfo(const std::string &name);
@@ -231,10 +238,14 @@ class DeployPlannerBase {
                                   int32_t &endpoint_index);
   bool IsOneToMany(const int32_t src_endpoint_idx);
   bool IsManyToOne(const int32_t dst_endpoint_idx);
+  void AddInputGroups(const int32_t dst_endpoint_idx,
+                      const int32_t src_tag_idx,
+                      const InputGroupAttr &input_group_attr);
   Status CreateTags(const int32_t src_endpoint_idx,
                     const int32_t dst_endpoint_idx,
                     const ModelQueueIndex &model_queue_loc,
-                    const DeployPlan::QueueInfo &queue_info);
+                    const DeployPlan::QueueInfo &queue_info,
+                    const InputGroupAttr &input_group_attr);
   Status CreateOutputTags(const int32_t src_endpoint_idx,
                           const DeployPlan::QueueInfo &dst_queue_info,
                           int32_t &src_tag_idx,
@@ -271,6 +282,7 @@ class DeployPlannerBase {
   std::set<std::string> disable_fusion_queues_;
   // for creating incoming group
   std::map<int32_t, std::vector<int32_t>> input_groups_;
+  std::map<int32_t, InputGroupAttr> input_groups_attr_;
   // for unifying input/output queues
   ModelRelation::ModelEndpointInfo head_model_queue_info_;
   ModelRelation::ModelEndpointInfo tail_model_queue_info_;

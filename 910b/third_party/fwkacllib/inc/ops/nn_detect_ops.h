@@ -1668,6 +1668,7 @@ REG_OP(DecodeBboxV2)
 *@par Attributes:
 * @li axis: An optional attribute indicates the sorting axis.
 * @li descending: An optional attribute indicates desending sort or not.
+* @li stable: An optional attribute indicates the sort result of y2 is stable or not.
 *
 *@par Outputs:
 * @li y1: A Tensor. Must have the same type as x.
@@ -1684,6 +1685,7 @@ REG_OP(Sort)
     .OUTPUT(y2, TensorType({DT_INT32}))
     .ATTR(axis, Int, -1)
     .ATTR(descending, Bool, false)
+    .ATTR(stable, Bool, false)
     .OP_END_FACTORY_REG(Sort)
 
 /**

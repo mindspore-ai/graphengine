@@ -18,25 +18,26 @@
 #define INC_FRAMEWORK_EXECUTOR_GE_C_EXECUTOR_H_
 
 #include <stdint.h>
+#include "external/ge/ge_error_codes.h"
 #include "framework/executor_c/ge_executor_types.h"
 #include "framework/executor_c/types.h"
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-Status Initialize();
-Status Finalize();
+GE_FUNC_VISIBILITY Status Initialize();
+GE_FUNC_VISIBILITY Status Finalize();
 
-Status GetMemAndWeightSize(const char *fileName, size_t *workSize, size_t *weightSize);
-Status ExecModel(uint32_t modelId, ExecHandleDesc *execDesc, bool basync, InputData *inputData,
-                 OutputData *outputData);
-Status LoadModelFromData(uint32_t *modelId, const ModelData *modelData, void *weightPtr,
-                         size_t weightSize);
-Status LoadDataFromFile(const char *modelPath, ModelData *data);
-void FreeModelData(ModelData *data);
-Status UnloadModel(uint32_t modelId);
-Status GetModelDescInfoFromMem(const ModelData *modelData, ModelInOutInfo *info);
-void DestoryModelInOutInfo(ModelInOutInfo *info);
+GE_FUNC_VISIBILITY Status GetMemAndWeightSize(const char *fileName, size_t *workSize, size_t *weightSize);
+GE_FUNC_VISIBILITY Status ExecModel(uint32_t modelId, ExecHandleDesc *execDesc, bool basync, InputData *inputData,
+                                    OutputData *outputData);
+GE_FUNC_VISIBILITY Status LoadModelFromData(uint32_t *modelId, const ModelData *modelData, void *weightPtr,
+                                            size_t weightSize);
+GE_FUNC_VISIBILITY Status LoadDataFromFile(const char *modelPath, ModelData *data);
+GE_FUNC_VISIBILITY void FreeModelData(ModelData *data);
+GE_FUNC_VISIBILITY Status UnloadModel(uint32_t modelId);
+GE_FUNC_VISIBILITY Status GetModelDescInfoFromMem(const ModelData *modelData, ModelInOutInfo *info);
+GE_FUNC_VISIBILITY void DestoryModelInOutInfo(ModelInOutInfo *info);
 #if defined(__cplusplus)
 }
 #endif

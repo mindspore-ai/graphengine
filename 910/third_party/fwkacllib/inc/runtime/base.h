@@ -224,6 +224,13 @@ typedef enum {
     RT_PROF_CTRL_BUTT
 } rtProfCtrlType_t;
 
+typedef enum {
+    RT_UTIL_TYPE_AICORE = 0,
+    RT_UTIL_TYPE_AIVECTOR,
+    RT_UTIL_TYPE_AICPU,
+    RT_UTIL_TYPE_MAX
+} rtTypeUtil_t;
+
 /**
  * @ingroup profiling_base
  * @brief runtime handle.

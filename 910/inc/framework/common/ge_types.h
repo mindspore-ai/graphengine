@@ -383,12 +383,23 @@ struct TaskDescInfo {
   uint32_t context_id = 0xFFFFFFFFU;
 };
 
+struct OpDescInfoId {
+  uint32_t task_id;
+  uint32_t stream_id;
+  uint32_t context_id;
+  uint32_t thread_id;
+
+  OpDescInfoId(): task_id(0U), stream_id(0U), context_id(UINT32_MAX), thread_id(UINT32_MAX) {}
+  OpDescInfoId(uint32_t task_id, uint32_t stream_id)
+      : task_id(task_id), stream_id(stream_id), context_id(UINT32_MAX), thread_id(UINT32_MAX) {}
+  OpDescInfoId(uint32_t task_id, uint32_t stream_id, uint32_t context_id, uint32_t thread_id)
+      : task_id(task_id), stream_id(stream_id), context_id(context_id), thread_id(thread_id) {}
+};
+
 struct OpDescInfo {
   std::string op_name;
   std::string op_type;
-  uint32_t task_id = 0U;
-  uint32_t stream_id = 0U;
-  uint32_t context_id = UINT32_MAX;
+  OpDescInfoId id;
   uint32_t imply_type = 0U;
   uint32_t block_dim = 0U;
   std::string op_file_path;

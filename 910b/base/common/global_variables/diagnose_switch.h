@@ -84,7 +84,11 @@ const SingleDiagnoseSwitch &GetDumper();
 
 void EnableDataDump();
 
+void EnableOverflowDump();
+
 void EnableExceptionDump();
+
+void EnableTrainingTrace();
 
 void EnableGeHostProfiling();
 

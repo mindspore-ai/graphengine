@@ -26,7 +26,7 @@
 #include "common/model/ge_root_model.h"
 #include "framework/common/types.h"
 #include "graph/model.h"
-#include "common/util/platform_info.h"
+#include "platform/platform_info.h"
 #include "common/op_so_store/op_so_store.h"
 
 namespace ge {

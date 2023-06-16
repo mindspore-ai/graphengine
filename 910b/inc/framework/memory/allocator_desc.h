@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-/*!
- * \file boosted_trees.h
- * \brief
- */
+#ifndef INC_FRAMEWORK_MEMORY_ALLOCATOR_DESC_H_
+#define INC_FRAMEWORK_MEMORY_ALLOCATOR_DESC_H_
+#include <cstdlib>
 
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_BOOSTED_TREES_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_BOOSTED_TREES_H_
+namespace ge {
+}  // namespace ge
 
-
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_BOOSTED_TREES_H_
+#endif  // INC_FRAMEWORK_MEMORY_ALLOCATOR_DESC_H_

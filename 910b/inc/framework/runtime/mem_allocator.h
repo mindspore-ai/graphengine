@@ -17,33 +17,46 @@
 #define AIR_MEM_ALLOCATOR_H
 
 #include "exe_graph/runtime/tensor_data.h"
-#include "block.h"
 #include "exe_graph/runtime/allocator.h"
 #include "common/ge_visibility.h"
 #include "ge/ge_api_error_codes.h"
+#include "runtime/mem.h"
+#include "ge/ge_allocator.h"
 
 namespace gert {
 namespace memory {
-struct MemAllocator {
-  virtual Block *Malloc(size_t size) = 0;
-  virtual ~MemAllocator() = default;
-};
-
 struct MemSynchronizer {
   MemSynchronizer() = default;
   virtual ~MemSynchronizer() = default;
   // Wait until the memory is actually freed after task completed
   virtual ge::Status Synchronize() const = 0;
+  virtual void Recycle() = 0;
+};
+
+class AllocatorManager {
+ public:
+  AllocatorManager() = default;
+  virtual ~AllocatorManager() = default;
+  virtual ge::Status Initialize(const std::vector<rtMemType_t> &memory_types) {
+    (void)memory_types;
+    return ge::SUCCESS;
+  }
+  virtual void Finalize() {};
+  virtual ge::Allocator *CreateAllocator(const uint32_t device_id, const rtMemType_t memory_type) {
+    (void)device_id;
+    (void)memory_type;
+    return nullptr;
+  }
 };
 }
 
 class VISIBILITY_EXPORT Allocators {
  public:
-  memory::MemAllocator *GetAllocator(const TensorPlacement &placement, const size_t &usage);
+  ge::Allocator *GetAllocator(const TensorPlacement &placement, const size_t &usage);
   ge::Status SetAllocator(const TensorPlacement &placement, const size_t &usage,
-                          std::shared_ptr<memory::MemAllocator> &allocator);
+                          std::shared_ptr<ge::Allocator> &allocator);
  private:
-  std::shared_ptr<memory::MemAllocator> allocators[static_cast<size_t>(TensorPlacement::kTensorPlacementEnd)]
+  std::shared_ptr<ge::Allocator> allocators[static_cast<size_t>(TensorPlacement::kTensorPlacementEnd)]
                                                   [static_cast<size_t>(AllocatorUsage::kEnd)];
 };
 }

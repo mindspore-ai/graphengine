@@ -66,6 +66,9 @@ class ModelParserBase {
   static Status GetDataNameOrder(const uint8_t * const data, const size_t size, ModelInOutInfo &info);
 
   static Status GetDynamicOutShape(const uint8_t * const data, const size_t size, ModelInOutInfo &info);
+
+  static void GenInOutTensorDesc(const uint8_t * const data, size_t &offset,
+                                 const ModelTensorDescBaseInfo &tensor_base_info, ModelInOutTensorDesc &desc);
 };
 }  //  namespace ge
 #endif  // GE_COMMON_MODEL_PARSER_BASE_H_

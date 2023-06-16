@@ -13,6 +13,7 @@
 #define PROF_API_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "prof_callback.h"
 #include "prof_common.h"
 
@@ -55,10 +56,11 @@ const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000;
 const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000;
 
 /* Msprof report type of model(15000) level, offset: 0x000000 */
-const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;  /* type info: graph_id_map */
-const uint32_t MSPROF_REPORT_MODEL_EXECUTE_TYPE         = 1;  /* type info: execute */
-const uint32_t MSPROF_REPORT_MODEL_LOAD_TYPE            = 2;  /* type info: load */
-const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE = 0x010000;  /* type info: udf_info */
+const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;         /* type info: graph_id_map */
+const uint32_t MSPROF_REPORT_MODEL_EXECUTE_TYPE         = 1;         /* type info: execute */
+const uint32_t MSPROF_REPORT_MODEL_LOAD_TYPE            = 2;         /* type info: load */
+const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE        = 0x010000;  /* type info: udf_info */
+const uint32_t MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      = 0x020000;  /* type info: aicpu */
 
 /* Msprof report type of node(10000) level, offset: 0x000000 */
 const uint32_t MSPROF_REPORT_NODE_BASIC_INFO_TYPE       = 0;  /* type info: node_basic_info */
@@ -66,10 +68,12 @@ const uint32_t MSPROF_REPORT_NODE_TENSOR_INFO_TYPE      = 1;  /* type info: tens
 const uint32_t MSPROF_REPORT_NODE_FUSION_OP_INFO_TYPE   = 2;  /* type info: funsion_op_info */
 const uint32_t MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  = 4;  /* type info: context_id_info */
 const uint32_t MSPROF_REPORT_NODE_LAUNCH_TYPE           = 5;  /* type info: launch */
+const uint32_t MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      = 6;  /* type info: task_memory_info */
+const uint32_t MSPROF_REPORT_NODE_LOGIC_STREAM_TYPE     = 7;  /* type info: logic_stream_info */
+const uint32_t MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     = 8;  /* type info: op exec */
 
 /* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
 const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000;
-const uint32_t MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      = 0x010007;  /* type info: task_memory */
 
 /* Msprof report type of node(10000) level(hccl api), offset: 0x020000 */
 const uint32_t MSPROF_REPORT_NODE_HCCL_BASE_TYPE        = 0x020000;
@@ -108,7 +112,7 @@ struct MsprofEvent {  // for MsprofReportEvent
     uint32_t threadId;
     uint32_t requestId; // 0xFFFF means single event
     uint64_t timeStamp;
-    uint64_t reserve = MSPROF_EVENT_FLAG;
+    uint64_t eventFlag = MSPROF_EVENT_FLAG;
     uint64_t itemId;
 };
 

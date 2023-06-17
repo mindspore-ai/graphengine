@@ -75,6 +75,8 @@ typedef enum aclrtMemMallocPolicy {
     ACL_MEM_MALLOC_HUGE_FIRST_P2P,
     ACL_MEM_MALLOC_HUGE_ONLY_P2P,
     ACL_MEM_MALLOC_NORMAL_ONLY_P2P,
+    ACL_MEM_TYPE_LOW_BAND_WIDTH   = 0x0100,
+    ACL_MEM_TYPE_HIGH_BAND_WIDTH  = 0x1000,
 } aclrtMemMallocPolicy;
 
 typedef enum aclrtMemAttr {
@@ -104,6 +106,20 @@ typedef enum aclrtFloatOverflowMode {
     ACL_RT_OVERFLOW_MODE_INFNAN,
     ACL_RT_OVERFLOW_MODE_UNDEF,
 } aclrtFloatOverflowMode;
+
+typedef enum {
+    ACL_RT_STREAM_WORK_ADDR_PTR = 0, /**< pointer to model work addr */
+    ACL_RT_STREAM_WORK_SIZE, /**< pointer to model work size */
+    ACL_RT_STREAM_FLAG,
+    ACL_RT_STREAM_PRIORITY,
+} aclrtStreamConfigAttr;
+
+typedef struct aclrtStreamConfigHandle {
+    void* workptr;
+    size_t workSize;
+    size_t flag;
+    uint32_t priority;
+} aclrtStreamConfigHandle;
 
 typedef struct tagRtGroupInfo aclrtGroupInfo;
 
@@ -336,6 +352,28 @@ ACL_FUNC_VISIBILITY aclError aclrtSetCurrentContext(aclrtContext context);
  * @see aclrtSetCurrentContext
  */
 ACL_FUNC_VISIBILITY aclError aclrtGetCurrentContext(aclrtContext *context);
+
+/**
+ * @ingroup AscendCL
+ * @brief get system param option value in current context
+ *
+ * @param opt[IN] system option
+ * @param value[OUT] value of system option
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+*/
+ACL_FUNC_VISIBILITY aclError aclrtCtxGetSysParamOpt(aclSysParamOpt opt, int64_t *value);
+
+/**
+ * @ingroup AscendCL
+ * @brief set system param option value in current context
+ *
+ * @param opt[IN] system option
+ * @param value[IN] value of system option
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+*/
+ACL_FUNC_VISIBILITY aclError aclrtCtxSetSysParamOpt(aclSysParamOpt opt, int64_t value);
 
 /**
  * @ingroup AscendCL
@@ -880,6 +918,40 @@ ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr,
 
 /**
  * @ingroup AscendCL
+ * @brief Create config handle of stream
+ *
+ * @retval the aclrtStreamConfigHandle pointer
+ */
+ACL_FUNC_VISIBILITY aclrtStreamConfigHandle *aclrtCreateStreamConfigHandle(void);
+
+/**
+ * @ingroup AscendCL
+ * @brief Destroy config handle of model execute
+ *
+ * @param  handle [IN]  Pointer to aclrtStreamConfigHandle to be destroyed
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtDestroyStreamConfigHandle(aclrtStreamConfigHandle *handle);
+
+/**
+ * @ingroup AscendCL
+ * @brief set config for stream
+ *
+ * @param handle [OUT]    pointer to stream config handle
+ * @param attr [IN]       config attr in stream config handle to be set
+ * @param attrValue [IN]  pointer to stream config value
+ * @param valueSize [IN]  memory size of attrValue
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetStreamConfigOpt(aclrtStreamConfigHandle *handle, aclrtStreamConfigAttr attr,
+    const void *attrValue, size_t valueSize);
+
+/**
+ * @ingroup AscendCL
  * @brief  create stream instance
  *
  * @param  stream [OUT]   the created stream
@@ -888,6 +960,17 @@ ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr,
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtCreateStream(aclrtStream *stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief  create stream instance
+ *
+ * @param  stream [OUT]   the created stream
+ * @param  handle [IN]   the config of stream
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtCreateStreamV2(aclrtStream *stream, const aclrtStreamConfigHandle *handle);
 
 /**
  * @ingroup AscendCL
@@ -1193,6 +1276,38 @@ ACL_FUNC_VISIBILITY aclError aclrtSetDeviceSatMode(aclrtFloatOverflowMode mode);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtGetDeviceSatMode(aclrtFloatOverflowMode *mode);
+
+/**
+ * @ingroup AscendCL
+ * @brief get overflow status asynchronously
+ *
+ * @par Restriction
+ * After calling the aclrtGetOverflowStatus interface,
+ * you need to call the aclrtSynchronizeStream interface
+ * to ensure that the tasks in the stream have been completed.
+ * @param outputAddr [IN/OUT]  output device addr to store overflow status
+ * @param outputSize [IN]  output addr size
+ * @param outputSize [IN]  stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtGetOverflowStatus(void *outputAddr, size_t outputSize, aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief reset overflow status asynchronously
+ *
+ * @par Restriction
+ * After calling the aclrtResetOverflowStatus interface,
+ * you need to call the aclrtSynchronizeStream interface
+ * to ensure that the tasks in the stream have been completed.
+ * @param outputSize [IN]  stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtResetOverflowStatus(aclrtStream stream);
 
 #ifdef __cplusplus
 }

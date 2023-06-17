@@ -52,6 +52,10 @@ typedef int aclError;
 typedef uint16_t aclFloat16;
 typedef struct aclDataBuffer aclDataBuffer;
 typedef struct aclTensorDesc aclTensorDesc;
+typedef void *aclrtAllocatorDesc;
+typedef void *aclrtAllocator;
+typedef void *aclrtAllocatorBlock;
+typedef void *aclrtAllocatorAddr;
 
 static const int ACL_ERROR_NONE = 0;
 static const int ACL_SUCCESS = 0;
@@ -183,6 +187,9 @@ typedef enum {
     ACL_MEMTYPE_HOST_COMPILE_INDEPENDENT = 2
 } aclMemType;
 
+typedef enum {
+    ACL_OPT_DETERMINISTIC = 0,
+} aclSysParamOpt;
 
 /**
  * @ingroup AscendCL

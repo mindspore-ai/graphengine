@@ -1,7 +1,7 @@
 /**
 * @file acl_mdl.h
 *
-* Copyright (c) Huawei Technologies Co., Ltd. 2019-2020. All rights reserved.
+* Copyright (c) Huawei Technologies Co., Ltd. 2019-2023. All rights reserved.
 *
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -87,7 +87,13 @@ typedef enum {
 
 typedef enum {
     ACL_MDL_STREAM_SYNC_TIMEOUT = 0,
-    ACL_MDL_EVENT_SYNC_TIMEOUT
+    ACL_MDL_EVENT_SYNC_TIMEOUT,
+    ACL_MDL_WORK_ADDR_PTR, /**< param */
+    ACL_MDL_WORK_SIZET, /**< param */
+    ACL_MDL_MPAIMID_SIZET, /**< param reserved */
+    ACL_MDL_AICQOS_SIZET, /**< param reserved */
+    ACL_MDL_AICOST_SIZET, /**< param reserved */
+    ACL_MDL_MEC_TIMETHR_SIZET /**< param reserved */
 } aclmdlExecConfigAttr;
 
 typedef enum {
@@ -206,6 +212,31 @@ ACL_FUNC_VISIBILITY aclError aclmdlDestroyDesc(aclmdlDesc *modelDesc);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclmdlGetDesc(aclmdlDesc *modelDesc, uint32_t modelId);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get aclmdlDesc data of the model according to the model path
+ *
+ * @param  modelDesc [OUT]   aclmdlDesc pointer
+ * @param  modelPath [IN]    model path
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlGetDescFromFile(aclmdlDesc *modelDesc, const char *modelPath);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get aclmdlDesc data of the model according to the model and modelSize
+ *
+ * @param  modelDesc [OUT]   aclmdlDesc pointer
+ * @param  model [IN]        model pointer
+ * @param  modelSize [IN]    model size
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlGetDescFromMem(aclmdlDesc *modelDesc, const void *model, size_t modelSize);
 
 /**
  * @ingroup AscendCL
@@ -508,6 +539,21 @@ ACL_FUNC_VISIBILITY aclError aclmdlExecute(uint32_t modelId, const aclmdlDataset
 ACL_FUNC_VISIBILITY aclError aclmdlExecuteV2(uint32_t modelId, const aclmdlDataset *input, aclmdlDataset *output,
                                              aclrtStream stream, const aclmdlExecConfigHandle *handle);
 
+/**
+ * @ingroup AscendCL
+ * @brief Execute model asynchronous inference until the inference result is returned
+ *
+ * @param  modelId [IN]   ID of the model to perform inference
+ * @param  input [IN]     Input data for model inference
+ * @param  output [OUT]   Output data for model inference
+ * @param  stream [IN]   stream
+ * @param  handle [IN]   config of model execute
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY  aclError aclmdlExecuteAsyncV2(uint32_t modelId, const aclmdlDataset *input, aclmdlDataset *output,
+                                                   aclrtStream stream, aclmdlExecConfigHandle *handle);
 /**
  * @ingroup AscendCL
  * @brief Execute model asynchronous inference until the inference result is returned

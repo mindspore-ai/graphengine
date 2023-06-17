@@ -42,19 +42,19 @@ enum ModelCheckType {
 typedef enum {
   MODEL_DEF = 0,
   WEIGHTS_DATA = 1,
-  TSAK_INFO = 2,
+  TASK_INFO = 2,
   TBE_KERNELS = 3,
   CUST_AICPU_KERNELS = 4,
   SO_BINS = 5,
   FLOW_MODEL = 6,
   FLOW_SUBMODEL = 7,
   MODEL_INOUT_INFO = 8,
-  STATIC_TASK_DESC,
-  DYNAMIC_TASK_DESC,
-  TASK_PARAM,
-  LITE_MODEL_DESC,
-  LITE_MODEL_SQE,
-  LITE_KERNEL_ARGS
+  STATIC_TASK_DESC = 9,
+  DYNAMIC_TASK_DESC = 10,
+  TASK_PARAM = 11,
+  PRE_MODEL_DESC = 20,
+  PRE_MODEL_SQE = 21,
+  PRE_KERNEL_ARGS = 22
 } ModelPartitionType;
 
 
@@ -198,7 +198,8 @@ typedef enum {
   DT_UINT2 = 32,           // uint2 type
   DT_MAX                   // Mark the boundaries of data types
 } DataType;
-
+#pragma pack(push)
+#pragma pack(1)
 typedef struct {
   uint32_t task_num;
   uint64_t workspace_size;
@@ -207,6 +208,7 @@ typedef struct {
   uint8_t profile_enable;
   uint8_t model_interrupt;
 } ModelDesc;
+#pragma pack(pop)
 
 typedef struct {
   uint32_t type : 2;
@@ -247,7 +249,7 @@ typedef struct {
 } ModelDescTlvConfig;
 
 typedef struct {
-  size_t size;
+  uint64_t size;
   Format format;
   DataType dt;
   uint32_t name_len;

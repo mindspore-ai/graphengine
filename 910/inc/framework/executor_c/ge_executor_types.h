@@ -46,7 +46,7 @@ typedef struct {
 } OutputData;
 
 typedef struct {
-  uint32_t sqId;
+  void *stream;
   void *workPtr;
   size_t workSize;
   size_t mpamId;

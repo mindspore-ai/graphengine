@@ -24,6 +24,7 @@
 #include "exe_graph/runtime/kernel_run_context.h"
 #include "graph/anchor.h"
 #include "framework/common/profiling_definitions.h"
+#include "runtime/base.h"
 
 namespace ge {
 class GeRootModel;
@@ -63,12 +64,19 @@ static_assert(static_cast<size_t>(ProfilingType::kNum) < sizeof(uint64_t) * stat
 enum class DumpType {
   kDataDump = 0,
   kExceptionDump = 1,
-  kNum = 2,
+  kOverflowDump = 2,
+  kNum = 3,
   kAll = kNum
 };
 static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),
               "The max num of dumper type must less than the width of uint64");
 class ModelV2Executor;
+struct TraceAttr{
+  bool is_fp = false;
+  bool is_bp = false;
+  int64_t start_log_id = -1;
+};
+// todo : 需要整改，root_model等需要删除
 struct SubscriberExtendInfo {
   ModelV2Executor *executor;
   ge::ComputeGraphPtr exe_graph;
@@ -76,6 +84,9 @@ struct SubscriberExtendInfo {
   std::shared_ptr<ge::GeRootModel> root_model;
   std::map<ge::Anchor *, ge::Anchor *> anchors_to_symbol;
   SymbolsToValue symbols_to_value;
+  uint32_t model_id;
+  rtStream_t stream;
+  std::unordered_map<std::string, TraceAttr> node_names_to_attrs;
 };
 
 class VISIBILITY_EXPORT BuiltInSubscriberUtil {

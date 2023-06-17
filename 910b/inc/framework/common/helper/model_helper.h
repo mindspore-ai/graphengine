@@ -26,7 +26,7 @@
 #include "common/model/ge_root_model.h"
 #include "framework/common/types.h"
 #include "graph/model.h"
-#include "common/util/platform_info.h"
+#include "platform/platform_info.h"
 #include "common/op_so_store/op_so_store.h"
 
 namespace ge {
@@ -75,7 +75,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   Status CheckOsCpuInfoAndOppVersion();
 
-  Status GetSoBinData(string &cpu_info, string &os_info);
+  Status GetSoBinData(const string &cpu_info, const string &os_info);
 
   const uint8_t *GetOpSoStoreData() const;
 
@@ -96,6 +96,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   bool is_so_store_ = false;
   bool is_repack_so_ = false;
   static std::string output_file_name_;
+  std::unordered_set<std::string> custom_compiler_versions_{};
   ModelHelper(const ModelHelper &) = default;
   ModelHelper &operator=(const ModelHelper &) & = default;
   static Status GetOppVersion(std::string &version);
@@ -138,8 +139,11 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   Status LoadOpSoBin(const OmFileLoadHelper &om_load_helper, const GeRootModelPtr &ge_root_model) const;
 
   Status SaveSoStoreModelPartitionInfo(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                                       const GeRootModelPtr &ge_root_model, string &output_file_name);
+                                       const GeRootModelPtr &ge_root_model, string &output_file_name,
+                                       const GeModelPtr &first_ge_model);
   void SaveOpSoInfo(const GeRootModelPtr &ge_root_model) const;
+  Status SetModelCompilerVersion(const GeModelPtr &first_ge_model);
+  Status LoadAndStoreOppSo(const string &path);
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_

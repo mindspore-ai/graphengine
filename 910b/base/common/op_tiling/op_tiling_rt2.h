@@ -20,7 +20,7 @@
 #include "graph/operator.h"
 #include "graph/op_desc.h"
 #include "register/op_tiling_registry.h"
-#include "common/util/platform_info.h"
+#include "platform/platform_info.h"
 #include "exe_graph/runtime/kernel_context.h"
 #include "runtime/kernel.h"
 #include "register/op_impl_space_registry.h"

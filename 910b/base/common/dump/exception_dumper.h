@@ -45,13 +45,13 @@ class ExceptionDumper {
   ExceptionDumper() noexcept = default;
   ~ExceptionDumper();
 
-  void SaveDumpOpInfo(const OpDescPtr &op, const uint32_t task_id, const uint32_t stream_id,
-                      const ExtraOpInfo &extra_op_info);
+  void SaveDumpOpInfo(const OpDescPtr &op, const ExtraOpInfo &extra_op_info, const OpDescInfoId &id);
+  void SaveDumpOpInfo(const OpDescPtr &op, const ExtraOpInfo &extra_op_info, uint32_t task_id, uint32_t stream_id);
   Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos);
   void LogExceptionTvmOpInfo(const OpDescInfo &op_desc_info) const;
   void LogExceptionArgs(const OpDescInfo &op_desc_info) const;
   bool GetOpDescInfo(const uint32_t stream_id, const uint32_t task_id, OpDescInfo &op_desc_info,
-                     const uint32_t context_id = UINT32_MAX);
+                     const uint32_t context_id = UINT32_MAX, const uint32_t thread_id = UINT32_MAX);
   OpDescInfo *MutableOpDescInfo(const uint32_t task_id, const uint32_t stream_id);
 
   static Status DumpDevMem(const ge::char_t * const file, const void * const addr, const int64_t size);
@@ -69,11 +69,11 @@ class ExceptionDumper {
 
  private:
   void RefreshAddrs(OpDescInfo &op_desc_info) const;
-  void SaveOpDescInfo(const OpDescPtr &op, const uint32_t task_id, const uint32_t stream_id,
-                      OpDescInfo &op_desc_info) const;
+  void SaveOpDescInfo(const OpDescPtr &op, OpDescInfo &op_desc_info, const OpDescInfoId &id) const;
   Status DumpExceptionInput(const OpDescInfo &op_desc_info, const std::string &dump_file) const;
   Status DumpExceptionOutput(const OpDescInfo &op_desc_info, const std::string &dump_file) const;
   Status DumpExceptionWorkspace(const OpDescInfo &op_desc_info, const std::string &dump_file) const;
+  void SaveDumpOpInfoHelper(const OpDescPtr &op, const ExtraOpInfo &extra_op_info, const OpDescInfoId &id);
   std::mutex mutex_;
   std::vector<OpDescInfo> op_desc_info_;
   size_t op_desc_info_idx_{0UL};

@@ -29,6 +29,7 @@
 #include "ge/ge_graph_compile_summary.h"
 #include "graph/graph.h"
 #include "graph/tensor.h"
+#include "ge/ge_allocator.h"
 
 namespace ge {
 typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
@@ -282,6 +283,19 @@ class GE_FUNC_VISIBILITY Session {
   /// @return Status result of function
   ///
   Status UpdateGraphFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+
+  /// @ingroup ge_graph
+  /// @brief register external allocator to GE.
+  /// @param [in] stream stream handle
+  /// @param [in] allocator_obj allocator object handle
+  /// @return Status result of function
+  Status RegisterExternalAllocator(const void *const stream, AllocatorPtr allocator);
+
+  /// @ingroup ge_graph
+  /// @brief unregister external allocator to GE.
+  /// @param [in] stream stream handle
+  /// @return Status result of function
+  Status UnregisterExternalAllocator(const void *const stream);
 
  private:
   uint64_t sessionId_;

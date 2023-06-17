@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
+#include <fstream>
 #include "mmpa/mmpa_api.h"
 #include "built_in_subscriber_definitions.h"
 #include "common/debug/ge_log.h"
@@ -40,7 +41,6 @@ struct ProfilingData {
   std::chrono::time_point<std::chrono::system_clock> timestamp;
   int64_t thread_id;
 };
-
 enum class GeProfInfoType {
   // model level
   kModelExecute = MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE + 1,  // 模型执行
@@ -56,7 +56,6 @@ enum class GeProfInfoType {
   kCompatibleTiling,
   kStreamSync,
   kStepInfo,
-  kTaskMemoryInfo,
   kEnd
 };
 
@@ -257,10 +256,7 @@ class VISIBILITY_EXPORT ProfilerRegistry {
   ProfilerRegistry &operator=(const ProfilerRegistry &) = delete;
   ProfilerRegistry &operator=(ProfilerRegistry &&) = delete;
 
-  static ProfilerRegistry &GetInstance() {
-    static ProfilerRegistry prof_registry;
-    return prof_registry;
-  }
+  static ProfilerRegistry &GetInstance();
 
   void SaveRegistryType(const std::string &type);
 

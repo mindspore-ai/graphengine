@@ -44,6 +44,8 @@
 #include "external/ge/ge_graph_compile_summary.h"
 #include "external/graph/types.h"
 #include "framework/common/util.h"
+#include "ge/ge_allocator.h"
+#include "graph/ge_tensor.h"
 
 namespace ge {
 
@@ -179,6 +181,51 @@ class GraphNode {
   const InputMemoryBaseInfo &GetFeatureMemoryBase() const { return feature_mem_; }
   CompiledGraphSummaryPtr GetCompiledGraphSummary() const { return compiled_summary_; }
   void SaveCompiledGraphSummary(const CompiledGraphSummaryPtr &summary) { compiled_summary_ = summary; }
+  void SetAppRefreshConstMemoryFlag() {
+    app_refresh_const_memory_flag_ = true;
+  }
+  bool IsAppRefreshConstMemory() const {
+    return app_refresh_const_memory_flag_;
+  }
+  void SetAppRefreshFeatureMemoryFlag() {
+    app_refresh_feature_memory_flag_ = true;
+  }
+  bool IsAppRefreshFeatureMemory() const {
+    return app_refresh_feature_memory_flag_;
+  }
+  void SetConstMemBlock(MemBlock *const_mem_block) {
+    const_mem_block_ = const_mem_block;
+  }
+  void SetFeatureMemBlock(MemBlock *feature_mem_block) {
+    feature_mem_block_ = feature_mem_block;
+  }
+  MemBlock *GetConstMemBlock() {
+    return const_mem_block_;
+  }
+  MemBlock *GetFeatureMemBlock() {
+    return feature_mem_block_;
+  }
+  void SetNetOutputNode(const NodePtr &net_output_node) { net_output_node_ = net_output_node; }
+  NodePtr GetNetOutputNode() const { return net_output_node_; }
+
+  void SetTensorSize(size_t tensor_size) {
+    tensor_sizes_.emplace_back(tensor_size);
+  }
+  std::vector<size_t> &GetTensorSize() {
+    return tensor_sizes_;
+  }
+  void SetGeTensorDescPtr(GeTensorDescPtr ge_tensor_desc) {
+    ge_tensor_descs_.emplace_back(ge_tensor_desc);
+  }
+  std::vector<GeTensorDescPtr> &GetGeTensorDescPtr() {
+    return ge_tensor_descs_;
+  }
+  bool IsSavedNetOutputTensorInfoFlag() const {
+    return is_saved_net_output_tensor_info_flag_;
+  }
+  void SetSavedNetOutputTensorInfoFlag(const bool is_saved_net_output_tensor_info_flag) {
+    is_saved_net_output_tensor_info_flag_ = is_saved_net_output_tensor_info_flag;
+  }
 
  private:
   GraphId graph_id_;
@@ -210,6 +257,15 @@ class GraphNode {
   InputMemoryBaseInfo const_mem_;
   InputMemoryBaseInfo feature_mem_;
   CompiledGraphSummaryPtr compiled_summary_{nullptr};
+
+  bool app_refresh_const_memory_flag_{false};
+  bool app_refresh_feature_memory_flag_{false};
+  MemBlock *const_mem_block_{nullptr};
+  MemBlock *feature_mem_block_{nullptr};
+  NodePtr net_output_node_;
+  std::vector<size_t> tensor_sizes_;
+  bool is_saved_net_output_tensor_info_flag_{false};
+  std::vector<GeTensorDescPtr> ge_tensor_descs_;
 };
 
 using GraphNodePtr = std::shared_ptr<GraphNode>;

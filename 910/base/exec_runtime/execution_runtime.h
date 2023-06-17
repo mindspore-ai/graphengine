@@ -39,6 +39,8 @@ class ExecutionRuntime {
 
   static bool IsHeterogeneous();
 
+  static bool IsHeterogeneousHost();
+
   static void SetExecutionRuntime(const std::shared_ptr<ExecutionRuntime> &instance);
 
   static bool IsMbufAllocatorEnabled();

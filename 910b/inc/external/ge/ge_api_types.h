@@ -98,6 +98,8 @@ const std::string OPTION_EXEC_CM_CHIEF_DEVICE = "ge.cmChiefWorkerDevice";
 const std::string OPTION_EXEC_CM_WORKER_IP = "ge.cmWorkerIp";
 const std::string OPTION_EXEC_CM_WORKER_SIZE = "ge.cmWorkerSize";
 
+const std::string OPTION_NAME_MAP = "ge.optionNameMap";
+
 const std::string OPTION_EXEC_STREAM_SYNC_TIMEOUT = "stream_sync_timeout";
 const std::string OPTION_EXEC_EVENT_SYNC_TIMEOUT = "event_sync_timeout";
 
@@ -143,6 +145,7 @@ const char_t *const INSERT_OP_FILE = "ge.insertOpFile";
 const char_t *const OUTPUT_NODE_NAME = "ge.outputNodeName";
 const char_t *const COMPRESS_FLAG = "ge.compressFlag";
 const char_t *const PRECISION_MODE = "ge.exec.precision_mode";
+const char_t *const PRECISION_MODE_V2 = "ge.exec.precision_mode_v2";
 const char_t *const SINGLE_OP_FLAG = "ge.exec.single_op";
 const char_t *const TRAIN_FLAG = "ge.trainFlag";
 const char_t *const RUN_FLAG = "ge.runFlag";
@@ -173,6 +176,7 @@ const char_t *const PERFORMANCE_MODE = "ge.performance_mode";
 const char_t *const SHAPE_GENERALIZED_BUILD_MODE = "ge.shape_generalized_build_mode";
 const char_t *const MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 const char_t *const OP_PRECISION_MODE = "ge.exec.op_precision_mode";
+const char_t *const ALLOW_HF32 = "ge.exec.allow_hf32";
 const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
@@ -234,6 +238,8 @@ const std::string OUTPUT_NODE_NAME = "ge.outputNodeName";
 const std::string COMPRESS_FLAG = "ge.compressFlag";
 
 const std::string PRECISION_MODE = "ge.exec.precision_mode";
+
+const std::string PRECISION_MODE_V2 = "ge.exec.precision_mode_v2";
 
 const std::string TUNE_DEVICE_IDS = "ge.exec.tuneDeviceIds";
 
@@ -429,6 +435,8 @@ const std::string MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 
 const std::string OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 
+const std::string ALLOW_HF32 = "ge.exec.allow_hf32";
+
 const std::string OP_WAIT_TIMEOUT = "ge.exec.opWaitTimeout";
 
 const std::string OP_EXECUTE_TIMEOUT = "ge.exec.opExecuteTimeout";
@@ -492,6 +500,7 @@ static const char_t *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
 static const char_t *const DYNAMIC_DIMS = kDynamicDims;
 static const char_t *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
 static const char_t *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
+static const char_t *const PRECISION_MODE_V2 = ge::PRECISION_MODE_V2.c_str();
 static const char_t *const TUNE_DEVICE_IDS = ge::TUNE_DEVICE_IDS.c_str();
 static const char_t *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
 static const char_t *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
@@ -524,6 +533,7 @@ static const char_t *const PERFORMANCE_MODE = ge::PERFORMANCE_MODE.c_str();
 static const char_t *const SHAPE_GENERALIZED_BUILD_MODE = ge::SHAPE_GENERALIZED_BUILD_MODE.c_str();
 static const char_t *const MODIFY_MIXLIST = ge::MODIFY_MIXLIST.c_str();
 static const char_t *const OP_PRECISION_MODE = ge::OP_PRECISION_MODE.c_str();
+static const char_t *const ALLOW_HF32 = ge::ALLOW_HF32.c_str();
 static const char_t *const CUSTOMIZE_DTYPES = "ge.customizeDtypes";
 static const char_t *const COMPRESSION_OPTIMIZE_CONF = "ge.compressionOptimizeConf";
 static const char_t *const INPUT_DATA_NAMES = "input_data_names";
@@ -544,7 +554,9 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              DYNAMIC_DIMS,
                                                              INSERT_OP_FILE,
                                                              OP_PRECISION_MODE,
+                                                             ALLOW_HF32,
                                                              PRECISION_MODE,
+                                                             PRECISION_MODE_V2,
                                                              TUNE_DEVICE_IDS,
                                                              EXEC_DISABLE_REUSED_MEMORY,
                                                              AUTO_TUNE_MODE,
@@ -582,6 +594,8 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               COMPRESS_WEIGHT_CONF,
                                               SPARSITY,
                                               PRECISION_MODE,
+                                              PRECISION_MODE_V2,
+                                              ALLOW_HF32,
                                               TUNE_DEVICE_IDS,
                                               EXEC_DISABLE_REUSED_MEMORY,
                                               AUTO_TUNE_MODE,

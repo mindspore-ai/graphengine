@@ -497,12 +497,12 @@ REG_OP(UninitEmbeddingHashmap)
 * Defaults to "-2".
 * @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
 * Defaults to "2".
-* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal. 
+* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
 * Defaults to "0".
 * @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
 * Defaults to "1".
 * @li seed: An Int, Used to create a random seed, Defaults to "0".
-* @li seed2: An Int, Used to create a random seed, Defaults to "0". 
+* @li seed2: An Int, Used to create a random seed, Defaults to "0".
 * @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
 * @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
 * @li default_key_or_value: A bool, indicates the default value get way.
@@ -1554,6 +1554,30 @@ REG_OP(FlashAttentionScoreGrad)
     .ATTR(is_transpose_attention, Bool, false)
     .REQUIRED_ATTR(is_flash, Bool)
     .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
+
+/**
+* @brief paste sub img.
+*
+* @par Inputs:
+* @li patch_img: A 3D Tensor, dtype is uint8 or float16 or float32, shape is (h, w, c). The input image.
+* @li patch_coord: A 1D Tensor, dtype is int32, shape is (4,). The coordinates in the combined img.
+* @li core_area_coord: A 1D Tensor, dtype is int32, shape is (4,). The coordinates in the patch img
+* @li combine_img: A 3D Tensor, dtype is uint8 or float16 or float32, shape is (H, W, C).
+*
+* @par Outputs:
+* @li combine_img: A 3D Tensor, Has the same type and shape as input "combine_img".
+*
+* @par Attr
+* @li scale: Float, scale of coordinates.\n
+*/
+REG_OP(PasteSubImg)
+    .INPUT(patch_img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(patch_coord, TensorType({DT_INT32}))
+    .INPUT(core_area_coord, TensorType({DT_INT32}))
+    .INPUT(combine_img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(combine_img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .REQUIRED_ATTR(scale, Float)
+    .OP_END_FACTORY_REG(PasteSubImg)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

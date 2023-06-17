@@ -21,6 +21,7 @@
 #include "common/ge_types.h"
 #include "common/ge_visibility.h"
 #include "mem_allocator.h"
+#include "memory/allocator_desc.h"
 #include "exe_graph/lowering/lowering_opt.h"
 
 namespace gert {
@@ -30,7 +31,7 @@ namespace gert {
 class VISIBILITY_EXPORT AllocatorFactory {
  public:
   // 根据placement创建allocator
-  static std::unique_ptr<memory::MemAllocator> Create(const TensorPlacement &placement);
+  static std::unique_ptr<ge::Allocator> Create(const TensorPlacement &placement);
  private:
   AllocatorFactory() = default;
 };
@@ -82,5 +83,8 @@ ge::graphStatus IsDynamicModel(const ge::char_t *model_path, bool &is_dynamic_mo
 
 VISIBILITY_EXPORT
 ge::graphStatus LoadDataFromFile(const ge::char_t *model_path, ge::ModelData &model_data);
+
+VISIBILITY_EXPORT
+std::unique_ptr<ge::Allocator> CreateExternalAllocator(const ge::AllocatorDesc * const allocatorDesc);
 }  // namespace gert
 #endif  // AIR_CXX_INC_FRAMEWORK_RUNTIME_GERT_API_H_

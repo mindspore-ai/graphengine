@@ -53,6 +53,7 @@ const uint32_t MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        = 0x040000;
 
 /* Msprof report type of acl(20000) level(host api), offset: 0x050000 */
 const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000;
+const uint32_t MSPROF_REPORT_ACL_ASCENDC_TYPE            = 0x060000;
 const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000;
 
 /* Msprof report type of model(15000) level, offset: 0x000000 */
@@ -91,7 +92,8 @@ enum ProfileCallbackType {
     PROFILE_REPORT_COMPACT_CALLBACK,
     PROFILE_REPORT_ADDITIONAL_CALLBACK,
     PROFILE_REPORT_REG_TYPE_INFO_CALLBACK,
-    PROFILE_REPORT_GET_HASH_ID_CALLBACK
+    PROFILE_REPORT_GET_HASH_ID_CALLBACK,
+    PROFILE_HOST_FREQ_IS_ENABLE_CALLBACK
 };
 
 struct MsprofApi { // for MsprofReportApi

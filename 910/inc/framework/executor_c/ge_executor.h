@@ -25,8 +25,9 @@
 extern "C" {
 #endif
 
-GE_FUNC_VISIBILITY Status Initialize();
-GE_FUNC_VISIBILITY Status Finalize();
+GE_FUNC_VISIBILITY Status GeInitialize();
+GE_FUNC_VISIBILITY Status GeFinalize();
+GE_FUNC_VISIBILITY Status GetModelDescInfo(uint32_t modelId, ModelInOutInfo *info);
 
 GE_FUNC_VISIBILITY Status GetMemAndWeightSize(const char *fileName, size_t *workSize, size_t *weightSize);
 GE_FUNC_VISIBILITY Status ExecModel(uint32_t modelId, ExecHandleDesc *execDesc, bool basync, InputData *inputData,

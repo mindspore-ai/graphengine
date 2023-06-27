@@ -19,6 +19,19 @@
 #include <cstdlib>
 
 namespace ge {
+using AllocFunc = void *(*)(void *obj, size_t size);
+using FreeFunc = void (*)(void *obj, void *block);
+using AllocAdviseFunc = void *(*)(void *obj, size_t size, void *addr);
+using GetAddrFromBlockFunc = void *(*)(void *block);
+
+using AllocatorDesc = struct AllocatorDesc {
+    AllocFunc alloc_func;
+    FreeFunc free_func;
+    AllocAdviseFunc alloc_advise_func;
+    GetAddrFromBlockFunc get_addr_from_block_func;
+
+    void *obj;
+};
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_MEMORY_ALLOCATOR_DESC_H_

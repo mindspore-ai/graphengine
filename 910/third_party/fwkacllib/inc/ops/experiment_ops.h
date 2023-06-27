@@ -1077,7 +1077,7 @@ REG_OP(StackBallQuery)
 /**
  * @brief Find and get the corresponding value from the corresponding ps according to the keys
  * @par Inputs:
- * @li kyes: A tensor. Must be int64 type,
+ * @li keys: A tensor. Must be int64 type.
  * @li table_id: A tensor. Must be int32 type.
  * @par Outputs:
  * @li values: A Tensor. Must be float32 type.
@@ -1100,8 +1100,8 @@ REG_OP(HcomRemoteLookup)
 /**
  * @brief Workers all find and get the corresponding value from the corresponding ps according to the keys
  * @par Inputs:
- * @li kyes: A tensor. Must be int64 type.
  * @li table_id: A tensor. Must be int32 type.
+ * @li keys: A tensor. Must be int64 type.
  * @par Outputs:
  * @li values: A Tensor. Must be float32 type.
  * @par Attributes:
@@ -1126,8 +1126,8 @@ REG_OP(HcomCollRemoteLookup)
 /**
  * @brief Workers send the keys and values to ps according to keys
  * @par Inputs:
- * @li kyes: A tensor. Must be int64 type.
  * @li table_id: A tensor. Must be int32 type.
+ * @li keys: A tensor. Must be int64 type.
  * @li values: A Tensor. Must be float32 type.
  * @par Attributes:
  * @li tag: A required integer identifying the hccl operator tag.
@@ -1145,6 +1145,72 @@ REG_OP(HcomCollRemoteUpdate)
     .REQUIRED_ATTR(max_num, Int)
     .REQUIRED_ATTR(embedding_dim, Int)
     .OP_END_FACTORY_REG(HcomCollRemoteUpdate)
+
+/**
+ * @brief Workers all find and get the corresponding value from the corresponding ps according to the keys. Used with
+ * HcomCollRemoteUpdatePaired.
+ * @par Inputs:
+ * @li table_id: A tensor. Must be int32 type.
+ * @li keys: A tensor. Must be int64 type.
+ * @par Outputs:
+ * @li values: A Tensor. Must be float32 type.
+ * @li indices: A Tensor. Recovery matrix. Must be int64 type.
+ * @li num_uniqued: A Tensor. Number of Recovery matrix. Must be int64 type.
+ * @li ps_segments: A Tensor. Offset and size of buffer for pss. Must be int64 type.
+ * @li ps_segments_num: A Tensor. Number of ps_segments. Must be int64 type.
+ * @par Attributes:
+ * @li tag: A required integer identifying the hccl operator tag.
+ * @li insert_option: Indicates whether lookup supports new value. Defaults to "0".
+ * @li group: A string identifying the group name of ranks participating in
+  the op. Defaults to "hccl_world_group".
+ * @li max_num: A required integer identifying the keys max num.
+ * @li embedding_dim: A required integer identifying Apply memory usage for output or infer shape.
+ */
+REG_OP(HcomCollRemoteLookupPaired)
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .OUTPUT(values, TensorType({DT_FP32}))
+    .OUTPUT(indices, TensorType({DT_INT64}))
+    .OUTPUT(num_uniqued, TensorType({DT_INT64}))
+    .OUTPUT(ps_segments, TesnorType({DT_INT64}))
+    .OUTPUT(ps_segments_num, TesnorType({DT_INT64}))
+    .REQUIRED_ATTR(tag, Int)
+    .ATTR(insert_option, Int, 0)
+    .ATTR(group, String, "hccl_world_group")
+    .REQUIRED_ATTR(max_num, Int)
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .OP_END_FACTORY_REG(HcomCollRemoteLookupPaired)
+
+/**
+ * @brief Workers send the keys and values to ps according to keys. Used with HcomCollRemoteLookupPaired.
+ * @par Inputs:
+ * @li table_id: A tensor. Must be int32 type.
+ * @li keys: A tensor. Must be int64 type.
+ * @li values: A Tensor. Must be float32 type.
+ * @li indices: A Tensor. Recovery matrix. Must be int64 type.
+ * @li num_uniqued: A Tensor. Number of Recovery matrix. Must be int64 type.
+ * @li ps_segments: A Tensor. Offset and size of buffer for pss. Must be int64 type.
+ * @li ps_segments_num: A Tensor. Number of ps_segments. Must be int64 type.
+ * @par Attributes:
+ * @li tag: A required integer identifying the hccl operator tag.
+ * @li group: A string identifying the group name of ranks participating in
+  the op. Defaults to "hccl_world_group".
+ * @li max_num: A required integer identifying the keys max num.
+ * @li embedding_dim: Apply memory usage for output or infer shape.
+ */
+REG_OP(HcomCollRemoteUpdatePaired)
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .INPUT(values, TensorType({DT_FP32}))
+    .INPUT(indices, TesnorType({DT_INT64}))
+    .INPUT(num_uniqued, TesnorType({DT_INT64}))
+    .INPUT(ps_segments, TesnorType({DT_INT64}))
+    .INPUT(ps_segments_num, TesnorType({DT_INT64}))
+    .REQUIRED_ATTR(tag, Int)
+    .ATTR(group, String, "hccl_world_group")
+    .REQUIRED_ATTR(max_num, Int)
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .OP_END_FACTORY_REG(HcomCollRemoteUpdatePaired)
 
 /**
  * @brief Calculate that aggregates input data
@@ -1222,8 +1288,8 @@ REG_OP(ThreeNN)
 
  * @par Inputs:
  * Three inputs, including:
- * @li points: the shape is [M, C], points[:3] contain xyz points and points[3:] contain other information. 
- * @li voxel_size: the size of voxel with the shape of [3]. 
+ * @li points: the shape is [M, C], points[:3] contain xyz points and points[3:] contain other information.
+ * @li voxel_size: the size of voxel with the shape of [3].
  * @li coors_range:the coordinate range of voxel with the shape of [6]. \n
 
  * @par Outputs:
@@ -1236,7 +1302,7 @@ REG_OP(ThreeNN)
  * @par Attributes:
  * Three attrs, including:
  * @li max_points: maximum points contained in a voxel.
- * @li max_voxels: maximum voxels this op create. 
+ * @li max_voxels: maximum voxels this op create.
  * @li deterministic: An optional attr, only support true now, false is faster. \n
 
  * @par Third-party framework compatibility
@@ -1260,7 +1326,7 @@ REG_OP(Voxelization)
 
  * @par Inputs:
  * Two inputs, including:
- * @li x: Input features with shape [num_output_planes, num_input_planes, num_orientations, H, W]. 
+ * @li x: Input features with shape [num_output_planes, num_input_planes, num_orientations, H, W].
  * @li indices: Indices with shape [num_orientations, H, W, num_rotations]. \n
 
  * @par Outputs:
@@ -1420,7 +1486,7 @@ REG_OP(RGB2YUV422)
     .INPUT(rgb, TensorType({DT_UINT8}))
     .OUTPUT(yuv, TensorType({DT_UINT8}))
     .OP_END_FACTORY_REG(RGB2YUV422)
-    
+
 /**
 * @brief Function FlashAttentionScore. \n
 
@@ -1444,7 +1510,7 @@ REG_OP(RGB2YUV422)
 * @li value_transpose: A bool. If True, changes the shape of "mid_data" from [K, M] to
  [M, K].
 * @li scale_value: A float.
-* @li keep_prob: A float. 
+* @li keep_prob: A float.
  * @li is_transpose_out: A bool. If True, changes the shape of "value" from [N, K] to
  [K, N].
  * @li is_flash: A bool. If True, changes the shape of "value" from [N, K] to
@@ -1461,17 +1527,17 @@ REG_OP(RGB2YUV422)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(FlashAttentionScore)
-    .INPUT(query, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .INPUT(key, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .INPUT(value, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1,DT_UINT8}))
-    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(softmax_max, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(softmax_sum, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(softmax_out, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(attention_out, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(softmax_max, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(softmax_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .ATTR(query_transpose, Bool, false)
     .ATTR(key_transpose, Bool, false)
     .ATTR(value_transpose, Bool, false)
@@ -1530,21 +1596,21 @@ REG_OP(FlashAttentionScore)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(FlashAttentionScoreGrad)
-    .INPUT(query, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .INPUT(key, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .INPUT(value, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .INPUT(dy, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1,DT_UINT8}))
-    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16,DT_FLOAT32}))    
-    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(dq, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(dk, TensorType({DT_FLOAT16,DT_FLOAT32}))
-    .OUTPUT(dv, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(dq, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(dk, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(dv, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .ATTR(scale_value, Float, 1.0)
     .ATTR(keep_prob, Float, 1.0)
     .ATTR(query_transpose, Bool, false)

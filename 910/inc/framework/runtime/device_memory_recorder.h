@@ -23,6 +23,14 @@
 #include "toolchain/prof_api.h"
 
 namespace gert {
+  struct MemoryRecorder {
+    int64_t size;
+    uint64_t addr;
+    uint64_t total_allocate_memory;
+    uint64_t total_reserve_memory;
+    uint64_t time_stamp;
+  };
+
   class DeviceMemoryRecorder {
    public:
     static uint64_t GetTotalAllocateMemory() { return total_allocate_memory_.load(); }
@@ -33,12 +41,12 @@ namespace gert {
     static void ReduceTotalAllocateMemory(const uint64_t &num) { total_allocate_memory_ -= num; }
     static void ClearReserveMemory() { total_reserve_memory_.store(0UL); }
     static void SetRecorder(const void *const addr, const int64_t size);
-    static const MsprofMemoryInfo GetRecorder();
+    static const MemoryRecorder GetRecorder();
     static bool IsRecorderEmpty();
    private:
     static std::atomic<uint64_t> total_allocate_memory_;
     static std::atomic<uint64_t> total_reserve_memory_;
-    static std::queue<MsprofMemoryInfo> memory_record_queue_;
+    static std::queue<MemoryRecorder> memory_record_queue_;
     static std::mutex mtx_;
   };
 }

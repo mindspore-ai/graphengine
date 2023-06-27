@@ -553,7 +553,7 @@ ACL_FUNC_VISIBILITY aclError aclmdlExecuteV2(uint32_t modelId, const aclmdlDatas
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY  aclError aclmdlExecuteAsyncV2(uint32_t modelId, const aclmdlDataset *input, aclmdlDataset *output,
-                                                   aclrtStream stream, aclmdlExecConfigHandle *handle);
+                                                   aclrtStream stream, const aclmdlExecConfigHandle *handle);
 /**
  * @ingroup AscendCL
  * @brief Execute model asynchronous inference until the inference result is returned

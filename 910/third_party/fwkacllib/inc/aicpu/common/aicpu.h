@@ -325,6 +325,7 @@ struct aicpu_system_config {
     unsigned long long stl_va;
     unsigned int stl_ssid;
     unsigned int aos_flag;
+    unsigned int stl_test_period;
 };
 
 #define SYSTEM_CONFIG_PHY ((struct aicpu_system_config *)SYSTEM_CONFIG_BASE)

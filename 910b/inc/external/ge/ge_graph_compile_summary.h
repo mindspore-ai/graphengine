@@ -21,7 +21,6 @@
 #include <vector>
 #include "ge_api_types.h"
 #include "ge_error_codes.h"
-#include "graph/tensor.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY CompiledGraphSummary {

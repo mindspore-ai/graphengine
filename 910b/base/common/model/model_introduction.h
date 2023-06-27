@@ -47,19 +47,12 @@ class ModelIntroduction {
   void ConstructNameOrder();
   void ConstructDynamicOutShape();
 
-  static Status CreateOutput(const uint32_t index, const OpDescPtr &op_desc, ModelTensorDesc &output,
-                            uint32_t &format_result);
+  static Status CreateOutput(const uint32_t index, const OpDescPtr &op_desc, ModelTensorDesc &output);
   static Status CreateInputDimsInfo(const OpDescPtr &op_desc, ModelTensorDesc &model_tensor_desc);
-  bool CopyModelBuffer(void *dst_addr, uint32_t &dst_len, const void *src_addr, const uint32_t &src_len) {
-    (void)dst_addr;
-    (void)dst_len;
-    (void)src_addr;
-    (void)src_len;
-    return true;
-  }
   Status GetDynamicInfoFromCase(int32_t &dynamic_type, std::vector<std::vector<int64_t>> &batch_info);
   void TlvBlockSize(BaseTlvBlock &tlv_block);
-  static Status SaveTlvBlock(BaseTlvBlock &tlv_block, ModelDescType type, uint8_t **write_addr, size_t &left_size);
+  static Status SaveTlvBlock(BaseTlvBlock &tlv_block, const ModelDescType type, uint8_t **const write_addr,
+                             size_t &left_size);
 
   uint32_t total_size_ = 0;
   std::shared_ptr<uint8_t> buff_;

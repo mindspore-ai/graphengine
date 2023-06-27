@@ -147,6 +147,13 @@ constexpr size_t kDSAArgsInputAddrSize = 4U;
 constexpr size_t kDSAStateInputAddrSize = 5U;
 constexpr size_t k32Bits = 32U;
 
+// mix
+constexpr size_t kMixMultiKernelPcAddrCnt = 1U;
+constexpr size_t kMixSingleKernelPcAddrCnt = 2U;
+constexpr size_t kMixSingleOnlyKernelPcAddrCnt = 1U;
+constexpr size_t kMixSingleKernelAicPcIndex = 0U;
+constexpr size_t kMixSingleKernelAivPcIndex = 1U;
+
 // Data cache, including data address and length
 struct DataBuffer {
   void *data;       // Data address
@@ -390,10 +397,16 @@ struct OpDescInfoId {
   uint32_t thread_id;
 
   OpDescInfoId(): task_id(0U), stream_id(0U), context_id(UINT32_MAX), thread_id(UINT32_MAX) {}
-  OpDescInfoId(uint32_t task_id, uint32_t stream_id)
-      : task_id(task_id), stream_id(stream_id), context_id(UINT32_MAX), thread_id(UINT32_MAX) {}
-  OpDescInfoId(uint32_t task_id, uint32_t stream_id, uint32_t context_id, uint32_t thread_id)
-      : task_id(task_id), stream_id(stream_id), context_id(context_id), thread_id(thread_id) {}
+  OpDescInfoId(const uint32_t task, const uint32_t stream)
+      : OpDescInfoId() {
+    task_id = task;
+    stream_id = stream;
+  }
+  OpDescInfoId(const uint32_t task, const uint32_t stream, const uint32_t context, const uint32_t thread)
+      : OpDescInfoId(task, stream) {
+    context_id = context;
+    thread_id = thread;
+  }
 };
 
 struct OpDescInfo {
@@ -481,7 +494,6 @@ const char_t *const OPTION_NUMA_CONFIG = "ge.numaConfig";
 
 // 7: config format mode(expirimental option)
 const char_t *const OPTION_EXEC_FORMAT_MODEL = "ge.exec.formatMode";
-enum FormatModel { INNER_PRIVATE_FORMAT, ORIGINAL_FORMAT };
 
 const std::set<std::string> ir_builder_suppported_options_inner = {EVALUATE_GRAPH_RESOURCE_MODE,
                                                                    ENABLE_GRAPH_PARALLEL,

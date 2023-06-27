@@ -169,7 +169,7 @@ class GraphNode {
   void SetLoadRecord(const uint32_t record) { load_record_ = record; }
   void IncreaseLoadCount();
   void SetLoaded();
-  void SetFeatureBaseRefreshable(bool refreshable) { is_feature_base_refreshable_ = refreshable; }
+  void SetFeatureBaseRefreshable(const bool refreshable) { is_feature_base_refreshable_ = refreshable; }
   bool IsFeatureBaseRefreshable() const { return is_feature_base_refreshable_; }
   void SetConstMemoryBase(const void * const memory, const size_t size) {
     const_mem_ = std::make_pair(memory, size);
@@ -193,10 +193,10 @@ class GraphNode {
   bool IsAppRefreshFeatureMemory() const {
     return app_refresh_feature_memory_flag_;
   }
-  void SetConstMemBlock(MemBlock *const_mem_block) {
+  void SetConstMemBlock(MemBlock *const const_mem_block) {
     const_mem_block_ = const_mem_block;
   }
-  void SetFeatureMemBlock(MemBlock *feature_mem_block) {
+  void SetFeatureMemBlock(MemBlock *const feature_mem_block) {
     feature_mem_block_ = feature_mem_block;
   }
   MemBlock *GetConstMemBlock() {
@@ -211,13 +211,13 @@ class GraphNode {
   void SetTensorSize(size_t tensor_size) {
     tensor_sizes_.emplace_back(tensor_size);
   }
-  std::vector<size_t> &GetTensorSize() {
+  const std::vector<size_t> &GetTensorSize() {
     return tensor_sizes_;
   }
-  void SetGeTensorDescPtr(GeTensorDescPtr ge_tensor_desc) {
+  void SetGeTensorDescPtr(GeTensorDescPtr &ge_tensor_desc) {
     ge_tensor_descs_.emplace_back(ge_tensor_desc);
   }
-  std::vector<GeTensorDescPtr> &GetGeTensorDescPtr() {
+  const std::vector<GeTensorDescPtr> &GetGeTensorDescPtr() {
     return ge_tensor_descs_;
   }
   bool IsSavedNetOutputTensorInfoFlag() const {

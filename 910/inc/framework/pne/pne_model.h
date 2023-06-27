@@ -102,6 +102,11 @@ class PneModel {
   }
 
   inline const std::shared_ptr<ModelCompileResource> GetCompileResource() const { return compile_resource_; }
+
+  inline void SetDeviceId(const int32_t device_id) { device_id_ = device_id; }
+
+  inline int32_t GetDeviceId() const { return device_id_; }
+
  public:
   virtual Status SerializeModel(ModelBufferData &model_buff) = 0;
 
@@ -127,6 +132,7 @@ class PneModel {
   std::string model_name_;
   std::string model_type_;
   uint32_t model_id_ = INVALID_MODEL_ID;
+  int32_t device_id_ = -1;
 };
 
 using PneModelPtr = std::shared_ptr<PneModel>;

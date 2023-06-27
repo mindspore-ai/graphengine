@@ -262,6 +262,7 @@ class DeployPlannerBase {
                                        const std::string &model_instance_name);
   std::string GetEndpointFullName(const DeployPlan::QueueInfo &endpoint_info, const ModelQueueIndex &model_queue_index);
   const std::string &GetSubmodelType(const std::string &name);
+  bool CheckAndAddRelation(const int32_t src_endpoint_idx, const int32_t dst_endpoint_idx);
 
   DeployPlan deploy_plan_;
   ModelRelation model_relation_;
@@ -292,6 +293,7 @@ class DeployPlannerBase {
   std::map<std::string, std::string> short_names_;
   std::map<std::string, std::string> instance_to_model_name_;
   std::map<std::string, std::set<std::string>> deploy_to_devlist_;
+  std::set<std::string> relations_;  // key: src_endpoint_index_to_dst_endpoint_index
   static std::atomic<int64_t> plan_id_gen_;
 };
 

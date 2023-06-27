@@ -42,6 +42,9 @@ class AllocatorManager {
     return ge::SUCCESS;
   }
   virtual void Finalize() {};
+  virtual void ReleaseResource(const uint32_t device_id = 0U) {
+    (void)device_id;
+  }
   virtual ge::Allocator *CreateAllocator(const uint32_t device_id, const rtMemType_t memory_type) {
     (void)device_id;
     (void)memory_type;

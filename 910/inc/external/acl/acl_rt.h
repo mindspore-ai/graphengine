@@ -121,6 +121,13 @@ typedef struct aclrtStreamConfigHandle {
     uint32_t priority;
 } aclrtStreamConfigHandle;
 
+typedef struct aclrtUtilizationInfo {
+    int32_t cube;
+    int32_t vector;
+    int32_t aicpu;
+    int32_t memory;
+} aclrtUtilizationInfo;
+
 typedef struct tagRtGroupInfo aclrtGroupInfo;
 
 typedef struct rtExceptionInfo aclrtExceptionInfo;
@@ -483,6 +490,17 @@ ACL_FUNC_VISIBILITY aclError aclrtSynchronizeDevice(void);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtSetTsDevice(aclrtTsId tsId);
+
+/**
+ * @ingroup AscendCL
+ * @brief Query the comprehensive usage rate of device
+ * @param deviceId [IN] the need query's deviceId
+ * @param utilizationInfo [OUT] the usage rate of device
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtGetDeviceUtilizationRate(int32_t deviceId, aclrtUtilizationInfo *utilizationInfo);
 
 /**
  * @ingroup AscendCL

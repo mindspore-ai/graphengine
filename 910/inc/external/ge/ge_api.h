@@ -289,13 +289,13 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] stream stream handle
   /// @param [in] allocator_obj allocator object handle
   /// @return Status result of function
-  Status RegisterExternalAllocator(const void *const stream, AllocatorPtr allocator);
+  Status RegisterExternalAllocator(const void *const stream, AllocatorPtr allocator) const;
 
   /// @ingroup ge_graph
   /// @brief unregister external allocator to GE.
   /// @param [in] stream stream handle
   /// @return Status result of function
-  Status UnregisterExternalAllocator(const void *const stream);
+  Status UnregisterExternalAllocator(const void *const stream) const;
 
  private:
   uint64_t sessionId_;

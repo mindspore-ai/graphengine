@@ -144,6 +144,8 @@ class GE_FUNC_VISIBILITY GeGenerator {
                                const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
                                std::vector<GeTensor> &inputs_dynamic,
                                std::vector<GeTensor> &outputs_dynamic);
+  Status ResetOutputShapeRange(const OpDescPtr &op_desc, const size_t index,
+                               std::vector<std::pair<int64_t, int64_t>> &shape_range);
   Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic,
                          std::vector<std::pair<int64_t, int64_t>> &dynamic_shape_range);
 

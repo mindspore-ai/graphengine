@@ -16,8 +16,8 @@
 #ifndef GE_COMMON_EXTERNAL_ALLOCATOR_MANAGER_H
 #define GE_COMMON_EXTERNAL_ALLOCATOR_MANAGER_H
 
-#include "mutex"
-#include "map"
+#include <mutex>
+#include <map>
 #include "ge/ge_allocator.h"
 
 namespace ge {

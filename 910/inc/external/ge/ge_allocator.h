@@ -19,20 +19,6 @@
 #include <cstdlib>
 #include <memory>
 namespace ge {
-typedef void *(*AllocFunc)(void *obj, size_t size);
-typedef void (*FreeFunc)(void *obj, void *block);
-typedef void *(*AllocAdviseFunc)(void *obj, size_t size, void *addr);
-typedef void *(*GetAddrFromBlockFunc)(void *block);
-
-using AllocatorDesc = struct AllocatorDesc {
-    AllocFunc alloc_func;
-    FreeFunc free_func;
-    AllocAdviseFunc alloc_advise_func;
-    GetAddrFromBlockFunc get_addr_from_block_func;
-
-    void *obj;
-};
-
 class MemBlock;
 class Allocator {
  public:
@@ -65,6 +51,9 @@ class MemBlock {
   size_t GetSize() const {
     return block_size_;
   }
+  void SetSize(size_t mem_size) {
+    block_size_ = mem_size;
+  }
   void Free() {
     if (GetCount() > 0U) {
       if (SubCount() == 0U) {
@@ -82,7 +71,6 @@ class MemBlock {
   size_t GetCount() const {
     return count_;
   }
-
  private:
   Allocator &allocator_;
   void *addr_;

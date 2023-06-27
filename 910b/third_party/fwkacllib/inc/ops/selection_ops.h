@@ -44,10 +44,10 @@ namespace ge {
 * Compatible with the TensorFlow operator Range.
 */
 REG_OP(Range)
-    .INPUT(start, TensorType({DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
-    .INPUT(limit, TensorType({DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
-    .INPUT(delta, TensorType({DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
+    .INPUT(start, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
+    .INPUT(limit, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
+    .INPUT(delta, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
     .OP_END_FACTORY_REG(Range)
 
 /**

@@ -333,7 +333,8 @@ class ProfLaunchTypeRegistry {
     (void)gert::GlobalProfilingWrapper::ProfileStepTrace(request_id, item_id, tag_id, stream); \
   } while (false)
 #define REGISTER_PROF_TYPE(type) const gert::ProfLaunchTypeRegistry type##prof_type_registry(#type)
-#define GE_ASSERT_MSPROF_OK(v, ...) GE_ASSERT(((v) == MSPROF_ERROR_NONE), __VA_ARGS__)
+#define GE_ASSERT_MSPROF_OK(v, ...) \
+  GE_ASSERT((((v) == MSPROF_ERROR_NONE) || ((v) == MSPROF_ERROR_UNINITIALIZE)), __VA_ARGS__)
 #define RT2_PROFILING_SCOPE(element, event) gert::ScopeProfiler profiler((element), event)
 #define RT2_PROFILING_SCOPE_CONST(element, event) const gert::ScopeProfiler profiler((element), (event))
 #define RT2_PROFILING_SCOPE_ELEMENT(element) profiler.SetElement(element)

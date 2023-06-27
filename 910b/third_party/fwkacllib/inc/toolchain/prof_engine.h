@@ -150,22 +150,6 @@ public:
 
 /**
  * @ingroup EngineMgr
- * @name  : RegisterEngine
- * @brief : API of libmsprof, register an engine with a name
- * @param module [IN] const std::string the name of plugin
- * @param engine [IN] const EngineIntf* the plugin
- * @retval PROFILING_SUCCESS 0 (success)
- * @retval PROFILING_FAILED -1 (failed)
- *
- * @par depend:
- * @li libmsprof
- * @li prof_engine.h
- * @since c60
- */
-MSVP_PROF_API int RegisterEngine(const std::string &module, const EngineIntf *engine);
-
-/**
- * @ingroup EngineMgr
  * @name  : Init
  * @brief : API of libmsprof, init an engine with a name
  * @param module [IN] const std::string  the name of plugin

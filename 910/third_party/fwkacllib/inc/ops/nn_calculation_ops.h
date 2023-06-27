@@ -814,6 +814,11 @@ REG_OP(Conv2DBackpropFilterD)
 * The W dimension of the input image supports cases exceeding 4096, but it may
 * cause compilation errors.
 *\n
+* If any dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647),
+* the product of each dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647) or
+* the value of stride/padding/dilation/offset_x exceeds the range in the above table,
+* the correctness of the function cannot be guaranteed.
+*\n
 *
 *@par Outputs:
 * y: A 4D Tensor of output feature map. Has the same type as "x". With the
@@ -921,14 +926,14 @@ REG_OP(Conv2DCompress)
 *@brief Computes a 2D deformable convolution given 4D "x", "filter" and
 * "offsets" tensors.
 *@par Inputs:
-*@li x: A 4D tensor of input image. With the format "NHWC", the data is stored
-* in the order of: [batch, in_height, in_width, in_channels].
+*@li x: A 4D tensor of input image. With the format "NCHW", the data is stored
+* in the order of: [batch, in_channels, in_height, in_width].
 *@li filter: A 4D tensor of learnable filters. Must have the same type as "x".
-* With the format "HWCN" , the data is stored in the order of: [filter_height,
-* filter_width, in_channels / groups, out_channels].
+* With the format "NCHW" , the data is stored in the order of: [out_channels,
+* in_channels / groups, filter_height, filter_width].
 *@li offsets: A 4D tensor of x-y coordinates offset and mask. With the format
-* "NHWC", the data is stored in the order of: [batch, out_height, out_width,
-* deformable_groups * filter_height * filter_width * 3].
+* "NCHW", the data is stored in the order of: [batch,
+* deformable_groups * filter_height * filter_width * 3, out_height, out_width].
 *@li bias: An optional 1D tensor of additive biases to the filter outputs.
 * The data is stored in the order of: [out_channels].
 *\n
@@ -941,7 +946,6 @@ REG_OP(Conv2DCompress)
 | Data Type | float16 | float16 | float16 | float16 | float16 |\n
 |           | float32 | float32 | float32 | float32 | float32 |\n
 | Format    | NCHW    | NCHW    | NCHW    | ND      | NCHW    |\n
-|           | NHWC    | HWCN    | NCHW    |         | NHWC    |\n
 *\n
 * For float32 type, the actual convolution calculation part on the chip is
 * based on float16.
@@ -981,8 +985,8 @@ REG_OP(Conv2DCompress)
 *
 *@par Outputs:
 * y:  A 4D Tensor of output feature map. Has the same type as "x". With the
-* format "NHWC", the data is stored in the order of: [batch, out_height,
-* out_width, out_channels].
+* format "NCHW", the data is stored in the order of: [batch, out_channels,
+* out_height, out_width].
 *\n
 *     out_height = (in_height + pad_top + pad_bottom -
 *                   (dilation_h * (filter_height - 1) + 1))
@@ -997,9 +1001,6 @@ REG_OP(Conv2DCompress)
 *@li No
 *
 *@par Third-party framework compatibility
-*@li Compatible with the Mxnet operator "DeformableConvolution".
-*@li Compatible with the Paddlepaddle operator "deformable_conv".
-*@li Compatible with the Mmcv operator "deform_conv".
 */
 REG_OP(DeformableConv2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

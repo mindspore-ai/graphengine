@@ -387,6 +387,31 @@ REG_OP(Rotate)
     .ATTR(data_format, String, "HWC")
     .DATATYPE(T, TensorType({DT_UINT8, DT_FLOAT}))
     .OP_END_FACTORY_REG(Rotate)
+
+/**
+* @brief Applies crop to image. \n
+
+* @par Inputs:
+* @li x: An tensor of at least 3 dimensions, type must be float32 or uint8. \n
+* @li boxes: A Tensor. Must be uint32. A 2-D tensor of shape [num_boxes, 4],
+4 numbers represent [left, top, left+width, top+height].
+* @li box_index: A Tensor of type uint32. A 1-D tensor of shape [num_boxes] with
+int32 values in [0, batch).\n
+
+* @par Attributes:
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "CHW".
+Value used for inferring real format of images.
+
+* @par Outputs:
+* y: output tensor, NHWC or NCHW, type must be float32 or uint8. \n
+*/
+REG_OP(ImgCrop)
+    .INPUT(x, TensorType({DT_FLOAT, DT_UINT8}))
+    .INPUT(boxes, TensorType({DT_UINT32}))
+    .INPUT(box_index, TensorType({DT_UINT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8}))
+    .ATTR(data_format, String, "CHW")
+    .OP_END_FACTORY_REG(ImgCrop)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_H_

@@ -167,13 +167,20 @@ class VarResource {
 
   rtMemType_t GetVarMemType(const int64_t offset);
 
-  VarDevAddrMgr *GetVarMgrInfo(const int64_t offset);
+  void UpdateDevVarMgrInfo(const uint32_t device_id);
 
-  std::unordered_map<uint64_t, VarDevAddrMgr> &GetAllVarMgrInfo() { return var_dev_addr_mgr_map_; }
+  VarDevAddrMgr *GetVarMgrInfo(const uint32_t device_id, const int64_t offset);
 
-  ge::Status CheckLogicAddrVaild(const uint8_t *const logic_addr, uint64_t &inner_offset_tmp, uint64_t &logic_addr_tmp);
+  std::map<uint32_t, std::unordered_map<uint64_t, VarDevAddrMgr>> &GetAllDevVarMgrInfo() {
+    return device_id_to_var_dev_addr_mgr_map_;
+  }
 
-  Status SetVarMgrDevAddr(const int64_t offset, uint8_t *const dev_addr);
+  ge::Status CheckLogicAddrVaild(const uint32_t device_id,
+                                 const uint8_t *const logic_addr,
+                                 uint64_t &inner_offset_tmp,
+                                 uint64_t &logic_addr_tmp);
+
+  Status SetVarMgrDevAddr(const uint32_t device_id, const int64_t offset, uint8_t *const dev_addr);
 
   std::unordered_map<std::string, ge::GeTensorDesc> GetAllVarDesc() const { return cur_var_tensor_desc_map_; }
 
@@ -202,6 +209,7 @@ class VarResource {
   std::unordered_map<std::string, ge::GeTensorDesc> cur_var_tensor_desc_map_;
   std::unordered_map<std::string, std::vector<TransNodeInfo>> var_to_trans_road_;
   std::unordered_map<uint64_t, VarDevAddrMgr> var_dev_addr_mgr_map_;
+  std::map<uint32_t, std::unordered_map<uint64_t, VarDevAddrMgr>> device_id_to_var_dev_addr_mgr_map_;
   std::map<std::string, uint32_t> var_names_to_changed_graph_id_;
   std::map<uint32_t, std::set<std::string>> graph_id_to_changed_var_names_;
   std::map<uint32_t, std::map<std::string, ge::GeTensorDesc>> graph_id_to_staged_var_desc_;

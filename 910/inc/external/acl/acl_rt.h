@@ -1130,17 +1130,6 @@ ACL_FUNC_VISIBILITY aclError aclrtSetOpWaitTimeout(uint32_t timeout);
 
 /**
  * @ingroup AscendCL
- * @brief Set the timeout interval for op executing
- *
- * @param timeout [IN]   op execute timeout
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
-ACL_FUNC_VISIBILITY aclError aclrtSetOpExecuteTimeOut(uint32_t timeout);
-
-/**
- * @ingroup AscendCL
  * @brief enable or disable overflow switch on some stream
  * @param stream [IN]   set overflow switch on this stream
  * @param flag [IN]  0 : disable 1 : enable

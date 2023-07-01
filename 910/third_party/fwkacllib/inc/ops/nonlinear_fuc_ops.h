@@ -553,7 +553,7 @@ REG_OP(ReluGrad)
 *@par Inputs:
 * Two inputs, including:
 *@li gradients: A Tensor. Must be one of the following types: float32, double, int32, int8, int16,  int8, int64, uint16, float16, uint32, uint64
-* @li mask: A Tensor. Must be the following types: uint8, uint1
+*@li mask: A Tensor. Must be the following types: uint8, uint1
 
 *@par Outputs:
 *backprops: A Tensor. Must have the same type as"gradients" . \n
@@ -585,7 +585,7 @@ REG_OP(ReluGradV2)
 *
 *@par Outputs:
 *@li y: A tensor. Has the same type as "x".
-* @li mask: A tensor of type uint8 or uint1.
+*@li mask: A tensor of type uint8 or uint1.
 *
 *@par Third-party framework compatibility
 * Incompatible with TensorFlow or Caffe.

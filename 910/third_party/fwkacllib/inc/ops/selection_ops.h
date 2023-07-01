@@ -164,7 +164,7 @@ REG_OP(TileD)
 * @li indices: A Tensor of type int32 or int64.
 
 * @par Attributes:
-* negative_index_support: An optional bool. Defaults to false.
+* negative_index_support: Whether to support negative index, An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x".
@@ -196,7 +196,7 @@ REG_OP(GatherNd)
 * @par Attributes:
 * batch_dims: An optional int. Defaults to 0.
 * is_preprocessed: An optional bool. Defaults to false.
-* negative_index_support: An optional bool. Defaults to false.
+* negative_index_support: Whether to support negative index, An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x".
@@ -1358,7 +1358,7 @@ REG_OP(StridedSliceAssignD)
 * @li validate_indices: A bool specifying whether to verify the argument of "indice" .
 * @li batch_dims: An optional int. Defaults to 0.
 * @li is_preprocessed: An optional bool. Defaults to false.
-* @li negative_index_support: An optional bool. Defaults to false.
+* @li negative_index_support: Whether to support negative index, An optional bool. Defaults to false.
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x" .

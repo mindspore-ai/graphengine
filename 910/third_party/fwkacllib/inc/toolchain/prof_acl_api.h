@@ -154,15 +154,6 @@ MSVP_PROF_API int aclprofSetStampPayload(void *stamp, const int32_t type, void *
 
 /**
 * @ingroup AscendCL
-* @brief set stamp tag name
-*
-*
-* @retval void
-*/
-MSVP_PROF_API int aclprofSetStampTagName(void *stamp, const char *tagName, uint16_t len);
-
-/**
-* @ingroup AscendCL
 * @brief set category and name
 *
 *

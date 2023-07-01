@@ -45,55 +45,48 @@ class HeterogeneousVarManager {
   ~HeterogeneousVarManager() = default;
 
   void SetInitGraphNode(const GraphNodePtr &graph_node);
-  std::vector<GraphNodePtr> GetInitGraphNodes() const;
+  const std::map<uint32_t, GraphNodePtr> &GetInitGraphNodes() const;
   bool IsSuspended(const uint32_t graph_id) const;
 
   const DeploymentInfo *GetVarDeployment(const std::string &var_name) const;
   void UpdateVarDeployments(const std::map<std::string, DeploymentInfo> &var_deployments);
-  Status RegisterInitModel(const FlowModelPtr &flow_model, const std::vector<size_t> &data_indices, const bool is_last);
+  Status RegisterInitModel(const FlowModelPtr &flow_model, const std::vector<size_t> &data_indices);
 
   Status RecordInitOp(const uint32_t graph_id, const std::vector<GeTensor> &inputs);
   Status LoadPendingModels(const LoadModelFunc &load_model_func);
   Status ExecutePendingInitOps(const ExecModelFunc &execute_model_func);
-  Status UnloadGraph(const uint32_t graph_id, const UnloadModelFunc &unload_model_func);
-  Status UnloadPartialModels(const uint32_t graph_id, const UnloadModelFunc &unload_model_func);
+  Status UnloadGraph(const uint32_t graph_id, const UnloadModelFunc &load_model_func);
 
  private:
   struct VarState {
-    int32_t state = 0;
+    int32_t state;
     DeploymentInfo deployment_info;
   };
 
   struct InitVarOperation {
-    uint32_t graph_id = 0U;
+    uint32_t graph_id;
     std::vector<GeTensor> inputs;
   };
 
   struct PartialModel {
-    uint32_t model_id = UINT32_MAX;
+    uint32_t model_id;
     FlowModelPtr flow_model;
     std::vector<size_t> input_indices;
-    std::vector<InitVarOperation> pending_init_operations;
-  };
-
-  struct InitGraphState {
-    GraphNodePtr graph_node;
-    std::vector<InitVarOperation> pending_init_operations;  // owning tensor data
-    std::vector<PartialModel> partial_models;
-    bool is_completed = false;
   };
 
   static Status GetPartialModelInput(const PartialModel &partial_model,
                                      const std::vector<GeTensor> &inputs,
                                      std::vector<GeTensor> &partial_inputs);
 
-  static Status ExecutePendingInitOps(const uint32_t graph_id,
-                                      InitGraphState &init_graph_state,
-                                      const ExecModelFunc &execute_model_func);
+  Status ExecutePendingInitOps(const uint32_t graph_id,
+                               std::vector<PartialModel> &partial_models,
+                               std::vector<InitVarOperation> &init_ops,
+                               const ExecModelFunc &execute_model_func);
 
   std::map<std::string, VarState> var_deployments_;
-  std::map<uint32_t, InitGraphState> init_graph_states_;
-  std::vector<uint32_t> ordered_init_graph_ids_;
+  std::map<uint32_t, GraphNodePtr> graph_nodes_;
+  std::map<uint32_t, std::vector<InitVarOperation>> pending_init_operations_;
+  std::map<uint32_t, std::vector<PartialModel>> graph_id_to_partial_models_;
 
   static std::mutex mu_;
   static std::map<uint64_t, std::shared_ptr<HeterogeneousVarManager>> var_manager_map_;

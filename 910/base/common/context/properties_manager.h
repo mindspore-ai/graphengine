@@ -74,7 +74,7 @@ class PropertiesManager {
  private:
   // Private construct, destructor
   PropertiesManager();
-  ~PropertiesManager() = default;
+  ~PropertiesManager();
 
   // Get file content
   bool LoadFileContent(const std::string &file_path);
@@ -85,10 +85,10 @@ class PropertiesManager {
   // Remove space before and after string
   std::string TrimStr(const std::string &str) const;
 
-  bool is_inited_ = false;
+  bool is_inited_;
 
   // Configuration item separator, default is "="
-  std::string delimiter{"="};
+  std::string delimiter;
 
   std::map<std::string, std::string> properties_map_;
   std::mutex mutex_;

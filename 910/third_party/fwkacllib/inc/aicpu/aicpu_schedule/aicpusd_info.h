@@ -166,32 +166,20 @@ enum __attribute__((visibility("default"))) ModelType {
     kModelTypeNum
 };
 
-struct __attribute__((visibility("default"))) CommGroup {
-    const char *groupName;
-    uint32_t rankNum;
-    uint32_t *rankIds;
-}__attribute__((packed));
-
-struct __attribute__((visibility("default"))) CommGroups {
-    uint32_t groupNum;
-    CommGroup *groups;
-}__attribute__((packed));
-
 struct __attribute__((visibility("default"))) ModelCfgInfo {
-    uint16_t inBuffPoolSize;       // input buffer pool size
-    uint16_t outBuffPoolSize;      // output buffer pool size
-    uint64_t inBuffSize;           // input buffer size
-    uint64_t outBuffSize;          // output buffer size
-    int32_t tagId;                 // tag id for hccl
-    int32_t rankId;                // rank id for hccl
-    uint64_t rankTableLen;         // rank table length
-    uint64_t rankTableAddr;        // rank table ptr
-    uint64_t roleTableLen;         // cluster spec length
-    uint64_t roleTableAddr;        // role table ptr
+    uint16_t inBuffPoolSize;     // input buffer pool size
+    uint16_t outBuffPoolSize;    // output buffer pool size
+    uint64_t inBuffSize;         // input buffer size
+    uint64_t outBuffSize;        // output buffer size
+    int32_t tagId;               // tag id for hccl
+    int32_t rankId;              // rank id for hccl
+    uint64_t rankTableLen;       // rank table length
+    uint64_t rankTableAddr;       // rank table ptr
+    uint64_t roleTableLen;       // cluster spec length
+    uint64_t roleTableAddr;       // role table ptr
     uint64_t modelCommOpListAddr;  // ModelCommOpList ptr
     uint32_t modelType;
-    uint64_t commGroupsAddr;       // communication groups ptr
-    char rsv[108UL];
+    char rsv[116UL];
 } __attribute__((packed));
 
 struct __attribute__((visibility("default"))) ModelInfo {

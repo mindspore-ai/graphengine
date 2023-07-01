@@ -50,7 +50,6 @@ class ExchangeService {
     int32_t timeout = 0;
     size_t skip_size = 0U;
     MsgInfo *msg_info = nullptr;
-    bool is_shared_input = false;
   };
   ExchangeService() = default;
   ExchangeService(const ExchangeService &) = delete;

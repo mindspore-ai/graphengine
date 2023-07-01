@@ -3383,8 +3383,8 @@ REG_OP(Muls)
 
 *@par Inputs:
 *One input, including:
-* x: A Tensor. Must be one of the following types:float16, float32, float64, int8,
-                                                  int16, int32, int64, uint8, bool.
+*x: A Tensor. Must be one of the following types:float16, float32, float64, int8,
+                                                 int16, int32, int64, uint8, bool.
 
 *@par Outputs:
 *y: A Tensor. Has the same type and shape as "x1". \n

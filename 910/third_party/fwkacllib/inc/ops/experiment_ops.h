@@ -340,14 +340,14 @@ REG_OP(TimeBatch)
 * @li padding: weather to pad when batch is insufficient.
 * @li slide_stride: sliding window step.
 */
-REG_OP(CountBatch)
+REG_OP(AutoBatch)
     .DYNAMIC_INPUT(x, TensorType::RealNumberType())
     .DYNAMIC_OUTPUT(y, TensorType::RealNumberType())
     .REQUIRED_ATTR(batch_size, Int)
     .ATTR(timeout, Int, 0)
     .ATTR(padding, Bool, false)
     .ATTR(slide_stride, Int, 0)
-    .OP_END_FACTORY_REG(CountBatch)
+    .OP_END_FACTORY_REG(AutoBatch)
 
 /**
 * @brief YUVToRGB
@@ -578,49 +578,6 @@ REG_OP(EmbeddingApplyAdam)
     .REQUIRED_ATTR(embedding_dim, Int)
     .OP_END_FACTORY_REG(EmbeddingApplyAdam)
 
-/**
-* @brief embedding hashtable embedding applyadamW. \n
-
-* @par Inputs:
-* @li var_handle: The handle of embedding hashtable.
-* @li beta1_power: A Scalar, dtype is DT_FLOAT16 or DT_FLOAT. 0-D. indicates the beta1's power.
-* @li beta2_power: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta2's power.
-* @li lr: A Scalar, dtype is same as "beta1_power". 0-D. indicates the learning rate.
-* @li weight_decay: A Scalar, dtype is same as "beta1_power". 0-D. indicates the weight decay.
-* @li beta1: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta1 param.
-* @li beta2: A Scalar, dtype is same as "beta1_power". 0-D. indicates the beta2 param.
-* @li epsilon: A Scalar, dtype is same as "beta1_power". 0-D. indicates the small value param.
-* @li grad: A Tensor, dtype is same as "beta1_power". 1-D. indicates the grad.
-* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
-* @li max_grad_norm: A mutable Tensor of the same type as "beta1_power", an optional input. \n
-
-* @par Outputs:
-* @li var_handle: The handle of embedding hashtable. \n
-
-* @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li amsgrad: An optional bool, indicates whether to use the AMSGrad variant of htis algorithm from
-*     the paper On the Convergence of Adam and Beyond(default:False).
-*     If "True", max_grad_norm input and output must be entered.
-* @li maximize: An optional bool, maximize the params based on the objective(default:False). \n
-*/
-REG_OP(EmbeddingApplyAdamW)
-    .INPUT(var_handle, TensorType({DT_RESOURCE}))
-    .INPUT(beta1_power, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(beta2_power, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(weight_decay, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(beta1, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(beta2, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(epsilon, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(keys, TensorType({DT_INT64}))
-    .OPTIONAL_INPUT(max_grad_norm, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(amsgrad, Bool, false)
-    .ATTR(maximize, Bool, false)
-    .OP_END_FACTORY_REG(EmbeddingApplyAdamW)
 /**
 * @brief embedding hashtable export. \n
 
@@ -1190,7 +1147,7 @@ REG_OP(ThreeNN)
 REG_OP(Voxelization)
     .INPUT(points, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
     .INPUT(voxel_size, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
-    .INPUT(coors_range, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
+    .INPUT(coors_range, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
     .OUTPUT(voxels, TensorType({DT_DOUBLE,DT_FLOAT,DT_FLOAT16}))
     .OUTPUT(coors, TensorType({DT_INT32}))
     .OUTPUT(num_points_per_voxel, TensorType({DT_INT32}))

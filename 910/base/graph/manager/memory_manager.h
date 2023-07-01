@@ -39,11 +39,6 @@ class MemoryManager {
 
   virtual uint8_t *GetMemoryAddr(rtMemType_t memory_type, const std::string &memory_key, uint32_t device_id) = 0;
 
-  virtual uint8_t *MallocMemory(rtMemType_t memory_type, const std::string &purpose,
-                                size_t memory_size, uint32_t device_id) = 0;
-
-  virtual Status FreeMemory(rtMemType_t memory_type, void *memory_addr, uint32_t device_id) = 0;
-
   virtual uint8_t *GetRdmaPoolMemory(rtMemType_t memory_type, size_t memory_size, uint32_t device_id) = 0;
 
   virtual uint8_t *GetHostPoolMemory(const rtMemType_t memory_type, const size_t memory_size) = 0;

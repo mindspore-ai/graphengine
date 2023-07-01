@@ -140,7 +140,8 @@ class GE_FUNC_VISIBILITY GeGenerator {
   void ConvertOpInfosToOptions(const OpDescPtr &op_desc);
   Status ResetInputOutputShape(const ComputeGraphPtr &graph, std::vector<GeTensor> &inputs_dynamic,
                                std::vector<GeTensor> &outputs_dynamic);
-  Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic);
+  Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic,
+                         std::vector<std::pair<int64_t, int64_t>> &dynamic_shape_range);
 
   class Impl;
   std::shared_ptr<Impl> impl_;

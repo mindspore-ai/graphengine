@@ -41,7 +41,7 @@ class BCast {
   BCast() {}
   /// @ingroup domi_calibration
   /// @brief destructor
-  ~BCast() = default;
+  ~BCast() {}
 
   /// @ingroup domi_calibration
   /// @brief Not optimize intermediate shapes
@@ -75,7 +75,7 @@ class BCast {
       return domi::PARAM_INVALID;
     }
     // Min input num is 2
-    constexpr size_t kMinDimNum = 2U;
+    const size_t kMinDimNum = 2U;
     if (input.size() < kMinDimNum) {
       REPORT_INNER_ERROR("E19999", "Param input.size():%zu < %zu, check invalid",
                          input.size(), kMinDimNum);
@@ -122,7 +122,7 @@ class BCast {
       return PARAM_INVALID;
     }
     // Min input num is 2
-    constexpr size_t kMinDimNum = 2U;
+    const size_t kMinDimNum = 2U;
     if (input.size() < kMinDimNum) {
       REPORT_INNER_ERROR("E19999", "Param input.size():%zu < %zu, check invalid",
                          input.size(), kMinDimNum);

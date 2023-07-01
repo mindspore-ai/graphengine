@@ -17,6 +17,7 @@
 #define AIR_RUNTIME_VAR_MANAGER_H
 #include "exe_graph/runtime/storage_shape.h"
 #include "exe_graph/runtime/tensor_data.h"
+#include "external/ge/ge_api_types.h"
 namespace gert {
 class RtVarManager {
  public:

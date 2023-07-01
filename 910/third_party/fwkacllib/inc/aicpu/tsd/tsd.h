@@ -54,7 +54,6 @@ typedef enum {
     TSD_EVENT_STOP_AICPU_SD_MODULE_RSP = 35,  // 35 stop aicpu module msg rsp
     TSD_EVENT_STOP_QS_MODULE = 36,            // 36 send stop qs module msg
     TSD_EVENT_STOP_QS_MODULE_RSP = 37,        // 37 stop qs module msg rsp
-    TSD_EVENT_STOP_SUB_PROCESS_WAIT = 38,     // 38 subprocess wait and suspend
     TSD_EVENT_TYPE_MAX
 } TsdSubEventType;
 
@@ -262,17 +261,6 @@ int32_t SubModuleProcessResponse(const uint32_t deviceId, const TsdWaitType wait
                                  const uint32_t hostPid, const uint32_t vfId,
                                  const uint32_t eventType);
 
-/**
-* @ingroup tsd_event_client
-* @brief send start up msg to tsd and wait process
-* @param [in] deviceId : device id
-* @param [in] waitType : process type
-* @param [in] hostPid :  host pid
-* @param [in] vfId : vf id
-* @return TSD_OK: sucess, other: error code
-*/
-int32_t StartUpRspAndWaitProcess(const uint32_t deviceId, const TsdWaitType waitType,
-                                 const uint32_t hostPid, const uint32_t vfId);
 #ifdef __cplusplus
 }
 #endif  // __cplusplus

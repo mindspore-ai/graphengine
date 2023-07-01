@@ -37,10 +37,6 @@ using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message
 
 using GetGraphCallbackV2 = std::function<std::string(const std::string &subgraph_name)>;
 
-using GetGraphCallbackV3 = std::function<bool(const std::string &subgraph_name,
-                                         std::vector<std::string> &partitioned_serialized,
-                                         std::map<std::string, std::string> &const_value_map)>;
-
 class GE_FUNC_VISIBILITY ModelParser {
  public:
   ModelParser() {}
@@ -152,66 +148,6 @@ class GE_FUNC_VISIBILITY ModelParser {
   virtual Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
                                               ge::ComputeGraphPtr &graph) {
     (void)serialized_proto;
-    (void)callback;
-    (void)graph;
-    return UNSUPPORTED;
-  }
-
-  /**
-   * @ingroup domi_omg
-   * @brief Analyze callback model data in subgraph
-   * @param [in] partitioned_serialized partitioned serialized network model
-   * @param [in] const_value_map const value map, key: constant node name value: serialized constant output tensor
-   * @param [in] callback callback of subgraph
-   * @param [in|out] graph Save the network information after analysis
-   * @return SUCCESS
-   * @return Others failed
-   */
-  virtual Status ParseProtoWithSubgraph(const std::vector<std::string> &partitioned_serialized,
-                                        const std::map<std::string, std::string> &const_value_map,
-                                        GetGraphCallbackV2 callback,
-                                        ge::ComputeGraphPtr &graph) {
-    (void)partitioned_serialized;
-    (void)const_value_map;
-    (void)callback;
-    (void)graph;
-    return UNSUPPORTED;
-  }
-
-  /**
-   * @ingroup domi_omg
-   * @brief Analyze network model data
-   * @param [in] partitioned_serialized partitioned serialized network model
-   * @param [in] const_value_map const value map, key: constant node name value: serialized constant output tensor
-   * @param [in|out]  graph Save the network information after analysis
-   * @return SUCCESS
-   * @return Others failed
-   */
-  virtual Status ParseProto(const std::vector<std::string> &partitioned_serialized,
-                            const std::map<std::string, std::string> &const_value_map,
-                            ge::ComputeGraphPtr &graph) {
-    (void)partitioned_serialized;
-    (void)const_value_map;
-    (void)graph;
-    return UNSUPPORTED;
-  }
-
-  /**
-   * @ingroup domi_omg
-   * @brief Analyze callback model data in subgraph
-   * @param [in] partitioned_serialized partitioned serialized network model
-   * @param [in] const_value_map const value map, key: constant node name value: serialized constant output tensor
-   * @param [in] callback callback of subgraph
-   * @param [in|out] graph Save the network information after analysis
-   * @return SUCCESS
-   * @return Others failed
-   */
-  virtual Status ParseProtoWithSubgraph(const std::vector<std::string> &partitioned_serialized,
-                                        const std::map<std::string, std::string> &const_value_map,
-                                        GetGraphCallbackV3 callback,
-                                        ge::ComputeGraphPtr &graph) {
-    (void)partitioned_serialized;
-    (void)const_value_map;
     (void)callback;
     (void)graph;
     return UNSUPPORTED;

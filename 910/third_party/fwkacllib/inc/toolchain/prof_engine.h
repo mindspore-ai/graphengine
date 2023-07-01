@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef MSPROF_ENGINE_PROF_ENGINE_H_
-#define MSPROF_ENGINE_PROF_ENGINE_H_
+#ifndef MSPROF_ENGINE_PROF_ENGINE_H
+#define MSPROF_ENGINE_PROF_ENGINE_H
 #define MSVP_PROF_API __attribute__((visibility("default")))
 
 #include <map>

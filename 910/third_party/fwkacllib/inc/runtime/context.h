@@ -29,6 +29,11 @@ typedef enum tagCtxMode {
     RT_CTX_GEN_MODE = 1,
 } rtCtxMode_t;
 
+typedef enum tagSysParamOpt {
+    SYS_OPT_DETERMINISTIC = 0,   // value: 0:non-DETERMINISTIC, 1:DETERMINISTIC
+    SYS_OPT_RESERVED = 1,
+} rtSysParamOpt;
+
 typedef struct tagRtGroupInfo {
     int32_t groupId;
     uint32_t flag;
@@ -157,6 +162,32 @@ RTS_API rtError_t rtGetGroupCount(uint32_t *cnt);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtSetCtxINFMode(bool infMode);
+
+/**
+ * @ingroup rt_context
+ * @brief set current context system param option
+ * @param [in] configOpt system option to be set
+ * @param [in] configVal system option's value to be set
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtCtxSetSysParamOpt(const rtSysParamOpt configOpt, const int64_t configVal);
+
+/**
+ * @ingroup rt_context
+ * @brief get current context system param option's value
+ * @param [in] configOpt system option to be get value
+ * @param [out] configVal system option's value to be get
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtCtxGetSysParamOpt(const rtSysParamOpt configOpt, int64_t * const configVal);
+
+/**
+ * @ingroup rt_context
+ * @brief get context overflowAddr
+ * @param [out] overflowAddr current ctx's overflowAddr to be get
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtCtxGetOverflowAddr(void **overflowAddr);
 
 #if defined(__cplusplus)
 }

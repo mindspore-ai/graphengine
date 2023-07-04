@@ -37,7 +37,6 @@ extern "C" {
 
 #define RT_MEMORY_L1 (0x1U << 16U)
 #define RT_MEMORY_L2 (0x1U << 17U)
-#define RT_MEMORY_CUST_AICPU_LOG (0x1U << 18U)
 
 /**
  * @ingroup dvrt_mem
@@ -416,6 +415,22 @@ RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, ui
 RTS_API rtError_t rtMemcpyAsyncWithCfg(void *dst, uint64_t destMax, const void *src, uint64_t cnt,
     rtMemcpyKind_t kind, rtStream_t stm, uint32_t qosCfg);
 
+/**
+ * @ingroup dvrt_mem
+ * @brief asynchronized memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] Max length of destination address memory
+ * @param [in] src   source address pointer
+ * @param [in] cnt   the number of byte to copy
+ * @param [in] kind   memcpy type
+ * @param [in] stm   asynchronized task stream
+ * @param [in] cfgInfo   task config
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtMemcpyAsyncWithCfgV2(void *dst, uint64_t destMax, const void *src, uint64_t cnt,
+    rtMemcpyKind_t kind, rtStream_t stm, const rtTaskCfgInfo_t *cfgInfo);
+
 typedef struct {
     uint32_t resv0;
     uint32_t resv1;
@@ -471,12 +486,29 @@ RTS_API rtError_t rtReduceAsyncWithCfg(void *dst, uint64_t destMax, const void *
  * @param [in] kind   memcpy type
  * @param [in] type   data type
  * @param [in] stm   asynchronized task stream
+ * @param [in] cfgInfo   task config
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtReduceAsyncWithCfgV2(void *dst, uint64_t destMax, const void *src, uint64_t cnt,
+    rtRecudeKind_t kind, rtDataType_t type, rtStream_t stm, const rtTaskCfgInfo_t *cfgInfo);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief asynchronized reduce memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] Max length of destination address memory
+ * @param [in] src   source address pointer
+ * @param [in] count   the number of byte to copy
+ * @param [in] kind   memcpy type
+ * @param [in] type   data type
+ * @param [in] stm   asynchronized task stream
  * @param [in] overflowAddr   addr of overflow flag
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtReduceAsyncV2(void *dst, uint64_t destMax, const void *src, uint64_t count, rtRecudeKind_t kind,
-                                  rtDataType_t type, rtStream_t stm, void *overflowAddr);
+    rtDataType_t type, rtStream_t stm, void *overflowAddr);
 
 /**
  * @ingroup dvrt_mem

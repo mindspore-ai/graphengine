@@ -208,6 +208,21 @@ typedef struct tagInitFlowGwInfo {
     char_t rsv[128];
 } rtInitFlowGwInfo_t;
 
+typedef enum tagBuffGetCmdType {
+    RT_BUFF_GET_MBUF_TIMEOUT_INFO = 0,
+    RT_BUFF_GET_MBUF_USE_INFO = 1,
+    RT_BUFF_GET_MBUF_TYPE_INFO = 2,
+    RT_BUFF_GET_MBUF_BUILD_INFO = 3,
+    RT_BUFF_GET_MAX
+} rtBuffGetCmdType;
+
+typedef struct tagBuffBuildInfo {
+    uint32_t status;  /* 0: buff unbuild   1: buff build */
+} rtBuffBuildInfo;
+
+RTS_API rtError_t rtBuffGetInfo(rtBuffGetCmdType type, const void * const inBuff, uint32_t inLen,
+    void * const outBuff, uint32_t * const outLen);
+
 /**
  * @ingroup rt_mem_queue
  * @brief init queue schedule
@@ -455,6 +470,27 @@ RTS_API rtError_t rtBuffFree(void *buff);
 * @return RT_ERROR_NONE for ok
 */
 RTS_API rtError_t rtMbufUnBuild(const rtMbufPtr_t mbufPtr, void **buff, uint64_t *size);
+
+/**
+* @ingroup rt_mem_queue
+* @brief get mbuffer
+* @param [in] mbufPtr: buff addr alloced
+* @param [out]  buff: The buffer of mbuPtr
+* @param [in]  size: The amount of memory space of buffer
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtBuffGet(const rtMbufPtr_t mbufPtr, void *buff, const uint64_t size);
+
+/**
+* @ingroup rt_mem_queue
+* @brief put mbuffer
+* @param [in] mbufPtr: buff addr alloced
+* @param [out]  buff: The buffer of mbuPtr
+* @param [out]  size: The amount of memory space of buffer
+* @return RT_ERROR_NONE for ok
+*/
+RTS_API rtError_t rtBuffPut(const rtMbufPtr_t mbufPtr, void *buff);
+
 
 /**
 * @ingroup rt_mem_queue

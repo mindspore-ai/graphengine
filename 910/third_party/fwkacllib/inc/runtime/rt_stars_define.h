@@ -98,14 +98,16 @@ typedef struct tagFftsPlusSqe {
     rtStarsSqeHeader_t sqeHeader; // use rtStarsFftsPlusHeader_t instead
     // 8-11 bytes
     uint16_t fftsType : 3;
-    uint16_t reserved1 : 9;
+    uint16_t cmo : 1;
+    uint16_t scheduleDfxFlag : 1;
+    uint16_t reserved1 : 7;
     uint16_t wrrRatio : 4;
     uint16_t dsaSqId : 11;
     uint16_t reserved2 : 5;
     // 12-15 bytes
     uint16_t sqeIndex;
     uint8_t  kernelCredit;
-    uint8_t  reserved4;
+    uint8_t  subType;
     // 16-23 bytes
     uint32_t stackPhyBaseL;
     uint32_t stackPhyBaseH;

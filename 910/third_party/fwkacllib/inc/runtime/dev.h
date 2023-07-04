@@ -79,7 +79,8 @@ typedef enum tagRtDeviceModuleType {
     RT_MODULE_TYPE_AICORE,      /**< AI CORE info*/
     RT_MODULE_TYPE_TSCPU,       /**< tscpu info*/
     RT_MODULE_TYPE_PCIE,        /**< PCIE info*/
-    RT_MODULE_TYPE_VECTOR_CORE  /**< VECTOR CORE info*/
+    RT_MODULE_TYPE_VECTOR_CORE, /**< VECTOR CORE info*/
+    RT_MODULE_TYPE_HOST_AICPU   /**< HOST AICPU info*/
 } rtDeviceModuleType_t;
 
 typedef enum tagRtPhyDeviceInfoType {
@@ -99,8 +100,27 @@ typedef void (*rtGetMsgCallback)(const char_t *msg, uint32_t len);
 typedef enum tagGetDevMsgType {
     RT_GET_DEV_ERROR_MSG = 0,
     RT_GET_DEV_RUNNING_STREAM_SNAPSHOT_MSG,
+    RT_GET_DEV_PID_SNAPSHOT_MSG,
     RT_GET_DEV_MSG_RESERVE
 } rtGetDevMsgType_t;
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get total device number.
+ * @param
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtInit(void);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get total device number.
+ * @param
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API void rtDeinit(void);
 
 /**
  * @ingroup dvrt_dev
@@ -475,6 +495,26 @@ RTS_API rtError_t rtGetDeviceSatMode(rtFloatOverflowMode_t *floatOverflowMode);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtGetDeviceSatModeForStream(rtStream_t stm, rtFloatOverflowMode_t *floatOverflowMode);
+
+/**
+ * @ingroup
+ * @brief get pyh deviceid of current process
+ * @param [in] logicDeviceId   user deviceid
+ * @param [out] *visibleDeviceId  deviceid configured using the environment variable ASCEND_RT_VISIBLE_DEVICES
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetVisibleDeviceIdByLogicDeviceId(const int32_t logicDeviceId, int32_t * const visibleDeviceId);
+/**
+ * @ingroup
+ * @brief get aicore/aivectoe/aicpu utilizations
+ * @param [int] devId   the device id
+ * @param [int] kind    util type
+ * @param [out] *util for aicore/aivectoe/aicpu
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetAllUtilizations(const int32_t devId, const rtTypeUtil_t kind, uint8_t * const util);
 
 #if defined(__cplusplus)
 }

@@ -9,6 +9,7 @@
 
 #include "base.h"
 #include "event.h"
+#include <stdlib.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -30,6 +31,18 @@ extern "C" {
 #define RT_STREAM_OVERFLOW (0x100U)
 #define RT_STREAM_FAST_LAUNCH (0x200U)
 #define RT_STREAM_FAST_SYNC   (0x400U)
+
+/**
+ * @ingroup stream_config
+ * @brief stream config params
+ */
+typedef struct TagStreamConfigHandle {
+    void *workPtr;
+    size_t workSize;
+    size_t flag;
+    uint32_t priority;
+} rtStreamConfigHandle;
+
 /**
  * @ingroup stream_type
  * @brief stream type
@@ -65,6 +78,47 @@ RTS_API rtError_t rtStreamCreateWithFlags(rtStream_t *stm, int32_t priority, uin
 
 /**
  * @ingroup dvrt_stream
+ * @brief create stream instance
+ * @param [in|out] stm   created stream
+ * @param [in] handle   stream config
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamCreateWithConfig(rtStream_t *stm, rtStreamConfigHandle *handle);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief create stream instance
+ * @param [in|out] stm   created stream
+ * @param [in] meid   stream op meid
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamSetLastMeid(rtStream_t stm, const uint64_t meid);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief create stream instance
+ * @param [in] stm   stream hadle
+ * @param [out] sqId   stream op sqId
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamGetSqid(const rtStream_t stm, uint32_t *sqId);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief create stream instance
+ * @param [in] stm   stream hadle
+ * @param [out] workaddr   workaddr on stream
+ * @param [out] worksize   worksize on stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamGetWorkspace(const rtStream_t stm, void **workaddr, size_t *worksize);
+
+/**
+ * @ingroup dvrt_stream
  * @brief destroy stream instance.
  * @param [in] stm   the stream to destroy
  * @return RT_ERROR_NONE for ok
@@ -93,10 +147,10 @@ RTS_API rtError_t rtStreamWaitEvent(rtStream_t stm, rtEvent_t evt);
 
 /**
  * @ingroup dvrt_stream
- * @brief wait an recorded event for stream, used for 51 pg1
+ * @brief wait an recorded event for stream
  * @param [in] stm   the wait stream
  * @param [in] event   the event to wait
- * @param [in] timeout   timeout value for 51 pg1
+ * @param [in] timeout   timeout value
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -150,6 +204,25 @@ RTS_API rtError_t rtGetStreamId(rtStream_t stm, int32_t *streamId);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *maxStrCount, uint32_t *maxTaskCount);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief inquire avaliable stream count
+ * @param [in] streamType   Stream Type
+ * @param [out] streamCount  avaliable streamCount
+ * @return RT_ERROR_NONE for complete
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetAvailStreamNum(const uint32_t streamType, uint32_t * const streamCount);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief inquire avaliable event count
+ * @param [out] eventCount  avaliable event Count
+ * @return RT_ERROR_NONE for complete
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtGetAvailEventNum(uint32_t * const eventCount);
 
 /**
  * @ingroup dvrt_stream

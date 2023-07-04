@@ -112,6 +112,19 @@ typedef struct rtKernelLaunchNames {
     const char_t *opName;      // defined for operator name
 } rtKernelLaunchNames_t;
 
+typedef struct rtFunctionInfo {
+    void *pcAddr;
+    uint32_t prefetchCnt;
+    uint8_t mixType;                  // 0:NO_MIX; 1:MIX_AIC; 2:MIX_AIV; 3:MIX_AIC_AIV
+    uint8_t reserved[3];
+} rtFunctionInfo_t;
+
+typedef struct tagRtKernelInfo {
+    uint8_t functionInfoNum;
+    uint8_t reserved[3];
+    rtFunctionInfo_t functionInfo[2];
+} rtKernelDetailInfo_t;
+
 /**
  * @ingroup rt_kernel
  * @brief args struct
@@ -330,6 +343,8 @@ typedef void (*rtCallback_t)(void *fnData);
  */
 RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **hdl);
 
+RTS_API rtError_t  rtGetNotifyAddress(rtNotify_t notify, uint64_t * const notifyAddres);
+
 /**
  * @ingroup rt_kernel
  * @brief register device binary with all kernel
@@ -448,6 +463,20 @@ RTS_API rtError_t rtKernelGetAddrAndPrefCnt(void *hdl, const uint64_t tilingKey,
                                             const uint32_t flag, void **addr, uint32_t *prefetchCnt);
 
 /**
+* @ingroup rt_kernel
+* @brief get kernel address and prefetchCnt
+* @param [in] hdl           program for dynamic shape
+* @param [in] tilingKey     tilingKey for dynamic shape
+* @param [in] stubFunc      stubFunc for static shape
+* @param [in] flag          flag for distinguishing between dynamic shape and static shape
+* @param [out] kernelInfo   address & prefetchCnt of kernel function
+* @return RT_ERROR_NONE for ok
+* @return RT_ERROR_INVALID_VALUE for error input
+*/
+RTS_API rtError_t rtKernelGetAddrAndPrefCntV2(void *hdl, const uint64_t tilingKey, const void * const stubFunc,
+                                              const uint32_t flag, rtKernelDetailInfo_t *kernelInfo);
+
+/**
  * @ingroup rt_kernel
  * @brief launch kernel to device
  * @param [in] stubFunc   stub function
@@ -480,6 +509,22 @@ RTS_API rtError_t rtKernelLaunchWithHandle(void *hdl, const uint64_t tilingKey, 
                                            const void *kernelInfo);
 
 /**
+ * @ingroup rt_kernel
+ * @brief launch kernel with handle to device
+ * @param [in] hdl             program
+ * @param [in] tilingKey       tilingKey
+ * @param [in] blockDim        block dimentions
+ * @param [in] argsInfo        argments address for kernel function
+ * @param [in] smDesc          shared memory description
+ * @param [in] stm             associated stream
+ * @param [in] cfgInfo      task config
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchWithHandleV2(void *hdl, const uint64_t tilingKey, uint32_t blockDim,
+    rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm, const rtTaskCfgInfo_t *cfgInfo);
+
+/**
  * @ingroup rtKernelLaunchWithFlag
  * @brief launch kernel to device
  * @param [in] stubFunc   stub function
@@ -493,6 +538,22 @@ RTS_API rtError_t rtKernelLaunchWithHandle(void *hdl, const uint64_t tilingKey, 
  */
 RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim, rtArgsEx_t *argsInfo,
                                          rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags);
+
+/**
+ * @ingroup rtKernelLaunchWithFlag
+ * @brief launch kernel to device
+ * @param [in] stubFunc   stub function
+ * @param [in] blockDim   block dimentions
+ * @param [in] argsInfo   argments address for kernel function
+ * @param [in] smDesc     shared memory description
+ * @param [in] stm        associated stream
+ * @param [in] flags      dump flag
+ * @param [in] cfgInfo      task config info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchWithFlagV2(const void *stubFunc, uint32_t blockDim, rtArgsEx_t *argsInfo,
+    rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags, const rtTaskCfgInfo_t *cfgInfo);
 
 /**
  * @ingroup rt_kernel(abandoned)
@@ -832,6 +893,145 @@ RTS_API rtError_t rtStartMDCProfiler(void **addr, uint32_t length);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtStopMDCProfiler(void *addr);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Calculate ArgsSize.
+ * @param [in] argsSize   args Size
+ * @param [in] hostInfoTotalSize   hostInfoTotal Size
+ * @param [in] hostInfoNum   hostInfo num
+ * @param [out] launchArgsSize   launch Args Size
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtCalcLaunchArgsSize(size_t argsSize, size_t hostInfoTotalSize, size_t hostInfoNum,
+                               size_t *launchArgsSize);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Create Args Handle.
+ * @param [in] argsSize   args Size
+ * @param [in] hostInfoTotalSize   hostInfoTotal Size
+ * @param [in] hostInfoNum   hostInfo num
+ * @param [in] argsData   args Data
+ * @param [out] argsHandle   args Handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtCreateLaunchArgs(size_t argsSize, size_t hostInfoTotalSize, size_t hostInfoNum,
+                             void* argsData, rtLaunchArgsHandle* argsHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Destroy Args Handle.
+ * @param [in] argsHandle   args Handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtDestroyLaunchArgs(rtLaunchArgsHandle argsHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Reset Args Handle Info.
+ * @param [in] argsHandle   args Handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtResetLaunchArgs(rtLaunchArgsHandle argsHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Append address info to Args Handle.
+ * @param [in] argsHandle   args Handle
+ * @param [in] addrInfo   address info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtAppendLaunchAddrInfo(rtLaunchArgsHandle argsHandle, void *addrInfo);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Append Host info to args  Handle.
+ * @param [in] argsHandle   args Handle
+ * @param [in] hostInfoSize   host Info Size
+ * @param [out] hostInfo Address
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtAppendLaunchHostInfo(rtLaunchArgsHandle argsHandle, size_t hostInfoSize, void **hostInfo);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Registers and parses the bin file and loads it to the device.
+ * @param [in] bin   device binary description
+ * @param [out] binHandle   device binary handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtBinaryLoad(const rtDevBinary_t *bin, rtBinHandle *binHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Find funcHandle based on binHandle and tilingKey.
+ * @param [in] binHandle  funcHandle
+  * @param [in] tilingKey   tilingKey
+ * @param [out] funcHandle   funcHandle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtBinaryGetFunction(const rtBinHandle binHandle, const uint64_t tilingKey, rtFuncHandle *funcHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief UnLoad binary
+ * @param [in] binHandle  Binary Handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtBinaryUnLoad(rtBinHandle binHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Kernel Launch to device
+ * @param [in] funcHandle  function Handle
+ * @param [in] blockDim  block dimentions
+ * @param [in] argsHandle  args Handle
+ * @param [in] stm  associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtLaunchKernelByFuncHandle(rtFuncHandle funcHandle, uint32_t blockDim, rtLaunchArgsHandle argsHandle,
+                                     rtStream_t stm);
+
+/**
+ * @ingroup rt_kernel
+ * @brief get Saturation Status task
+ * @param [in] outputAddrPtr  pointer to op output addr
+ * @param [in] outputSize   op output size
+ * @param [in] stm  associated stream
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtGetDeviceSatStatus(void * const outputAddrPtr, const uint64_t outputSize, rtStream_t stm);
+
+/**
+ * @ingroup rt_kernel
+ * @brief clear Saturation Status task
+ * @param [in] stm  associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtCleanDeviceSatStatus(rtStream_t stm);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Get ConditionKernel Bin
+ * @param [in] binFileName  binFileName
+ * @param [out] buffer   bin buffer
+ * @param [out] length   buffer length
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetConditionKernelBin(const char_t * const binFileName, char_t **const buffer, uint32_t *length);
 
 #if defined(__cplusplus)
 }

@@ -36,8 +36,9 @@ typedef enum tagRtChipType {
     CHIP_CLOUD_V2 = 5,
     CHIP_NO_DEVICE = 6,
     CHIP_MINI_V3 = 7,
-    CHIP_5612 = 8, /* 1911T */
+    CHIP_5612 = 8, /* 1910b tiny */
     CHIP_END = 9,
+    CHIP_NANO = 10,
 } rtChipType_t;
 
 typedef enum tagRtAicpuScheType {
@@ -63,7 +64,9 @@ typedef enum tagRtVersion {
     VER_ES = 1,
     VER_CS = 2,
     VER_SD3403 = 3,
-    VER_END = 4,
+    VER_LITE = 4,
+    VER_310M1 = 5,
+    VER_END = 6,
 } rtVersion_t;
 
 /* match rtChipType_t */
@@ -86,7 +89,9 @@ typedef enum tagRtPlatformType {
     PLATFORM_CLOUD_V2_910C2 = 14,
     PLATFORM_CLOUD_V2_910C3 = 15,
     PLATFORM_MDC_BS9SX1A = 16,
-    PLATFORM_END = 17,
+    PLATFORM_MDC_310M1 = 17,
+    PLATFORM_MDC_LITE = 18,
+    PLATFORM_END = 19,
 } rtPlatformType_t;
 
 typedef enum tagRtCubeFracMKNFp16 {

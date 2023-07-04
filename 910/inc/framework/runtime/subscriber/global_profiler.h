@@ -174,8 +174,10 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
   const std::vector<std::string> &GetIdxToStr() const {
     return idx_to_str_;
   }
+  uint32_t GetProfModelId() const;
+  void IncProfModelId();
   void RegisterBuiltInString();
-  ge::Status RegisterProfType();
+  ge::Status RegisterProfType() const;
   static ge::Status ReportEvent(const uint64_t item_id, const uint32_t request_id, const GeProfInfoType type,
                              MsprofEvent &prof_single_event);
   static ge::Status ReportApiInfo(const uint64_t begin_time, const uint64_t end_time, const uint64_t item_id,
@@ -218,10 +220,12 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
   std::atomic<uint64_t> enable_flags_{0UL};
   uint64_t str_idx_{0UL};
   bool is_builtin_string_registered_{false};
-  bool is_prof_type_registered_{false};
   std::vector<std::string> idx_to_str_;
   std::mutex register_mutex_;
   std::mutex mutex_;
+  // rt2流程acl会给推理场景生成一个model id，但是静态子图没有办法获取这个model id，生成的davinci model
+  // 的model id为uint32_t的最大值，因此这种情况下，需要给它一个model id且生成model id的逻辑需要与acl一致
+  std::atomic_uint32_t model_id_generator_{std::numeric_limits<uint32_t>::max() / 2U};
 };
 
 class ScopeProfiler {
@@ -305,14 +309,31 @@ class ProfLaunchTypeRegistry {
     event##begin_time = MsprofSysCycleTime();                                                   \
   }
 
-#define CANN_PROFILING_EVENT_START(item_id, request_id, info_type, single_event)                  \
-  do {                                                                                            \
-    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) { \
-      (void)gert::GlobalProfilingWrapper::ReportEvent(item_id, request_id, info_type, single_event);    \
-    }                                                                                             \
+#define CANN_PROFILING_EVENT_START(item_id, request_id, info_type, single_event)                     \
+  do {                                                                                               \
+    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) {    \
+      (void)gert::GlobalProfilingWrapper::ReportEvent(item_id, request_id, info_type, single_event); \
+    }                                                                                                \
   } while (false)
 
 #define CANN_PROFILING_EVENT_END(item_id, request_id, info_type, single_event)                    \
+  do {                                                                                            \
+    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) { \
+      const uint64_t prof_time = MsprofSysCycleTime();                                            \
+      (single_event).timeStamp = prof_time;                                                       \
+      (void)MsprofReportEvent(true, &(single_event));                                             \
+    }                                                                                             \
+  } while (false)
+
+#define CANN_PROFILING_INFER_EVENT_START(request_id, info_type, single_event)                                        \
+  do {                                                                                                               \
+    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) {                    \
+      (void)gert::GlobalProfilingWrapper::ReportEvent(gert::GlobalProfilingWrapper::GetInstance()->GetProfModelId(), \
+                                                      request_id, info_type, single_event);                          \
+    }                                                                                                                \
+  } while (false)
+
+#define CANN_PROFILING_INFER_EVENT_END(request_id, info_type, single_event)                       \
   do {                                                                                            \
     if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) { \
       const uint64_t prof_time = MsprofSysCycleTime();                                            \

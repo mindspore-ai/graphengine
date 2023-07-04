@@ -85,6 +85,13 @@ GE_FUNC_VISIBILITY domi::Status ConvertPbtxtToJson(const char *model_file, const
 GE_FUNC_VISIBILITY domi::Status ConvertFwkModelToJson(const domi::FrameworkType framework, const char *model_file,
                                                       const char *json_file);
 
+/**
+ * @ingroup domi_omg
+ * @brief convert the model file into a execute-om file.
+ * @param [in] om model_file path of offline model file
+ * @param [out] output path of execute-om file
+ * @return Status result code
+ */
 GE_FUNC_VISIBILITY void GetGroupName(ge::proto::ModelDef &model_def);
 
 GE_FUNC_VISIBILITY void FindParserSo(const std::string &path, std::vector<std::string> &file_list,

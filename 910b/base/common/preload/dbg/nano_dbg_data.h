@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AIR_BASE_COMMON_MODEL_LITE_DBG_DATA_H_
-#define AIR_BASE_COMMON_MODEL_LITE_DBG_DATA_H_
+#ifndef AIR_BASE_COMMON_MODEL_NANO_DBG_DATA_H_
+#define AIR_BASE_COMMON_MODEL_NANO_DBG_DATA_H_
 
 #include <map>
 #include <memory>
@@ -33,7 +33,7 @@ namespace ge {
 constexpr size_t kAddrLength = sizeof(uint64_t);
 constexpr size_t kDumpL1FusionOpMByteSize = 2U * 1042U * 1024U;
 
-struct LiteDbgOutputDesc {
+struct NanoDbgOutputDesc {
   int32_t data_type;
   int32_t format;
   toolkit::aicpu::dump::AddressType addr_type;
@@ -48,7 +48,7 @@ struct LiteDbgOutputDesc {
   string original_name;
 };
 
-struct LiteDbgInputDesc {
+struct NanoDbgInputDesc {
   int32_t data_type;
   int32_t format;
   toolkit::aicpu::dump::AddressType addr_type;
@@ -59,19 +59,19 @@ struct LiteDbgInputDesc {
   std::vector<int64_t> original_shape_dims;
 };
 
-struct LiteDbgWorkspaceDesc {
+struct NanoDbgWorkspaceDesc {
   toolkit::aicpu::dump::Workspace::SpaceType type;
   uint64_t data_addr;
   uint64_t size;
 };
 
-struct LiteDbgBufferDesc {
+struct NanoDbgBufferDesc {
   toolkit::aicpu::dump::BufferType type;
   uint64_t addr;
   uint64_t size;
 };
 
-struct LiteDbgMemInfoDesc {
+struct NanoDbgMemInfoDesc {
   uint64_t input_mem_size;
   uint64_t output_mem_size;
   uint64_t weight_mem_size;
@@ -79,7 +79,7 @@ struct LiteDbgMemInfoDesc {
   uint64_t total_mem_size;
 };
 
-struct LiteDbgOpDesc {
+struct NanoDbgOpDesc {
   uint32_t task_id;
   uint32_t stream_id;
   uint32_t logic_stream_id;
@@ -90,19 +90,19 @@ struct LiteDbgOpDesc {
   string original_op_names;
   bool datadump_is_multiop;
   string L1_fusion_sub_graph_no;
-  std::vector<LiteDbgInputDesc> input_list;
-  std::vector<LiteDbgOutputDesc> output_list;
-  std::vector<LiteDbgWorkspaceDesc> workspace_list;
-  std::vector<LiteDbgBufferDesc> buffer_list;
-  std::vector<LiteDbgMemInfoDesc> mem_info_list;
+  std::vector<NanoDbgInputDesc> input_list;
+  std::vector<NanoDbgOutputDesc> output_list;
+  std::vector<NanoDbgWorkspaceDesc> workspace_list;
+  std::vector<NanoDbgBufferDesc> buffer_list;
+  std::vector<NanoDbgMemInfoDesc> mem_info_list;
 };
 
-class LiteDbgData {
+class NanoDbgData {
  public:
-  explicit LiteDbgData(const GeModelPtr &ge_model);
-  ~LiteDbgData() = default;
-  LiteDbgData &operator=(const LiteDbgData &dbg) & = delete;
-  LiteDbgData(const LiteDbgData &dbg) = delete;
+  explicit NanoDbgData(const GeModelPtr &ge_model, const std::unordered_map<int64_t, uint32_t> zerocopy_info);
+  ~NanoDbgData() = default;
+  NanoDbgData &operator=(const NanoDbgData &dbg) & = delete;
+  NanoDbgData(const NanoDbgData &dbg) = delete;
 
   Status Init();
 
@@ -125,39 +125,46 @@ class LiteDbgData {
 
   Status InitDbgData();
   Status AddDbgOp(const domi::TaskDef &task_def);
-  Status GenDbgInput(const GeTensorDesc &tensor_desc, LiteDbgInputDesc &dbg_input) const;
-  Status AddDbgInput(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op);
-  Status GenDbgOutput(const GeTensorDesc &tensor_desc, LiteDbgOutputDesc &dbg_output) const;
-  Status AddDbgOutput(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op);
-  Status AddDbgWorkspace(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op) const;
-  Status AddDbgBuffer(LiteDbgOpDesc &dbg_op);
-  Status AddDbgMemInfo(const OpDescPtr &op_desc, LiteDbgOpDesc &dbg_op) const;
+  Status GenDbgInput(const GeTensorDesc &tensor_desc, NanoDbgInputDesc &dbg_input) const;
+  Status AddDbgInput(const OpDescPtr &op_desc, NanoDbgOpDesc &dbg_op, const uint32_t &op_index);
+  Status GenDbgOutput(const GeTensorDesc &tensor_desc, NanoDbgOutputDesc &dbg_output) const;
+  Status AddDbgOutput(const OpDescPtr &op_desc, NanoDbgOpDesc &dbg_op, const uint32_t &op_index);
+  Status AddDbgWorkspace(const OpDescPtr &op_desc, NanoDbgOpDesc &dbg_op) const;
+  Status AddDbgBuffer(NanoDbgOpDesc &dbg_op);
+  Status AddDbgMemInfo(const OpDescPtr &op_desc, NanoDbgOpDesc &dbg_op) const;
+  void GenMemType(const int64_t &id, const ge::NodePtr &node);
+  void SaveMemType(std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> &mem_types, const int64_t &id,
+                   const ge::NodePtr &node) const;
 
   Status InitDbgTlv();
-  void GenInputDescLen(const std::vector<LiteDbgInputDesc> &input_list);
-  void GenOutputDescLen(const std::vector<LiteDbgOutputDesc> &output_list);
-  void GenWorkspaceDescLen(const std::vector<LiteDbgWorkspaceDesc> &workspace_list);
+  void GenInputDescLen(const std::vector<NanoDbgInputDesc> &input_list);
+  void GenOutputDescLen(const std::vector<NanoDbgOutputDesc> &output_list);
+  void GenWorkspaceDescLen(const std::vector<NanoDbgWorkspaceDesc> &workspace_list);
   void GenDbgPartitionLen();
   Status SaveDbgHead();
   Status SaveDbgStrTlv(const string &str, const uint32_t type);
   Status SaveDbgVecTlv(const std::vector<int64_t> &vec, const uint32_t type);
-  Status SaveDbgMemInfoTlv(const std::vector<LiteDbgMemInfoDesc> &mem_info_list);
-  Status SaveDbgBufTlv(const std::vector<LiteDbgBufferDesc> &buffer_list);
-  Status SaveDbgInputDescTlv(const std::vector<LiteDbgInputDesc> &input_list);
-  Status SaveDbgOutputDescTlv(const std::vector<LiteDbgOutputDesc> &output_list);
-  Status SaveDbgWorkspaceDescTlv(const std::vector<LiteDbgWorkspaceDesc> &workspace_list);
+  Status SaveDbgMemInfoTlv(const std::vector<NanoDbgMemInfoDesc> &mem_info_list);
+  Status SaveDbgBufTlv(const std::vector<NanoDbgBufferDesc> &buffer_list);
+  Status SaveDbgInputDescTlv(const std::vector<NanoDbgInputDesc> &input_list);
+  Status SaveDbgOutputDescTlv(const std::vector<NanoDbgOutputDesc> &output_list);
+  Status SaveDbgWorkspaceDescTlv(const std::vector<NanoDbgWorkspaceDesc> &workspace_list);
   Status SaveDbgL1Tlv();
   Status SaveDbgPartition();
 
   bool need_generate_op_buffer_ = false;
   GeModelPtr ge_model_;
   std::map<uint32_t, OpDescPtr> op_map_;
-  std::vector<LiteDbgOpDesc> op_list_;
+  std::vector<NanoDbgOpDesc> op_list_;
   string model_name_;
   uint8_t *des_addr_ = nullptr;
   size_t des_size_ = 0U;
   size_t buff_size_ = 0U;
   std::vector<uint8_t> buff_;
+  std::unordered_map<int64_t, uint32_t> zerocopy_info_;
+
+  std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> output_mem_types_;
+  std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> input_mem_types_;
 };
 } // namespace ge
-#endif  // AIR_BASE_COMMON_MODEL_LITE_DBG_DATA_H_
+#endif  // AIR_BASE_COMMON_MODEL_NANO_DBG_DATA_H_

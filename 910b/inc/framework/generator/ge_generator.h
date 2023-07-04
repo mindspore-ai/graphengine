@@ -121,33 +121,32 @@ class GE_FUNC_VISIBILITY GeGenerator {
                        const std::string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                        ComputeGraphPtr &comp_graph, bool is_offline = true, int32_t compile_flag = 0,
                        GraphStage graph_stage = GraphStage::GRAPH_STAGE_RESERVED);
-  bool CheckNoAicore(const ComputeGraphPtr &graph);
-  void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) const;
-  Status CheckForSingleOp(const OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
-                          const std::vector<GeTensor> &outputs) const;
-  Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph) const;
-  Status ResetAiCpuToDynamicShape(const ComputeGraphPtr &graph) const;
+  static void RemoveConst(const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
+  static Status CheckForSingleOp(const OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
+                                 const std::vector<GeTensor> &outputs);
+  static Status InferFormatForSingleOp(const OpDescPtr &op_desc, const Graph &graph);
+  static Status ResetAiCpuToDynamicShape(const ComputeGraphPtr &graph);
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
-  Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
-  Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model,
-                                     const std::vector<GeTensor> &inputs,
-                                     const std::vector<GeTensor> &outputs,
-                                     const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
-                                     std::vector<ge::NamedAttrs> &generalized_build_attrs) const;
-  void AddExcludeEnginesOption(const OpDescPtr &op_desc, std::map<std::string, std::string> &graph_options) const;
-  void AddShapeGeneralizedOption(std::map<std::string, std::string> &graph_options);
-  void SetFuzzCompile(const std::vector<GeTensor> &inputs, int32_t compile_flag);
-  bool IsFuzzCompileEnable();
-  void ConvertOpInfosToOptions(const OpDescPtr &op_desc);
-  Status ResetInputOutputShape(const ComputeGraphPtr &graph,
-                               const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
-                               std::vector<GeTensor> &inputs_dynamic,
-                               std::vector<GeTensor> &outputs_dynamic);
-  Status ResetOutputShapeRange(const OpDescPtr &op_desc, const size_t index,
-                               std::vector<std::pair<int64_t, int64_t>> &shape_range);
-  Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic,
-                         std::vector<std::pair<int64_t, int64_t>> &dynamic_shape_range);
+  static Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
+  static Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model,
+                                            const std::vector<GeTensor> &inputs,
+                                            const std::vector<GeTensor> &outputs,
+                                            const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
+                                            std::vector<ge::NamedAttrs> &generalized_build_attrs);
+  static void AddExcludeEnginesOption(const OpDescPtr &op_desc, std::map<std::string, std::string> &graph_options);
+  void AddShapeGeneralizedOption(std::map<std::string, std::string> &graph_options) const;
+  void SetFuzzCompile(const std::vector<GeTensor> &inputs, int32_t compile_flag) const;
+  bool IsFuzzCompileEnable() const;
+  void ConvertOpInfosToOptions(const OpDescPtr &op_desc) const;
+  static Status ResetInputOutputShape(const ComputeGraphPtr &graph,
+                                      const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
+                                      std::vector<GeTensor> &inputs_dynamic,
+                                      std::vector<GeTensor> &outputs_dynamic);
+  static Status ResetOutputShapeRange(const OpDescPtr &op_desc, const size_t index,
+                                      std::vector<std::pair<int64_t, int64_t>> &shape_range);
+  static Status ResetTensorDesc(const size_t index, const GeShape &data_shape, std::vector<GeTensor> &vector_dynamic,
+                                std::vector<std::pair<int64_t, int64_t>> &dynamic_shape_range);
 
   class Impl;
   std::shared_ptr<Impl> impl_;

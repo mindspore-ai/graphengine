@@ -30,10 +30,27 @@
 #include "common/op_so_store/op_so_store.h"
 
 namespace ge {
+static std::map<ModelPartitionType, string> item_type_map = {
+  {MODEL_DEF, "model info"},
+  {TASK_INFO, "task info"},
+  {TBE_KERNELS, "tbe kernels"},
+  {CUST_AICPU_KERNELS, "aicput kernels"},
+  {SO_BINS, "so bins"},
+  {MODEL_INOUT_INFO, "model introductions"},
+  {STATIC_TASK_DESC, "static task desc"},
+  {DYNAMIC_TASK_DESC, "dynamic task desc"},
+  {TASK_PARAM, "task param"},
+  {PRE_MODEL_DESC, "pre model desc"},
+  {PRE_MODEL_SQE, "pre model task"},
+  {PRE_KERNEL_ARGS, "pre kernel args"},
+};
+
 class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  public:
   ModelHelper() noexcept = default;
   virtual ~ModelHelper() override = default;
+  ModelHelper(const ModelHelper &) = default;
+  ModelHelper &operator=(const ModelHelper &) & = default;
 
   Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
                        ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
@@ -66,7 +83,8 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   Status GetBaseNameFromFileName(const std::string &file_name, std::string &base_name) const;
   Status GetModelNameFromMergedGraphName(const ComputeGraphPtr &compute_graph, std::string &model_name) const;
 
- // for soft sync op
+  // for soft sync op
+  Status GetHardwareInfo(std::map<std::string, std::string> &options) const;
   Status HandleDeviceInfo(fe::PlatFormInfos &platform_infos) const;
   Status GetPlatformInfo(int32_t device_id, const std::string &soc_version, fe::PlatformInfo &platform_info,
                          int32_t &virtual_type) const;
@@ -84,23 +102,43 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   void SetRepackSoFlag(const bool val);
 
   Status LoadModelDataAndPackSo(const ModelBufferData &model, const std::string &output_file);
+
+  static constexpr const char_t *kFilePreffix = ".exeom";
+  static constexpr const char_t *kDebugPreffix = ".dbg";
+
+ protected:
+  Status SaveModelCustAICPU(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                            const size_t model_index = 0U) const;
+  static Status GetOppVersion(std::string &version);
+  static Status EnsureKernelBuilt(const GeModelPtr &model);
+  Status SaveSoStoreModelPartitionInfo(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                                       const GeRootModelPtr &ge_root_model, string &output_file_name,
+                                       const GeModelPtr &first_ge_model);
+  Status SaveModelHeader(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                         const size_t model_num = 1U, bool need_check_os_cpu = false,
+                         bool is_unknow_shape = false) const;
+  Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const ModelPartitionType type,
+                            const uint8_t* const data, const size_t size, const size_t model_index) const;
+  Status SaveModelWeights(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                          const size_t model_index = 0U) const;
+  Status SaveModelIntroduction(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                               const GeModelPtr &ge_model, size_t model_index = 0U) const;
+  Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                            const size_t model_index = 0U) const;
+  GeModelPtr model_;
+  bool is_so_store_ = false;
+
  private:
   bool is_assign_model_ = false;
   bool is_offline_ = true;
   bool is_unknown_shape_model_ = false;
   bool is_shared_weight_ = false;
   const ModelFileHeader *file_header_ = nullptr;
-  GeModelPtr model_;
   GeRootModelPtr root_model_;
   OpSoStore op_so_store_;
-  bool is_so_store_ = false;
   bool is_repack_so_ = false;
   static std::string output_file_name_;
   std::unordered_set<std::string> custom_compiler_versions_{};
-  ModelHelper(const ModelHelper &) = default;
-  ModelHelper &operator=(const ModelHelper &) & = default;
-  static Status GetOppVersion(std::string &version);
-  static Status EnsureKernelBuilt(const GeModelPtr &model);
 
   bool IsPartitionedGraph(const GeModelPtr &cur_model) const;
 
@@ -108,7 +146,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                        const size_t mode_index) const;
-  Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
+  virtual Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                      const size_t mode_index) const;
   Status LoadTask(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model, const size_t mode_index) const;
   Status LoadTBEKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
@@ -116,31 +154,18 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   Status LoadCustAICPUKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                                   const size_t mode_index) const;
 
-  Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const ModelPartitionType type,
-                            const uint8_t* const data, const size_t size, const size_t model_index) const;
+
   Status SaveModelDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                       Buffer &model_buffer, const size_t model_index = 0U) const;
   Status SaveSizeToModelDef(const GeModelPtr &ge_model, const size_t model_index) const;
-  Status SaveModelWeights(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                          const size_t model_index = 0U) const;
-  Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                            const size_t model_index = 0U) const;
-  Status SaveModelCustAICPU(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                            const size_t model_index = 0U) const;
+
   Status SaveModelTaskDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                           Buffer &task_buffer, const size_t model_index = 0U) const;
-  Status SaveModelHeader(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                         const size_t model_num = 1U, bool need_check_os_cpu = false) const;
-  Status SaveModelIntroduction(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                               const GeModelPtr &ge_model, const size_t model_index = 0U) const;
   Status SaveAllModelPartiton(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                               Buffer &model_buffer, Buffer &task_buffer, const size_t model_index = 0U) const;
 
   Status LoadOpSoBin(const OmFileLoadHelper &om_load_helper, const GeRootModelPtr &ge_root_model) const;
 
-  Status SaveSoStoreModelPartitionInfo(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                                       const GeRootModelPtr &ge_root_model, string &output_file_name,
-                                       const GeModelPtr &first_ge_model);
   void SaveOpSoInfo(const GeRootModelPtr &ge_root_model) const;
   Status SetModelCompilerVersion(const GeModelPtr &first_ge_model);
   Status LoadAndStoreOppSo(const string &path);

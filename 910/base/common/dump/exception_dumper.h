@@ -48,6 +48,7 @@ class ExceptionDumper {
   void SaveDumpOpInfo(const OpDescPtr &op, const ExtraOpInfo &extra_op_info, const OpDescInfoId &id);
   void SaveDumpOpInfo(const OpDescPtr &op, const ExtraOpInfo &extra_op_info, const uint32_t task_id,
                       const uint32_t stream_id);
+  void SaveInputOutputInfo(const bool is_input, const OpDescPtr &op, OpDescInfo &op_desc_info) const;
   Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos);
   void LogExceptionTvmOpInfo(const OpDescInfo &op_desc_info) const;
   void LogExceptionArgs(const OpDescInfo &op_desc_info) const;

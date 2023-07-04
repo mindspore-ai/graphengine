@@ -84,6 +84,7 @@ class DumpOp {
   Status LaunchDump(toolkit::aicpu::dump::Task &task);
   Status BuildFftsSubOpTask(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
   Status BuildUnLoadFftsDumpInfo(void *&unload_dump_info, uint32_t &unload_dump_len);
+  toolkit::aicpu::dump::AddressType GetAddrType(toolkit::aicpu::dump::Task &task, const GeTensorDesc &desc) const;
 
   DumpProperties dump_properties_;
   OpDescPtr op_desc_;

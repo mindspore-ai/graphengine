@@ -34,8 +34,7 @@ public:
     {
         Stop();
     }
-    static void EnableRecord(bool flag);
-    static void SetRecordPath(const std::string &recordPath);
+    static void StartDumpTraceToPath(const std::string &recordPath);
     void Start();
     void Stop();
 private:

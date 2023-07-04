@@ -171,7 +171,7 @@ class VarResource {
 
   VarDevAddrMgr *GetVarMgrInfo(const uint32_t device_id, const int64_t offset);
 
-  std::map<uint32_t, std::unordered_map<uint64_t, VarDevAddrMgr>> &GetAllDevVarMgrInfo() {
+  const std::map<uint32_t, std::unordered_map<uint64_t, VarDevAddrMgr>> &GetAllDevVarMgrInfo() {
     return device_id_to_var_dev_addr_mgr_map_;
   }
 

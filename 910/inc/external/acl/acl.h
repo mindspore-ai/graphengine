@@ -19,9 +19,9 @@
 extern "C" {
 #endif
 
-// Current version is 1.4.0
+// Current version is 1.6.0
 #define ACL_MAJOR_VERSION    1
-#define ACL_MINOR_VERSION    5
+#define ACL_MINOR_VERSION    6
 #define ACL_PATCH_VERSION    0
 
 /**

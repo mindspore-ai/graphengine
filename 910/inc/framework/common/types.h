@@ -422,6 +422,8 @@ REGISTER_OPTYPE_DECLARE(HCOMREMOTELOOKUP, "HcomRemoteLookup");
 REGISTER_OPTYPE_DECLARE(HCOMCOLLREMOTELOOKUP, "HcomCollRemoteLookup");
 REGISTER_OPTYPE_DECLARE(HCOMCOLLREMOTEUPDATE, "HcomCollRemoteUpdate");
 REGISTER_OPTYPE_DECLARE(HCOMGATHER, "HcomGather");
+REGISTER_OPTYPE_DECLARE(HCOMCOLLREMOTELOOKUPPAIRED, "HcomCollRemoteLookupPaired");
+REGISTER_OPTYPE_DECLARE(HCOMCOLLREMOTEUPDATEPAIRED, "HcomCollRemoteUpdatePaired");
 
 REGISTER_OPTYPE_DECLARE(VARASSIGN, "VarAssign");
 REGISTER_OPTYPE_DECLARE(VARISINITIALIZEDOP, "VarIsInitializedOp");
@@ -604,7 +606,7 @@ constexpr uint32_t MODEL_FILE_CHECKSUM_LENGTH = 64U;
 ///
 /// @brief length of the reserved field in the model file header
 ///
-constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 63U;
+constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 62U;
 
 // DATA node type
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DATA_TYPE;
@@ -689,7 +691,8 @@ struct ModelFileHeader {
   uint8_t padd[3] = {0};  // For initializing aligned memory
   uint64_t model_length = 0UL;
   uint8_t need_check_os_cpu_info = static_cast<uint8_t>(OsCpuInfoCheckTyep::NO_CHECK);
-  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 64
+  uint8_t is_unknow_model = 0U;  // 0:static model 1:dynamic model
+  uint8_t reserved[MODEL_FILE_RESERVED_LENGTH] = {0U};  // Reserved field 62
 };
 
 constexpr uint8_t TARGET_TYPE_LTTE_8BIT = 0U;
@@ -697,8 +700,6 @@ constexpr uint8_t TARGET_TYPE_MINI_8BIT = 1U;
 
 // number of partitions in the current model
 constexpr uint32_t PARTITION_SIZE = 5U;
-
-constexpr uint8_t MODEL_TYPE_FLOW_MODEL = 3;
 
 enum ModelPartitionType {
   MODEL_DEF = 0,
@@ -709,7 +710,22 @@ enum ModelPartitionType {
   SO_BINS = 5,
   FLOW_MODEL = 6,
   FLOW_SUBMODEL = 7,
-  MODEL_INOUT_INFO = 8
+  MODEL_INOUT_INFO = 8,
+  STATIC_TASK_DESC = 9,
+  DYNAMIC_TASK_DESC = 10,
+  TASK_PARAM = 11,
+  PRE_MODEL_DESC = 20,
+  PRE_MODEL_SQE = 21,
+  PRE_KERNEL_ARGS = 22
+};
+
+enum ModelHeaderType {
+  MODEL_TYPE_IR_MODEL = 0,
+  MODEL_TYPE_STANDARD_MODEL = 1,
+  MODEL_TYPE_OM_TINY_MODEL = 2,
+  MODEL_TYPE_FLOW_MODEL = 3,
+  MODEL_TYPE_LITE_MODEL = 4,
+  MODEL_TYPE_RESERVED = 5
 };
 
 struct TinyModelPartitionMemInfo {

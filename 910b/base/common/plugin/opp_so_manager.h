@@ -31,7 +31,6 @@ class OppSoManager {
  private:
   void LoadOpsProtoSo() const;
   void LoadOpMasterSo() const;
-  Status SaveSo(const std::string &so_path) const;
 };
 }  // namespace ge
 

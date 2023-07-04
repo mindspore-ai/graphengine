@@ -70,7 +70,7 @@ TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t logicDeviceId, const uint32_t ran
 
 /**
 * @ingroup Open
-* @brief Used for the Framework process to communicate with the TSDDaemon process in 1981,
+* @brief Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of other processes
 *
 * @par Function

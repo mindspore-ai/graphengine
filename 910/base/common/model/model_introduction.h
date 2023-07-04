@@ -17,7 +17,11 @@
 #ifndef INC_FRAMEWORK_COMMON_HELPER_MODEL_INTRODUCTION_H_
 #define INC_FRAMEWORK_COMMON_HELPER_MODEL_INTRODUCTION_H_
 
-#include "framework/common/ge_model_inout_info.h"
+#include "common/model/tlv/base_tlv_block.h"
+#include "common/model/tlv/model_tensor_descs_value.h"
+#include "common/model/tlv/vec_int_value.h"
+#include "common/model/tlv/vec_int_int_value.h"
+#include "common/model/tlv/vec_str_value.h"
 #include "framework/common/ge_types.h"
 #include "ge/ge_api_error_codes.h"
 #include "common/model/ge_model.h"

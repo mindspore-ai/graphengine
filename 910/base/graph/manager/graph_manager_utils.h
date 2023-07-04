@@ -211,13 +211,13 @@ class GraphNode {
   void SetTensorSize(size_t tensor_size) {
     tensor_sizes_.emplace_back(tensor_size);
   }
-  const std::vector<size_t> &GetTensorSize() {
+  const std::vector<size_t> &GetTensorSize() const {
     return tensor_sizes_;
   }
   void SetGeTensorDescPtr(GeTensorDescPtr &ge_tensor_desc) {
     ge_tensor_descs_.emplace_back(ge_tensor_desc);
   }
-  const std::vector<GeTensorDescPtr> &GetGeTensorDescPtr() {
+  const std::vector<GeTensorDescPtr> &GetGeTensorDescPtr() const {
     return ge_tensor_descs_;
   }
   bool IsSavedNetOutputTensorInfoFlag() const {

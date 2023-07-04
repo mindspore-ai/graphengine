@@ -127,6 +127,10 @@ struct HcomRemoteOperation {
     void *keyAddr;
     int *tableId;
     void *value;
+    void *indices{nullptr};
+    void *numUniqued{nullptr};
+    void *psSeg{nullptr};
+    void *psSegNum{nullptr};
 };
 
 struct HcomOperation {
@@ -159,6 +163,11 @@ struct HcomRemoteOperationParams {
     int tag;
     rtStream_t stream;
     u64 flag;
+    s32 insertOption;
+    void *indices{};
+    void *numUniqued{};
+    void *psSeg{};
+    void *psSegNum{};
     std::string hcclType;
 };
 

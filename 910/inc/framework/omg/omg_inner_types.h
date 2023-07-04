@@ -44,6 +44,8 @@ enum RunMode {
   ONLY_PRE_CHECK = 3,       // only for pre-check
   PBTXT_TO_JSON = 5,        // pbtxt to json
   DISPLAY_OM_INFO = 6,      // display model info
+  GEN_EXE_OM = 10,          // generate exe-om file
+  MODEL_TO_EXE_OM = 20,     // conver om to exe-om file
   GEN_EXE_OM_FOR_NANO = 30  // convert om to exe-om file for nano
 };
 

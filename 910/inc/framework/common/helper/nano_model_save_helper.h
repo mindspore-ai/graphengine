@@ -17,28 +17,52 @@
 #ifndef INC_FRAMEWORK_COMMON_HELPER_NANO_MODEL_SAVE_HELPER_H_
 #define INC_FRAMEWORK_COMMON_HELPER_NANO_MODEL_SAVE_HELPER_H_
 
-#include "framework/common/helper/model_save_helper.h"
+#include "framework/common/helper/model_helper.h"
 
 namespace ge {
-class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelSaveHelper {
+class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelHelper {
  public:
   NanoModelSaveHelper() = default;
-  ~NanoModelSaveHelper() override = default;
+  virtual ~NanoModelSaveHelper() override = default;
+  NanoModelSaveHelper(const NanoModelSaveHelper &) = default;
+  NanoModelSaveHelper &operator=(const NanoModelSaveHelper &) & = default;
 
-  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
+  virtual Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
                            ModelBufferData &model, const bool is_unknown_shape) override;
 
-  Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
-                       ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
   void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
 
  private:
-  bool is_offline_ = true;
-  NanoModelSaveHelper(const NanoModelSaveHelper &) = default;
-  NanoModelSaveHelper &operator=(const NanoModelSaveHelper &) & = default;
   Status SaveToDbg(const GeModelPtr &ge_model, const std::string &output_file) const;
+  Status SaveToExeOmModel(const GeModelPtr &ge_model, const std::string &output_file,
+                       ModelBufferData &model);
+  Status SaveAllModelPartiton(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                              const size_t model_index = 0UL);
+  Status SaveModelDesc(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                       const GeModelPtr &ge_model, const size_t model_index = 0UL);
+  Status SaveStaticTaskDesc(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                       const GeModelPtr &ge_model, const size_t model_index = 0UL);
+  Status SaveDynamicTaskDesc(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                       const GeModelPtr &ge_model, const size_t model_index = 0UL);
+  Status SaveTaskParam(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                       const GeModelPtr &ge_model, const size_t model_index = 0UL);
+  Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                            const size_t model_index = 0UL) const;
+
+ private:
+  void SetModelDescInfo(std::shared_ptr<uint8_t> &buff) { model_desc_info_ = buff; }
+  void SetStaticTaskInfo(std::shared_ptr<uint8_t> &buff) { static_task_info_ = buff; }
+  void SetDynamicTaskInfo(std::shared_ptr<uint8_t> &buff) { dynamic_task_info_ = buff; }
+  void SetTaskParamInfo(std::shared_ptr<uint8_t> &buff) { task_param_info_ = buff; }
+
+  std::shared_ptr<uint8_t> model_desc_info_ = nullptr;
+  std::shared_ptr<uint8_t> static_task_info_ = nullptr;
+  std::shared_ptr<uint8_t> dynamic_task_info_ = nullptr;
+  std::shared_ptr<uint8_t> task_param_info_ = nullptr;
+  bool is_offline_ = true;
+  std::unordered_map<int64_t, uint32_t> search_ids_;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_NANO_MODEL_SAVE_HELPER_H_

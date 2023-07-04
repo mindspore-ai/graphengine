@@ -81,10 +81,18 @@ class ModelRelationBuilder {
                              std::map<int32_t, std::string>> &paired_inputs);
   bool CheckInnerNode(const NodePtr &node) const;
   Status GetOrCreateModelEndpointInfo(const OpDesc &op_desc, ModelRelation::ModelEndpointInfo *&model_endpoint_info);
+  ModelRelation::ModelEndpointInfo *GetOrCreateModelEndpointInfo(const std::string &model_name);
   Status CheckNetOutputNode(const NodePtr &node) const;
   Status CreateExternalEndpointInfo(const ComputeGraph &subgraph,
                                     ModelRelation::ModelEndpointInfo *&model_endpoint_info);
   Status CreateP2pNode(const std::string &p2p_node_name, const Endpoint &p2p_node);
+  Status AddP2pNodeByGraphRecursively(
+      const ComputeGraphPtr &graph, const std::string &model_name,
+      const std::map<std::string, std::map<std::string, std::vector<Endpoint>>> &all_endpoints_by_graph,
+      const int32_t depth = 16);
+  Status AddP2pNodeByOneGraph(
+      const std::map<std::string, std::map<std::string, std::vector<Endpoint>>> &all_endpoints_by_graph,
+      const ComputeGraphPtr &subgraph, const std::string &model_name);
   Status GetP2pNodeAndSetEndpoint(
       const NodePtr &node,
       const std::map<std::string, std::map<std::string, std::vector<Endpoint>>> &all_endpoints_by_graph);

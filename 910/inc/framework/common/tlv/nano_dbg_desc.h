@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INC_FRAMEWORK_COMMON_TLV_LITE_DBG_DESC_H_
-#define INC_FRAMEWORK_COMMON_TLV_LITE_DBG_DESC_H_
+#ifndef INC_FRAMEWORK_COMMON_TLV_NANO_DBG_DESC_H_
+#define INC_FRAMEWORK_COMMON_TLV_NANO_DBG_DESC_H_
 
 #include "framework/common/tlv/tlv.h"
 
@@ -168,4 +168,4 @@ struct DbgOpMemInfosTlv2 {
 }
 #endif
 
-#endif  // INC_FRAMEWORK_COMMON_TLV_LITE_DBG_DESC_H_
+#endif  // INC_FRAMEWORK_COMMON_TLV_NANO_DBG_DESC_H_

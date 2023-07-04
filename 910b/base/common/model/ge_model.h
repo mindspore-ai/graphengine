@@ -44,7 +44,7 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
   void SetGraph(const ComputeGraphPtr &graph);
 
   std::shared_ptr<domi::ModelTaskDef> GetModelTaskDefPtr() const;
-  const TBEKernelStore &GetTBEKernelStore() const;
+  TBEKernelStore &GetTBEKernelStore();
   const CustAICPUKernelStore &GetCustAICPUKernelStore() const;
   Buffer GetWeight() const;
   uint8_t* GetWeightData() const;

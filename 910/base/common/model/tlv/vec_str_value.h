@@ -13,21 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef GE_COMMON_MODEL_LITE_MODEL_UTILS_H_
-#define GE_COMMON_MODEL_LITE_MODEL_UTILS_H_
 
-#include "common/model/ge_root_model.h"
+#ifndef VEC_STR_VALUE_H_
+#define VEC_STR_VALUE_H_
+
+#include "base_tlv_block.h"
+#include "graph/def_types.h"
+#include "framework/common/ge_model_inout_types.h"
 
 namespace ge {
-class LiteModelUtils {
- public:
-  LiteModelUtils() = default;
-  ~LiteModelUtils() = default;
-
-  static std::vector<int64_t> GetInputSize(const ConstOpDescPtr &op_desc);
-  static std::vector<int64_t> GetOutputSize(const ConstOpDescPtr &op_desc);
-  static std::vector<int64_t> GetWorkspaceSize(const ConstOpDescPtr &op_desc);
-  static std::vector<int64_t> GetWeightSize(const ConstOpDescPtr &op_desc);
+class vecStrValue : public BaseTlvBlock {
+public:
+  friend class ModelIntroduction;
+  size_t Size() override;
+  bool Serilize(uint8_t ** const addr, size_t &left_size) override;
+  bool NeedSave() override;
+  virtual ~vecStrValue() = default;
+private:
+  uint32_t vec_size = 0U;
+  std::vector<uint32_t> str_len;
+  std::vector<std::string> value;
 };
-}  // namespace ge
-#endif  // GE_COMMON_MODEL_LITE_MODEL_UTILS_H_
+}
+#endif

@@ -1,3 +1,4 @@
+
 /**
  * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
@@ -25,16 +26,27 @@
 #include <securec.h>
 
 #include "common/plugin/ge_util.h"
+#include "common/checker.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "graph/op_desc.h"
 #include "graph/op_kernel_bin.h"
+#include "runtime/base.h"
+#include "runtime/context.h"
+#include "runtime/rt_preload_task.h"
 
 namespace ge {
 using KernelBin = ge::OpKernelBin;
 using KernelBinPtr = std::shared_ptr<ge::OpKernelBin>;
 using CustAICPUKernelPtr = std::shared_ptr<ge::OpKernelBin>;
 using TBEKernelPtr = std::shared_ptr<ge::OpKernelBin>;
+
+#define ALIGN_MEM(MEM_SIZE, ALIGN_SIZE)                                              \
+  if (((MEM_SIZE) > 0) && ((ALIGN_SIZE) != 0) && ((MEM_SIZE) % (ALIGN_SIZE) != 0)) { \
+    GELOGI("assign before, size[%zu]", (MEM_SIZE));                                  \
+    (MEM_SIZE) = ((MEM_SIZE) + (ALIGN_SIZE)-1) / (ALIGN_SIZE) * (ALIGN_SIZE);        \
+    GELOGI("assign after, size[%zu]", (MEM_SIZE));                                   \
+  }
 
 struct KernelStoreItemHead {
   uint32_t magic;
@@ -47,17 +59,26 @@ class KernelStore {
   KernelStore() = default;
   virtual ~KernelStore() = default;
   virtual bool Build();
+  virtual bool PreBuild();
 
   virtual bool Load(const uint8_t *const data, const size_t len);
 
   virtual const uint8_t *Data() const;
   virtual size_t DataSize() const;
+  virtual const uint8_t *PreData() const;
+  virtual size_t PreDataSize() const;
   virtual void AddKernel(const KernelBinPtr &kernel);
   virtual KernelBinPtr FindKernel(const std::string &name) const;
   virtual bool IsEmpty() const;
+  std::unordered_map<std::string, uint32_t> GetKernelOffset() const {
+    return pre_buffer_offset_;
+  }
+
  private:
   std::unordered_map<std::string, KernelBinPtr> kernels_;
   std::vector<uint8_t> buffer_;
+  std::vector<uint8_t> pre_buffer_;
+  std::unordered_map<std::string, uint32_t> pre_buffer_offset_;
 };
 }  // namespace ge
 

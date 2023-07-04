@@ -67,7 +67,7 @@ enum OpEngineType {
 
 enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
 
-enum OfflineModelFormat { OM_FORMAT_DEFAULT, OM_FORMAT_NANO };
+enum OfflineModelFormat { OM_FORMAT_DEFAULT, OM_FORMAT_LITE, OM_FORMAT_NANO };
 
 const char_t *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 const char_t *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";

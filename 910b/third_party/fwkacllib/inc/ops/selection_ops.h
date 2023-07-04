@@ -44,10 +44,10 @@ namespace ge {
 * Compatible with the TensorFlow operator Range.
 */
 REG_OP(Range)
-    .INPUT(start, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
-    .INPUT(limit, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
-    .INPUT(delta, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_DOUBLE,DT_INT64}))
+    .INPUT(start, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
+    .INPUT(limit, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
+    .INPUT(delta, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
     .OP_END_FACTORY_REG(Range)
 
 /**
@@ -84,8 +84,8 @@ REG_OP(Range)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Range instead.
 */
 REG_OP(RangeD)
-    .INPUT(x, TensorType({DT_FLOAT,DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT,DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(start, Float)
     .REQUIRED_ATTR(limit, Float)
     .REQUIRED_ATTR(delta, Float)
@@ -270,11 +270,11 @@ REG_OP(GatherV2D)
 * Compatible with the PyTorch operator Gather.
 */
 REG_OP(GatherElements)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
-    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64,DT_BOOL}))
-    .INPUT(index, TensorType({DT_INT32,DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_INT16,DT_INT32,
-    DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64,DT_BOOL}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32,
+    DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_BOOL}))
+    .INPUT(index, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32,
+    DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_BOOL}))
     .ATTR(dim, Int, 0)
     .OP_END_FACTORY_REG(GatherElements)
 
@@ -644,7 +644,7 @@ REG_OP(ReverseV2)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
                           DT_INT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
                           DT_COMPLEX64, DT_COMPLEX128, DT_STRING}))
-    .INPUT(axis, TensorType({DT_INT32,DT_INT64}))
+    .INPUT(axis, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
                            DT_INT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
                            DT_COMPLEX64, DT_COMPLEX128, DT_STRING}))
@@ -2031,9 +2031,9 @@ REG_OP(PassThrough)
 * Compatible with the Caffe operator Crop.
 */
 REG_OP(Crop)
-      .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,DT_INT64,DT_UINT64}))
-      .INPUT(size, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,DT_INT64,DT_UINT64}))
-      .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,DT_INT64,DT_UINT64}))
+      .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+      .INPUT(size, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+      .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
       .ATTR(axis, Int, 2)
       .REQUIRED_ATTR(offsets, ListInt)
       .OP_END_FACTORY_REG(Crop)
@@ -2492,10 +2492,10 @@ REG_OP(IndexFillD)
 * Compatible with the kaldi operator AddRowRanges.
 */
 REG_OP(AddRowRanges)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(src, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(src, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(indices, TensorType({DT_INT32}))
-    .OUTPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(AddRowRanges)
 
 /**

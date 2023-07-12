@@ -33,6 +33,7 @@ extern "C" {
 #define ACL_PROF_TRAINING_TRACE         0x0040ULL
 #define ACL_PROF_MSPROFTX               0x0080ULL
 #define ACL_PROF_RUNTIME_API            0x0100ULL
+#define ACL_PROF_TASK_TIME_L0           0x0800ULL
 #define ACL_PROF_TASK_MEMORY            0x1000ULL
 
 /**
@@ -49,7 +50,6 @@ typedef enum {
     ACL_AICORE_RESOURCE_CONFLICT_RATIO = 4,
     ACL_AICORE_MEMORY_UB = 5,
     ACL_AICORE_L2_CACHE = 6,
-    ACL_AICORE_PIPE_EXECUTE_UTILIZATION = 7,
     ACL_AICORE_NONE = 0xFF
 } aclprofAicoreMetrics;
 

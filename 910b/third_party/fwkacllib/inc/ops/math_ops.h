@@ -953,7 +953,7 @@ REG_OP(ActULQClampMinGrad)
 * @brief Computes Lp norm.
 
 * @par Inputs:
-* x: An ND tensor of type float16, float32. \n
+* x: An ND tensor of type float16, bfloat16, float32. \n
 *
 * @par Attributes:
 * @li p: Int, "inf" or "-inf", default value is 2.
@@ -962,15 +962,15 @@ REG_OP(ActULQClampMinGrad)
 * @li epsilon: Float, default is 1e-12. \n
 
 * @par Outputs:
-* y: An ND tensor of type float16, float32. The shape of y is depending
+* y: An ND tensor of type float16, bfloat16, float32. The shape of y is depending
 * on axes and keepdim. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator LpNorm.
 */
 REG_OP(LpNorm)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(p, Int, 2)
     .ATTR(axes, ListInt, {})
     .ATTR(keepdim, Bool, false)
@@ -978,10 +978,38 @@ REG_OP(LpNorm)
     .OP_END_FACTORY_REG(LpNorm)
 
 /**
+* @brief Computes Lp norm.
+
+* @par Inputs:
+* x: An ND tensor of type float16, bfloat16, float32. \n
+*
+* @par Attributes:
+* @li p: Float, "inf" or "-inf", default value is 2.0.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, bfloat16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNorm.
+*/
+REG_OP(LpNormV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .ATTR(p, Float, 2.0)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormV2)
+
+/**
 * @brief Computes LpNormReduce.
 
 * @par Inputs:
-* x: An ND tensor of type float16, float32. \n
+* x: An ND tensor of type float16, bfloat16, float32. \n
 *
 * @par Attributes:
 * @li p: Int, "inf" or "-inf", default value is 2.
@@ -990,15 +1018,15 @@ REG_OP(LpNorm)
 * @li epsilon: Float, default is 1e-12. \n
 
 * @par Outputs:
-* y: An ND tensor of type float16, float32. The shape of y is depending
+* y: An ND tensor of type float16, bfloat16, float32. The shape of y is depending
 * on axes and keepdim. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator LpNormReduce.
 */
 REG_OP(LpNormReduce)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(p, Int, 2)
     .ATTR(axes, ListInt, {})
     .ATTR(keepdim, Bool, false)
@@ -1006,27 +1034,78 @@ REG_OP(LpNormReduce)
     .OP_END_FACTORY_REG(LpNormReduce)
 
 /**
+* @brief Computes LpNormReduce.
+
+* @par Inputs:
+* x: An ND tensor of type float16, bfloat16, float32. \n
+*
+* @par Attributes:
+* @li p: Float, "inf" or "-inf", default value is 2.0.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, bfloat16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNormReduce.
+*/
+REG_OP(LpNormReduceV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .ATTR(p, Float, 2.0)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormReduceV2)
+
+/**
 * @brief Computes LpNormUpdate.
 
 * @par Inputs:
-* x: An ND tensor of type float16, float32. \n
+* x: An ND tensor of type float16, bfloat16, float32. \n
 *
 * @par Attributes:
 * @li p: Int, "inf" or "-inf", default value is 2.
 * @li epsilon: Float, default is 1e-12. \n
 
 * @par Outputs:
-* y: An ND tensor of type float16, float32. \n
+* y: An ND tensor of type float16, bfloat16, float32. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator LpNormUpdate.
 */
 REG_OP(LpNormUpdate)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(p, Int, 2)
     .ATTR(epsilon, Float, 1e-12)
     .OP_END_FACTORY_REG(LpNormUpdate)
+
+/**
+* @brief Computes LpNormUpdate.
+
+* @par Inputs:
+* x: An ND tensor of type float16, bfloat16, float32. \n
+*
+* @par Attributes:
+* @li p: Float, "inf" or "-inf", default value is 2.0.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, bfloat16, float32. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNormUpdate.
+*/
+REG_OP(LpNormUpdateV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .ATTR(p, Float, 2.0)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormUpdateV2)
 
 /**
 * @brief get complex.
@@ -1375,7 +1454,7 @@ REG_OP(SignBitsUnpack)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A mutable Tensor. The type support float16/float32.
+* @li x: A mutable Tensor. The type support float16, bfloat16, float32.
 * @li mask: An optional Tensor. Must meet all of the following rules:
 *     shape of mask should be broadcastable with x.
 *     dtype of mask should be bool.
@@ -1394,9 +1473,9 @@ REG_OP(SignBitsUnpack)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ScaledMaskedSoftmax)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OPTIONAL_INPUT(mask, TensorType({DT_BOOL, DT_UINT1}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .ATTR(scale, Float, 1.0)
     .ATTR(fixed_triu_mask, Bool, false)
     .OP_END_FACTORY_REG(ScaledMaskedSoftmax)
@@ -1406,8 +1485,8 @@ REG_OP(ScaledMaskedSoftmax)
 
 * @par Inputs:
 * Three inputs, including:
-* @li y_grad: A mutable Tensor. The type support float16/float32.
-* @li y: A mutable Tensor. The type support float16/float32.
+* @li y_grad: A mutable Tensor. The type support float16, bfloat16, float32.
+* @li y: A mutable Tensor. The type support float16, bfloat16, float32.
 * @li mask: An optional Tensor. Must meet all of the following rules:
 *     shape of mask should be broadcastable with x.
 *     dtype of mask should be bool.
@@ -1426,10 +1505,10 @@ REG_OP(ScaledMaskedSoftmax)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ScaledMaskedSoftmaxGrad)
-    .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OPTIONAL_INPUT(mask, TensorType({DT_BOOL, DT_UINT1}))
-    .OUTPUT(x_grad, TensorType({DT_FLOAT16}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT16, DT_BF16}))
     .ATTR(scale, Float, 1.0)
     .ATTR(fixed_triu_mask, Bool, false)
     .OP_END_FACTORY_REG(ScaledMaskedSoftmaxGrad)

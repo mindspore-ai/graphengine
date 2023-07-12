@@ -70,8 +70,7 @@ class GlobalProfiler {
   GlobalProfiler() = default;
   void Record(uint64_t name_idx, uint64_t type_idx, ExecutorEvent event,
               std::chrono::time_point<std::chrono::system_clock> timestamp) {
-    auto index = count_.load();
-    ++count_;
+    auto index = count_.fetch_add(1, std::memory_order_relaxed);
     if (index >= kProfilingDataCap) {
       return;
     }
@@ -262,19 +261,19 @@ class VISIBILITY_EXPORT ProfilerRegistry {
 
   static ProfilerRegistry &GetInstance();
 
-  void SaveRegistryType(const std::string &type);
-
-  bool IsProfLaunchType(const std::string &kernel_type);
+  void SaveRegistryType(const std::string &type, const bool launch_flag);
+  bool IsProfLaunchType(const std::string &kernel_type, const bool launch_flag = true);
  private:
   ProfilerRegistry() noexcept = default;
   std::vector<std::string> register_prof_launch_type_{};
+  std::vector<std::string> register_prof_non_launch_type_{};
   std::mutex mutex_;
 };
 
 class ProfLaunchTypeRegistry {
  public:
-  explicit ProfLaunchTypeRegistry(const std::string &type) noexcept {
-    ProfilerRegistry::GetInstance().SaveRegistryType(type);
+  explicit ProfLaunchTypeRegistry(const std::string &type, const bool launch_flag) noexcept {
+    ProfilerRegistry::GetInstance().SaveRegistryType(type, launch_flag);
   }
 };
 }  // namespace gert
@@ -353,7 +352,8 @@ class ProfLaunchTypeRegistry {
   do {                                                                                         \
     (void)gert::GlobalProfilingWrapper::ProfileStepTrace(request_id, item_id, tag_id, stream); \
   } while (false)
-#define REGISTER_PROF_TYPE(type) const gert::ProfLaunchTypeRegistry type##prof_type_registry(#type)
+#define REGISTER_PROF_TYPE(type) const gert::ProfLaunchTypeRegistry type##prof_type_registry(#type, true)
+#define REGISTER_PROF_NON_LAUNCH_TYPE(type) const gert::ProfLaunchTypeRegistry type##prof_type_registry(#type, false)
 #define GE_ASSERT_MSPROF_OK(v, ...) \
   GE_ASSERT((((v) == MSPROF_ERROR_NONE) || ((v) == MSPROF_ERROR_UNINITIALIZE)), __VA_ARGS__)
 #define RT2_PROFILING_SCOPE(element, event) gert::ScopeProfiler profiler((element), event)

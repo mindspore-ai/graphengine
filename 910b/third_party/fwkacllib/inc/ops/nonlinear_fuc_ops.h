@@ -84,7 +84,7 @@ REG_OP(HardSwishGrad)
 
 *@par Inputs:
 *One input, including:
-*x: A Tensor. Must be one of the following types: float16, float32
+*x: A Tensor. Must be one of the following types: float16, bfloat16, float32
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -96,8 +96,8 @@ REG_OP(HardSwishGrad)
 *Compatible with the Torch operator Swish
 */
 REG_OP(Swish)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(scale, Float, 1.0)
     .OP_END_FACTORY_REG(Swish)
 
@@ -106,7 +106,7 @@ REG_OP(Swish)
 
 *@par Inputs:
 *Three inputs, including:
-* @li grad: A Tensor. Must be one of the following types: float16, float32
+* @li grad: A Tensor. Must be one of the following types: float16, bfloat16, float32
 * @li x: A Tensor of the same type as "grad".
 * @li y: A Tensor of the same type as "grad" . \n
 * @par Attributes:
@@ -117,10 +117,10 @@ REG_OP(Swish)
 *Compatible with the Torch operator SwishGrad
 */
 REG_OP(SwishGrad)
-    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(grad_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(grad_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(scale, Float, 1.0)
     .OP_END_FACTORY_REG(SwishGrad)
 
@@ -381,6 +381,7 @@ REG_OP(SigmoidGrad)
     .INPUT(y, TensorType(UnaryDataType))
     .INPUT(dy, TensorType(UnaryDataType))
     .OUTPUT(z, TensorType(UnaryDataType))
+    .ATTR(complex_conj, Bool, false)
     .OP_END_FACTORY_REG(SigmoidGrad)
 
 /**

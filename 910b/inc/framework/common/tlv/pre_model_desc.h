@@ -17,8 +17,6 @@
 #ifndef INC_FRAMEWORK_COMMON_TLV_pre_model_desc_H_
 #define INC_FRAMEWORK_COMMON_TLV_pre_model_desc_H_
 
-#include "framework/common/tlv/tlv.h"
-
 namespace ge {
 #pragma pack(1)  // single-byte alignment
 
@@ -42,12 +40,6 @@ enum KERNEL_ARG_UPADTE_ADDR_TYPE {
   KERNEL_ARG_UPADTE_ADDR_TYPE_VAR,
   KERNEL_ARG_UPADTE_ADDR_TYPE_KERNEL_BIN,
   KERNEL_ARG_UPADTE_ADDR_TYPE_BUFF
-};
-enum KERNEL_CPU_PARA_ARG_TYPE { INSTANCE_NOT_CTEATE, INSTANCE_CTEATE };
-struct ExeOmKernelArgParamTlv1 {
-  uint8_t type;
-  uint64_t offset;
-  uint8_t param[0];
 };
 
 /********************************************************************************************/

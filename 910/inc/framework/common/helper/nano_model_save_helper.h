@@ -30,7 +30,7 @@ class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelHelper {
   virtual Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
                            ModelBufferData &model, const bool is_unknown_shape) override;
 
-  void SetSaveMode(const bool val) override {
+  virtual void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
 
@@ -52,10 +52,10 @@ class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelHelper {
                             const size_t model_index = 0UL) const;
 
  private:
-  void SetModelDescInfo(std::shared_ptr<uint8_t> &buff) { model_desc_info_ = buff; }
-  void SetStaticTaskInfo(std::shared_ptr<uint8_t> &buff) { static_task_info_ = buff; }
-  void SetDynamicTaskInfo(std::shared_ptr<uint8_t> &buff) { dynamic_task_info_ = buff; }
-  void SetTaskParamInfo(std::shared_ptr<uint8_t> &buff) { task_param_info_ = buff; }
+  void SetModelDescInfo(const std::shared_ptr<uint8_t> &buff) { model_desc_info_ = buff; }
+  void SetStaticTaskInfo(const std::shared_ptr<uint8_t> &buff) { static_task_info_ = buff; }
+  void SetDynamicTaskInfo(const std::shared_ptr<uint8_t> &buff) { dynamic_task_info_ = buff; }
+  void SetTaskParamInfo(const std::shared_ptr<uint8_t> &buff) { task_param_info_ = buff; }
 
   std::shared_ptr<uint8_t> model_desc_info_ = nullptr;
   std::shared_ptr<uint8_t> static_task_info_ = nullptr;

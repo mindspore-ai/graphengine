@@ -126,11 +126,12 @@ class VarResource {
   void SaveBroadCastInfo(const uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
 
   Status SetTransRoad(const std::string &var_name, const VarTransRoad &trans_road) {
-    if (var_to_trans_road_.find(var_name) != var_to_trans_road_.end()) {
-      GELOGW("Var name: %s has already set.", var_name.c_str());
+    const std::string &batch_var_name = GetBatchVarKeyName(var_name);
+    if (var_to_trans_road_.find(batch_var_name) != var_to_trans_road_.end()) {
+      GELOGW("Var name: %s has already set.", batch_var_name.c_str());
       return GRAPH_SUCCESS;
     }
-    var_to_trans_road_[var_name] = trans_road;
+    var_to_trans_road_[batch_var_name] = trans_road;
     return GRAPH_SUCCESS;
   }
 
@@ -171,7 +172,7 @@ class VarResource {
 
   VarDevAddrMgr *GetVarMgrInfo(const uint32_t device_id, const int64_t offset);
 
-  const std::map<uint32_t, std::unordered_map<uint64_t, VarDevAddrMgr>> &GetAllDevVarMgrInfo() {
+  const std::map<uint32_t, std::unordered_map<uint64_t, VarDevAddrMgr>> &GetAllDevVarMgrInfo() const {
     return device_id_to_var_dev_addr_mgr_map_;
   }
 
@@ -184,9 +185,9 @@ class VarResource {
 
   std::unordered_map<std::string, ge::GeTensorDesc> GetAllVarDesc() const { return cur_var_tensor_desc_map_; }
 
-  void SetVarIsReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
+  void SetVarIsReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, const uint32_t device_id);
 
-  bool IsVarReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc) const;
+  bool IsVarReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, const uint32_t device_id) const;
 
   Status VarResourceToSerial(deployer::VarResourceInfo *const var_resource_info) const;
 
@@ -215,7 +216,7 @@ class VarResource {
   std::map<uint32_t, std::map<std::string, ge::GeTensorDesc>> graph_id_to_staged_var_desc_;
   std::map<std::string, uint32_t> var_names_to_allocated_graph_id_;
   std::map<uint32_t, std::unordered_map<std::string, VarBroadCastInfo>> var_broad_cast_info_;
-  std::set<std::string> var_is_instance_;
+  std::map<uint32_t, std::set<std::string>> var_is_instance_;
   std::unordered_map<std::string, std::string> batch_var_name_map_;
 };
 
@@ -386,9 +387,9 @@ class VarManager {
 
   Status GetAllVariables(std::map<std::string, GeTensorDesc> &all_variables);
 
-  void SetVarIsReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
+  void SetVarIsReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, const uint32_t device_id);
 
-  bool IsVarReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc) const;
+  bool IsVarReady(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, const uint32_t device_id) const;
 
   Status VarManagerToSerial(const uint64_t session_id, deployer::VarManagerInfo &info) const;
 

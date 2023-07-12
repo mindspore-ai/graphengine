@@ -23,7 +23,7 @@ class ModelDescPartition : public ModelPartitionBase {
  public:
   ModelDescPartition() = default;
   virtual ~ModelDescPartition() = default;
-  Status Init(const GeModelPtr &ge_model, const uint8_t type = 0U) override;
+  virtual Status Init(const GeModelPtr &ge_model, const uint8_t type = 0U) override;
 
   Status GenModelDescInfo(const GeModelPtr &ge_model, ModelDescInfo &model_desc_info) const;
   Status SaveModelDescInfo(const ModelDescInfo model_desc_info);

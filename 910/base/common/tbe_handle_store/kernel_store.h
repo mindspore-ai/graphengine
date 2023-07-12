@@ -35,18 +35,18 @@
 #include "runtime/context.h"
 #include "runtime/rt_preload_task.h"
 
+#define ALIGN_MEM(MEM_SIZE, ALIGN_SIZE)                                                    \
+  if (((MEM_SIZE) > 0UL) && ((ALIGN_SIZE) != 0UL) && ((MEM_SIZE) % (ALIGN_SIZE) != 0UL)) { \
+    GELOGI("assign before, size[%zu]", (MEM_SIZE));                                        \
+    (MEM_SIZE) = ((MEM_SIZE) + (ALIGN_SIZE)-1) / (ALIGN_SIZE) * (ALIGN_SIZE);              \
+    GELOGI("assign after, size[%zu]", (MEM_SIZE));                                         \
+  }
+
 namespace ge {
 using KernelBin = ge::OpKernelBin;
 using KernelBinPtr = std::shared_ptr<ge::OpKernelBin>;
 using CustAICPUKernelPtr = std::shared_ptr<ge::OpKernelBin>;
 using TBEKernelPtr = std::shared_ptr<ge::OpKernelBin>;
-
-#define ALIGN_MEM(MEM_SIZE, ALIGN_SIZE)                                              \
-  if (((MEM_SIZE) > 0) && ((ALIGN_SIZE) != 0) && ((MEM_SIZE) % (ALIGN_SIZE) != 0)) { \
-    GELOGI("assign before, size[%zu]", (MEM_SIZE));                                  \
-    (MEM_SIZE) = ((MEM_SIZE) + (ALIGN_SIZE)-1) / (ALIGN_SIZE) * (ALIGN_SIZE);        \
-    GELOGI("assign after, size[%zu]", (MEM_SIZE));                                   \
-  }
 
 struct KernelStoreItemHead {
   uint32_t magic;

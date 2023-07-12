@@ -1393,6 +1393,8 @@ REG_OP(ReduceMeanVariance)
 * @li keepdim: An optional bool. Defaults to "False".
 *     If "True", Keep the original tensor dimension.
 *     If "False", Do not keep the original tensor dimension. \n
+* @li correction: An optional int. Defaults to 1.
+*     If unbiased is "True", use Bessel Correction. \n
 
 * @par Outputs:
 * @li output_var: A Tensor. It's the standard deviation or the variance of X. Has the same type as "x".
@@ -1401,13 +1403,14 @@ REG_OP(ReduceMeanVariance)
 * Compatible with the Pytorch operator Var_mean.
 */
 REG_OP(ReduceStdV2Update)
-    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
-    .INPUT(mean, TensorType({DT_FLOAT,DT_FLOAT16}))
-    .OUTPUT(output_var, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .INPUT(x, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(mean, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(output_var, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .REQUIRED_ATTR(dim, ListInt)
     .ATTR(if_std, Bool, false)
     .ATTR(unbiased, Bool, true)
     .ATTR(keepdim, Bool, false)
+    .ATTR(correction, Int, 1)
     .OP_END_FACTORY_REG(ReduceStdV2Update)
 
 /**

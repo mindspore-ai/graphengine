@@ -1556,7 +1556,7 @@ REG_OP(Centralization)
 *@par Inputs:
 *One inputs, including:
 * x: A tensor . Must be one of the following types:
-*     float16, float32, int32, uint32, int8, uint8. \n
+*     float16, bfloat16, float32, int32, uint32, int8, uint8. \n
 
 *@par Attributes:
 * @li shifts: The number of places by which the elements of the tensor are shifted. \n
@@ -1569,8 +1569,8 @@ REG_OP(Centralization)
 *Compatible with the Pytorch operator Roll. \n
 */
 REG_OP(Roll)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8,DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8,DT_BF16}))
     .REQUIRED_ATTR(shifts, ListInt)
     .ATTR(dims, ListInt, {})
     .OP_END_FACTORY_REG(Roll)

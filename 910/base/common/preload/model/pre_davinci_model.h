@@ -40,7 +40,7 @@ class PreDavinciModel {
   // get Op
   OpDescPtr GetOpByIndex(const uint32_t op_index) const;
   Status GetEngineName(const EngineType engine_type, const uint32_t task_type,
-                       const uint32_t kernel_type, std::string &engine_name);
+                       const uint32_t kernel_type, std::string &engine_name) const;
   std::string GetEngineNameByType(const uint32_t type,
                                   const std::map<uint32_t, std::string> type_to_engine_name) const;
 

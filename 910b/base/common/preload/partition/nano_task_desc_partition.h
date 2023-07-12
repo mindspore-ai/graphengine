@@ -23,7 +23,7 @@ class NanoTaskDescPartition : public ModelPartitionBase {
  public:
   NanoTaskDescPartition() = default;
   virtual ~NanoTaskDescPartition() override = default;
-  Status Init(const GeModelPtr &ge_model, const uint8_t type) override;
+  virtual Status Init(const GeModelPtr &ge_model, const uint8_t type) override;
 
  protected:
   uint8_t *desc_addr_ = nullptr;

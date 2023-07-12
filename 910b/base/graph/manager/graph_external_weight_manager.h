@@ -34,9 +34,9 @@ class ExternalWeightManager {
 
   bool IsWeightExist(std::string &file_name);
 
-  bool IsWeightLoaded(const std::string &file_name);
+  bool IsWeightLoaded(const std::string &file_name, const uint32_t device_id);
 
-  void SetWeightLoaded(const std::string &file_name);
+  void SetWeightLoaded(const std::string &file_name, const uint32_t device_id);
 
   void Finalize() noexcept;
 
@@ -48,7 +48,7 @@ class ExternalWeightManager {
 
   std::mutex mutex_;
   uint64_t session_id_;
-  std::set<std::string> loaded_external_weight_files;
+  std::map<uint32_t, std::set<std::string>> loaded_external_weight_files_;
   std::map<size_t, std::vector<std::string>> hash_to_files_;
   std::map<std::string, std::string> file_to_exist_file_;
 };

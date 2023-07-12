@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef GE_COMMON_PRELOAD_TASKINFO_AICORE_H_
-#define GE_COMMON_PRELOAD_TASKINFO_AICORE_H_
+#ifndef GE_COMMON_PRELOAD_TASKINFO_AICORE_AICORE_TASK_INFO_H_
+#define GE_COMMON_PRELOAD_TASKINFO_AICORE_AICORE_TASK_INFO_H_
 #include "common/preload/task_info/pre_generate_task_registry.h"
 
 namespace ge {
@@ -22,4 +22,4 @@ PreTaskResult GenerateAiCoreTask(const domi::TaskDef &task_def, const OpDescPtr 
                                  const PreTaskInput &pre_task_input);
 }  // namespace ge
 
-#endif  // GE_COMMON_PRELOAD_TASKINFO_AICORE_H_
+#endif  // GE_COMMON_PRELOAD_TASKINFO_AICORE_AICORE_TASK_INFO_H_

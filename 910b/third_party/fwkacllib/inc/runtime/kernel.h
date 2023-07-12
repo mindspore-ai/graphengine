@@ -954,7 +954,7 @@ rtError_t rtAppendLaunchAddrInfo(rtLaunchArgsHandle argsHandle, void *addrInfo);
  * @brief Append Host info to args  Handle.
  * @param [in] argsHandle   args Handle
  * @param [in] hostInfoSize   host Info Size
- * @param [out] hostInfo Address
+ * @param [out] hostInfo host info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */

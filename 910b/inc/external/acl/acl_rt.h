@@ -121,11 +121,14 @@ typedef struct aclrtStreamConfigHandle {
     uint32_t priority;
 } aclrtStreamConfigHandle;
 
+typedef struct aclrtUtilizationExtendInfo aclrtUtilizationExtendInfo;
+
 typedef struct aclrtUtilizationInfo {
     int32_t cubeUtilization;
     int32_t vectorUtilization;
     int32_t aicpuUtilization;
     int32_t memoryUtilization;
+    aclrtUtilizationExtendInfo *utilizationExtend; /**< reserved parameters, current version needs to be null */
 } aclrtUtilizationInfo;
 
 typedef struct tagRtGroupInfo aclrtGroupInfo;

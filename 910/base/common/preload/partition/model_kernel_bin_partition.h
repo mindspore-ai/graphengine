@@ -23,7 +23,7 @@ class ModelKernelBinPartition : public ModelPartitionBase {
  public:
   ModelKernelBinPartition() = default;
   virtual ~ModelKernelBinPartition() override = default;
-  Status Init(const GeModelPtr &ge_model, const uint8_t type = 0U) override;
+  virtual Status Init(const GeModelPtr &ge_model, const uint8_t type = 0U) override;
 };
 }  // namespace ge
 #endif

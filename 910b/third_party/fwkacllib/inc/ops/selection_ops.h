@@ -257,7 +257,7 @@ REG_OP(GatherV2D)
 * will be set as 0. Otherwise, an aic_error will occur.
 
 * @par Inputs:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+* @li x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64.
 * @li index: A Tensor. Must be one of the following types: int32, int64.
 
 * @par Attributes:
@@ -270,10 +270,10 @@ REG_OP(GatherV2D)
 * Compatible with the PyTorch operator Gather.
 */
 REG_OP(GatherElements)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32,
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32,
     DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_BOOL}))
     .INPUT(index, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32,
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32,
     DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_BOOL}))
     .ATTR(dim, Int, 0)
     .OP_END_FACTORY_REG(GatherElements)

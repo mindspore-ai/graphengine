@@ -20,7 +20,7 @@
 #include "common/checker.h"
 
 namespace ge {
-ge::char_t *CreateMessage(const ge::char_t *format, va_list arg);
+ge::char_t *CreateMessage(const ge::char_t * const format, va_list arg);
 class PreTaskStatus {
  public:
   bool IsSuccess() const {

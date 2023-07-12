@@ -1588,7 +1588,7 @@ REG_OP(IndexAdd)
 * @par Inputs:
 * Three inputs, including:
 * @li x1:  A Tensor. Must be one of the following types:
-* float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+* float16, bfloat16, float32, double, int32, uint8, int16, int8, complex64, int64,
 * qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
 
 * @li x2: A Tensor of the same type as "x1".
@@ -1642,7 +1642,7 @@ REG_OP(Triu)
 
 *@par Inputs:
 * x: A Tensor. Must be one of the following types:
-* float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+* float16, bfloat16, float32, double, int32, uint8, int16, int8, complex64, int64,
 * qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
 
 * @par Attributes:

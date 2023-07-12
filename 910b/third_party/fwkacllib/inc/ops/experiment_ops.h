@@ -432,8 +432,8 @@ REG_OP(InitEmbeddingHashmap)
 * @li table_id: A Tensor, dtype is int32. 1-D. indicates the id of hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int. indicates the hashtable value number.
-* @li value_total_length: A Int. indicates the hashtable total length, inclue m+v or accum.
+* @li embedding_dim: A ListInt. indicates the hashtable value number.
+* @li value_total_length: A ListInt. indicates the hashtable total length, inclue m+v or accum.
 * @li only_var: A Bool. only import var.
 * @li file_type: A String. indicates the import file . \n
 */
@@ -441,8 +441,8 @@ REG_OP(EmbeddingTableImport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .REQUIRED_ATTR(value_total_len, Int)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .REQUIRED_ATTR(value_total_len, ListInt)
     .ATTR(only_var_flag, Bool, false)
     .ATTR(file_type, String, "bin")
     .OP_END_FACTORY_REG(EmbeddingTableImport)
@@ -618,8 +618,8 @@ REG_OP(EmbeddingApplyAdamW)
 * @li table_id: A Tensor, 1D, dtype is DT_INT32, indicates the hashtable id.
 
 * @par Attributes:
-* @li embedding_dim: A Int. indicates the hashtable value number.
-* @li value_total_length: A Int. indicates the hashtable total length, inclue m+v or accum.
+* @li embedding_dim: A ListInt. indicates the hashtable value number.
+* @li value_total_length: A ListInt. indicates the hashtable total length, inclue m+v or accum.
 * @li export_mode: A String. export mode, Defaults to "all".
 * @li only_var: A Bool. only export var, Defaults to "false".
 * @li file_type: A String. indicates the export file, Defaults to "bin". \n
@@ -628,8 +628,8 @@ REG_OP(EmbeddingTableExport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .REQUIRED_ATTR(value_total_len, Int)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .REQUIRED_ATTR(value_total_len, ListInt)
     .ATTR(export_mode, String, "all")
     .ATTR(only_var_flag, Bool, false)
     .ATTR(file_type, String, "bin")
@@ -1644,6 +1644,33 @@ REG_OP(PasteSubImg)
     .OUTPUT(combine_img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
     .REQUIRED_ATTR(scale, Float)
     .OP_END_FACTORY_REG(PasteSubImg)
+
+/**
+* @brief RotatedFeatureAlignGrad:Calculate the gradient of input features according to
+* the gradient of output features. \n
+
+* @par Inputs:
+* @li dy: A tensor of type float32. The gradient of output features. 
+* @li bboxes: A tensor of type float32. The position information of bboxes. \n
+
+* @par Outputs:
+* @li dx: A tensor of type float32. The gradient of input features. \n
+
+* @par Attributes:
+* @li spatial_scale: A required float32. The scale of feature map to initial image.
+* @li points: An optional int. Defaults to "1". The number of sample points. \n
+
+* @par Third-party framework compatibility
+* Compatible with MMCV RotatedFeatureAlign operator.
+*/
+
+REG_OP(RotatedFeatureAlignGrad)
+    .INPUT(dy, TensorType({DT_FLOAT}))
+    .INPUT(bboxes, TensorType({DT_FLOAT}))
+    .OUTPUT(dx, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(spatial_scale, Float)
+    .ATTR(points, Int, 1)
+    .OP_END_FACTORY_REG(RotatedFeatureAlignGrad)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

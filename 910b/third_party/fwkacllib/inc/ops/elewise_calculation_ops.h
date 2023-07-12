@@ -3567,11 +3567,11 @@ REG_OP(TensorRedirect)
 * @par Inputs:
 * Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
-*     float16, float32, double, int64.
+*     float16, bfloat16, float32, double, int64.
 * @li x1: A mutable input Tensor of the same type as input_data.
 * @li x2: A mutable input Tensor of the same type as input_data.
 * @li value: A mutable input Tensor. Must be one of the following types:
-*     float16, float32, double, int64, int32. \n
+*     float16, bfloat16, float32, double, int64, int32. \n
 
 
 * @par Outputs:
@@ -3581,11 +3581,11 @@ REG_OP(TensorRedirect)
 * Compatible with the Pytorch operator Addcdiv(version-1.5.0).
 */
 REG_OP(Addcdiv)
-    .INPUT(input_data, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
-    .INPUT(value, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(input_data, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(value, TensorType({ DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
     .OP_END_FACTORY_REG(Addcdiv)
 
 /**
@@ -3595,7 +3595,7 @@ REG_OP(Addcdiv)
 * @par Inputs:
 * Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
-*     float16, float32, double, int64, int8, int32, uint8.
+*     float16, bfloat16, float32, double, int64, int8, int32, uint8.
 * @li x1: A mutable input Tensor of the same type as input_data.
 * @li x2: A mutable input Tensor of the same type as input_data.
 * @li value: A tensor which includes only one element of the same type as input_data. \n
@@ -3607,20 +3607,20 @@ REG_OP(Addcdiv)
 * Compatible with the Pytorch operator Addcmul.
 */
 REG_OP(Addcmul)
-    .INPUT(input_data, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
-    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(input_data, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
     .OP_END_FACTORY_REG(Addcmul)
 
 /**
 * @brief Computes the result of x2 * alpha + x1.
 
 * @par Inputs:
-* @li x1: An ND tensor of type float16, float32, int32.
-* @li x2: An ND tensor of type float16, float32, int32.
-* @li alpha: A scalar tensor of type float16, float32. \n
+* @li x1: An ND tensor of type float16, bfloat16, float32, int32.
+* @li x2: An ND tensor of type float16, bfloat16, float32, int32.
+* @li alpha: A scalar tensor of type float16, bfloat16, float32. \n
 
 * @par Outputs:
 * y: An ND tensor tensor with the same shape and type as "x1". \n
@@ -3629,10 +3629,10 @@ REG_OP(Addcmul)
 * Compatible with the Pytorch operator Axpy.
 */
 REG_OP(AxpyV2)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .OP_END_FACTORY_REG(AxpyV2)
 
 /**

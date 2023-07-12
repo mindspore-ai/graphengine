@@ -768,7 +768,7 @@ is changed, but the data is not changed. \n
 
 REG_OP(UnsqueezeV3)
     .INPUT(x, TensorType::ALL())
-    .INPUT(axes, ListInt)
+    .INPUT(axes, TensorType({DT_INT64}))
     .OUTPUT(y, TensorType::ALL())
     .OP_END_FACTORY_REG(UnsqueezeV3)
 
@@ -864,7 +864,7 @@ squeeze a dimension that is not 1. \n
 
 REG_OP(SqueezeV3)
     .INPUT(x, TensorType::ALL())
-    .OPTIONAL_INPUT(axes, ListInt)
+    .OPTIONAL_INPUT(axes, TensorType({DT_INT64}))
     .OUTPUT(y, TensorType::ALL())
     .OP_END_FACTORY_REG(SqueezeV3)
 
@@ -1214,7 +1214,7 @@ REG_OP(Copy)
 *@par Inputs:
 *Eight inputs, including:
 *dst: A tensor. Must be one of the following types:
-* double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
+* double, float32, float16, bfloat16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
 *dst_size: A tensor with type int32
 *dst_stride: A tensor with type int32
 *dst_storage_offset: A tensor with type int32

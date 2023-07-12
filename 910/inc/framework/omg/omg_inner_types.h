@@ -103,6 +103,8 @@ struct OmgContext {
   bool user_attr_index_valid = false;
   bool is_online_model = false;
   bool is_subgraph_multi_batch = false;
+  // dynamic dims
+  std::vector<std::vector<int32_t>> batch_shapes;
 };
 }  // namespace ge
 

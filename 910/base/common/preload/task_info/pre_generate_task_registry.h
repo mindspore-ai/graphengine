@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GE_COMMON_PRELOAD_PRE_GENERATE_TASK_REGISTRY_H_
-#define GE_COMMON_PRELOAD_PRE_GENERATE_TASK_REGISTRY_H_
+#ifndef GE_COMMON_PRELOAD_TASK_INFO_PRE_GENERATE_TASK_REGISTRY_H_
+#define GE_COMMON_PRELOAD_TASK_INFO_PRE_GENERATE_TASK_REGISTRY_H_
 #include <string>
 #include <functional>
 #include <vector>
@@ -58,8 +58,8 @@ class PreGenerateTaskRegister {
 
 #define GE_REFISTER_PRE_GENERATE_TASK(type, func, counter)                                                             \
   static const ge::PreGenerateTaskRegister g_register_pre_generate_task_##counter ATTRIBUTE_USED =                     \
-      ge::PreGenerateTaskRegister(type, func)
+      ge::PreGenerateTaskRegister((type), (func))
 #define REFISTER_PRE_GENERATE_TASK(type, func)                                                                         \
-  GE_REFISTER_PRE_GENERATE_TASK(type, func, __COUNTER__)
+  GE_REFISTER_PRE_GENERATE_TASK((type), (func), __COUNTER__)
 
 #endif  // GE_COMMON_PRELOAD_PRE_GENERATE_TASK_REGISTRY_H_

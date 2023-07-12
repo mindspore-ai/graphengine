@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INC_FRAMEWORK_COMMON_HELPER_LITE_MODEL_HELPER_H_
-#define INC_FRAMEWORK_COMMON_HELPER_LITE_MODEL_HELPER_H_
+#ifndef INC_FRAMEWORK_COMMON_HELPER_PRE_MODEL_HELPER_H_
+#define INC_FRAMEWORK_COMMON_HELPER_PRE_MODEL_HELPER_H_
 
 #include "framework/common/helper/model_helper.h"
 
@@ -23,11 +23,11 @@ namespace ge {
 class GE_FUNC_VISIBILITY PreModelHelper : public ModelHelper {
  public:
   PreModelHelper() = default;
-  virtual ~PreModelHelper() = default;
+  virtual ~PreModelHelper() override = default;
   PreModelHelper(const PreModelHelper &) = default;
   PreModelHelper &operator=(const PreModelHelper &) & = default;
 
-  virtual Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
+  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
                                    ModelBufferData &model, const bool is_unknown_shape) override;
 
  private:
@@ -48,16 +48,16 @@ class GE_FUNC_VISIBILITY PreModelHelper : public ModelHelper {
                             const size_t model_index = 0UL) const;
 
  private:
-  void SetKernelArgsInfo(std::shared_ptr<uint8_t> &buff) {
+  void SetKernelArgsInfo(const std::shared_ptr<uint8_t> &buff) {
     kernel_args_info_ = buff;
   }
-  void SetTaskDescInfo(std::shared_ptr<uint8_t> &buff) {
+  void SetTaskDescInfo(const std::shared_ptr<uint8_t> &buff) {
     task_desc_info_ = buff;
   }
-  void SetModelDescInfo(std::shared_ptr<uint8_t> &buff) {
+  void SetModelDescInfo(const std::shared_ptr<uint8_t> &buff) {
     model_desc_info_ = buff;
   }
-  void SetKernelBinInfo(std::shared_ptr<uint8_t> &buff) {
+  void SetKernelBinInfo(const std::shared_ptr<uint8_t> &buff) {
     kernel_bin_info_ = buff;
   }
 
@@ -67,4 +67,4 @@ class GE_FUNC_VISIBILITY PreModelHelper : public ModelHelper {
   std::shared_ptr<uint8_t> kernel_bin_info_ = nullptr;
 };
 }  // namespace ge
-#endif  // INC_FRAMEWORK_COMMON_HELPER_LITE_MODEL_SAVE_HELPER_H_
+#endif  // INC_FRAMEWORK_COMMON_HELPER_PRE_MODEL_HELPER_H_

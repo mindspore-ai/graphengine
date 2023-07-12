@@ -17,7 +17,7 @@
 
 // DataTypeConfig
 constexpr uint64_t PROF_ACL_API              = 0x00000001ULL;
-constexpr uint64_t PROF_TASK_TIME            = 0x00000002ULL;
+constexpr uint64_t PROF_TASK_TIME_L1         = 0x00000002ULL;
 constexpr uint64_t PROF_AICORE_METRICS       = 0x00000004ULL;
 constexpr uint64_t PROF_AICPU_TRACE          = 0x00000008ULL;
 constexpr uint64_t PROF_L2CACHE              = 0x00000010ULL;
@@ -27,7 +27,7 @@ constexpr uint64_t PROF_MSPROFTX             = 0x00000080ULL;
 constexpr uint64_t PROF_RUNTIME_API          = 0x00000100ULL;
 constexpr uint64_t PROF_FWK_SCHEDULE_L0      = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW            = 0x00000400ULL;
-constexpr uint64_t PROF_TASK_TIME_L1         = 0x00000800ULL;
+constexpr uint64_t PROF_TASK_TIME            = 0x00000800ULL;
 constexpr uint64_t PROF_TASK_MEMORY          = 0x00001000ULL;
 
 // system profilinig switch
@@ -57,7 +57,7 @@ constexpr uint64_t PROF_TASK_TRACE = (PROF_RUNTIME_TRACE | PROF_TRAINING_TRACE |
 
 // DataTypeConfig MASK
 constexpr uint64_t PROF_ACL_API_MASK              = 0x00000001ULL;
-constexpr uint64_t PROF_TASK_TIME_MASK            = 0x00000002ULL;
+constexpr uint64_t PROF_TASK_TIME_L1_MASK         = 0x00000002ULL;
 constexpr uint64_t PROF_AICORE_METRICS_MASK       = 0x00000004ULL;
 constexpr uint64_t PROF_AICPU_TRACE_MASK          = 0x00000008ULL;
 constexpr uint64_t PROF_L2CACHE_MASK              = 0x00000010ULL;
@@ -68,7 +68,7 @@ constexpr uint64_t PROF_RUNTIME_API_MASK          = 0x00000100ULL;
 constexpr uint64_t PROF_TASK_FRAMEWORK_MASK       = 0x00000200ULL;
 constexpr uint64_t PROF_FWK_SCHEDULE_L0_MASK      = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW_MASK            = 0x00000400ULL;
-constexpr uint64_t PROF_TASK_TIME_L1_MASK         = 0x00000800ULL;
+constexpr uint64_t PROF_TASK_TIME_MASK            = 0x00000800ULL;
 constexpr uint64_t PROF_TASK_MEMORY_MASK          = 0x00001000ULL;
 
 // system profilinig mask

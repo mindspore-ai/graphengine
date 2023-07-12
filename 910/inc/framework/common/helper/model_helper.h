@@ -30,21 +30,6 @@
 #include "common/op_so_store/op_so_store.h"
 
 namespace ge {
-static std::map<ModelPartitionType, string> item_type_map = {
-  {MODEL_DEF, "model info"},
-  {TASK_INFO, "task info"},
-  {TBE_KERNELS, "tbe kernels"},
-  {CUST_AICPU_KERNELS, "aicput kernels"},
-  {SO_BINS, "so bins"},
-  {MODEL_INOUT_INFO, "model introductions"},
-  {STATIC_TASK_DESC, "static task desc"},
-  {DYNAMIC_TASK_DESC, "dynamic task desc"},
-  {TASK_PARAM, "task param"},
-  {PRE_MODEL_DESC, "pre model desc"},
-  {PRE_MODEL_SQE, "pre model task"},
-  {PRE_KERNEL_ARGS, "pre kernel args"},
-};
-
 class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  public:
   ModelHelper() noexcept = default;
@@ -68,7 +53,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
-  void SetSaveMode(const bool val) override {
+  virtual void SetSaveMode(const bool val) override {
     is_offline_ = val;
   }
 
@@ -115,14 +100,14 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
                                        const GeRootModelPtr &ge_root_model, string &output_file_name,
                                        const GeModelPtr &first_ge_model);
   Status SaveModelHeader(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
-                         const size_t model_num = 1U, bool need_check_os_cpu = false,
-                         bool is_unknow_shape = false) const;
+                         const size_t model_num = 1U, const bool need_check_os_cpu = false,
+                         const bool is_unknow_shape = false) const;
   Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const ModelPartitionType type,
                             const uint8_t* const data, const size_t size, const size_t model_index) const;
   Status SaveModelWeights(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                           const size_t model_index = 0U) const;
   Status SaveModelIntroduction(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                               const GeModelPtr &ge_model, size_t model_index = 0U) const;
+                               const GeModelPtr &ge_model, const size_t model_index = 0U) const;
   Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                             const size_t model_index = 0U) const;
   GeModelPtr model_;

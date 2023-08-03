@@ -75,6 +75,10 @@ extern "C" {
 #define RUN_LOG_MASK        (0x01000000)    // print log to directory run
 #define STDOUT_LOG_MASK     (0x10000000)    // print log to stdout
 
+#define LOG_SAVE_MODE_DEF   (0x0)           // default
+#define LOG_SAVE_MODE_UNI   (0xFE756E69)    // unify save mode
+#define LOG_SAVE_MODE_SEP   (0xFE736570)    // separate save mode
+
 typedef struct tagKV {
     char *kname;
     char *value;
@@ -86,10 +90,11 @@ typedef enum {
 } ProcessType;
 
 typedef struct {
-    ProcessType type;
-    unsigned int pid;
-    unsigned int deviceId;
-    char reserved[52];      // reserve 52 bytes, align to 64 bytes
+    ProcessType type;       // process type
+    unsigned int pid;       // pid
+    unsigned int deviceId;  // device id
+    unsigned int mode;      // log save mode
+    char reserved[48];      // reserve 48 bytes, align to 64 bytes
 } LogAttr;
 
 /**
@@ -108,11 +113,7 @@ enum {
     DVPP,          /**< DVPP */
     RUNTIME,       /**< Runtime */
     CCE,           /**< CCE */
-#if (OS_TYPE == LINUX)
-    HDC,         /**< HDC */
-#else
-    HDCL,
-#endif // OS_TYPE
+    HDC,           /**< HDC */
     DRV,           /**< Driver */
     MDCFUSION,     /**< Mdc fusion */
     MDCLOCATION,   /**< Mdc location */
@@ -233,6 +234,12 @@ DLL_EXPORT void DlogVaList(int moduleId, int level, const char *fmt, va_list lis
 
 /**
  * @ingroup slog
+ * @brief DlogFlush: flush log buffer to file
+ */
+DLL_EXPORT void DlogFlush(void);
+
+/**
+ * @ingroup slog
  * @brief dlog_error: print error log
  *
  * @param [in]moduleId: module id, eg: CCE
@@ -242,12 +249,6 @@ DLL_EXPORT void DlogVaList(int moduleId, int level, const char *fmt, va_list lis
     do {                                                                          \
         DlogErrorInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
     } while (TMP_LOG != 0)
-
-/**
- * @ingroup slog
- * @brief DlogFlush: flush log buffer to file
- */
-DLL_EXPORT void DlogFlush(void);
 
 /**
  * @ingroup slog

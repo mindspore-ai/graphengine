@@ -93,6 +93,59 @@ constexpr uint64_t PROF_OP_DETAIL_MASK            = 0x0000080000000ULL;
 constexpr uint64_t PROF_AICPU_MODEL_MASK          = 0x4000000000000000ULL;
 constexpr uint64_t PROF_MODEL_LOAD_MASK           = 0x8000000000000000ULL;
 
+constexpr int PROF_MAX_DEV_NUM = 64; // 64 : dev max number
+constexpr int PROF_DEFAULT_HOST_ID = PROF_MAX_DEV_NUM;
+
+/**
+ * @name  ProfAicoreMetrics
+ * @brief aicore metrics enum
+ */
+enum ProfAicoreMetrics {
+    PROF_AICORE_ARITHMETIC_UTILIZATION = 0,
+    PROF_AICORE_PIPE_UTILIZATION = 1,
+    PROF_AICORE_MEMORY_BANDWIDTH = 2,
+    PROF_AICORE_L0B_AND_WIDTH = 3,
+    PROF_AICORE_RESOURCE_CONFLICT_RATIO = 4,
+    PROF_AICORE_MEMORY_UB = 5,
+    PROF_AICORE_L2_CACHE = 6,
+    PROF_AICORE_PIPE_EXECUTE_UTILIZATION = 7,
+    PROF_AICORE_METRICS_COUNT,
+    PROF_AICORE_NONE = 0xff,
+};
+
+/**
+ * @name  ProfConfig
+ * @brief struct of aclprofStart/aclprofStop
+ */
+struct ProfConfig {
+    uint32_t devNums;                       // length of device id list
+    uint32_t devIdList[PROF_MAX_DEV_NUM + 1];   // physical device id list
+    ProfAicoreMetrics aicoreMetrics;        // aicore metric
+    uint64_t dataTypeConfig;                // data type to start profiling
+};
+using PROF_CONF_CONST_PTR = const ProfConfig *;
+
+/**
+ * @name  ProfSubscribeConfig
+ * @brief config of subscribe api
+ */
+struct ProfSubscribeConfig {
+    bool timeInfo;                          // subscribe op time
+    ProfAicoreMetrics aicoreMetrics;        // subscribe ai core metrics
+    void* fd;                               // pipe fd
+};
+using PROF_SUB_CONF_CONST_PTR = const ProfSubscribeConfig *;
+
+/**
+ * @name  aclprofSubscribeConfig
+ * @brief config of subscribe common api
+ */
+struct aclprofSubscribeConfig {
+    struct ProfSubscribeConfig config;
+};
+using ACL_PROF_SUB_CONFIG_PTR = aclprofSubscribeConfig *;
+using ACL_PROF_SUB_CINFIG_CONST_PTR = const aclprofSubscribeConfig *;
+
 #if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)
 #else

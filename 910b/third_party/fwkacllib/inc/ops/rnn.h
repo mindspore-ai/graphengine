@@ -1404,8 +1404,8 @@ REG_OP(DynamicGRUCellGrad)
 * @par Inputs:
 * Two inputs, including:
 * @li grad: A mutable Tensor of word grad. Must be one of the following types:
-*     float32, bfloat16.
-* @li indices: A mutable word index Tensor of the int32 type.\n
+*     float32, bfloat16, float16.
+* @li indices: A mutable word index Tensor of the int32, int64 type.\n
 
 * @par Attributes:
 * @li num_weights: An int attr which use to judge how many words in dict. \n
@@ -1423,9 +1423,9 @@ REG_OP(DynamicGRUCellGrad)
 * Compatible with the Pytorch operator EmbeddingDenseGrad.
 */
 REG_OP(EmbeddingDenseGrad)
-    .INPUT(grad, TensorType({ DT_FLOAT32, DT_BF16 }))  /* "First operand." */
-    .INPUT(indices, TensorType({ DT_INT32 })) /* "Second operand." */
-    .OUTPUT(y, TensorType({ DT_FLOAT32 }))    /* "Result, has same element type as two inputs" */
+    .INPUT(grad, TensorType({ DT_FLOAT32, DT_FLOAT16, DT_BF16 }))  /* "First operand." */
+    .INPUT(indices, TensorType({ DT_INT32, DT_INT64 }))  /* "Second operand." */
+    .OUTPUT(y, TensorType({ DT_FLOAT32, DT_FLOAT16, DT_BF16 }))  /* "Result, has same element type as two inputs" */
     .REQUIRED_ATTR(num_weights, Int)
     .ATTR(padding_idx, Int, -1)
     .ATTR(scale_grad_by_freq, Bool, false)

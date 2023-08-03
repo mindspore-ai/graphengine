@@ -138,6 +138,7 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     return enable_flags_.load() & BuiltInSubscriberUtil::EnableBit<ProfilingType>(profiling_type);
   }
 
+  bool IsEnabled(std::vector<ProfilingType> profiling_types);
   void DumpAndFree(std::ostream &out_stream) {
     Dump(out_stream);
     Free();
@@ -154,26 +155,13 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     }
   }
 
-  uint64_t RegisterString(const std::string &name) {
-    const std::lock_guard<std::mutex> lk(register_mutex_);
-    RegisterBuiltInString();
-    const auto iter = std::find(idx_to_str_.begin(), idx_to_str_.end(), name);
-    if (iter == idx_to_str_.end()) {
-      idx_to_str_[str_idx_] = name;
-      ++str_idx_;
-      if (str_idx_ >= idx_to_str_.size()) {
-        idx_to_str_.resize(idx_to_str_.size() * kDouble);
-      }
-      return str_idx_ - 1UL;
-    } else {
-      return iter - idx_to_str_.begin();
-    }
-  }
+  uint64_t RegisterString(const std::string &name);
 
   const std::vector<std::string> &GetIdxToStr() const {
     return idx_to_str_;
   }
   uint32_t GetProfModelId() const;
+  ge::Status RegisterExtendProfType(const std::string &name, const uint32_t idx) const;
   void IncProfModelId();
   void RegisterBuiltInString();
   ge::Status RegisterProfType() const;
@@ -308,6 +296,20 @@ class ProfLaunchTypeRegistry {
     event##begin_time = MsprofSysCycleTime();                                                   \
   }
 
+#define CANN_PROFILING_MODEL_API_END(item_id, info_type, end_time, event)                                          \
+  do {                                                                                                             \
+    if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) {                  \
+      gert::GlobalProfilingWrapper::GetInstance()->ReportApiInfoModelLevel(                                        \
+      event##begin_time, end_time, item_id, info_type);                                                            \
+    }                                                                                                              \
+  } while (false)
+
+#define CANN_PROFILING_MODEL_API_START(event)                                                   \
+  uint64_t event##begin_time = 0UL;                                                             \
+  if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) { \
+    event##begin_time = MsprofSysCycleTime();                                                   \
+  }
+
 #define CANN_PROFILING_EVENT_START(item_id, request_id, info_type, single_event)                     \
   do {                                                                                               \
     if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) {    \
@@ -341,10 +343,11 @@ class ProfLaunchTypeRegistry {
     }                                                                                             \
   } while (false)
 
-#define CANN_PROFILING_GRAPH_ID(prof_time, tid, graph_id, model_id, is_aging)                               \
+#define CANN_PROFILING_GRAPH_ID(prof_time, tid, graph_id, model_id, is_aging, model_name)                   \
   do {                                                                                                      \
     if (gert::GlobalProfilingWrapper::GetInstance()->IsEnabled(gert::ProfilingType::kTaskTime)) {           \
-      (void)gert::GlobalProfilingWrapper::ReportGraphIdMap(prof_time, tid, {graph_id, model_id}, is_aging); \
+      (void)gert::GlobalProfilingWrapper::ReportGraphIdMap(prof_time, tid, {graph_id, model_id}, is_aging,  \
+                                                           model_name);                                     \
     }                                                                                                       \
   } while (false)
 

@@ -478,7 +478,7 @@ REG_OP(BNInferGrad)
 *@li x: A Tensor. Must be one of the following types:
 *     float32, float64, int32, uint8, int16, int8,
 *     complex64, int64, qint8, quint8, qint32, uint16,
-*     complex128, float16, uint32, uint64, complex64, complex128.
+*     complex128, bfloat16, float16, uint32, uint64, complex64, complex128.
 *@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
 
 *@par Attributes:
@@ -498,28 +498,28 @@ REG_OP(ReduceSum)
     .OP_END_FACTORY_REG(ReduceSum)
 
 /**
-*@brief Computes the sum of elements across dimensions of a tensor . \n
+* @brief Computes the sum of elements across dimensions of a tensor . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x: A Tensor. Up to 8D. Must be one of the following types: float16, float32. \n
+* x: A Tensor. Up to 8D. Must be one of the following types: float16, float32, bfloat16. \n
 
-*@par Attributes:
-*@li axes: A required 1D list or tuple of int32 or int64. Specifies the dimensions to reduce.
-*@li keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+* @par Attributes:
+* @li axes: A required 1D list or tuple of int32 or int64. Specifies the dimensions to reduce.
+* @li keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
 
-*@par Outputs:
-*y: The reduced tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: The reduced tensor. Has the same type and format as input "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Sum.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceSum instead.
 */
 REG_OP(ReduceSumD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceSumD)
@@ -724,23 +724,26 @@ REG_OP(ReduceMeanD)
     .OP_END_FACTORY_REG(ReduceMeanD)
 
 /**
-*@brief Returns the maximum of elements across dimensions of a Tensor . \n
+* @brief Returns the maximum of elements across dimensions of a Tensor . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: A multi-dimensional Tensor of type float16, float32, or int16.
-*@li axes: A Scalar of type int32, specifying the axes information of the index with the maximum value . \n
+* @li x: A multi-dimensional Tensor of type bfloat16, float16, float32, or int16.
+* @li axes: A Scalar of type int32, specifying the axes information of the index with the maximum value . \n
 
-*@par Attributes:
-*keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false" . \n
+* @par Attributes:
+* keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false" . \n
 
-*@par Outputs:
-*y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor. Has the same type as "x". (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
+* @par Outputs:
+* y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor.
+  Has the same type as "x". (If "keep_dims" is set to "false",
+  the output dimensions are reduced by "dimension" compared with that of "x".
+  Otherwise, the output has one fewer dimension than "x".)
 
-*@attention Constraints:
+* @attention Constraints:
 * The value range of "axes" is [-dims, dims - 1]. "dims" indicates the dimension length of "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with TensorFlow operator Max.
 */
 REG_OP(ReduceMax)
@@ -1333,6 +1336,8 @@ REG_OP(ReduceStd)
 *     If "False", the output is variance.
 * @li epsilon: An optional floar, Defaults to 0.001.
 *     Prevent division by 0.
+* @li correction: An optional int. Defaults to 1.
+*     If unbiased is "True", use Bessel Correction. \n
 
 * @par Outputs:
 * @li y: A Tensor. It's the variance of X or reciprocal of vaiance of X. Has the same type as "x".

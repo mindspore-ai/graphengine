@@ -665,7 +665,7 @@ ACL_FUNC_VISIBILITY aclError aclrtEventElapsedTime(float *ms, aclrtEvent startEv
 
 /**
  * @ingroup AscendCL
- * @brief alloc memory on device
+ * @brief alloc memory on device, real alloc size is aligned to 32 bytes and padded with 32 bytes
  *
  * @par Function
  *  alloc for size linear memory on device
@@ -690,6 +690,31 @@ ACL_FUNC_VISIBILITY aclError aclrtEventElapsedTime(float *ms, aclrtEvent startEv
 ACL_FUNC_VISIBILITY aclError aclrtMalloc(void **devPtr,
                                          size_t size,
                                          aclrtMemMallocPolicy policy);
+
+/**
+ * @ingroup AscendCL
+ * @brief alloc memory on device, real alloc size is aligned to 32 bytes with no padding
+ *
+ * @par Function
+ *  alloc for size linear memory on device
+ *  and return a pointer to allocated memory by *devPtr
+ *
+ * @par Restriction
+ * @li The memory requested by the aclrtMallocAlign32 interface needs to be released
+ * through the aclrtFree interface.
+ *
+ * @param devPtr [OUT]  pointer to pointer to allocated memory on device
+ * @param size [IN]     alloc memory size
+ * @param policy [IN]   memory alloc policy
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see aclrtFree | aclrtMalloc | aclrtMallocCached
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMallocAlign32(void **devPtr,
+                                                size_t size,
+                                                aclrtMemMallocPolicy policy);
 
 /**
  * @ingroup AscendCL

@@ -41,6 +41,12 @@ struct ModelRelation {
     std::vector<std::string> p2p_input_node_names;
     std::vector<std::string> p2p_output_node_names;
     std::vector<std::string> invoke_model_keys;
+    bool IsEmpty() const {
+      return input_endpoint_names.empty() && output_endpoint_names.empty() &&
+             external_output_queue_names.empty() && external_input_queue_names.empty() &&
+             p2p_input_node_names.empty() && p2p_output_node_names.empty() &&
+             invoke_model_keys.empty();
+    }
   };
 
   std::vector<Endpoint> endpoints;
@@ -49,6 +55,10 @@ struct ModelRelation {
   // key: invoke model key
   std::map<std::string, InvokedModelQueueInfo> invoked_model_queue_infos;
   ModelEndpointInfo root_model_endpoint_info;
+  bool IsEmpty() const {
+    return endpoints.empty() && submodel_endpoint_infos.empty() &&
+           invoked_model_queue_infos.empty() && root_model_endpoint_info.IsEmpty();
+  }
 };
 
 class ModelRelationBuilder {

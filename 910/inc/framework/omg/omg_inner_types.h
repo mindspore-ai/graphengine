@@ -104,7 +104,7 @@ struct OmgContext {
   bool is_online_model = false;
   bool is_subgraph_multi_batch = false;
   // dynamic dims
-  std::vector<std::vector<int32_t>> batch_shapes;
+  std::vector<std::vector<int64_t>> batch_shapes;
 };
 }  // namespace ge
 

@@ -55,6 +55,7 @@ enum class ProfilingType {
   kTrainingTrace = 3,
   kTaskTime = 4,
   kMemory = 5,
+  kCannHostL1 = 6,
   kNum,
   kAll = kNum
 };

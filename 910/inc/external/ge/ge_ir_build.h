@@ -90,6 +90,24 @@ GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph,
 
 /**
  * @ingroup AscendCL
+ * @brief build model.Notice the model is stored in buffer
+ *
+ * @param graphs[IN]   the multiple graphs ready to build
+ * @param options[IN] options used for build
+ * @param model[OUT]  builded model
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const std::vector<ge::Graph> &graphs,
+                                                 const std::map<std::string, std::string> &build_options,
+                                                 ModelBufferData &model);
+
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const std::vector<ge::Graph> &graphs,
+                                                 const std::map<AscendString, AscendString> &build_options,
+                                                 ModelBufferData &model);
+
+/**
+ * @ingroup AscendCL
  * @brief save model buffer to file
  *
  * @param output_file[IN]   the file path to be saved

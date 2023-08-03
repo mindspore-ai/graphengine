@@ -30,7 +30,7 @@ namespace ge {
 
 * @par Inputs:
 * One input, including: \n
-* x: A Tensor. Must be one of the following types: float16, float32. \n
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x". \n
@@ -39,8 +39,8 @@ namespace ge {
 * Compatible with the TensorFlow operator Gelu.
 */
 REG_OP(Gelu)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(Gelu)
 
 /**
@@ -84,13 +84,13 @@ REG_OP(HardSwishGrad)
 
 *@par Inputs:
 *One input, including:
-*x: A Tensor. Must be one of the following types: float16, bfloat16, float32
+* x: A Tensor. Must be one of the following types: float16, bfloat16, float32. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+* y: A Tensor. Has the same type as "x". \n
 
 *@par Attributes:
-*scale: scalar parameter, default value = 1.0
+* scale: scalar parameter, default value = 1.0 \n
 
 *@par Third-party framework compatibility
 *Compatible with the Torch operator Swish
@@ -129,7 +129,7 @@ REG_OP(SwishGrad)
 
 * @par Inputs:
 * Three inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li dy: A Tensor. Must be one of the following types:bfloat16, float16, float32.
 * @li x: A Tensor of the same type as "dy".
 * @li y: A Tensor of the same type as "dy" . \n
 
@@ -139,10 +139,10 @@ REG_OP(SwishGrad)
 * Compatible with the TensorFlow operator GeluGrad.
 */
 REG_OP(GeluGrad)
-    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(z, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dy, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(z, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(GeluGrad)
 
 /**
@@ -150,7 +150,7 @@ REG_OP(GeluGrad)
 
 *@par Inputs:
 *One input, including:
-*x: A Tensor. Must be one of the following types: float16, float32
+*x: A Tensor. Must be one of the following types: bfloat16, float16, float32
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -158,8 +158,8 @@ REG_OP(GeluGrad)
 *Compatible with the TensorFlow operator FastGelu
 */
 REG_OP(FastGelu)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(FastGelu)
 /**
 *@brief The FastGeluV2 activation function is x*(sgn(x)*[(a/2)*(clip(|x|,max=-b)+b)^2+0.5]+0.5),
@@ -167,7 +167,7 @@ REG_OP(FastGelu)
 
 *@par Inputs:
 *One input, including:
-*x: A Tensor. Must be one of the following types: float16, float32
+*x: A Tensor. Must be one of the following types: bfloat16, float16, float32
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -175,15 +175,15 @@ REG_OP(FastGelu)
 *Compatible with the TensorFlow operator FastGeluV2
 */
 REG_OP(FastGeluV2)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(FastGeluV2)
 /**
 *@brief Computes the gradient for the fast_gelu of "x" . \n
 
 *@par Inputs:
 *Two inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32
+* @li dy: A Tensor. Must be one of the following types: bfloat16, float16, float32
 * @li x: A Tensor of the same type as "dy" . \n
 
 *@par Outputs:
@@ -192,9 +192,9 @@ REG_OP(FastGeluV2)
 *Compatible with the TensorFlow operator FastGeluGrad
 */
 REG_OP(FastGeluGrad)
-    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(z, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(z, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(FastGeluGrad)
 
 /**
@@ -373,6 +373,9 @@ REG_OP(Sigmoid)
 * @par Inputs:
 * @li y: The input is Tensor, dtype is UnaryDataType.
 * @li dy: The input is Tensor, dtype is UnaryDataType . \n
+
+* @par Attributes:
+* @li complex_conj: An optional attribute indicates whether to use conjugate operations for complex dtype.
 
 * @par Outputs:
 * z: The shape of output, dtype is UnaryDataType.
@@ -1236,10 +1239,10 @@ REG_OP(Shrink)
 * Compatible with the Pytorch operator Threshold.
 */
 REG_OP(ThresholdV2)
-     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
-     .INPUT(threshold, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
-     .OPTIONAL_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
-     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8}))
+     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
+     .INPUT(threshold, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
+     .OPTIONAL_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
      .OP_END_FACTORY_REG(ThresholdV2)
 
 /**

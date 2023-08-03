@@ -392,37 +392,37 @@ RTS_API rtError_t rtNanoModelExecute(rtMdlExecute_t *modelExec);
 RTS_API rtError_t rtMsgSend(uint32_t tId, uint32_t sendTid, int32_t timeout, void *sendInfo, uint32_t size);
 
 /**
- * @ingroup rtUpdataTaskDescDumpFlag
+ * @ingroup rtUpdateTaskDescDumpFlag
  * @brief nano update taskdesc dump flag
  * @param [in] taskDescBaseAddr      TaskDesc Base Addr
  * @param [in] taskId   task id
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtUpdataTaskDescDumpFlag(void *taskDescBaseAddr, uint32_t taskId);
+RTS_API rtError_t rtUpdateTaskDescDumpFlag(void *taskDescBaseAddr, uint32_t taskId);
 
 /**
  * @ingroup rt_dump_Init
  * @brief nano dump init
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtDumpInit();
+RTS_API rtError_t rtDumpInit(void);
 
 /**
  * @ingroup rt_dump_deInit
  * @brief nano dump deinit
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtDumpDeInit();
+RTS_API rtError_t rtDumpDeInit(void);
 
 /**
  * @ingroup rt_model
  * @brief nano destroy model instance
- * @param [in] mdl   model to destroy
+ * @param [in] phyMdlId   model to destroy
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNanoModelDestroy(uint32_t phy_model_id);
+RTS_API rtError_t rtNanoModelDestroy(uint32_t phyMdlId);
 
 /**
  * @ingroup rt_model

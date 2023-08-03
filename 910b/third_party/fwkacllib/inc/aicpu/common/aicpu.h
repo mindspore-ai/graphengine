@@ -105,7 +105,11 @@
 #ifdef CONFIG_CPU_MAX_NUM
 #undef CONFIG_CPU_MAX_NUM
 #endif
+#if defined(CFG_MEMORY_OPTIMIZE) || defined(DAVINCI_MDC_310M1)
+#define SYSTEM_CONFIG_PLAT_BASE __ULL(0xBB3E000) /* 0xBB40000 - 8K */
+#else
 #define SYSTEM_CONFIG_PLAT_BASE __ULL(0x2223e000) /* 0x22240000 - 8K */
+#endif
 #define CONFIG_CPU_MAX_NUM 4
 #endif
 

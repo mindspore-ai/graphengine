@@ -30,12 +30,12 @@ namespace ge {
 * Three inputs, including:
 * @li start: A 0D Tensor (scalar). Acts as first entry in the range if "limit"
 *   is not "None"; otherwise, acts as range limit and first entry defaults to "0".
-*   The supported types are: float32, int32, double, int64.
+*   The supported types are:float16, float32, int32, double, int64.
 * @li limit: A 0D Tensor (scalar). Upper limit of sequence, exclusive. If "None",
 *   defaults to the value of "start" while the first entry of the range
-*   defaults to "0". The supported types are: float32, int32, double, int64.
+*   defaults to "0". The supported types are:float16, float32, int32, double, int64.
 * @li delta: A 0D Tensor (scalar). Number that increments "start".
-*   Defaults to "1". The supported types are: float32, int32, double, int64 . \n
+*   Defaults to "1". The supported types are:float16, float32, int32, double, int64 . \n
 
 * @par Outputs:
 * y: A 1D Tensor . \n
@@ -44,10 +44,10 @@ namespace ge {
 * Compatible with the TensorFlow operator Range.
 */
 REG_OP(Range)
-    .INPUT(start, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
-    .INPUT(limit, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
-    .INPUT(delta, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
+    .INPUT(start, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64, DT_BF16}))
+    .INPUT(limit, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64, DT_BF16}))
+    .INPUT(delta, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64, DT_BF16}))
     .OP_END_FACTORY_REG(Range)
 
 /**
@@ -160,7 +160,7 @@ REG_OP(TileD)
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32,
 *     uint8, int16, int8, int64, qint8, quint8, qint32, qint16, quint16,
-*     uint16, complex128, float16, uint32, uint64, complex64, complex128.
+*     uint16, bfloat16, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64.
 
 * @par Attributes:
@@ -189,7 +189,7 @@ REG_OP(GatherNd)
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32,
 *     uint8, int16, int8, int64, qint8, quint8, qint32, qint16, quint16,
-*     uint16, complex128, float16, uint32, uint64, complex64, complex128.
+*     uint16, bfloat16, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64.
 * @li axis: A Tensor of type as int32 or int64. Must be in the range [-rank(input_tensor), rank(input_tensor)).
 
@@ -316,8 +316,8 @@ REG_OP(GatherD)
 * @par Inputs:
 * Four inputs, including:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
-*     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, float16, uint32, uint64, complex64, complex128.
+*     int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     bfloat16, float16, uint32, uint64, complex64, complex128.
 * @li begin: A Tensor of type int32 or int64, for the index of the first value to select . \n
 
 * @li end: A Tensor of type int32 or int64, for the index of the last value to select . \n
@@ -366,9 +366,8 @@ REG_OP(StridedSlice)
     adding "stride" to the index until all dimensions are not less than "end" . \n
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
-*  complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*  complex128, float16, uint32, uint64, complex64, complex128 . \n
+* x: A Tensor. Must be one of the following types: float32, int32, uint8, int8,
+*  int64, float16, uint64 , bfloat16. \n
 
 * @par Attributes:
 * @li begin: A Tensor of type int32 or int64.
@@ -401,9 +400,9 @@ REG_OP(StridedSlice)
 */
 REG_OP(StridedSliceD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT64, DT_UINT8, DT_INT8,
-                          DT_BOOL}))
+                          DT_BOOL, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT64, DT_UINT8, DT_INT8,
-                          DT_BOOL}))
+                          DT_BOOL, DT_BF16}))
     .REQUIRED_ATTR(begin, ListInt)
     .REQUIRED_ATTR(end, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -421,8 +420,8 @@ REG_OP(StridedSliceD)
 
 * @par Inputs:
 * dy: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
-*   complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*   complex128, float16, uint32, uint64, complex64, complex128 . \n
+*   int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*   bfloat16, float16, uint32, uint64, complex64, complex128 . \n
 
 * @par Attributes:
 * @li shape: A Tensor of type int32 or int64.
@@ -484,8 +483,8 @@ REG_OP(StridedSliceGradD)
 * @li strides: A Tensor of type int32 or int64, for the increment.
 * @li dy: A Tensor. Must be one of the following types:
 *     float32, float64, int32, uint8, int16, int8,
-*     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, float16, uint32, uint64, complex64, complex128 . \n
+*     int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     bfloat16, float16, uint32, uint64, complex64, complex128 . \n
 
 * @par Attributes:
 * @li begin_mask: A Tensor of type int32.
@@ -689,7 +688,7 @@ REG_OP(ReverseV2D)
 * @par Inputs:
 * Three inputs, including:
 * @li condition: A Tensor of type bool.
-* @li x1: A Tensor. Must be one of the following types: float16, float32,
+* @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32,
  * int32, int8, uint8, int16, uint16, double, complex64, int64, complex128
  * half, qint8, quint8, qint16, quint16, qint32, quint32, uint32, uint64.
  * format:ND
@@ -880,7 +879,7 @@ REG_OP(OneHotD)
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
-* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* bfloat16, float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 * @li offsets: A Tensor of type int32 or int64. The starting location for the slice.
 * @li size: A Tensor of type int32 or int64. The tensor shape . \n
@@ -905,7 +904,7 @@ REG_OP(Slice)
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
-* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* bfloat16, float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32 . \n
 
 * @par Attributes:
@@ -1351,7 +1350,7 @@ REG_OP(StridedSliceAssignD)
 * Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
 *     int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     float16, uint32, uint64, complex64, complex128.
+*     bfloat16, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64 .
 
 * @par Attributes:
@@ -2300,19 +2299,19 @@ REG_OP(InplaceIndexAdd)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor of dtype is float16 or float32 or int64 or int32 or int8.
+* @li x: A Tensor of dtype is bfloat16 or float16 or float32 or int64 or int32 or int8.
 * @li mask: A Tensor of dtype bool.
-* @li value: A Tensor of dtype float16 or float32 or int64 or int32 or int8. \n
+* @li value: A Tensor of dtype bfloat16 or float16 or float32 or int64 or int32 or int8. \n
 
 * @par Outputs:
 * y: A tensor. Must be one of the following dtypes:
-* float16, float32, int64, int32, int8.
+* bfloat16 float16, float32, int64, int32, int8.
 */
 REG_OP(MaskedFill)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
     .INPUT(mask, TensorType({DT_BOOL}))
-    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .INPUT(value, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(MaskedFill)
 
 /**

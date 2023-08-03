@@ -294,7 +294,7 @@ typedef struct {
     uint64_t count;
     HcclDataType dataType;
     uint32_t root;
-    int32_t rsv1;
+    HcclReduceOp reduceOp;
     int32_t rsv2;
     int32_t rsv3;
 } HcomCollOpInfo;

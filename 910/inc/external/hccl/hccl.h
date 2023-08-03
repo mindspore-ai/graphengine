@@ -212,6 +212,17 @@ extern HcclResult HcclReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclD
  */
 extern HcclResult HcclCommDestroy(HcclComm comm);
 
+/**
+ * @brief Create a single-process multi-npu communication domain. Cross-machine is not supported.
+ *
+ * @param ndev: the number of NPUs in a communication domain.
+ * @param devices: Indicates the NPU list in the communication domain. The value is the device logic ID.
+ The communication library creates communication domains in the sequence of devices.
+ * @param comms: Generated communication domain handle, size: ndev * sizeof(HcclComm)
+ * @return HcclResult
+ */
+extern HcclResult HcclCommInitAll(uint32_t ndev, int32_t* devices, HcclComm* comms);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

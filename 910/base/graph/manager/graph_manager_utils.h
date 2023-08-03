@@ -53,6 +53,7 @@ using GraphId = uint32_t;
 using ConstGraphPtr = std::shared_ptr<const ge::Graph>;
 
 constexpr uint64_t INVALID_SESSION_ID = 0xFFFFFFFFFFFFFFFFULL;
+constexpr uint32_t INVALID_GRAPH_ID = 0xFFFFFFFFU;
 constexpr uint32_t kMaxLoadNum = 8U;
 
 struct ModelIdInfo {
@@ -131,7 +132,11 @@ class GraphNode {
   GraphId GetGraphId() const { return graph_id_; }
 
   ConstGraphPtr GetGraph() const { return graph_; }
-  void SetGraph(const GraphPtr &graph) { graph_ = graph; }
+  void SetGraph(const GraphPtr &graph) {
+    graph_ = graph;
+    graphs_.emplace_back(graph);
+  }
+  std::vector<ConstGraphPtr> &GetGraphs() { return graphs_; }
 
   ComputeGraphPtr GetComputeGraph() const { return compute_graph_; }
   void SetComputeGraph(const ComputeGraphPtr &compute_graph) { compute_graph_ = compute_graph; }
@@ -236,6 +241,8 @@ class GraphNode {
   OmeContext context_;
 
   GraphPtr graph_;
+  // record graphs got multiple graphs
+  std::vector<ConstGraphPtr> graphs_;
   ComputeGraphPtr compute_graph_;
   // set true only when Session::CompileGraph is called
   bool compiled_flag_{false};

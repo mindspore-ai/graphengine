@@ -17,7 +17,7 @@
 #ifndef INC_EXTERNAL_GE_GE_DATA_FLOW_API_H
 #define INC_EXTERNAL_GE_GE_DATA_FLOW_API_H
 #include <memory>
-#include "ge_error_codes.h"
+#include "ge_api_error_codes.h"
 
 namespace ge {
 enum class DataFlowFlag : uint32_t {
@@ -52,6 +52,25 @@ class GE_FUNC_VISIBILITY DataFlowInfo {
    * @return uint32_t flow flags, can use operate & with DataFlowFlag to check which bit is set.
    */
   uint32_t GetFlowFlags() const;
+
+  /**
+   * @brief set user data, max data size is 64.
+   * @param data user data point, input.
+   * @param size user data size, need in (0, 64].
+   * @param offset user data offset, need in [0, 64), size + offset <= 64.
+   * @return success:0, failed:others.
+   */
+  Status SetUserData(const void *data, size_t size, size_t offset = 0U);
+
+  /**
+   * @brief get user data, max data size is 64.
+   * @param data user data point, output.
+   * @param size user data size, need in (0, 64]. The value must be the same as that of SetUserData.
+   * @param offset user data offset, need in [0, 64), size + offset <= 64. The value must be the same as that of
+   * SetUserData.
+   * @return success:0, failed:others.
+   */
+  Status GetUserData(void *data, size_t size, size_t offset = 0U) const;
 
  private:
   std::shared_ptr<DataFlowInfoImpl> impl_;

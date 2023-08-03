@@ -182,7 +182,7 @@ REG_OP(StatelessSampleDistortedBoundingBox)
 * @li dtype: dtype: A optional attr, specifying the output data type. Defaults to "DT_FLOAT". \n
 
 * @par Outputs:
-* y: A Tensor of types: float16, float32, double. A tensor of the specified shape
+* y: A Tensor of types: float16, bfloat16, float32, double. A tensor of the specified shape
  filled with random truncated normal values. \n
 
 * @attention Constraints:
@@ -197,7 +197,7 @@ REG_OP(StatelessTruncatedNormalV2)
     .INPUT(key, TensorType({ DT_UINT64 }))
     .INPUT(counter, TensorType({ DT_UINT64 }))
     .INPUT(alg, TensorType({ DT_INT32 }))
-    .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .OUTPUT(y, TensorType({ DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE }))
     .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(StatelessTruncatedNormalV2)
 
@@ -429,6 +429,7 @@ REG_OP(StatelessRandomGetKeyCounterAlg)
 
 * @par Outputs:
 * @li y: Returns Random values with specified shape . \n
+* Must be one of the following types: float16, bfloat16, float32, float64. \n
 
 * @par Third-party framework compatibility
 * Compatible with TensorFlow StatelessRandomNormalV2 operator.
@@ -438,7 +439,7 @@ REG_OP(StatelessRandomNormalV2)
     .INPUT(key, TensorType({DT_UINT64}))
     .INPUT(counter, TensorType({DT_UINT64}))
     .INPUT(alg, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE}))
     .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(StatelessRandomNormalV2)
 
@@ -455,7 +456,8 @@ REG_OP(StatelessRandomNormalV2)
 * dtype:Output data type . \n
 
 * @par Outputs:
-* y: Returns Random values with specified shape. Must be one of the following types: float16, float32, float64. \n
+* y: Returns Random values with specified shape.
+* Must be one of the following types: float16, bfloat16, float32, float64. \n
 
 * @par Third-party framework compatibility
 * Compatible with TensorFlow StatelessRandomUniformV2 operator.
@@ -466,7 +468,7 @@ REG_OP(StatelessRandomUniformV2)
     .INPUT(key, TensorType({DT_UINT64}))
     .INPUT(counter, TensorType({DT_UINT64}))
     .INPUT(alg, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_DOUBLE}))
     .ATTR(dtype, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(StatelessRandomUniformV2)
 

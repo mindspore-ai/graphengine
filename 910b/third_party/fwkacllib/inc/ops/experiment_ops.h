@@ -1471,6 +1471,20 @@ REG_OP(ImgRawDecodePostHandleV2)
     .OP_END_FACTORY_REG(ImgRawDecodePostHandleV2)
 
 /**
+* @brief YUV4442YUV422. Convert the image from yuv444 to yuv422. \n
+
+* @par Inputs:
+* @li x: A 3D Tensor, dtype is float16, shape is (h, w, 4). The input yuv444 data. \n
+*
+* @par Outputs:
+* @li y: A 3D Tensor, dtype is uint8, shape is (h, w, 2). The output yuv422 data. \n
+*/
+REG_OP(YUV4442YUV422)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .OP_END_FACTORY_REG(YUV4442YUV422)
+
+/**
 * @brief RGB2YUV422. Convert the image from rgb to yuv422. \n
 
 * @par Inputs:
@@ -1538,15 +1552,13 @@ REG_OP(FlashAttentionScore)
     .OUTPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OUTPUT(softmax_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .ATTR(query_transpose, Bool, false)
-    .ATTR(key_transpose, Bool, false)
-    .ATTR(value_transpose, Bool, false)
     .ATTR(scale_value, Float, 1.0)
     .ATTR(keep_prob, Float, 1.0)
-    .REQUIRED_ATTR(is_transpose_out, Bool)
+    .ATTR(pre_tockens, Int, 2147483647)
+    .ATTR(next_tockens, Int, 2147483647)
+    .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(is_flash, Bool)
     .OP_END_FACTORY_REG(FlashAttentionScore)
-
 
 /**
 * @brief Function FlashAttentionScore. \n
@@ -1596,31 +1608,55 @@ REG_OP(FlashAttentionScore)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(FlashAttentionScoreGrad)
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dq, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dk, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .ATTR(scale_value, Float, 1.0)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(pre_tockens, Int, 65536)
+    .ATTR(next_tockens, Int, 65536)
+    .REQUIRED_ATTR(is_flash, Bool)
+    .REQUIRED_ATTR(head_num, Int)
+    .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
+
+
+REG_OP(IncreFlashAttention)
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .REQUIRED_ATTR(actual_seq_lengths, ListInt)
+    .REQUIRED_ATTR(num_heads, Int)
+    .ATTR(scale_value, Float, 1.0)
+    .OP_END_FACTORY_REG(IncreFlashAttention)
+
+
+REG_OP(PromptFlashAttention)
     .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(dq, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(dk, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(dv, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .REQUIRED_ATTR(actual_seq_lengths, ListInt)
+    .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
-    .ATTR(keep_prob, Float, 1.0)
-    .ATTR(query_transpose, Bool, false)
-    .ATTR(key_transpose, Bool, false)
-    .ATTR(value_transpose, Bool, false)
-    .ATTR(dy_transpose, Bool, false)
-    .ATTR(is_transpose_attention, Bool, false)
-    .REQUIRED_ATTR(is_flash, Bool)
-    .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
-
+    .ATTR(pre_tokens, Int, 65535)
+    .OP_END_FACTORY_REG(PromptFlashAttention)
 /**
 * @brief paste sub img.
 *
@@ -1650,7 +1686,7 @@ REG_OP(PasteSubImg)
 * the gradient of output features. \n
 
 * @par Inputs:
-* @li dy: A tensor of type float32. The gradient of output features. 
+* @li dy: A tensor of type float32. The gradient of output features.
 * @li bboxes: A tensor of type float32. The position information of bboxes. \n
 
 * @par Outputs:
@@ -1672,5 +1708,6 @@ REG_OP(RotatedFeatureAlignGrad)
     .ATTR(points, Int, 1)
     .OP_END_FACTORY_REG(RotatedFeatureAlignGrad)
 }  // namespace ge
+
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

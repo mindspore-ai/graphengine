@@ -212,7 +212,8 @@ REG_OP(ParallelConcat)
 *@par Inputs:
 * One input:
 *x: Dynamic input.A ND Tensor.
-*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
+*Must be one of the following types: bfloat16, float16, float32, int32,
+*     int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
 *concat_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to concatenate. No default value.
@@ -231,8 +232,10 @@ REG_OP(ParallelConcat)
 *Warning: THIS FUNCTION IS DEPRECATED. Please use ConcatV2 instead.
 */
 REG_OP(ConcatV2D)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT64, DT_UINT64, DT_UINT32, DT_INT16, DT_UINT16, DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT64, DT_UINT64, DT_UINT32, DT_INT16, DT_UINT16, DT_UINT8}))
+    .DYNAMIC_INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT64,
+                                  DT_UINT64, DT_UINT32, DT_INT16, DT_UINT16, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT64, DT_UINT64,
+                           DT_UINT32, DT_INT16, DT_UINT16, DT_UINT8}))
     .REQUIRED_ATTR(concat_dim, Int)
     .ATTR(N, Int, 1)
     .OP_END_FACTORY_REG(ConcatV2D)
@@ -243,7 +246,9 @@ REG_OP(ConcatV2D)
 *@par Inputs:
 * Two inputs, including:
 *@li Dynamic input "x" is A ND Tensor.
-* Must be one of the following types: bool, float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
+*Must be one of the following types: bfloat16, float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
+*     complex128, uint32, uint64, qint16, quint16.
 *@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
 
 *@par Attributes:
@@ -271,7 +276,8 @@ REG_OP(ConcatV2)
 *@par Inputs:
 * One input:
 *x:Dynamic input. A ND Tensor.
-*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
+*Must be one of the following types: bfloat16, float16, float32, int32,
+*     int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
 *@li concat_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to concatenate. No default value.
@@ -290,8 +296,10 @@ REG_OP(ConcatV2)
 *Warning: THIS FUNCTION IS DEPRECATED. Please use Concat instead.
 */
 REG_OP(ConcatD)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_INT8,DT_INT16,DT_INT32,DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16,DT_INT8,DT_INT16,DT_INT32,DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
+    .DYNAMIC_INPUT(x, TensorType({DT_BF16, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, 
+                                  DT_INT32, DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_INT32,
+                           DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64}))
     .REQUIRED_ATTR(concat_dim, Int)
     .ATTR(N, Int, 1)
     .OP_END_FACTORY_REG(ConcatD)
@@ -302,7 +310,7 @@ REG_OP(ConcatD)
 *@par Inputs:
 * Two inputs, including:
 *@li x: Dynamic input.A ND Tensor.
-*Must be one of the following types: float16, float32, double, int32,
+*Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
 *     complex128, uint32, uint64, qint16, quint16.
 *@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
@@ -333,8 +341,9 @@ REG_OP(Concat)
 * shape (A, B, C); if axis == 0 then the output tensor will have the shape (N, A, B, C) . \n
 
 *@par Inputs:
-* x: A list of N Tensors. Must be one of the following types: int8, int16, int32,
-*     int64, uint8, uint16, uint32, uint64, float16, float32, bool . It's a dynamic input. \n
+* x: A list of N Tensors. Must be one of the following types: bfloat16, float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
+*     complex128, uint32, uint64, qint16, quint16. It's a dynamic input. \n
 
 *@par Attributes:
 *@li axis: A optional int, default value is 0.

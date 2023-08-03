@@ -29,6 +29,8 @@ constexpr AoeStatus AOE_ERROR_NON_OPTIMIZE_GRAPH                     = 8;    // 
 constexpr AoeStatus AOE_ERROR_DYNAMIC_GRAPH                          = 9;    // 调优业务不支持动态图
 constexpr AoeStatus AOE_ERROR_DYNAMIC_SHAPE_RANGE                    = 10;   // 动态shape（opat）
 constexpr AoeStatus AOE_ERROR_INVALID_OPTION_ATTR                    = 11;   // option属性错误
+constexpr AoeStatus QTEST_LIB_OPEN_FAILED                            = 12;   // 打开lib失败
+constexpr AoeStatus QTEST_LIB_INVALID_FUNC                           = 13;   // 无效函数
 
 constexpr AoeStatus AOE_ERROR_TUNING_ERROR                           = 100;  // 其他调优错误
 } // namespace Aoe

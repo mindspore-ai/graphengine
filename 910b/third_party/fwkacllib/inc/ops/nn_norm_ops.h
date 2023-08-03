@@ -104,7 +104,7 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
 *@par Inputs:
 * Two inputs, including:
 * @li softmax: Output of the softmax operator. Must be one of the following
-* types: float16, float31, int32, int8, uint8.
+* types: float16, bfloat16, float31, int32, int8, uint8.
 * @li grad_softmax: A Tensor. Has the same shape and type as "softmax".\n
 
 *@par Attributes:
@@ -117,9 +117,9 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
 * Compatible with TensorFlow operator SoftmaxGrad.
 */
 REG_OP(SoftmaxGrad)
-    .INPUT(softmax, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .INPUT(grad_softmax, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(grad_x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(softmax, TensorType({ DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8 }))
+    .INPUT(grad_softmax, TensorType({ DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8 }))
+    .OUTPUT(grad_x, TensorType({ DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8 }))
     .ATTR(axes, ListInt, {-1})
     .OP_END_FACTORY_REG(SoftmaxGrad)
 
@@ -382,7 +382,7 @@ REG_OP(BinaryCrossEntropyGrad)
 
 *@par Inputs:
 *One input:
-*x: A mutable Tensor. Must be one of the following types: float16, float32,
+*x: A mutable Tensor. Must be one of the following types: float16, float32, bfloat16,
 * double. Should be a Variable Tensor . \n
 
 *@par Attributes:
@@ -391,15 +391,15 @@ REG_OP(BinaryCrossEntropyGrad)
 
 *@par Outputs:
 *y: A Tensor. Has the same dimensionality and shape as the "x" with values in
-* the range [0, 1]. Must be one of the following types: float16, float32,
+* the range [0, 1]. Must be one of the following types: float16, float32, bfloat16,
 * double . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Softmax.
 */
 REG_OP(SoftmaxV2)
-    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT }))
     .ATTR(axes, ListInt, {-1})
     .OP_END_FACTORY_REG(SoftmaxV2)
 
@@ -609,9 +609,9 @@ REG_OP(Normalize)
 
 *@par Inputs:
 *Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li gamma: A Tensor. Must be one of the following types: float16, float32.
-* @li beta: A Tensor. Must be one of the following types: float16, float32 . \n
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li beta: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
 
 *@par Attributes:
 * @li begin_norm_axis: A optional attribute, the type is int32. Defaults to 0.
@@ -620,17 +620,17 @@ REG_OP(Normalize)
 
 *@par Outputs:
 *Three outputs, including:
-* @li y: A Tensor. Must be one of the following types: float16, float32.
-* @li mean: A Tensor. Must be one of the following types: float16, float32.
-* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li variance: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 */
 REG_OP(LayerNorm)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(begin_norm_axis, Int, 0)
     .ATTR(begin_params_axis, Int, 0)
     .ATTR(epsilon, Float, 0.0000001)
@@ -697,14 +697,14 @@ REG_OP(Renorm)
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormGrad)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(LayerNormGrad)
 
 /**
@@ -767,27 +767,27 @@ REG_OP(LayerNormXBackprop)
 
 *@par Inputs:
 *Five inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li variance: A Tensor. Must be one of the following types: float16, float32.
-* @li mean: A Tensor. Must be one of the following types: float16, float32.
-* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
+* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li variance: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
 
 *@par Outputs:
 *Three outputs, including:
-* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * @li res_for_gamma: A Tensor. Must be one of the following types: float32.
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormXBackpropV2)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(LayerNormXBackpropV2)
 
@@ -842,24 +842,24 @@ REG_OP(LayerNormBetaGammaBackprop)
 
 *@par Inputs:
 *Three inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li variance: A Tensor. Must be one of the following types: float16, float32.
-* @li mean: A Tensor. Must be one of the following types: float16, float32 . \n
+* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li variance: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16 . \n
 
 *@par Outputs:
 *Three outputs, including:
-* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
-* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormBetaGammaBackpropV2)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .INPUT(res_for_gamma, TensorType({DT_FLOAT}))
-    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(shape_gamma, ListInt)
     .OP_END_FACTORY_REG(LayerNormBetaGammaBackpropV2)
 
@@ -917,7 +917,7 @@ REG_OP(LNDropoutGrad)
 *@par Inputs:
 *Three inputs, including:
 * @li x: A mutable Tensor. Must be one of the following types:
-*     float16, float32
+*     float16, float32, bfloat16
 * @li mask: A mutable Tensor. Must met all of the following rules:
 *     dtype of mask should be uint8 or uint1.
 *     if data type of mask is uint8, shape of mask should be 1D. value of shape should met the following algorithm:
@@ -931,10 +931,10 @@ REG_OP(LNDropoutGrad)
 *y: A mutable Tensor. Has the same type as "x".
 */
 REG_OP(DropOutDoMask)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .INPUT(mask, TensorType({DT_UINT8, DT_UINT1}))
     .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(DropOutDoMask)
 
 /**
@@ -1569,8 +1569,8 @@ REG_OP(Centralization)
 *Compatible with the Pytorch operator Roll. \n
 */
 REG_OP(Roll)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8,DT_BF16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8,DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8, DT_BF16}))
     .REQUIRED_ATTR(shifts, ListInt)
     .ATTR(dims, ListInt, {})
     .OP_END_FACTORY_REG(Roll)

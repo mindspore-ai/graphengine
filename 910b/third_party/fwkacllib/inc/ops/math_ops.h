@@ -27,25 +27,25 @@
 namespace ge {
 
 /**
-*@brief Computes the output as (shift + scale * x) ^ power . \n
+* @brief Computes the output as (shift + scale * x) ^ power . \n
 
-*@par Inputs:
-* x: A Tensor of type float16 or float32 . \n
+* @par Inputs:
+* x: A Tensor of type float16 or float32 of bfloat16 . \n
 
-*@par Attributes:
-*@li power: Optional. Must be one of the following types: float32. Defaults to 1.0.
-*@li scale: Optional. Must be one of the following types: float32. Defaults to 1.0.
-*@li shift: Optional. Must be one of the following types: float32. Defaults to 0.0 . \n
+* @par Attributes:
+* @li power: Optional. Must be one of the following types: float32. Defaults to 1.0.
+* @li scale: Optional. Must be one of the following types: float32. Defaults to 1.0.
+* @li shift: Optional. Must be one of the following types: float32. Defaults to 0.0 . \n
 
-*@par Outputs:
+* @par Outputs:
 * y: A Tensor. Has the same type and shape as "x".
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the Caffe operator Power.
 */
 
 REG_OP(Power)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(power, Float, 1.0)
     .ATTR(scale, Float, 1.0)
     .ATTR(shift, Float, 0.0)
@@ -266,7 +266,7 @@ REG_OP(Bucketize)
 
 *@par Inputs:
 *One inputs, including:
-*input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
+* input_x: A tensor. Must be one of the following types: float16, bfloat16, float32, int8, uint8, int32. \n
 
 *@par Outputs:
 * output_y: A tensor with the same type and shape of input_x \n
@@ -275,8 +275,8 @@ REG_OP(Bucketize)
 *Compatible with the Pytorch operator Trunc. \n
 */
 REG_OP(Trunc)
-    .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
-    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
     .OP_END_FACTORY_REG(Trunc)
 
 /**
@@ -600,7 +600,7 @@ REG_OP(Pdist)
  *@brief Compute element-wise finiteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor of type float16, float32, double.
+ *x:A Tensor of type bfloat16, float16, float32, double.
 
  *@par Outputs:
  *y:A Tensor. Returns which elements of x are finite
@@ -609,7 +609,7 @@ REG_OP(Pdist)
  *Compatible with tensorflow IsFinite operator.
  */
 REG_OP(IsFinite)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsFinite)
 
@@ -629,6 +629,23 @@ REG_OP(IsInf)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsInf)
+
+/**
+ * @brief Compute element-wise infiniteness, return a boolean tensor.
+
+ * @par Inputs:
+ * x:A Tensor of type float16, float32, double, bfloat16.
+
+ * @par Outputs:
+ * y:A Tensor. Has the same shape as x. Returns which elements of x are isneginf.
+
+ * @par Third-party framework compatibility.
+ * Compatible with torch IsNegInf operator.
+ */
+REG_OP(IsNegInf)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BFLOAT16}))
+    .OUTPUT(y, TensorType({DT_BOOL}))
+    .OP_END_FACTORY_REG(IsNegInf)
 
 /**
  *@brief Computes the complex absolute value of a tensor.

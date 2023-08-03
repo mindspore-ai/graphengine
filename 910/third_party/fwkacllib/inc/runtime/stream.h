@@ -7,9 +7,10 @@
 #ifndef CCE_RUNTIME_STREAM_H
 #define CCE_RUNTIME_STREAM_H
 
+#include <stdlib.h>
+
 #include "base.h"
 #include "event.h"
-#include <stdlib.h>
 
 #if defined(__cplusplus)
 extern "C" {

@@ -42,6 +42,7 @@ enum class ExecutorType {
     EXE_REMOTE_COMPILE              = 1 << 4,                              // use remote compiler
     EXE_REMOTE_RUN                  = 1 << 5,                              // use remote runner
     EXE_REMOTE_COMPILE_RUN          = 1 << 6,                              // remote support build and run together
+    EXE_QTEST_RUN                   = 1 << 7,                              // support qtest runner
 };
 
 struct ExecuteInitConfig {
@@ -84,6 +85,7 @@ constexpr uint32_t EXE_REMOTE_EXECUTOR             = static_cast<uint32_t>(Execu
                                                      static_cast<uint32_t>(ExecutorType::EXE_REMOTE_RUN);
 constexpr uint32_t EXE_REMOTE_COMPILE_RUN_EXECUTOR = EXE_REMOTE_EXECUTOR |
                                                      static_cast<uint32_t>(ExecutorType::EXE_REMOTE_COMPILE_RUN);
+constexpr uint32_t EXE_QTEST_EXECUTOR              = static_cast<uint32_t>(ExecutorType::EXE_QTEST_RUN);
 
 const std::map<CompileType, std::map<std::string, std::string>> BUILD_MAP = {
     {CompileType::COMPILE_TYPE_BASIC, {
@@ -133,6 +135,7 @@ const std::set<std::string> EXECUTOR_INIT_OPTION_SET = {
     FRAMEWORK,
     COMPRESSION_OPTIMIZE_CONF,
 
+    QTEST_SOC_VERSION,
     SOC_VERSION,
     TUNE_DEVICE_IDS,
     EXEC_DISABLE_REUSED_MEMORY,
@@ -169,6 +172,7 @@ const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
     ge::TUNING_PATH,
     ge::ir_option::OP_BANK_UPDATE,
     OP_PRECISION_MODE,
+    QTEST_SOC_VERSION,
 
     EXEC_DISABLE_REUSED_MEMORY,
     AUTO_TUNE_MODE,
@@ -286,12 +290,34 @@ extern "C" std::future<AoeStatus> AoeExecutorOfflineCompileRunAsync(const Execut
 
 /**
  * @ingroup      aoe executor
+ * @brief        aoe executor compile run async
+ * @param  [in]  const ExecuteSession &session   session
+ * @param  [in]  const ge::Graph &graph                                         compile graph
+ * @param  [in]  const std::map<std::string, std::string> &compileOptions       compile option
+ * @param  [out] OfflineRunParam &param                                         offline param
+ * @return      success == AOE_SUCCESS; failed != AOE_SUCCESS
+ */
+extern "C" std::future<AoeStatus> AoeExecutorQtestCompileRunAsync(const ExecuteSession &session,
+    const ge::Graph &graph, const std::map<std::string, std::string> &compileOptions, OfflineRunParam &param);
+
+/**
+ * @ingroup      aoe executor
  * @brief        aoe executor online run graph
  * @param  [in]  const ge::Graph &graph             run graph
  * @param  [out] OfflineRunParam &param             run param
  * @return       success == AOE_SUCCESS; failed != AOE_SUCCESS
  */
 extern "C" AoeStatus AoeExecutorOnlineRun(const ge::Graph &graph, OnlineRunParam &param);
+
+/**
+ * @ingroup      aoe executor
+ * @brief        aoe executor qtest run graph
+ * @param  [in]  const ge::Graph &graph             run graph
+ * @param  [in]  const std::string &graphPath       graph path
+ * @param  [out] OfflineRunParam &param               run param
+ * @return       success == AOE_SUCCESS; failed != AOE_SUCCESS
+ */
+extern "C" AoeStatus AoeExecutorQtestRun(const ge::Graph &graph, const std::string &graphPath, OfflineRunParam &param);
 
 /**
  * @ingroup     aoe executor

@@ -120,7 +120,9 @@ REG_OP(TransposeD)
 
 *@par Inputs:
 *Two inputs, including:
-*@li x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
+*@li x: A Tensor. Must be one of the following types:
+* bfloat16, float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32 . \n
 *@li perm: A Tensor of type int32 or int64. A permutation of the dimensions of "x" . \n
 
 *@par Outputs:
@@ -140,7 +142,7 @@ REG_OP(Transpose)
 * In general, the framework will insert it atomatically . \n
 
 *@par Inputs:
-*src: A Tensor. For all branches can be types: float16, float32, int32, int8, bool.
+*src: A Tensor. For all branches can be types: bfloat16, float16, float32, int32, int8, bool.
 * For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64 . \n
 
 *@par Attributes:

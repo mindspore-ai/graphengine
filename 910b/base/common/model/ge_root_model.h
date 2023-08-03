@@ -103,6 +103,15 @@ namespace ge {
   void SetSoInOmInfo(const SoInOmInfo &so_info);
 
   SoInOmInfo GetSoInOmInfo() const;
+
+  void SetFileConstantWeightDir(const std::string &file_constant_weight_dir) {
+    file_constant_weight_dir_ = file_constant_weight_dir;
+  }
+
+  const std::string GetFileConstantWeightDir() const {
+    return file_constant_weight_dir_;
+  }
+
  private:
   std::map<std::string, GeModelPtr> subgraph_instance_name_to_model_;
   // In multithread online secenario, same graph can owns different davinci_model for for concurrency
@@ -122,6 +131,7 @@ namespace ge {
   OpSoStore op_so_store_;
   bool so_in_om_ = false;
   SoInOmInfo so_info_ = {};
+  std::string file_constant_weight_dir_;
 };
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
 }  // namespace ge

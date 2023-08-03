@@ -125,7 +125,7 @@ REG_OP(MinimumGrad)
 *@par Inputs:
 *One input:
 *x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8,
-   int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32, uint1.
+   int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16, uint1.
    For float32 type, the actual calculation on the chip is based on float16.  \n
 
 *@par Attributes:
@@ -151,7 +151,7 @@ REG_OP(Cast)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32,
+* @li x1: A Tensor. Must be one of the following types:bfloat16, float16, float32,
 *    double, int32, int8, uint8, int64, uint16, uint32, uint64.
 * @li x2: A Tensor of the same type as "x1". \n
 
@@ -174,7 +174,7 @@ REG_OP(GreaterEqual)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, double, int32,
+* @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, int64, uint16, uint32, uint64.
 * @li x2: A Tensor with the same type as "x1". \n
 
@@ -191,29 +191,29 @@ REG_OP(Less)
     .OP_END_FACTORY_REG(Less)
 
 /**
-*@brief Returns x1/x2 element-wise for real types. \n
+* @brief Returns x1/x2 element-wise for real types. \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, double, uint16,
-         int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128.
-*@li x2: A Tensor. Must be one of the following types: float16, float32, double, uint16,
-         int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128. \n
+* @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, uint16,
+          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128.
+* @li x2: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, uint16,
+          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128. \n
 
-*@par Outputs:
+* @par Outputs:
 * y: A Tensor. Has the same type and format as input "x1". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator RealDiv.
 */
 REG_OP(RealDiv)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
                            DT_COMPLEX64, DT_COMPLEX128}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
                            DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
                            DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(RealDiv)
@@ -222,7 +222,7 @@ REG_OP(RealDiv)
 *@brief Computes square root of x element-wise. \n
 
 *@par Inputs:
-*  x: A Tensor. Must be one of the following types: float16, float32, complex128, complex64, float64. \n
+*  x: A Tensor. Must be one of the following types:bfloat16 float16, float32, complex128, complex64, float64. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -230,8 +230,8 @@ REG_OP(RealDiv)
 *Compatible with the TensorFlow operator Sqrt.
 */
 REG_OP(Sqrt)
-    .INPUT(x, TensorType{(DT_FLOAT. DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128)})
-    .OUTPUT(y, TensorType{(DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128)})
+    .INPUT(x, TensorType{(DT_BF16, DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128)})
+    .OUTPUT(y, TensorType{(DT_BF16, DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128)})
     .OP_END_FACTORY_REG(Sqrt)
 
 /**
@@ -286,7 +286,7 @@ REG_OP(Minimum)
 *@par Inputs:
 *One inputs, include:
 *x:A Tensor of type float16, float32, int32, int64, double,
-*     complex64, complex128.the format can be [NCHW,NHWC,ND]
+*     complex64, complex128, bfloat16.the format can be [NCHW,NHWC,ND]
 
 *@par Outputs:
 *y:A Tensor with same type as "x". \n
@@ -296,9 +296,9 @@ REG_OP(Minimum)
 */
 REG_OP(Reciprocal)
     .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_FLOAT16,
-                          DT_COMPLEX64, DT_COMPLEX128}))
+                          DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_FLOAT16
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OP_END_FACTORY_REG(Reciprocal)
 
 /**
@@ -306,7 +306,7 @@ REG_OP(Reciprocal)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, float64,
-*     float16, float32, complex128, complex64, uint16.
+*     float16, float32, complex128, complex64, uint16, bfloat16.
 * @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
@@ -317,32 +317,32 @@ REG_OP(Reciprocal)
 REG_OP(Sub)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OP_END_FACTORY_REG(Sub)
 
 /**
-*@brief computes the absolute value of a tensor. \n
+* @brief computes the absolute value of a tensor. \n
 
-*@par Inputs:
-*One input, including: \n
-*x: A Tensor. Must be one of the following types: float16, float32, double, int8, int16, int32, int64. \n
+* @par Inputs:
+* One input, including: \n
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, int8, int16, int32, int64. \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x". \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x". \n
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator Abs.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Abs.
 */
 REG_OP(Abs)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16,
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16,
                           DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16,
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16,
                            DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(Abs)
 
@@ -417,7 +417,7 @@ REG_OP(SquaredDifference)
 *@brief Computes cosine of "x" element-wise. \n
 
 *@par Inputs:
-*x: A Tensor of type float16, float32, double, complex64, complex128.
+*x: A Tensor of type bfloat16, float16, float32, double, complex64, complex128.
 * the format can be [NCHW,NHWC,ND]
 
 *@par Outputs:
@@ -433,31 +433,31 @@ REG_OP(Cos)
     .OP_END_FACTORY_REG(Cos)
 
 /**
-*@brief Returns x1/x2 element-wise. \n
+* @brief Returns x1/x2 element-wise. \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types:
+* @li x1: A Tensor. Must be one of the following types:
 *    float16, float32, int32, int8, uint8, float64, int64, uint16, int16,
-*    complex64, complex128, the format can be [NCHW,NHWC,ND].
-*@li x2: A Tensor. Has the same type and format as input "x1". \n
+*    complex64, complex128, bfloat16, the format can be [NCHW,NHWC,ND].
+* @li x2: A Tensor. Has the same type and format as input "x1". \n
 
-*@par Outputs:
+* @par Outputs:
 * y: A Tensor. Has the same type and format as input "x1". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Div.
 */
 REG_OP(Div)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT32,
                            DT_DOUBLE, DT_INT64, DT_UINT16, DT_INT16,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT32,
                            DT_DOUBLE, DT_INT64, DT_UINT16, DT_INT16,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT32,
                            DT_DOUBLE, DT_INT64, DT_UINT16, DT_INT16,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OP_END_FACTORY_REG(Div)
 
 /**
@@ -466,7 +466,7 @@ REG_OP(Div)
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types:
-*    float16, float32, int32, int8, uint8, double, int16, int64, complex64,
+*    bfloat16, float16, float32, int32, int8, uint8, double, int16, int64, complex64,
 *    complex128, quint8, qint8, qint32, string, bool. the format can be
 *    [NCHW, NHWC, ND]
 *@li x2: A Tensor of the same type and format as "x1". \n
@@ -478,11 +478,11 @@ REG_OP(Div)
 * Compatible with the TensorFlow operator Equal.
 */
 REG_OP(Equal)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_UINT8,
+    .INPUT(x1, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT32, DT_INT8, DT_UINT8,
                            DT_DOUBLE, DT_INT16, DT_INT64, DT_COMPLEX64,
                            DT_COMPLEX128, DT_QUINT8, DT_QINT8, DT_QINT32,
                            DT_STRING, DT_BOOL}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_UINT8,
+    .INPUT(x2, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT32, DT_INT8, DT_UINT8,
                            DT_DOUBLE, DT_INT16, DT_INT64, DT_COMPLEX64,
                            DT_COMPLEX128, DT_QUINT8, DT_QINT8, DT_QINT32,
                            DT_STRING, DT_BOOL}))
@@ -494,7 +494,7 @@ REG_OP(Equal)
 
 *@par Inputs:
 *One input:\n
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128. \n
+*x: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, complex64, complex128. \n
 
 *@par Attributes:
 *@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1.0".
@@ -671,7 +671,7 @@ REG_OP(Mod)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, int32,
+* @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32, int32,
 * int8, uint8, double, int16, int64, uint16, half, uint32, uint64.
 * @li x2: A Tensor of the same type as "x1". \n
 
@@ -712,7 +712,7 @@ REG_OP(Ndtri)
 *@par Inputs:
 * One input:
 *x: A Tensor. Must be one of the following types: float16, float32, int32,
- * int64, complex64, complex128. \n
+ * int64, complex64, complex128, bfloat16. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x". \n
@@ -721,8 +721,8 @@ REG_OP(Ndtri)
 * Compatible with the TensorFlow operator Neg.
 */
 REG_OP(Neg)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Neg)
 
 /**
@@ -1125,7 +1125,7 @@ REG_OP(BesselI1e)
 * y = log_base(shift + scale * x), with "base" > 0. \n
 
 * @par Inputs:
-* x: A Tensor of type complex64, complex128, float16, float32 or double. \n
+* x: A Tensor of type complex64, complex128, bfloat16, float16, float32 or double. \n
 
 * @par Attributes:
 * @li base: An optional float32, specifying the base "e". Defaults to "-1.0"
@@ -1160,13 +1160,13 @@ REG_OP(Log)
 * y = x1 * x2
 
 * @par Inputs:
-* @li x1: A Tensor. Must be one of the following types: float16, float32,
+* @li x1: A Tensor. Must be one of the following types: float16, float32, bfloat16,
 * float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128.
-* @li x2: A Tensor. Must be one of the following types: float16, float32,
+* @li x2: A Tensor. Must be one of the following types: float16, float32, bfloat16,
 * float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128. \n
 
 * @par Outputs:
-* y: A Tensor. Must be one of the following types: float16, float32, float64,
+* y: A Tensor. Must be one of the following types: float16, float32, float64, bfloat16,
 * uint8, int8, uint16, int16, int32, int64, complex64, complex128. \n
 
 * @attention Constraints:
@@ -1177,13 +1177,13 @@ REG_OP(Log)
 */
 REG_OP(Mul)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
                            DT_COMPLEX64, DT_COMPLEX128}))
     .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
                            DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
                            DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Mul)
 
@@ -1214,7 +1214,7 @@ REG_OP(SqrtGrad)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, float64,
-*     float16, float32, complex128, complex64, string.
+*     float16, bfloat16, float32, complex128, complex64, string.
 * @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
@@ -1223,13 +1223,13 @@ REG_OP(SqrtGrad)
 *Compatible with the TensorFlow operator Add.
 */
 REG_OP(Add)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_INT16,
+    .INPUT(x1, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_INT16,
                            DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128,
                            DT_COMPLEX64, DT_STRING}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_INT16,
+    .INPUT(x2, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_INT16,
                            DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128,
                            DT_COMPLEX64, DT_STRING}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_INT16,
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_INT16,
                            DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128,
                            DT_COMPLEX64, DT_STRING}))
     .OP_END_FACTORY_REG(Add)
@@ -1447,19 +1447,19 @@ REG_OP(Sinh)
     .OP_END_FACTORY_REG(Sinh)
 
 /**
-*@brief: Clips tensor values to a specified min and max. \n
+* @brief: Clips tensor values to a specified min and max. \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64,
-*qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
-*@li clip_value_min: A Tensor of the same type as "x".
-*@li clip_value_max: A Tensor of the same type as "x". \n
+* @li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64,
+* qint8, quint8, qint32, uint16, complex128, float16, bfloat16, uint32, uint64.
+* @li clip_value_min: A Tensor of the same type as "x".
+* @li clip_value_max: A Tensor of the same type as "x". \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x". \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator ClipByValue.
 */
 REG_OP(ClipByValue)
@@ -1537,7 +1537,7 @@ REG_OP(Invert)
 *@par Inputs:
 *One input: \n
 *x: A Tensor. Must be one of the following types: float16, float32, int8, uint8,
- * int16, uint16, int32, int64, complex128, bool. \n
+ * int16, uint16, int32, int64, complex128, bool, double, bfloat16. \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
@@ -1548,10 +1548,10 @@ REG_OP(Invert)
 REG_OP(OnesLike)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,
                           DT_UINT8, DT_INT16, DI_UINT16, DT_INT32,
-                          DT_INT64, DT_COMPLEX128, DT_BOOL}))
+                          DT_INT64, DT_COMPLEX128, DT_BOOL, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,
                            DT_UINT8, DT_INT16, DI_UINT16, DT_INT32,
-                           DT_INT64, DT_COMPLEX128, DT_BOOL}))
+                           DT_INT64, DT_COMPLEX128, DT_BOOL, DT_BF16}))
     .OP_END_FACTORY_REG(OnesLike)
 
 /**
@@ -1580,22 +1580,22 @@ REG_OP(ReciprocalGrad)
     .OP_END_FACTORY_REG(ReciprocalGrad)
 
 /**
-*@brief Returns the truth value of (x1 > x2) element-wise. \n
-*when input is int32 and (x2 - x1) > 2**31 or < -2**31
-*aicore accuracy is not guaranteed \n
+* @brief Returns the truth value of (x1 > x2) element-wise. \n
+* when input is int32 and (x2 - x1) > 2**31 or < -2**31
+* aicore accuracy is not guaranteed \n
 
-*@par Inputs:
-*@li x1: A Tensor of type float16, float32, double, int64, int32, int16, int8,
+* @par Inputs:
+* @li x1: A Tensor of type bfloat16, float16, float32, double, int64, int32, int16, int8,
 *    uint8, uint16, uint32, uint64.
-*@li x2: A Tensor of the same data type as "x1". \n
+* @li x2: A Tensor of the same data type as "x1". \n
 
-*@par Outputs:
-*y: A Tensor of type bool.
+* @par Outputs:
+* y: A Tensor of type bool.
 
-*@attention Constraints:
+* @attention Constraints:
 * Broadcasting is supported. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Greater. \n
 
 */
@@ -1612,7 +1612,7 @@ REG_OP(Greater)
 *x: A Tensor. Must be one of the following types:
 *     float32, float64, int32, uint8, int16, int8,
 *     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, float16, uint32, uint64, complex64, complex128. \n
+*     complex128, bfloat16, float16, uint32, uint64, complex64, complex128. \n
 
 *@par Outputs:
 *y: A Tensor of the same data type as "x". \n
@@ -2235,26 +2235,26 @@ REG_OP(FloorMod)
     .OP_END_FACTORY_REG(FloorMod)
 
 /**
-*@brief Computes the power of "x1" to "x2". \n
+* @brief Computes the power of "x1" to "x2". \n
 
-*@par Inputs:
-*Two inputs, including:
+* @par Inputs:
+* Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types:
-*     float16, float32, int32, int64, int8, uint8, double, complex64, complex128.
+*     bfloat16, float16, float32, int32, int64, int8, uint8, double, complex64, complex128.
 * @li x2: A Tensor of the same type as "x1". \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x1". \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x1". \n
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator Pow.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Pow.
 */
 REG_OP(Pow)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+    .INPUT(x1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
                            DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+    .INPUT(x2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
                            DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
                            DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Pow)
 
@@ -2298,17 +2298,17 @@ REG_OP(Round)
     .OP_END_FACTORY_REG(Round)
 
 /**
-*@brief: Computes sine of "x" element-wise. \n
+* @brief: Computes sine of "x" element-wise. \n
 
-*@par Inputs:
-*One input:
-*x: An ND Tensor. Must be one of the following types: float16, float32, double,
+* @par Inputs:
+* One input:
+* x: An ND Tensor. Must be one of the following types:bflaot16, float16, float32, double,
  * complex64, complex128, int32, int64
 
-*@par Outputs:
-*y: An ND Tensor. Has the same type as "x". \n
+* @par Outputs:
+* y: An ND Tensor. Has the same type as "x". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with TensorFlow operator Sin.
 */
 REG_OP(Sin)
@@ -2511,7 +2511,7 @@ REG_OP(ArgMaxD)
 
 *@par Inputs:
 *One input: \n
-*x: A multi-dimensional Tensor of type float16 or float32. \n
+*x: A multi-dimensional Tensor of type bfloat16 float16 or float32. \n
 
 *@par Attributes:
 *@li dimension: An integer of type int32, specifying the axis information of
@@ -2538,9 +2538,9 @@ REG_OP(ArgMaxD)
 * sequence is opposite to that of PyTorch).
 */
 REG_OP(ArgMaxWithValue)
-    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
-    .OUTPUT(indice,TensorType({DT_INT32}))
-    .OUTPUT(values, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(indice, TensorType({DT_INT32}))
+    .OUTPUT(values, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(dimension, Int)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ArgMaxWithValue)
@@ -3816,9 +3816,9 @@ REG_OP(HardMax)
 * Compatible with the Pytorch dot operator. \n
 */
 REG_OP(Dot)
-    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
-    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
-    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_UINT8, DT_INT8, DT_INT32}))
+    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_UINT8, DT_INT8, DT_INT32}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_UINT8, DT_INT8, DT_INT32}))
     .OP_END_FACTORY_REG(Dot)
 
 /**

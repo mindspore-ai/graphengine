@@ -408,6 +408,15 @@ RTS_API rtError_t rtGetSocVersion(char_t *ver, const uint32_t maxLen);
 
 /**
  * @ingroup dvrt_dev
+ * @brief check socversion
+ * @param [in] OMSoCVersion   OM SocVersion
+ * @param [in] otherDevId   OM ArchVersion
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtModelCheckCompatibility(const char_t *OMSoCVersion, const char_t *OMArchVersion);
+
+/**
+ * @ingroup dvrt_dev
  * @brief get status
  * @param [in] devId   the logical device id
  * @param [in] otherDevId   the other logical device id

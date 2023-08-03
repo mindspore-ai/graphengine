@@ -23,6 +23,7 @@
 #include "ge/ge_api_error_codes.h"
 #include "graph/op_desc.h"
 #include "graph/ge_tensor.h"
+#include "pne/model/flow_model.h"
 
 namespace ge {
 struct FileConstantInfo {
@@ -47,7 +48,13 @@ void GetFileConstantPath(const OpDescPtr &op_desc, std::string &file_path, size_
 Status SetFileConstantPath(const OpDescPtr &op_desc, const std::string &file_path, const int64_t offset = 0,
                            const int64_t length = 0);
 
+Status TransferOmPathToWeightDir(const std::string &om_path, std::string &weight_dir);
+
+Status SetExternalPathInner(const OpDescPtr &op_desc, const std::string &weight_dir);
+
 Status SetExternalPath(const OpDescPtr &op_desc, const std::string &om_path);
+
+Status SetExternalPath(const ComputeGraphPtr &compute_graph, const std::string &om_path);
 
 std::string GetTmpWeightDir(const int32_t pid, const uint64_t session_id);
 
@@ -56,6 +63,13 @@ Status ConvertFileConstToConst(const ComputeGraphPtr &compute_graph);
 Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph);
 
 Status ChangeFilePath(const ComputeGraphPtr &compute_graph, const std::string &om_path);
+
+Status ChangeFilePath(const FlowModelPtr &flow_model, const std::string &om_path);
+
+Status ChangeFilePathAttr(const ComputeGraphPtr &compute_graph, const std::string &om_path,
+                          std::map<std::string, std::string> &old_file_to_new_file);
+
+Status MoveFilePath(const std::map<std::string, std::string> &old_file_to_new_file);
 }
 
 #endif // INC_FRAMEWORK_COMMON_FILE_CONSTANT_UTIL_H

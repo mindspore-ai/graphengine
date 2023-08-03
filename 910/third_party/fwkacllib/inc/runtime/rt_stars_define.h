@@ -135,7 +135,7 @@ typedef struct tagFftsPlusSqe {
     uint32_t contextAddressBaseL;
     uint32_t contextAddressBaseH : 17;
     uint32_t reserved15 : 15;
-    // 48-63 bytes
+    // 48-63 bytes:48-51 use for pid
     uint32_t reserved16[4];
 } rtFftsPlusSqe_t;
 

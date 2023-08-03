@@ -39,6 +39,7 @@ extern "C" {
 #define  ACL_ERROR_RT_INVALID_MALLOC_TYPE        107018 // invalid malloc type
 #define  ACL_ERROR_RT_WAIT_TIMEOUT               107019 // wait timeout
 #define  ACL_ERROR_RT_TASK_TIMEOUT               107020 // task timeout
+#define  ACL_ERROR_RT_SYSPARAMOPT_NOT_SET        107021 // not set sysparamopt
 
 #define  ACL_ERROR_RT_FEATURE_NOT_SUPPORT        207000 // feature not support
 #define  ACL_ERROR_RT_MEMORY_ALLOCATION          207001 // memory allocation error

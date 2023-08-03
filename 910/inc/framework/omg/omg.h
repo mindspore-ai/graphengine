@@ -64,6 +64,16 @@ GE_FUNC_VISIBILITY domi::Status ParseGraph(ge::Graph &graph, const std::map<std:
 
 /**
  * @ingroup domi_omg
+ * @brief generate graph based on the input model file and weight file
+ * @param [out] graph graph
+ * @param [in] model_file path of model file
+ * @return Status result code
+ */
+GE_FUNC_VISIBILITY domi::Status ParseGraph(ge::Graph &graph, const char *model_file,
+                                           const std::string &output, domi::FrameworkType type);
+
+/**
+ * @ingroup domi_omg
  * @brief generates a simplified JSON file based on the key value of the offline model file in protobuf format
  * @param [in] model_file path of offline model file
  * @param [out] json_file path of json file

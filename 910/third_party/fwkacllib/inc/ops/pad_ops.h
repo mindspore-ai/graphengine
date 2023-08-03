@@ -33,7 +33,7 @@ namespace ge {
 
 * @li value: A 0D scalar. Specifies the value to fill the returned tensor.
 *    Must be one of the following types:
-*    float16, float32, double, int32, uint8, int16, int8, complex64, int64, bool, 
+*    bfloat16, float16, float32, double, int32, uint8, int16, int8, complex64, int64, bool,
 *    qint8, quint8, qint32, qint16, quint16, uint16, complex128, uint32, uint64, .
 *
 * @par Outputs:
@@ -49,11 +49,11 @@ REG_OP(Fill)
     .INPUT(value, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_UINT8, DT_INT16,
                               DT_INT8, DT_COMPLEX64, DT_INT64, DT_BOOL, DT_QINT8,
                               DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16, DT_UINT16,
-                              DT_COMPLEX128, DT_FLOAT16, DT_UINT32, DT_UINT64}))
+                              DT_COMPLEX128, DT_FLOAT16, DT_BF16, DT_UINT32, DT_UINT64}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_UINT8, DT_INT16,
                               DT_INT8, DT_COMPLEX64, DT_INT64, DT_BOOL, DT_QINT8,
                               DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16, DT_UINT16,
-                              DT_COMPLEX128, DT_FLOAT16, DT_UINT32, DT_UINT64}))
+                              DT_COMPLEX128, DT_FLOAT16, DT_BF16, DT_UINT32, DT_UINT64}))
     .OP_END_FACTORY_REG(Fill)
 
 /**
@@ -63,7 +63,7 @@ REG_OP(Fill)
 * @par Inputs:
 * value: A 0D scalar for the value to fill the returned tensor. Must be one of
 *    the following types:
-*    float16, float32, uint8, int8, int16, int32, int64, quint8, qint8, qint32
+*    bfloat16, float16, float32, uint8, int8, int16, int32, int64, quint8, qint8, qint32
 *
 * @par Attributes:
 * dims: A tensor. Must be one of the following types:"int32"
@@ -76,10 +76,10 @@ REG_OP(Fill)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Fill instead.
 */
 REG_OP(FillD)
-    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16,
+    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT8, DT_INT16,
                               DT_UINT16, DT_UINT8, DT_INT32, DT_INT64,
                               DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16,
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT8, DT_INT16, DT_UINT16,
                            DT_UINT8, DT_INT32, DT_INT64, DT_UINT32,
                            DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .REQUIRED_ATTR(dims, ListInt)
@@ -283,7 +283,7 @@ REG_OP(PadV3)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+* @li x: A Tensor. Must be one of the following types: float16, bfloat16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li paddings: A Tensor of type int32 or int64.

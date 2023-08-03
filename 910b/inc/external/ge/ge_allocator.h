@@ -51,7 +51,7 @@ class MemBlock {
   size_t GetSize() const {
     return block_size_;
   }
-  void SetSize(size_t mem_size) {
+  void SetSize(const size_t mem_size) {
     block_size_ = mem_size;
   }
   void Free() {

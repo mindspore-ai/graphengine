@@ -23,6 +23,8 @@ typedef enum tagRtTaskType {
     RT_TASK_TYPE_KERNEL_AICORE = 0,
     RT_TASK_TYPE_KERNEL_AICPU = 1,
     RT_TASK_TYPE_KERNEL_NANO_AICORE = 2,
+    RT_TASK_TYPE_KERNEL_NANO_AICPU_HOSTFUNC = 3,
+    RT_TASK_TYPE_MAX,
 } rtTaskType_t;
 
 typedef struct {
@@ -67,6 +69,8 @@ typedef struct {
     uint16_t prefetchBufSize;
     uint64_t paramBufInfo[16];
     uint16_t paramBufSize;
+    uint32_t bufSize;
+    void* bufInfo;
 } rtParamBufDesc_t;
 
 typedef struct {
@@ -76,14 +80,16 @@ typedef struct {
         rtHwtsDynamicTaskDesc_t hwtsDynamicTaskDesc;
         rtParamBufDesc_t paramBufDesc;
     }u;
-} rtNanoAicoreTaskParam_t;
+} rtNanoDefaultTaskParam_t;
 
 typedef struct {
     rtTaskType_t taskType;
+    rtTaskBuffType_t bufType;
     uint16_t streamId;
     union {
         rtAicoreTaskParam_t aicoreTask;
-        rtNanoAicoreTaskParam_t nanoAicoreTask;
+        rtNanoDefaultTaskParam_t nanoAicoreTask;
+        rtNanoDefaultTaskParam_t nanoHostFuncTask;
     }u;
 } rtCompilerPartinfo_t;
 

@@ -138,6 +138,27 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief Load graph from om
+  /// @param [in] graphId graph id
+  /// @param [in] options graph options
+  /// @param [in] om_file_path offline om path
+  /// @return Status result of function
+  ///
+  /* 规避方案：规避acl系列接口不支持拉远环境；aclModelLoad接口当前不支持分布式的模型加载，不支持session管理权重变量复用
+              根据20230615 SEG会议纪要可以在session中开接口作为临时方案
+     方案详述：acl接口不支持拉远形态，不支持外置权重。使用该接口实现在session加载离线om。
+              1.将om根据指定om_file_path直接加载到ModelManager中
+              2.modelManager判断是异构模型，调用异构部署函数，生成deloyplan
+              3.ModelManger提供接口返回modelid和flowModelPtr GraphPtr，InnerSession根据返回信息注册在GraphManager中生成graphnode
+              4.当前调用进程可以通过RunGraph接口去执行加载的离线模型
+     方案约束：只用于加载异构离线模型，即存储格式为flowmodel下包含一个或多个submodel和modelrelation的离线模型;
+              不支持包含variable的离线模型，variable的值在device侧目前还没有保存到om中的方案
+  */
+  Status LoadGraph(const uint32_t graph_id, const std::map<std::string, std::string> options,
+                   const std::string om_file_path);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief run a graph of the session with specific session id and specific stream asynchronously
   /// @param [in] graph_id graph id
   /// @param [in] stream specific stream

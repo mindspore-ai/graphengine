@@ -20,8 +20,6 @@
 #include "framework/runtime/executor_option/executor_option.h"
 
 namespace gert {
-constexpr const char *kCacheExecutor = "CacheExecutor";
-
 enum class RtCacheMode {
   /**
    * 关闭
@@ -44,9 +42,9 @@ enum class RtCacheMode {
 };
 class VISIBILITY_EXPORT RtCacheExecutorOption : public ExecutorOption {
  public:
-  RtCacheExecutorOption() : ExecutorOption(kCacheExecutor), rt_cache_mode_(RtCacheMode::kTurnOff) {}
+  RtCacheExecutorOption() : ExecutorOption(ExecutorType::kHostCache), rt_cache_mode_(RtCacheMode::kTurnOff) {}
   explicit RtCacheExecutorOption(RtCacheMode rt_cache_mode)
-      : ExecutorOption(kCacheExecutor), rt_cache_mode_(rt_cache_mode) {}
+      : ExecutorOption(ExecutorType::kHostCache), rt_cache_mode_(rt_cache_mode) {}
   const RtCacheMode &GetCacheMode() const {
     return rt_cache_mode_;
   }

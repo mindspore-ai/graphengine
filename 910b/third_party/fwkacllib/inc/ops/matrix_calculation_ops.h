@@ -770,10 +770,10 @@ REG_OP(TensorScatterUpdate)
 * @par Inputs:
 * Three inputs, including:
 * @li data: An ND Tensor . \n
-* Must be one of the following types: float16, float32, int32, int8, uint8
+* Must be one of NumberType.
 * @li indices: An ND Tensor of type int32 or int64
 * @li updates: An Tensor. Same shape as indices. format:NCHW, NHWC . \n
-* Must be one of the following types: float16, float32, int32, int8, uint8
+* Must be one of NumberType.
 
 * @par Attributes:
 * @li axis: An optional attribute. Defaults to 0.
@@ -787,10 +787,10 @@ REG_OP(TensorScatterUpdate)
 * Compatible with the ONNX operator ScatterElements.
 */
 REG_OP(ScatterElements)
-    .INPUT(data, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(data, TensorType::NumberType())
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType::NumberType())
+    .OUTPUT(y, TensorType::NumberType())
     .ATTR(axis, Int, 0)
     .ATTR(reduction, String, "none")
     .OP_END_FACTORY_REG(ScatterElements)

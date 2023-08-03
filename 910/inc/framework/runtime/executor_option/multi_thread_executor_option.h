@@ -21,7 +21,6 @@
 #include "framework/runtime/executor_option/executor_option.h"
 
 namespace gert {
-constexpr const char *kMultiThreadExecutor = "MultiThreadExecutor";
 constexpr size_t kLeastCoreNumber = 3U;    // least core num, one for schedule, two for workers
 constexpr size_t kLeastThreadNumber = 2U;  // least new thread num, one for normal worker, one for memory worker
 
@@ -29,7 +28,7 @@ class VISIBILITY_EXPORT MultiThreadExecutorOption : public ExecutorOption {
  public:
   MultiThreadExecutorOption() : MultiThreadExecutorOption(3U) {}
   explicit MultiThreadExecutorOption(size_t thread_num)
-      : ExecutorOption(kMultiThreadExecutor), thread_num_(thread_num) {}
+      : ExecutorOption(ExecutorType::kTopologicalMultiThread), thread_num_(thread_num) {}
 
   size_t GetThreadNum() const {
     return thread_num_;

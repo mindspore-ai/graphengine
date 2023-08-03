@@ -79,6 +79,7 @@ const char_t *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
 const char_t *const OPTION_EXEC_REUSE_ZERO_COPY_MEMORY = "ge.exec.reuseZeroCopyMemory";
 const char_t *const OPTION_INPUT_REUSE_MEM_INDEXES = "ge.exec.inputReuseMemIndexes";
 const char_t *const OPTION_OUTPUT_REUSE_MEM_INDEXES = "ge.exec.outputReuseMemIndexes";
+const char_t *const OPTION_GRAPH_IO_MEM_ALLOC_MODE = "ge.exec.graphIOMemAllocMode";
 
 const std::string ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const std::string MEMORY_OPTIMIZATION_POLICY = "ge.exec.memoryOptimizationPolicy";
@@ -129,6 +130,12 @@ const char_t *const OPTION_GRAPH_KEY = "ge.graph_key";
 
 // optimizations to disable, split by comma
 const char_t *const OPTION_DISABLE_OPTIMIZATIONS = "ge.disableOptimizations";
+const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
+const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
+const std::string DISTRIBUTED_CLUSTER_BUILD = "ge.distributed_cluster_build";
+const std::string MODEL_RELATION_CONFIG = "ge.offline_model_relation";
+const std::string CLUSTER_CONFIG = "ge.cluster_config";
+const std::string OPTION_HCCL_COMPILER_OFFLINE = "ge.offline_hccl_compile";
 
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
@@ -542,7 +549,11 @@ static const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 static const char_t *const EXTERNAL_WEIGHT = ge::EXTERNAL_WEIGHT.c_str();
 static const char_t *const EXCLUDE_ENGINES = ge::EXCLUDE_ENGINES.c_str();
 static const char_t *const DETERMINISTIC = ge::DETERMINISTIC.c_str();
-
+static const char_t *const DISTRIBUTED_CLUSTER_BUILD = ge::DISTRIBUTED_CLUSTER_BUILD.c_str();
+static const char_t *const MODEL_RELATION_CONFIG = ge::MODEL_RELATION_CONFIG.c_str();
+static const char_t *const CLUSTER_CONFIG = ge::CLUSTER_CONFIG.c_str();
+static const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
+static const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
 const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
@@ -578,7 +589,11 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              BUILD_INNER_MODEL,
                                                              OP_DEBUG_CONFIG,
                                                              EXCLUDE_ENGINES,
-                                                             EXTERNAL_WEIGHT};
+                                                             EXTERNAL_WEIGHT,
+                                                             DISTRIBUTED_CLUSTER_BUILD,
+                                                             MODEL_RELATION_CONFIG,
+                                                             ENABLE_GRAPH_PARALLEL,
+                                                             GRAPH_PARALLEL_OPTION_PATH};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
@@ -612,7 +627,8 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               MODIFY_MIXLIST,
                                               COMPRESSION_OPTIMIZE_CONF,
                                               OP_DEBUG_CONFIG,
-                                              DETERMINISTIC};
+                                              DETERMINISTIC,
+                                              CLUSTER_CONFIG};
 #endif
 }  // namespace ir_option
 }  // namespace ge

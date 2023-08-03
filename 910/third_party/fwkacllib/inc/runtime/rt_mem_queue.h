@@ -806,6 +806,44 @@ RTS_API rtError_t rtQueueSubscribe(int32_t devId, uint32_t qId, uint32_t groupId
 */
 RTS_API rtError_t rtBufEventTrigger(const char_t *name);
 
+// EschedQueryInfo group
+#define EVENT_MAX_GRP_NAME_LEN   16
+typedef enum tagEschedQueryType {
+    RT_QUERY_TYPE_LOCAL_GRP_ID,
+    RT_QUERY_TYPE_REMOTE_GRP_ID,
+    RT_QUERY_TYPE_MAX
+} rtEschedQueryType;
+
+typedef struct tagEschedInputInfo {
+    void *inBuff;
+    unsigned int inLen;
+} rtEschedInputInfo;
+
+typedef struct tagEschedOutputInfo {
+    void *outBuff;
+    unsigned int outLen;
+} rtEschedOutputInfo;
+
+typedef struct tagEschedQueryGidInput {
+    int pid;
+    char grpName[EVENT_MAX_GRP_NAME_LEN];
+} rtEschedQueryGidInput;
+
+typedef struct tagEschedQueryGidOutput {
+    unsigned int grpId;
+} rtEschedQueryGidOutput;
+
+/**
+* @ingroup rtEschedQueryInfo
+* @brief  query esched info, such as grpid.
+* @param [in] devId: logic devid
+* @param [in] type: query info type
+* @param [in] inPut: Input the corresponding data structure based on the type.
+* @param [out] outPut: OutPut the corresponding data structure based on the type.
+* @return   0 for success, others for fail
+*/
+RTS_API rtError_t rtEschedQueryInfo(const uint32_t devId, const rtEschedQueryType type,
+    rtEschedInputInfo *inPut, rtEschedOutputInfo *outPut);
 #if defined(__cplusplus)
 }
 #endif

@@ -562,7 +562,8 @@ typedef struct tagFftsPlusLabelCtx {
     // 0-3 bytes
     uint16_t contextType;
     uint8_t successorNum;
-    uint8_t res1;
+    uint8_t res1 : 7;
+    uint8_t aten : 1;
     // 4-7
     uint8_t res2;
     uint8_t res3;
@@ -572,10 +573,14 @@ typedef struct tagFftsPlusLabelCtx {
     uint32_t res4;
     // 12-63
     uint16_t successorList[RT_CTX_SUCCESSOR_NUM];
-    // 64-79
-    uint16_t res5[8];
-    // 80-127
-    uint32_t res6[12];
+    // 64-71
+    uint32_t res5[2];
+    // 72-75
+    uint16_t threadId;
+    uint16_t threadDim;
+
+    // 76-127
+    uint32_t res6[13];
 } rtFftsPlusLabelCtx_t;
 
 // case switch context

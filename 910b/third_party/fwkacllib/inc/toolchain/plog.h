@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,23 @@ DLL_EXPORT int DlogReportInitialize(void);
  * @return: 0: SUCCEED, others: FAILED
  */
 DLL_EXPORT int DlogReportFinalize(void);
+
+/**
+ * @ingroup     : plog
+ * @brief       : create thread to recv log from device
+ * @param[in]   : devId         device id
+ * @param[in]   : mode          use macro LOG_SAVE_MODE_XXX in slog.h
+ * @return      : 0: SUCCEED, others: FAILED
+ */
+DLL_EXPORT int DlogReportStart(int devId, int mode);
+
+/**
+ * @ingroup     : plog
+ * @brief       : stop recv thread
+ * @param[in]   : devId         device id
+ */
+DLL_EXPORT void DlogReportStop(int devId);
+
 
 #ifdef __cplusplus
 }

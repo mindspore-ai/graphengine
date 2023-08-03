@@ -31,7 +31,9 @@ enum ProfDataTypeConfig {
     kProfL2cache        = 0x0010,
     kProfHccl           = 0x0020,
     kProfTrainingTrace  = 0x0040,
+    kProfFwkScheduleL0  = 0x0200,
     kProfTaskTimeL0     = 0x0800,
+    kProfFwkScheduleL1  = 0x01000000,
 };
 
 enum ProfilingAicoreMetrics {
@@ -41,7 +43,8 @@ enum ProfilingAicoreMetrics {
     kAicoreMemoryL0 = 3,
     kAicoreResourceConflictRatio = 4,
     kAicoreMemoryUB = 5,
-    kAicoreL2Cache = 6
+    kAicoreL2Cache = 6,
+    kAicorePipelineExecuteUtilization = 7
 };
 
 using ProfAicoreEvents = struct ProfAicoreEvents;

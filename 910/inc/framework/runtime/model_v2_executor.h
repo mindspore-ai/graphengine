@@ -159,6 +159,12 @@ class VISIBILITY_EXPORT ModelV2Executor {
   void SetSpaceRegistry(gert::OpImplSpaceRegistryPtr space_registry) {
     space_registry_ = space_registry;
   }
+  void SetFileConstantWeightDir(const std::string &file_constant_weight_dir) {
+    file_constant_weight_dir_ = file_constant_weight_dir;
+  }
+  const std::string &GetFileConstantWeightDir() const {
+    return file_constant_weight_dir_;
+  }
   /**
    * @brief 获取aipp相关config info
    * @param [in] index 输入index
@@ -190,6 +196,7 @@ class VISIBILITY_EXPORT ModelV2Executor {
   ExecutorSubscribersScheduler subscribers_;
   ExecutorState state_ = ExecutorState::kInit;
   gert::OpImplSpaceRegistryPtr space_registry_;
+  std::string file_constant_weight_dir_;
   // for aipp
   std::map<uint32_t, ge::AippConfigInfo> aipp_info_list_;
   std::map<uint32_t, std::pair<ge::InputAippType, size_t>> aipp_type_list_;

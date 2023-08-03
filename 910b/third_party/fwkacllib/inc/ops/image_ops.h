@@ -204,7 +204,7 @@ nearest neighbor sampling to a common output size specified by crop_size . \n
 * @li method: An optional string from: '"bilinear", "nearest"'. Defaults to
               "bilinear". Currently two sampling methods are supported: Bilinear
               and NearestNeighbor .
-* @li dtype: An Type attr, support type list [uint8, float16, float].
+* @li dtype: An optional Type attr, support type list [uint8, float16, float].
              Defaults to DT_FLOAT . \n
 
 * @par Outputs:
@@ -548,11 +548,11 @@ REG_OP(ResizeBicubicGrad)
 size for the images . \n
 
 *@par Attributes:
-*@li align_corners: If true, the centers of the 4 corner pixels of the input
+*@li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input
 and output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false.
 *@li half_pixel_centers: An optional bool. Defaults to False .
-*@li dtype: Determine the DataType of input tensor and output tensor,
+*@li dtype: An optional Type attr. Determine the DataType of input tensor and output tensor,
 must be float (set value 0) or uint8 (set value 4) , defaults to float.\n
 
 *@par Outputs:
@@ -734,11 +734,11 @@ REG_OP(SyncResizeBilinearV2Grad)
 size for the images . \n
 
 *@par Attributes:
-* @li align_corners: If true, the centers of the 4 corner pixels of the input and
+* @li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input and
 output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false .
 * @li half_pixel_centers: An optional bool. Defaults to False . \n
-* @li dtype: An Type attr, support type list [DT_FP32, DT_U8]. Defaults to DT_FP32 . \n
+* @li dtype: An optional Type attr, support type list [DT_FP32, DT_U8]. Defaults to DT_FP32 . \n
 *@par Outputs:
 *y: 4-D with shape [batch, new_height, new_width, channels] . \n
 
@@ -952,7 +952,7 @@ REG_OP(SampleDistortedBoundingBoxExt2)
 The new size for the images . \n
 
 *@par Attributes:
-*@li align_corners: If true, the centers of the 4 corner pixels of the input and
+*@li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input and
 output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false . \n
 *@li half_pixel_centers: An optional bool. Defaults to False . \n
@@ -1788,21 +1788,21 @@ is "tf_crop_and_resize"
 to empty data (zero shape) in this operator's input list.
 
 * @par Attributes:
-* @li coordinate_transformation_mode: String. Defaults to half_pixel. how to transform \n
+* @li coordinate_transformation_mode: An optional String. Defaults to half_pixel. how to transform \n
 the coordinate in the resized tensor to the coordinate in the original tensor. \n
 other optional: pytorch_half_pixel, align_corners, asymmetric, tf_half_pixel_for_nn, \n
 tf_crop_and_resize.
-* @li cubic_coeff_a: Float. Defaults to -0.75, only used in cubic interpolation. \n
+* @li cubic_coeff_a: An optional Float. Defaults to -0.75, only used in cubic interpolation. \n
 other optional: -0.5
-* @li exclude_outside: Int. Defaults to 0, If set to 1, the weight of sampling \n
+* @li exclude_outside: An optional Int. Defaults to 0, If set to 1, the weight of sampling \n
 locations outside the tensor will be set to 0 and the weight will be renormalized \n
 so that their sum is 1.0.
-* @li extrapolation_value: Float. Defaults to 0.0f. When coordinate_transformation_mode \n
+* @li extrapolation_value: An optional Float. Defaults to 0.0f. When coordinate_transformation_mode \n
 is "tf_crop_and_resize" and x_original is outside the range [0, length_original - 1], \n
 this value is used as the corresponding output value.
-* @li mode: String. Defaults to nearest. Three interpolation modes: nearest (default), \n
+* @li mode: An optional String. Defaults to nearest. Three interpolation modes: nearest (default), \n
 linear and cubic.
-* @li nearest_mode: String. Defaults to round_prefer_floor. Four modes: round_prefer_floor, \n
+* @li nearest_mode: An optional String. Defaults to round_prefer_floor. Four modes: round_prefer_floor, \n
 round_prefer_ceil, floor, ceil. Only used by nearest interpolation.
 
 * @par Outputs:
@@ -2182,7 +2182,7 @@ REG_OP(IMGWarpOffsets)
 * @par Attributes:
 * @li interpolation_mode: An optional string specifying the interpolation method.
 * @li padding_mode: An optional string specifying the pad method.
-* @li data_format: A String. data formats, defaults to "NCDHW".
+* @li data_format: An optional string specifying the data formats, defaults to "NCDHW".
 * @li align_corners: An optional bool. If "true", the centers of the corner
   pixels of the input and output tensors are aligned. Defaults to "false" .
 

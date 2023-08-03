@@ -86,7 +86,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   void SetRepackSoFlag(const bool val);
 
-  Status LoadModelDataAndPackSo(const ModelBufferData &model, const std::string &output_file);
+  Status LoadModelDataAndPackSo(const ModelData &model_data, const std::string &output_file);
 
   static constexpr const char_t *kFilePreffix = ".exeom";
   static constexpr const char_t *kDebugPreffix = ".dbg";

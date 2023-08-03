@@ -100,6 +100,8 @@ class VISIBILITY_EXPORT ModelDesc {
   void SetOutputNum(size_t output_num);
   void SetSpaceRegistry(gert::OpImplSpaceRegistry *space_registry);
   gert::OpImplSpaceRegistry *GetSpaceRegistry() const;
+  void SetFileConstantWeightDir(const ge::char_t *om_path);
+  const ge::char_t *GetFileConstantWeightDir() const;
 
   ge::graphStatus GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) const;
   ge::graphStatus GetUserDesignateShapeOrder(std::vector<std::string> &user_designate_shape_order) const;
@@ -107,6 +109,7 @@ class VISIBILITY_EXPORT ModelDesc {
 
  private:
   gert::OpImplSpaceRegistry *space_registry_;
+  const ge::char_t *file_constant_weight_dir_;
   size_t input_num_;
   size_t output_num_;
   ContinuousVector model_io_descs_;

@@ -470,14 +470,8 @@ struct ModelQueueParam {
 // 1: Graph resource evaluation does not limit model memory size.
 const char_t *const EVALUATE_GRAPH_RESOURCE_MODE = "ge.evaluateGraphResourceMode";
 
-// 2: Enable graph parallel options
-const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
-
 // 3: Config all resource and device mesh
 const char_t *const RESOURCE_CONFIG_PATH = "ge.resourceConfigPath";
-
-// 4: Config graph parallel options path(should specific file name)
-const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
 
 // 5: auto recompute attribute
 const char_t *const RECOMPUTE = "ge.recompute";
@@ -496,9 +490,7 @@ const char_t *const OPTION_NUMA_CONFIG = "ge.numaConfig";
 const char_t *const OPTION_EXEC_FORMAT_MODEL = "ge.exec.formatMode";
 
 const std::set<std::string> ir_builder_suppported_options_inner = {EVALUATE_GRAPH_RESOURCE_MODE,
-                                                                   ENABLE_GRAPH_PARALLEL,
                                                                    RESOURCE_CONFIG_PATH,
-                                                                   GRAPH_PARALLEL_OPTION_PATH,
                                                                    RECOMPUTE,
                                                                    OPTION_TOPOSORTING_MODE,
                                                                    GRAPH_SLICE_MODE};

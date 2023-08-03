@@ -222,6 +222,10 @@ could be NHWC or NCHW.
 * @ Outputs:
 * y:A Tensor of type uint8. The format could be NHWC or NCHW. \n
 
+* @par Attributes:
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "CHW".
+Value used for inferring real format of images.
+
 * @attention Constraints:
 * Input images is a tensor of at least 3 dimensions. The last dimension is
 interpretted as channels, and must be three . \n
@@ -276,10 +280,12 @@ REG_OP(ResizeTrilinear)
 * @par Attributes:
 * @li dst_size: Required int32 and int64, shape must be (1, 2), specifying the size of the output image.
 * Must be greater than "0".
-* @li interpolation: Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area", default "bilinear".
-* @li border_type: Pixel extension method, only support "constant".
-* @li border_value: Used when border_type is "constant". Data type is the same as that of the original picture.
-*                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 .
+* @li interpolation: An optional string. Used to select interpolation type.
+only support "bilinear"/"nearest"/"cubic"/"area", default "bilinear".
+* @li border_type: An optional string. Pixel extension method, currently only support "constant", default "constant".
+* @li border_value: An optional float. Used when border_type is "constant".
+Data type is the same as that of the original picture. The number of data is the same as that of the original
+picture channels. Default value is 0.
 * @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
                    Value used for inferring real format of images. \n
 
@@ -305,7 +311,8 @@ REG_OP(WarpAffineV2)
 * @li dst_size: Required int32 and int64, shape must be (1, 2), specifying the size of the output image. \n
 
 * @par Attributes:
-* @li interpolation: Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area", default "nearest".
+* @li interpolation: An optional string. Interpolation type, only support "bilinear"/"nearest"/"cubic"/"area",
+default "nearest".
 * @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
                    Value used for inferring real format of images. \n
 
@@ -328,12 +335,12 @@ REG_OP(ResizeV2)
 * @li matrix: transformation matrix, format ND , shape must be (2, 3), type must be float32. \n
 
 * @par Attributes:
-* @li kernel_size: An required ListInt.
+* @li kernel_size: A required ListInt.
 * contain 2 elements: [size_width, size_height].
 * every element must be 1 or 3 or 5.
 * @li sigma: A required ListFloat.
 * contain 2 elements: [sigma_x, sigma_y].
-* @li padding_mode: padding mode, only support "constant" and "reflect", default "constant". \n
+* @li padding_mode: An optional string. padding mode, only support "constant" and "reflect", default "constant". \n
 
 * @par DataType:
 * @li T: type of uint8 or float32. \n
@@ -358,14 +365,15 @@ REG_OP(GaussianBlur)
 
 * @par Attributes:
 * @li angle: An required float attr. In degress counter clockwise.
-* @li center: Optional center of rotation. Origin is the upper left corner. Default is the center of the image.
-* @li expand: Optional expansion flag. If true, expands the output image to make it large enough to hold the
+* @li center: An optional ListInt, center of rotation. Origin is the upper left corner.
+Default is the center of the image.
+* @li expand: An optional Bool, expansion flag. If true, expands the output image to make it large enough to hold the
               entire rotated image. If false or omitted, make the output image the same size as the input image.
               Note that the expand flag assumes rotation around the center and no translation.
-* @li interpolation: Interpolation type, only support "bilinear"/"nearest", default "nearest".
-* @li padding_mode: Pixel extension method, only support "constant" and "edge", default "constant".
-* @li padding_mode: Used when padding_mode is "constant". Data type is the same as that of the original picture.
-*                   THe number of data is the same as that of the original picture channels. Deatulat value is 0 . \n
+* @li interpolation: An optional string. Interpolation type, only support "bilinear"/"nearest", default "nearest".
+* @li padding_mode: An optional string. Pixel extension method, only support "constant" and "edge", default "constant".
+* @li padding_value: An optional float. Used when padding_mode is "constant". Data type is the same as that of the
+original picture. The number of data is the same as that of the original picture channels. Deatulat value is 0 . \n
 * @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "HWC".
 Value used for inferring real format of images.
 
@@ -393,22 +401,22 @@ REG_OP(Rotate)
 
 * @par Inputs:
 * @li x: An tensor of at least 3 dimensions, type must be float32 or uint8. \n
-* @li boxes: A Tensor. Must be uint32. A 2-D tensor of shape [num_boxes, 4],
-4 numbers represent [left, top, left+width, top+height].
-* @li box_index: A Tensor of type uint32. A 1-D tensor of shape [num_boxes] with
-int32 values in [0, batch).\n
+* @li boxes: A Tensor of type uint32 or int32. A 2-D tensor of shape
+[num_boxes, 4], 4 numbers represent [left, top, left+width, top+height].
+* @li box_index: A Tensor of type uint32 or int32. A 1-D tensor of shape
+[num_boxes] with int32 values in [0, batch).\n
 
 * @par Attributes:
-* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to "CHW".
-Value used for inferring real format of images.
+* @li data_format: An optional string. Could be "HWC" or "CHW". Defaults to
+"CHW". Value used for inferring real format of images.
 
 * @par Outputs:
 * y: output tensor, NHWC or NCHW, type must be float32 or uint8. \n
 */
 REG_OP(ImgCrop)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8}))
-    .INPUT(boxes, TensorType({DT_UINT32}))
-    .INPUT(box_index, TensorType({DT_UINT32}))
+    .INPUT(boxes, TensorType({DT_UINT32, DT_INT32}))
+    .INPUT(box_index, TensorType({DT_UINT32, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8}))
     .ATTR(data_format, String, "CHW")
     .OP_END_FACTORY_REG(ImgCrop)

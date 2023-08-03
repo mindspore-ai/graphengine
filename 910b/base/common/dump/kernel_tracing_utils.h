@@ -26,7 +26,7 @@ void PrintHex(const T *p, size_t num, std::stringstream &ss) {
   for (size_t i = 0; i < num; ++i) {
     if (!IsPointer) {
       // 通过std::setw设置输出位宽为2倍的sizeof(T)
-      ss << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2UL) << std::hex << +p[i] << ' ';
+      ss << "0x" << std::setfill('0') << std::setw(static_cast<int32_t>(sizeof(T)) * 2) << std::hex << +p[i] << ' ';
     } else {
       ss << p[i] << ' ';
     }

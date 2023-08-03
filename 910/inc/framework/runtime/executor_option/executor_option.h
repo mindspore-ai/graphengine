@@ -17,20 +17,38 @@
 #ifndef AIR_CXX_EXECUTOR_OPTION_H
 #define AIR_CXX_EXECUTOR_OPTION_H
 
-#include <string>
-
 namespace gert {
+enum class ExecutorType {
+  // 顺序优先级执行器，基于优先级完成拓扑排序后，使用基于拓扑排序后的结果执行，
+  // 本执行器调度速度最快，但是不支持条件/循环节点
+  kSequentialPriority,
+
+  // 基于拓扑的执行器，执行时基于拓扑动态计算ready节点，并做调度执行
+  kTopological,
+
+  // 基于拓扑的优先级执行器，在`kTopological`的基础上，将ready节点做优先级排序，总是优先执行优先级高的节点
+  kTopologicalPriority,
+
+  // 基于host缓存的执行器，在`kTopologicalPriority`的基础上，支持按照冻结后的图执行，被冻结的节点不再执行
+  kHostCache,
+
+  // 基于拓扑的多线程执行器
+  kTopologicalMultiThread,
+
+  kEnd
+};
+
 class VISIBILITY_EXPORT ExecutorOption {
  public:
-  ExecutorOption() : executor_type_("") {}
-  explicit ExecutorOption(std::string executor_type) : executor_type_(executor_type) {}
-  const std::string &GetExecutorType() const {
+  ExecutorOption() : executor_type_(ExecutorType::kEnd) {}
+  explicit ExecutorOption(ExecutorType executor_type) : executor_type_(executor_type) {}
+  ExecutorType GetExecutorType() const {
     return executor_type_;
   }
   virtual ~ExecutorOption() = default;
 
  private:
-  std::string executor_type_;
+  ExecutorType executor_type_;
 };
 }  // namespace gert
 

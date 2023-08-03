@@ -446,7 +446,7 @@ REG_OP(RandomUniform)
 are set to be non-zero, the random number generator is seeded by the given 
 seed. Otherwise, it is seeded by a random seed.
 *@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
-* @li dtype: A type from: float16, float32, double. The default type is float32.
+* @li dtype: An optional attribute, a type from: float16, float32, double. The default type is float32.
 * The corresponding relationshape between the enumeration values and real output type is :
 * 0(float32), 1(float16), 11(double).
 
@@ -552,7 +552,7 @@ include:
 */
 REG_OP(StatelessDropOutGenMask)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
-    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT, DT_BF16 }))
     .INPUT(seed, TensorType({ DT_INT32, DT_INT64 }))
     .INPUT(seed1, TensorType({ DT_INT32, DT_INT64 }))
     .OPTIONAL_INPUT(offset, TensorType({ DT_INT64 }))

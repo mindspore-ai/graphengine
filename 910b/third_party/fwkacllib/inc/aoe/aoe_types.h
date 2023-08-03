@@ -123,9 +123,10 @@ const char * const OP_BANK_PATH                              = "ge.op_bank_path"
 const char * const TUNE_DEVICE_IDS                           = "ge.exec.tuneDeviceIds";
 const char * const OPTION_GRAPH_RUN_MODE                     = "ge.graphRunMode";
 
-
 // 其他常量定义
 constexpr char NO_DYNAMIC_PARAM[] = "no_dynamic_param";
+constexpr char const *QTEST_SOC_VERSION = "QTEST_SOC_VERSION";
+const std::set<std::string> QTEST_SOC_VERSION_CONFIG = {"Ascend610Lite"};
 
 const AoeStatus AOE_ERROR_NO_AICORE_GRAPH                           = AOE_ERROR_NON_OPTIMIZE_GRAPH; // for sgat
 

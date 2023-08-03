@@ -25,6 +25,8 @@
 
 namespace ge {
 constexpr uint8_t kNullDataFlagBit = 1U;
+constexpr size_t kMaxUserDataSize = 64U;
+
 struct MemQueueAttr {
   uint32_t depth;
   uint32_t work_mode;
@@ -51,6 +53,7 @@ class ExchangeService {
     size_t skip_size = 0U;
     MsgInfo *msg_info = nullptr;
     bool is_shared_input = false;
+    int8_t user_data[kMaxUserDataSize] = {};
   };
   ExchangeService() = default;
   ExchangeService(const ExchangeService &) = delete;

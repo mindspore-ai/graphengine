@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INC_EXTERNAL_GE_GE_API_TYPES_H_
-#define INC_EXTERNAL_GE_GE_API_TYPES_H_
+#ifndef INC_EXTERNAL_GE_COMMON_GE_API_TYPES_H_
+#define INC_EXTERNAL_GE_COMMON_GE_API_TYPES_H_
 
 #include <cstdint>
 #include <string>
@@ -25,6 +25,9 @@
 #include <memory>
 #include "graph/tensor.h"
 #include "graph/types.h"
+
+#ifndef GE_API_TYPES_DEF
+#define GE_API_TYPES_DEF
 
 namespace ge {
 // Option key: graph run mode
@@ -136,6 +139,9 @@ const std::string DISTRIBUTED_CLUSTER_BUILD = "ge.distributed_cluster_build";
 const std::string MODEL_RELATION_CONFIG = "ge.offline_model_relation";
 const std::string CLUSTER_CONFIG = "ge.cluster_config";
 const std::string OPTION_HCCL_COMPILER_OFFLINE = "ge.offline_hccl_compile";
+
+// option for screen log
+const char_t *const OPTION_SCREEN_PRINT_MODE = "ge.screen_print_mode";
 
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
@@ -632,5 +638,5 @@ const std::set<std::string> global_options = {CORE_TYPE,
 #endif
 }  // namespace ir_option
 }  // namespace ge
-
+#endif // GE_API_TYPES_DEF
 #endif  // INC_EXTERNAL_GE_GE_API_TYPES_H_

@@ -55,11 +55,15 @@ const uint32_t MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        = 0x040000;
 const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000;
 const uint32_t MSPROF_REPORT_ACL_ASCENDC_TYPE            = 0x060000;
 const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000;
+const uint32_t MSPROF_REPORT_ACL_DVPP_BASE_TYPE          = 0x090000;
+const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0a0000;
 
 /* Msprof report type of model(15000) level, offset: 0x000000 */
 const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;         /* type info: graph_id_map */
 const uint32_t MSPROF_REPORT_MODEL_EXECUTE_TYPE         = 1;         /* type info: execute */
 const uint32_t MSPROF_REPORT_MODEL_LOAD_TYPE            = 2;         /* type info: load */
+const uint32_t MSPROF_REPORT_MODEL_EXEOM_TYPE           = 3;         /* type info: exeom */
+const uint32_t MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    = 7;         /* type info: logic_stream_info */
 const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE        = 0x010000;  /* type info: udf_info */
 const uint32_t MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      = 0x020000;  /* type info: aicpu */
 
@@ -70,14 +74,12 @@ const uint32_t MSPROF_REPORT_NODE_FUSION_OP_INFO_TYPE   = 2;  /* type info: funs
 const uint32_t MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  = 4;  /* type info: context_id_info */
 const uint32_t MSPROF_REPORT_NODE_LAUNCH_TYPE           = 5;  /* type info: launch */
 const uint32_t MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      = 6;  /* type info: task_memory_info */
-const uint32_t MSPROF_REPORT_NODE_LOGIC_STREAM_TYPE     = 7;  /* type info: logic_stream_info */
 const uint32_t MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     = 8;  /* type info: op exec */
 
 /* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
-const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000;
-
-/* Msprof report type of node(10000) level(hccl api), offset: 0x020000 */
-const uint32_t MSPROF_REPORT_NODE_HCCL_BASE_TYPE        = 0x020000;
+const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000; /* type info: ge api */
+const uint32_t MSPROF_REPORT_NODE_HCCL_BASE_TYPE        = 0x020000; /* type info: hccl api */
+const uint32_t MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    = 0x030000; /* type info: dvpp api */
 
 /* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
 const uint32_t MSPROF_REPORT_HCCL_NODE_BASE_TYPE        = 0x010000;

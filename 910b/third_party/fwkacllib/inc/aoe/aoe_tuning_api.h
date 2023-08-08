@@ -61,6 +61,8 @@ const std::set<ge::AscendString> GLOBAL_OPTION_SET = {
     ge::AscendString(OPTION_HOST_ENV_CPU),
     ge::AscendString(COMPRESSION_OPTIMIZE_CONF),
     ge::AscendString(OPTION_GRAPH_RUN_MODE),
+    ge::AscendString(OP_TUNE_MODE),
+    ge::AscendString(SOC_VER),
 };
 
 // this set for tuning option key
@@ -110,6 +112,11 @@ const std::set<ge::AscendString> TUNING_OPTION_SET = {
     ge::AscendString(OP_DEBUG_CONFIG),
     ge::AscendString(EXTERNAL_WEIGHT),
     ge::AscendString(EXCLUDE_ENGINES),
+    ge::AscendString(OP_TUNE_MODE),
+    ge::AscendString(OP_TUNE_KERNEL_PATH),
+    ge::AscendString(OP_TUNE_KERNEL_NAME),
+    ge::AscendString(IMPL_MODE),
+    ge::AscendString(DETERMINISTIC),
 };
 
 /**

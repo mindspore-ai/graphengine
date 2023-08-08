@@ -34,6 +34,10 @@ namespace ge {
   participating in the op.
  * @li group: A required string identifying the group name of ranks
   participating in the op.
+ * @li fusion: An optional integer identifying the fusion flag of the op.
+  0: no fusion; 2: fusion the ops by fusion id.
+ * @li fusion_id: An optional integer identifying the fusion id of the op.
+ * The HcomAllGather ops with the same fusion id will be fused.
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
  * @attention Constraints:
@@ -47,6 +51,8 @@ REG_OP(HcomAllGather)
                           DT_UINT8, DT_UINT16, DT_UINT32, DT_FLOAT64}))
     .REQUIRED_ATTR(rank_size, Int)
     .REQUIRED_ATTR(group, String)
+    .ATTR(fusion, Int, 0)
+    .ATTR(fusion_id, Int, -1)
     .OP_END_FACTORY_REG(HcomAllGather)
 
 /**
@@ -152,6 +158,10 @@ REG_OP(HcomReduce)
  * @par Attributes:
  * @li reduction: A required string identifying the reduction operation to
   perform. The supported operation are: "sum", "max", "min", "prod".
+ * @li fusion: An optional integer identifying the fusion flag of the op.
+  0: no fusion; 2: fusion the ops by fusion id.
+ * @li fusion_id: An optional integer identifying the fusion id of the op.
+ * The HcomReduceScatter ops with the same fusion id will be fused.
  * @li group: A required string identifying the group name of ranks
   participating in the op.
  * @li rank_size: A required integer identifying the number of ranks
@@ -166,6 +176,8 @@ REG_OP(HcomReduceScatter)
     .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(reduction, String)
+    .ATTR(fusion, Int, 0)
+    .ATTR(fusion_id, Int, -1)
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(rank_size, Int)
     .OP_END_FACTORY_REG(HcomReduceScatter)

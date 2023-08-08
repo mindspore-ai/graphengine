@@ -67,6 +67,7 @@ enum __attribute__((visibility("default"))) AICPUSubEvent {
     AICPU_SUB_EVENT_END_GRAPH,
     AICPU_SUB_EVENT_ACTIVE_MODEL,
     AICPU_SUB_EVENT_PREPARE_MEM,
+    AICPU_SUB_EVENT_MAX_NUM,
 };
 
 enum __attribute__((visibility("default"))) AICPUCustSubEvent {
@@ -191,7 +192,8 @@ struct __attribute__((visibility("default"))) ModelCfgInfo {
     uint64_t modelCommOpListAddr;  // ModelCommOpList ptr
     uint32_t modelType;
     uint64_t commGroupsAddr;       // communication groups ptr
-    char rsv[108UL];
+    int32_t psId;                  // ps id
+    char rsv[104UL];
 } __attribute__((packed));
 
 struct __attribute__((visibility("default"))) ModelInfo {

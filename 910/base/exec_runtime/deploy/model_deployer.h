@@ -35,6 +35,7 @@ struct DeployResult {
   std::function<Status(void)> dev_stat_callback;
   size_t replica_num = 1U;
   std::string input_model_name;
+  bool deploy_with_flow = true;
 };
 
 class ModelDeployer {
@@ -60,9 +61,12 @@ class ModelDeployer {
   /// @return                     SUCCESS if undeployed successfully, otherwise returns appropriate error code
   virtual Status Undeploy(const uint32_t model_id) = 0;
 
-  /// Get local node index in device mesh
+  /// Get local device node mesh index
   /// @return                     empty means not support
-  virtual std::vector<int32_t> GetLocalNodeIndex() { return std::vector<int32_t>(); }
+  virtual Status GetDeviceMeshIndex(const int32_t, std::vector<int32_t> &)  { return UNSUPPORTED; };
+
+  /// Get valid logic device id str
+  virtual Status GetValidLogicDeviceId(std::string &) { return UNSUPPORTED; };
 };
 }  // namespace ge
 

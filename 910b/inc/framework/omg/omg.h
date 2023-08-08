@@ -109,8 +109,7 @@ GE_FUNC_VISIBILITY void FindParserSo(const std::string &path, std::vector<std::s
 
 GE_FUNC_VISIBILITY domi::Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
 
-GE_FUNC_VISIBILITY domi::Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type,
-                                                  const std::string &output);
+GE_FUNC_VISIBILITY domi::Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type);
 
 GE_FUNC_VISIBILITY domi::Status GetOutputLeaf(ge::NodePtr node,
                                               std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);

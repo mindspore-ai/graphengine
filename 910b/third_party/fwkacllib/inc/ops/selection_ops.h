@@ -30,12 +30,12 @@ namespace ge {
 * Three inputs, including:
 * @li start: A 0D Tensor (scalar). Acts as first entry in the range if "limit"
 *   is not "None"; otherwise, acts as range limit and first entry defaults to "0".
-*   The supported types are:float16, float32, int32, double, int64.
+*   The supported types are:float16, float32, int32, double, int64, bfloat16.
 * @li limit: A 0D Tensor (scalar). Upper limit of sequence, exclusive. If "None",
 *   defaults to the value of "start" while the first entry of the range
-*   defaults to "0". The supported types are:float16, float32, int32, double, int64.
+*   defaults to "0". The supported types are:float16, float32, int32, double, int64, bfloat16.
 * @li delta: A 0D Tensor (scalar). Number that increments "start".
-*   Defaults to "1". The supported types are:float16, float32, int32, double, int64 . \n
+*   Defaults to "1". The supported types are:float16, float32, int32, double, int64, bfloat16 . \n
 
 * @par Outputs:
 * y: A 1D Tensor . \n
@@ -2270,9 +2270,10 @@ REG_OP(CumulativeLogsumexpD)
 * @par Inputs:
 * Three inputs, including:
 * @li var: A Tensor. Must be one of the following types:
-*     double, float16, float32, int16, int32, int8, uint8.
-* @li indices: A Tensor of the indices, type should be int32.
-* @li updates: A Tensor of the same type as "var". \n
+*     double, float16, float32, int16, int32, int8, uint8, int64, bool.
+* @li indices: A Tensor of the indices, type should be int32 or int64.
+* @li updates: A Tensor of the same type as "var".
+* @li alpha: An optional Tensor of the same type as "var". A scaling factor to updates. \n
 
 * @par Attributes:
 * axis: An required int to specify the axis to perform indices add. \n
@@ -2285,12 +2286,18 @@ REG_OP(CumulativeLogsumexpD)
 */
 REG_OP(InplaceIndexAdd)
     .INPUT(var, TensorType({DT_INT16, DT_INT32, DT_INT8,
-                            DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE}))
-    .INPUT(indices, TensorType({DT_INT32}))
+                            DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
+                            DT_INT64, DT_BOOL}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
     .INPUT(updates, TensorType({DT_INT16, DT_INT32, DT_INT8,
-                                DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE}))
+                                DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
+                                DT_INT64, DT_BOOL}))
+    .OPTIONAL_INPUT(alpha, TensorType({DT_INT16, DT_INT32, DT_INT8,
+                                       DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
+                                       DT_INT64, DT_BOOL}))
     .OUTPUT(var, TensorType({DT_INT16, DT_INT32, DT_INT8,
-                            DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE}))
+                             DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
+                             DT_INT64, DT_BOOL}))
     .REQUIRED_ATTR(axis, Int)
     .OP_END_FACTORY_REG(InplaceIndexAdd)
 
@@ -2305,7 +2312,7 @@ REG_OP(InplaceIndexAdd)
 
 * @par Outputs:
 * y: A tensor. Must be one of the following dtypes:
-* bfloat16 float16, float32, int64, int32, int8.
+* bfloat16, float16, float32, int64, int32, int8.
 */
 REG_OP(MaskedFill)
     .INPUT(x, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
@@ -2340,7 +2347,7 @@ REG_OP(MaskedSelectV2)
 
 * @par Inputs:
 * three inputs, including:
-*  @li x: A Tensor of dtype is float16 or float32 or float64 or int64 or int32 or int16 or int8 or uint8.
+*  @li x: A Tensor of dtype is float16 or float32 or float64 or int64 or int32 or int16 or int8 or uint8 or bool.
 *  @li mask: A Tensor of dtype is bool.
 *  @li updates: A tensor with the same type as x. \n
 
@@ -2348,10 +2355,13 @@ REG_OP(MaskedSelectV2)
 *  @li y: A tensor with the same type as x. \n
 */
 REG_OP(MaskedScatter)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8,  DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
+                          DT_INT16, DT_INT32, DT_INT64, DT_BOOL}))
     .INPUT(mask, TensorType({DT_BOOL}))
-    .INPUT(updates, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8,  DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
+    .INPUT(updates, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8,
+                                DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
+                           DT_INT16, DT_INT32, DT_INT64, DT_BOOL}))
     .OP_END_FACTORY_REG(MaskedScatter)
 
 /**
@@ -2601,7 +2611,7 @@ REG_OP(TopKPQDistanceMerge)
 * Four inputs, including:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
 *     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, float16, uint32, uint64.
+*     complex128, float16, bfloat16, uint32, uint64.
 * @li begin: A Tensor of type int32 or int64, for the index of the first value to select . \n
 
 * @li end: A Tensor of type int32 or int64, for the index of the last value to select . \n

@@ -26,6 +26,8 @@
 #include "graph/tensor.h"
 #include "graph/types.h"
 
+#ifndef GE_API_TYPES_DEF
+#define GE_API_TYPES_DEF
 namespace ge {
 // Option key: graph run mode
 const char_t *const OPTION_GRAPH_RUN_MODE = "ge.graphRunMode";

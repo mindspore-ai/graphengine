@@ -128,7 +128,7 @@ class OfflineModelConfigParser {
   ~OfflineModelConfigParser() = default;
 
   Status ParserOfflineModelConfig(const std::string &offline_model_relation_path,
-                                  OfflineModelRelation &model_relation);
+                                  OfflineModelRelation &model_relation) const;
   Status ParserSubmodelDeployConfig(const std::vector<DeployConfig> &deploy_configs,
                                     std::map<std::string, std::string> &name_to_logic_dev) const;
   Status ParserSubmodelInstanceId(const std::vector<SubModelNameId> &name_to_ids,

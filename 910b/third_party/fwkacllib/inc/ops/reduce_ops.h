@@ -1318,8 +1318,8 @@ REG_OP(ReduceStd)
 
 * @par Inputs:
 * include:
-* @li x: A Tensor. Must be one of the following types: float16, float32. \n
-* @li mean: A Tensor. It's the mean of X. Must be one of the following types: float16, float32. \n
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+* @li mean: A Tensor. It's the mean of X. Must be one of the following types: float16, float32, bfloat16. \n
 
 
 * @par Attributes:
@@ -1346,9 +1346,9 @@ REG_OP(ReduceStd)
 * Compatible with the Pytorch operator ReduceStdWithMean.
 */
 REG_OP(ReduceStdWithMean)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(dim, ListInt, {})
     .ATTR(unbiased, Bool, true)
     .ATTR(keepdim, Bool, false)

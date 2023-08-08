@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "toolchain/slog.h"
 #include <unistd.h>
 #include <sys/syscall.h>

@@ -1602,6 +1602,7 @@ REG_OP(FlashAttentionScore)
 * dq: A matrix Tensor. The type support float16 and float32.
 * dk: A matrix Tensor. The type support float16 and float32.
 * dv: A matrix Tensor. The type support float16 and float32.
+* dpse: A matrix Tensor. The type support float16 and float32.
 
 
 * @par Restrictions:
@@ -1623,6 +1624,7 @@ REG_OP(FlashAttentionScoreGrad)
     .OUTPUT(dq, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OUTPUT(dk, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OUTPUT(dv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dpse, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .ATTR(scale_value, Float, 1.0)
     .ATTR(keep_prob, Float, 1.0)
     .ATTR(pre_tockens, Int, 65536)
@@ -1707,6 +1709,61 @@ REG_OP(RotatedFeatureAlignGrad)
     .REQUIRED_ATTR(spatial_scale, Float)
     .ATTR(points, Int, 1)
     .OP_END_FACTORY_REG(RotatedFeatureAlignGrad)
+
+/**
+* @brief Computes the transpose of convolution 2d with respect to the input.
+* @par Inputs:
+* Five inputs:
+* @li x: A Tensor of type int8.
+* The format is NHWC or NCHW.
+* @li filter_compress: A Tensor of type int8. Must have the same type as "x".
+* The format is NHWC or NCHW or HWCN.
+* @li compress_index: A Tensor of type int8. Index for decompression.
+* Must have the same type and format as "filter_compress".
+* @li bias: An optional 1D tensor of the same type as "y".
+* @li offset_w: An optional 1D tensor for quantized inference. Type is int8.
+* @par Required Attributes:
+* @li input_size: An integer vector representing the shape of input.
+* @li strides: A tuple/list of 4 integers.
+* Specifies the stride of the sliding window for each dimension of "x".
+* The N and C dimensions must be 1. Has the same format as "x".
+* @li pads: A required list or tuple of int32. Padding added to each dimension
+* of the input.
+* @par Attributes:
+* Six attributes:
+* @li dilations: A tuple/list of 4 integers. The dilation factor for each dimension
+* of input. The N and C dimensions must be 1. Has the same format as "x".
+* @li groups: Number of blocked connections from input channels to output channels.
+* Defaults to "1".
+* @li data_format: An optional string from: "NHWC", "NCHW". Defaults to "NHWC".
+* Specify the data format of the input and output data.
+* @li output_padding: The size will be added in the output shape. Defaults
+* to [0, 0, 0, 0].
+* @li offset_x: An optional int. Input offset, used for quantized inference.
+* Defaults to "0".
+* @li alg: An optional string from "weiight_unzip", "weight_sparse_4_2"
+* @par Outputs:
+* y: A Tensor of type int32.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(Conv2DTransposeDCompress)
+    .INPUT(x, TensorType({DT_INT8}))
+    .INPUT(filter_compress, TensorType({DT_INT8}))
+    .INPUT(compress_index, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(dilations, ListInt, {1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NHWC")
+    .ATTR(output_padding, ListInt, {0, 0, 0, 0})
+    .ATTR(offset_x, Int, 0)
+    .ATTR(alg, String, "weight_sparse_4_2")
+    .OP_END_FACTORY_REG(Conv2DTransposeDCompress)
 }  // namespace ge
 
 

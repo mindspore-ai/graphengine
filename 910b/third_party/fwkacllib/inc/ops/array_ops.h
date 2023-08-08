@@ -1373,7 +1373,7 @@ REG_OP(Expand)
 *@Returns a tensor containing the indices of all non-zero elements of input. \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+*x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64.
 
 *@par Attributes:
 * transpose: the output tensor will be transposed if true. \n
@@ -1387,7 +1387,7 @@ REG_OP(Expand)
 
 REG_OP(NonZero)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
-              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+           DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL, DT_BF16}))
     .OUTPUT(y, TensorType({DT_INT64, DT_INT32}))
     .ATTR(transpose, Bool, false)
     .ATTR(dtype, Type, DT_INT64)

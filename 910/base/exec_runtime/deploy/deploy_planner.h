@@ -32,17 +32,21 @@ class DeployPlan {
    public:
     DeviceInfo() = default;
     DeviceInfo(const int32_t type, const int32_t node_id, const int32_t device_id) noexcept;
+    DeviceInfo(const int32_t type, const int32_t node_id, const int32_t device_id,
+               const int32_t phy_device_id) noexcept;
     int32_t GetType() const;
     int32_t GetNodeId() const;
     int32_t GetDeviceId() const;
+    int32_t GetPhyDeviceId() const;
     const std::string &GetKey() const;
     const std::string &GetDesc() const;
 
    private:
-    std::string key_ = "1_0_0";
+    std::string key_ = "1_0_0(-1)";
     int32_t type_ = static_cast<int32_t>(CPU);
     int32_t node_id_ = 0;
     int32_t device_id_ = 0;
+    int32_t phy_device_id_ = -1;
   };
 
   struct QueueInfo {

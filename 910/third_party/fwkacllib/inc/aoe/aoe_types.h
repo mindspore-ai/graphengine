@@ -33,6 +33,9 @@ const char * const FRAMEWORK                                 = "framework";
 const char * const MODEL_PATH                                = "model_path";
 const char * const TUNE_OPS_FILE                             = "tune_ops_file";
 const char * const SINGLE_OP                                 = "singleop";
+const char * const OP_TUNE_FILE                              = "op_tune_file";
+const char * const OP_TUNE_MODE                              = "op_tune_mode";
+const char * const OP_TUNE_KERNEL_PATH                       = "op_tune_kernel_path";
 const char * const TUNE_OPTIMIZATION_LEVEL                   = "tune_optimization_level";
 const char * const FEATURE_DEEPER_OPAT                       = "Fdeeper_opat";
 const char * const FEATURE_NONHOMO_SPLIT                     = "Fnonhomo_split";
@@ -122,11 +125,14 @@ const char * const MDL_BANK_PATH                             = "ge.mdl_bank_path
 const char * const OP_BANK_PATH                              = "ge.op_bank_path";
 const char * const TUNE_DEVICE_IDS                           = "ge.exec.tuneDeviceIds";
 const char * const OPTION_GRAPH_RUN_MODE                     = "ge.graphRunMode";
+const char * const OP_TUNE_KERNEL_NAME                       = "_kernelname";
+const char * const IMPL_MODE                                 = "ge.opSelectImplmode";
 
 // 其他常量定义
 constexpr char NO_DYNAMIC_PARAM[] = "no_dynamic_param";
 constexpr char const *QTEST_SOC_VERSION = "QTEST_SOC_VERSION";
-const std::set<std::string> QTEST_SOC_VERSION_CONFIG = {"Ascend610Lite"};
+constexpr char OP_TUNE_MODE_STATIC_KERNEL[] = "static_kernel";
+constexpr char OP_TUNE_MODE_FAST[] = "fast";
 
 const AoeStatus AOE_ERROR_NO_AICORE_GRAPH                           = AOE_ERROR_NON_OPTIMIZE_GRAPH; // for sgat
 

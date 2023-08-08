@@ -414,16 +414,16 @@ REG_OP(SquaredDifference)
     .OP_END_FACTORY_REG(SquaredDifference)
 
 /**
-*@brief Computes cosine of "x" element-wise. \n
+* @brief Computes cosine of "x" element-wise. \n
 
-*@par Inputs:
-*x: A Tensor of type bfloat16, float16, float32, double, complex64, complex128.
+* @par Inputs:
+* x: A Tensor of type bfloat16, float16, float32, double, complex64, complex128.
 * the format can be [NCHW,NHWC,ND]
 
-*@par Outputs:
-*y: A Tensor of the same type as "x". \n
+* @par Outputs:
+* y: A Tensor of the same type as "x". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cos. \n
 
 */
@@ -1125,7 +1125,8 @@ REG_OP(BesselI1e)
 * y = log_base(shift + scale * x), with "base" > 0. \n
 
 * @par Inputs:
-* x: A Tensor of type complex64, complex128, bfloat16, float16, float32 or double. \n
+* x: A Tensor of type uint8, int8, int16, int32, int64, float64,
+*    float16, bfloat16, float32, bool, complex128 or complex64. \n
 
 * @par Attributes:
 * @li base: An optional float32, specifying the base "e". Defaults to "-1.0"
@@ -1135,7 +1136,8 @@ REG_OP(BesselI1e)
 * @li shift: An optional float32, specifying the shift. Defaults to "0.0"
 
 * @par Outputs:
-* y: A Tensor has same type as "x". \n
+* y: A tensor, when the input is of integer type, the y type is float32.
+*    Other case, y has same type as "x". \n
 
 * @attention Constraints:
 * @li "base" is supposed to be greater than 0. Retaining the default
@@ -1148,7 +1150,9 @@ REG_OP(BesselI1e)
 * @li Compatible with the Caffe operator Log.
 */
 REG_OP(Log)
-    .INPUT(x, TensorType::UnaryDataType())
+    .INPUT(x, TensorType({DT_UINT8, DT_INT8, DT_INT16, DT_INT32, DT_INT64,
+                          DT_FLOAT, DT_DOUBLE, DT_FLOAT16, DT_BF16,
+                          DT_BOOL, DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(y, TensorType::UnaryDataType())
     .ATTR(base, Float, -1.0)
     .ATTR(scale, Float, 1.0)
@@ -2181,7 +2185,7 @@ REG_OP(Floor)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32, int32, int64, int8,
-*     uint8, int16, uint16, double, complex64, complex128.
+*     uint8, int16, uint16, double, complex64, complex128, bfloat16.
 * @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
@@ -2193,13 +2197,13 @@ REG_OP(Floor)
 REG_OP(FloorDiv)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
                            DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
                            DT_INT64, DT_INT16,DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
                            DT_INT64, DT_INT16,DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_BF16}))
     .OP_END_FACTORY_REG(FloorDiv)
 
 /**
@@ -3731,11 +3735,11 @@ REG_OP(MaskedScale)
  * @par Inputs:
  * Three inputs, including:
  * @li start: A tensor. Must be one of the following types:
- *     float16, float32. \n
+ *     float16, float32, bfloat16. \n
  * @li end: A tensor. Must be one of the following types:
- *     float16, float32. \n
+ *     float16, float32, bfloat16. \n
  * @li weight: A tensor. Must be one of the following types:
- *     float16, float32. \n
+ *     float16, float32, bfloat16. \n
 
  * @par Outputs:
  * y: A Tensor with the same type and shape of input_x's. \n
@@ -3744,34 +3748,34 @@ REG_OP(MaskedScale)
  * Compatible with the Pytorch operator Lerp. \n
  */
 REG_OP(Lerp)
-    .INPUT(start, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(end, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(start, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(end, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(Lerp)
 
 /**
-*@brief Returns the num value of abs(x1-x2) > atol+rtol*abs(x2) element-wise. \n
+* @brief Returns the num value of abs(x1-x2) > atol+rtol*abs(x2) element-wise. \n
 
 *
-*@par Inputs:
-*@li x1: A tensor. Must be one of the following types: float32, int32, uint8, int8, float16
-*@li x2: A tensor of the same type as "x1".
+* @par Inputs:
+* @li x1: A tensor. Must be one of the following types: float32, int32, uint8, int8, float16, bfloat16
+* @li x2: A tensor of the same type as "x1".
 *
-*@par Attributes:
+* @par Attributes:
 * atol: Defaults to "1e-05".
 * rtol: Defaults to "1e-03".
 *
-*@par Outputs:
+* @par Outputs:
 * num: A tensor of type float32.
 *
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 *
 */
 REG_OP(DataCompare)
-  .INPUT(x1, TensorType({ DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT32 }))
-  .INPUT(x2, TensorType({ DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT32 }))
+  .INPUT(x1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT32}))
+  .INPUT(x2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT32}))
   .OUTPUT(num, TensorType({DT_FLOAT}))
   .ATTR(atol, Float, 1e-5)
   .ATTR(rtol, Float, 1e-3)
@@ -4045,6 +4049,36 @@ REG_OP(Dawsn)
     .OP_END_FACTORY_REG(Dawsn)
 
 /**
+* @brief Replace Nan, positive infinity, and negative infinity values in input
+* with the values specified by nan, posinf, and neginf, respectively \n
+
+* @par Inputs:
+* One input:\n
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
+
+* @par Attributes:
+* @li nan: An optional attribute of type float32,
+        specifying the value to replace NaNs with. Defaults to "0.0".
+* @li posinf: An optional attribute of type float32,
+        specifying the value to replace Infs with.. Defaults to "None".
+* @ li neginf: An optional attribute of type float32,
+        specifying the value to replace -Infs with. Defaults to "None". \n
+
+* @par Outputs:
+* y: A Tensor of the same type as "x". \n
+
+* @par Third-party framework compatibility
+* Compatible with Pytorch operator nan_to_num.
+*/
+REG_OP(NanToNum)
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(nan, Float)
+    .REQUIRED_ATTR(posinf, Float)
+    .REQUIRED_ATTR(neginf, Float)
+    .OP_END_FACTORY_REG(NanToNum)
+
+/**
 * @brief The operator casts the elements of a given input tensor (the first input)
 * to the same data type as the elements of the second input tensor. \n
 
@@ -4068,6 +4102,29 @@ REG_OP(CastLike)
     .INPUT(target, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .OP_END_FACTORY_REG(CastLike)
+
+/**
+* @brief: Clips tensor values to a specified min and max. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64,
+* qint8, quint8, qint32, uint16, complex128, float16, bfloat16, uint32, uint64.
+* @li clip_value_min: A Tensor of the same type as "x".
+* @li clip_value_max: A Tensor of the same type as "x". \n
+
+* @par Outputs:
+* y: A Tensor. Has the same type as "x". \n
+
+* @par Third-party framework compatibility
+* Compatible with the pytorch operator clip.
+*/
+REG_OP(ClipByValueV2)
+    .INPUT(x, TensorType::NumberType())
+    .INPUT(clip_value_min, TensorType::NumberType())
+    .INPUT(clip_value_max, TensorType::NumberType())
+    .OUTPUT(y, TensorType::NumberType())
+    .OP_END_FACTORY_REG(ClipByValueV2)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_

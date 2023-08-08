@@ -147,6 +147,7 @@ const std::set<std::string> EXECUTOR_INIT_OPTION_SET = {
     OPTION_HOST_ENV_OS,
     OPTION_HOST_ENV_CPU,
     DEBUG_DIR,
+    OP_TUNE_MODE,
 };
 
 const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
@@ -187,6 +188,8 @@ const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
     EXTERNAL_WEIGHT,
     EXCLUDE_ENGINES,
     ge::OPTION_GRAPH_RUN_MODE,
+    DETERMINISTIC,
+    IMPL_MODE,
 };
 
 /**

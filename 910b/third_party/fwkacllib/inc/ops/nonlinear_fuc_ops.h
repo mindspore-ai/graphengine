@@ -206,6 +206,9 @@ REG_OP(FastGeluGrad)
 *     double, complex64, complex128.
 * @li dy: A Tensor of the same type as "y" . \n
 
+*@par Attributes:
+* @li complex_conj: An optional attribute indicates whether to use conjugate operations for complex dtype.
+
 *@par Outputs:
 *z: A Tensor. Has the same type as "y".
 *@par Third-party framework compatibility
@@ -214,6 +217,7 @@ REG_OP(FastGeluGrad)
 REG_OP(TanhGrad)
     .INPUT(y, TensorType::UnaryDataType())
     .INPUT(dy, TensorType::UnaryDataType())
+    .ATTR(complex_conj, Bool, false)
     .OUTPUT(z, TensorType::UnaryDataType())
     .OP_END_FACTORY_REG(TanhGrad)
 
@@ -654,6 +658,8 @@ REG_OP(PReluGrad)
 
 *@par Attributes:
 *alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+*scale: A float32. Input data scaling factor. Defaults to "1.0". \n
+*input_scale: A float32. Negative data scaling factor. Defaults to "1.0". \n
 
 *@par Outputs:
 *y: A float16, float32 or double, for the normalized result . \n
@@ -666,6 +672,7 @@ REG_OP(PReluGrad)
 *@par Third-party framework compatibility
 *@li Compatible with Tensorflow's Elu operator
 *@li Compatible with Caffe's ELULayer operator
+*@li Compatible with Pytorch's elu Opeartor
 *
 *@since V100R001C33
 */
@@ -673,6 +680,8 @@ REG_OP(Elu)
     .INPUT(x, TensorType::FloatingDataType())
     .OUTPUT(y, TensorType::FloatingDataType())
     .ATTR(alpha, Float, 1.0)
+    .ATTR(scale, Float, 1.0)
+    .ATTR(input_scale, Float, 1.0)
     .OP_END_FACTORY_REG(Elu)
 
 /**

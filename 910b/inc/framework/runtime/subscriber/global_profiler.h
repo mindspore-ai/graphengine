@@ -138,7 +138,6 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     return enable_flags_.load() & BuiltInSubscriberUtil::EnableBit<ProfilingType>(profiling_type);
   }
 
-  bool IsEnabled(std::vector<ProfilingType> profiling_types);
   void DumpAndFree(std::ostream &out_stream) {
     Dump(out_stream);
     Free();

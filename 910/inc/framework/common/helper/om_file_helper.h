@@ -23,6 +23,7 @@
 #include "external/ge/ge_ir_build.h"
 #include "framework/common/types.h"
 #include "framework/common/ge_types.h"
+#include "graph/model.h"
 
 namespace ge {
 struct ModelPartition {
@@ -60,6 +61,8 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
   const std::vector<ModelPartition> &GetModelPartitions(const size_t model_index) const;
 
   bool IsPartitionTableNumValid(const uint32_t partition_num, const uint32_t increase_partition_num) const;
+
+  Status CheckModelCompatibility(const Model &model) const;
 
   OmFileContext context_;
 

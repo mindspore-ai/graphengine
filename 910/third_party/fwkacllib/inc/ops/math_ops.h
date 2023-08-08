@@ -614,6 +614,23 @@ REG_OP(IsFinite)
     .OP_END_FACTORY_REG(IsFinite)
 
 /**
+ * @brief Compute element-wise infiniteness, return a boolean tensor.
+
+ * @par Inputs:
+ * x:A Tensor of type float16, float32, double, bfloat16.
+
+ * @par Outputs:
+ * y:A Tensor. Has the same shape as x. Returns which elements of x are isposinf.
+
+ * @par Third-party framework compatibility.
+ * Compatible with the Pytorch operator IsPosInf.
+ */
+REG_OP(IsPosInf)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BFLOAT16}))
+    .OUTPUT(y, TensorType({DT_BOOL}))
+    .OP_END_FACTORY_REG(IsPosInf)
+
+/**
  *@brief Compute element-wise infiniteness, return a boolean tensor.
 
  *@par Inputs:

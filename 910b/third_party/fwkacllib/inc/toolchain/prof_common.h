@@ -490,11 +490,11 @@ struct MsprofMemoryInfo {
     uint32_t deviceType;
 };
 
-#define MSPROF_PHYSIC_STREAM_ID_MAX_NUM 48
+#define MSPROF_PHYSIC_STREAM_ID_MAX_NUM 56
 struct MsprofLogicStreamInfo {
     uint32_t logicStreamId;
     uint32_t physicStreamNum;
-    uint16_t physicStreamId[MSPROF_PHYSIC_STREAM_ID_MAX_NUM];
+    uint32_t physicStreamId[MSPROF_PHYSIC_STREAM_ID_MAX_NUM];
 };
 #pragma pack()
 

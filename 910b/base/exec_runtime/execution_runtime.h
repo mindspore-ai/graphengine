@@ -51,8 +51,6 @@ class ExecutionRuntime {
 
   static bool IsInHeterogeneousExecutor();
 
-  static bool DeployWithFlow();
-
   /// Initialize ExecutionRuntime
   /// @param execution_runtime    instance of execution runtime
   /// @param options              options for initialization
@@ -80,7 +78,6 @@ class ExecutionRuntime {
   static void UpdateGraphOptions(const std::string &key, const std::string &value);
   static std::mutex mu_;
   static bool heterogeneous_enabled_;
-  static bool deploy_with_flow_;
   static void *handle_;
   static std::shared_ptr<ExecutionRuntime> instance_;
 };

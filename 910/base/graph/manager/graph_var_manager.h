@@ -46,6 +46,7 @@ constexpr uint64_t kMemoryHostSVMFeatureMapLogicBase = 137438953472U; // 128UL *
 constexpr uint64_t kUseMaxMemorySize = kGraphMemoryManagerMallocMaxSize + kMemoryVarManagerMallocSize;
 constexpr uint64_t kGraphMemoryBuffer = 34359738368U; // 32UL * 1024UL * 1024UL * 1024UL;
 constexpr uint64_t kMaxMemorySize = 274877906944U; // 256UL * 1024UL * 1024UL * 1024UL;
+constexpr uint64_t kVarMemoryLogicBase = 137438953472U; // 128UL * 1024UL * 1024UL * 1024UL;
 constexpr char_t kEnvGeuseStaticMemory[] = "GE_USE_STATIC_MEMORY";
 constexpr uint64_t kSessionMemAlignSize = 512U;
 constexpr size_t kSessionMemAlignUnit = 2U;

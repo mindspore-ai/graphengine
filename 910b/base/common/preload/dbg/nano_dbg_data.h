@@ -87,7 +87,7 @@ struct NanoDbgOpDesc {
   string op_type;
   toolkit::aicpu::dump::Task::TaskType task_type;
   uint32_t block_dim;
-  string original_op_names;
+  std::vector<string> original_op_names;
   bool datadump_is_multiop;
   string L1_fusion_sub_graph_no;
   std::vector<NanoDbgInputDesc> input_list;
@@ -137,12 +137,14 @@ class NanoDbgData {
                    const ge::NodePtr &node) const;
 
   Status InitDbgTlv();
+  void GenOpOriNameLen(const std::vector<string> &name_list);
   void GenInputDescLen(const std::vector<NanoDbgInputDesc> &input_list);
   void GenOutputDescLen(const std::vector<NanoDbgOutputDesc> &output_list);
   void GenWorkspaceDescLen(const std::vector<NanoDbgWorkspaceDesc> &workspace_list);
   void GenDbgPartitionLen();
   Status SaveDbgHead();
   Status SaveDbgStrTlv(const string &str, const uint32_t type);
+  Status SaveDbgVecTlv(const std::vector<string> &vec, const uint32_t type);
   Status SaveDbgVecTlv(const std::vector<int64_t> &vec, const uint32_t type);
   Status SaveDbgMemInfoTlv(const std::vector<NanoDbgMemInfoDesc> &mem_info_list);
   Status SaveDbgBufTlv(const std::vector<NanoDbgBufferDesc> &buffer_list);

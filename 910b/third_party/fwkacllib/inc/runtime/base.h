@@ -78,7 +78,8 @@ typedef enum tagRtCondition {
 typedef struct tagRtTaskCfgInfo {
     uint8_t qos;
     uint8_t partId;
-    uint8_t res[2]; // res
+    uint8_t schemMode; // 0:normal;1:batch;2:sync
+    uint8_t res[1]; // res
 } rtTaskCfgInfo_t;
 
 /**

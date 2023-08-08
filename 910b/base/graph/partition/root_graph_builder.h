@@ -32,8 +32,8 @@ class RootGraphBuilder {
   const ComputeGraphPtr GetComputeGraphPtr() const {return root_graph_;}
  private:
   Status MakePartitionedCallNode(const ComputeGraphPtr &subgraph);
-  Status ConnectPartionedCallNodesWithRelation();
-  Status ConnectPartionedCallNodesWithoutRelation();
+  Status ConnectPartitionedCallNodesWithRelation();
+  Status ConnectPartitionedCallNodesWithoutRelation();
   Status ConnectInputEdge(const std::map<std::string, std::map<uint32_t, uint32_t>> &input_name_to_indices,
                           const NodePtr curr_partitioned_call);
   Status ConnectInputEdge();

@@ -43,8 +43,53 @@ struct InitFlowGwInfo {
 
 typedef enum {
     TSD_CAPABILITY_PIDQOS = 0,
-    TSD_CAPABILITY_BUT
+    TSD_CAPABILITY_LEVEL  = 1,
+    TSD_CAPABILITY_BUT    = 0xff
 } TsdCapabilityType;
+
+typedef enum {
+    SUB_PROCESS_STATUS_NORMAL = 0,
+    SUB_PROCESS_STATUS_EXITED = 1,
+    SUB_PROCESS_STATUS_STOPED = 2,
+    SUB_PROCESS_STATUS_MAX    = 0xff
+} SubProcessStatus;
+
+typedef enum {
+    TSD_SUB_PROC_HCCP           = 0,           // hccp process
+    TSD_SUB_PROC_COMPUTE        = 1,           // aicpu_schedule process
+    TSD_SUB_PROC_CUSTOM_COMPUTE = 2,           // aicpu_cust_schedule process
+    TSD_SUB_PROC_QUEUE_SCHEDULE = 3,           // queue_schedule process
+    TSD_SUB_PROC_UDF            = 4,           // udf process
+    TSD_SUB_PROC_NPU            = 5,           // npu process
+    TSD_SUB_PROC_PROXY          = 6,           // proxy process
+    TSD_SUB_PROC_MAX            = 0xff
+} SubProcType;
+
+struct ProcStatusInfo {
+    pid_t pid;
+    SubProcessStatus curStat;
+};
+
+struct ProcEnvParam {
+    const char   *envName;
+    uint64_t     nameLen;
+    const char   *envValue;
+    uint64_t     valueLen;
+};
+struct ProcExtParam {
+    const char  *paramInfo;
+    uint64_t    paramLen;
+};
+struct ProcOpenArgs {
+    SubProcType  procType;
+    ProcEnvParam *envParaList;
+    uint64_t     envCnt;
+    const char   *filePath;
+    uint64_t     pathLen;
+    ProcExtParam *extParamList;
+    uint64_t     extParamCnt;
+    pid_t        *subPid;
+};
 /**
 * @ingroup Open
 * @brief Used for the Framework process to communicate with the TSDDaemon process,
@@ -217,7 +262,6 @@ TDT_LIB_EXPORT uint32_t TsdSetAttr(const char * const attrKey, const char * cons
 */
 TDT_LIB_EXPORT uint32_t TsdCapabilityGet(const uint32_t logicDeviceId, const int32_t type, const uint64_t ptr);
 
-
 /**
 * @ingroup GetHdcConctStatus
 * @brief used to get hdc connection status
@@ -231,6 +275,119 @@ TDT_LIB_EXPORT uint32_t TsdCapabilityGet(const uint32_t logicDeviceId, const int
 * @retval OtherValues Failure
 */
 TDT_LIB_EXPORT uint32_t GetHdcConctStatus(const uint32_t logicDeviceId, int32_t *hdcSessStat);
+
+/**
+* @ingroup TsdBindHostPid
+* @brief Tsd supply bindhostpid function
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par processType
+* device processtype
+
+* @par devicePid
+* device pid
+
+* @par hostPid
+* host pid
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdBindHostPid(const uint32_t logicDeviceId, const SubProcType processType,
+                                       const int32_t devicePid, const int32_t hostPid);
+
+/**
+* @ingroup TsdFileLoad
+* @brief Tsd omfile send function
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par filePath
+* the path of the file
+
+* @par pathLen
+* the path length
+
+* @par fileName
+* the name of the file
+
+* @par fileNameLen
+* the filename length
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdFileLoad(const uint32_t logicDeviceId, const char *filePath, const uint64_t pathLen,
+                                    const char *fileName, const uint64_t fileNameLen);
+
+/**
+* @ingroup TsdFileUnLoad
+* @brief Tsd remove omfile
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par filePath
+* the path of the file
+
+* @par pathLen
+* the path length
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdFileUnLoad(const uint32_t logicDeviceId, const char *filePath, const uint64_t pathLen);
+
+/**
+* @ingroup TsdGetProcStatus
+* @brief Tsd query subproc status
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par pidArry
+* the pid list
+
+* @par arrayLen
+* the list length
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdGetProcStatus(const uint32_t logicDeviceId, ProcStatusInfo *pidArry, uint32_t arrayLen);
+
+/**
+* @ingroup TsdProcessOpen
+* @brief Tsd pull nn or udf process
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par openArgs
+* the args of nn or udf needed
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdProcessOpen(const uint32_t logicDeviceId, ProcOpenArgs *openArgs);
+
+/**
+* @ingroup TsdProcessClose
+* @brief Tsd close
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par closePid
+* the pid need to be close
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdProcessClose(const uint32_t logicDeviceId, const pid_t closePid);
 
 #ifdef __cplusplus
 }

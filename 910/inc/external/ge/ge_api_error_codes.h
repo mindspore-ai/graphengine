@@ -27,7 +27,10 @@
 #else
 #define ATTRIBUTED_DEPRECATED(replacement) __declspec(deprecated("Please use " #replacement " instead."))
 #endif
-
+#ifndef GE_ERRORNO_EXTERNAL
+#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc))
+#endif
+#ifndef GE_ERRORNO
 // Code compose(4 byte), runtime: 2 bit,  type: 2 bit,   level: 3 bit,  sysid: 8 bit, modid: 5 bit, value: 12 bit
 #define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                               \
   constexpr ge::Status name = (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime))) << 30U) | \
@@ -38,7 +41,6 @@
                               (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));        \
   const ErrorNoRegisterar g_errorno_##name((name), (desc))
 
-#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc))
 
 namespace ge {
 class GE_FUNC_VISIBILITY StatusFactory {
@@ -99,5 +101,5 @@ GE_ERRORNO(0, 0, 0, 0, 0, SUCCESS, 0, "success");
 GE_ERRORNO(0b11, 0b11, 0b111, 0xFFU, 0b11111, FAILED, 0xFFFU, "failed"); /*lint !e401*/
 
 }  // namespace ge
-
+#endif
 #endif  // INC_EXTERNAL_GE_GE_API_ERROR_CODES_H_

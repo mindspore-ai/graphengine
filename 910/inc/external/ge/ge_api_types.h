@@ -634,5 +634,5 @@ const std::set<std::string> global_options = {CORE_TYPE,
 #endif
 }  // namespace ir_option
 }  // namespace ge
-
+#endif
 #endif  // INC_EXTERNAL_GE_GE_API_TYPES_H_

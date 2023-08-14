@@ -1373,7 +1373,7 @@ REG_OP(Expand)
 *@Returns a tensor containing the indices of all non-zero elements of input. \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64.
+* x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64.
 
 *@par Attributes:
 * transpose: the output tensor will be transposed if true. \n

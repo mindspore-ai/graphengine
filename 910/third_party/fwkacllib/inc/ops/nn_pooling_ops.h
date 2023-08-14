@@ -898,7 +898,11 @@ REG_OP(MaxPoolGradGradWithArgmax)
 * out_grad: A mutable tensor with the same shape and type as "orig_input_shape". \n
 
 * @par Third-party framework compatibility
-* @li Compatible with the TensorFlow operator AvgPoolGrad.
+* @li Compatible with the TensorFlow operator AvgPoolGrad. 
+* TensorFlow operator AvgPoolGrad are difference from our operator AvgPoolGrad in 
+* following two case:
+* -- kernel_h > input_h && hernel_h // 2 < input_h - 1
+* -- kernel_w > input_w && hernel_w // 2 < input_w - 1
 */
 REG_OP(AvgPoolGrad)
     .INPUT(orig_input_shape, TensorType({DT_INT32}))

@@ -1,7 +1,7 @@
 /**
  * @file aoe_executor.h
  *
- * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2023. All rights reserved.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -146,8 +146,11 @@ const std::set<std::string> EXECUTOR_INIT_OPTION_SET = {
     DETERMINISTIC,
     OPTION_HOST_ENV_OS,
     OPTION_HOST_ENV_CPU,
+    HOST_ENV_OS,
+    HOST_ENV_CPU,
     DEBUG_DIR,
     OP_TUNE_MODE,
+    OPTION_SCREEN_PRINT_MODE,
 };
 
 const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
@@ -174,6 +177,8 @@ const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
     ge::ir_option::OP_BANK_UPDATE,
     OP_PRECISION_MODE,
     QTEST_SOC_VERSION,
+    HOST_ENV_OS,
+    HOST_ENV_CPU,
 
     EXEC_DISABLE_REUSED_MEMORY,
     AUTO_TUNE_MODE,

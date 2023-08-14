@@ -317,6 +317,7 @@ REG_OP(MatMulV2Compress)
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
     .ATTR(offset_x, Int, 0)
+    .ATTR(alg, String, "weight_unzip")
     .OP_END_FACTORY_REG(MatMulV2Compress)
 
 /**
@@ -740,13 +741,15 @@ REG_OP(ScatterNdUpdate)
 * Three inputs, including:
 * @li x: An ND Tensor. \n
 
-* Must be one of the following types: float16, float32, bool, int8, uint8
+* Must be one of the following types: float16, float32, double, int64, int32,
+  uint8, uint16, uint32, uint64, int8, int16, bool, complex64, complex128,
+  qint8, quint8, qint16, quint16, qint32, bfloat16, string. \n
 * @li indices: An ND Tensor. \n
 
 * Must be one of the following types: int32
 * @li updates: An ND Tensor. \n
 
-* Must be one of the following types: float16, float32, bool, int8, uint8
+* Has the same type and format as input "x" .
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "x" . \n
@@ -758,10 +761,10 @@ REG_OP(ScatterNdUpdate)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TensorScatterUpdate)
-    .INPUT(x, TensorType::BasicType())
+    .INPUT(x, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(updates, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .OP_END_FACTORY_REG(TensorScatterUpdate)
 
 /**

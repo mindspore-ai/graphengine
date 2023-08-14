@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "pne/model/flow_model.h"
+#include "framework/pne/flow_model.h"
 #include "common/plugin/ge_util.h"
 #include "common/model/model_relation.h"
 #include "external/ge/ge_api_error_codes.h"

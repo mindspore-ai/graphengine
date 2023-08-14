@@ -327,7 +327,27 @@ REG_OP(Sub)
     .OP_END_FACTORY_REG(Sub)
 
 /**
-* @brief computes the absolute value of a tensor. \n
+*@brief Returns x1 and x2 greatest common divisor element-wise.
+*@par Inputs:
+*Two inputs, including:
+* @li x1: A Tensor. Must be one of the following types: 
+* int32, uint8, int16, int8, int64, int64, uint16, uint32, uint64.
+* @li x2: A Tensor of the same type as "x1". \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x1".
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator gcd.
+*/
+REG_OP(Gcd)
+    .INPUT(x1, "T")
+    .INPUT(x2, "T")
+    .OUTPUT(y, "T")
+    .DATATYPE(T, TensorType({DT_INT16, DT_INT32}))
+    .OP_END_FACTORY_REG(Gcd)
+
+/**
+*@brief computes the absolute value of a tensor. \n
 
 * @par Inputs:
 * One input, including: \n
@@ -835,7 +855,7 @@ REG_OP(Xlogy)
 
 *@par Inputs:
 *One input: \n
-*x: A Tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128
+* x: A Tensor. Must be one of the following types: float16, bfloat16, float32, float64, int32, int64, complex64, complex128
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -844,9 +864,9 @@ REG_OP(Xlogy)
 * Compatible with TensorFlow operator Square.
 */
 REG_OP(Square)
-    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT,
+    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_BF16,
                           DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT,
+    .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_BF16,
                            DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Square)
 
@@ -1352,7 +1372,9 @@ REG_OP(AssignAdd)
 *@brief Updates "ref" by assigning "value" to it. \n
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
+*@li ref: A Tensor. Must be one of the following types: bfloat16, float16, float32,
+*    double, int8, int16, int32, int64, uint8, uint16, uint32, uint64,
+*    complex64, complex128, qint8, quint8, qint16, qint32, quint16, bool, string.
 *@li value: A Tensor of the same type as "ref". \n
 
 *@par Attributes:
@@ -1372,9 +1394,9 @@ REG_OP(AssignAdd)
 *Compatible with the TensorFlow operator Assign.
 */
 REG_OP(Assign)
-    .INPUT(ref, TensorType::BasicType())
-    .INPUT(value,TensorType::BasicType())
-    .OUTPUT(ref, TensorType::BasicType())
+    .INPUT(ref, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .INPUT(value,TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .OUTPUT(ref, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .ATTR(validate_shape, Bool, true)
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(Assign)

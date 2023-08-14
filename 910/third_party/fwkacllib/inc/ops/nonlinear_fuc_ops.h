@@ -202,7 +202,7 @@ REG_OP(FastGeluGrad)
 
 *@par Inputs:
 *Two inputs, including:
-* @li y: A Tensor. Must be one of the following types: float16, float32,
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16,
 *     double, complex64, complex128.
 * @li dy: A Tensor of the same type as "y" . \n
 
@@ -226,7 +226,7 @@ REG_OP(TanhGrad)
 
 *@par Inputs:
 *One input:
-*x: A Tensor. Must be one of the following types: float16, float32, complex64, complex128, double . \n
+* x: A Tensor. Must be one of the following types: float16, float32, complex64, complex128, double, bfloat16. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
@@ -1233,13 +1233,16 @@ REG_OP(Shrink)
 * Three inputs, including:
 * @li x: A Tensor.
 * Must be one of the following types on Ascend310: float16, int8, int32, uint8.
-* Must be one of the following types on Ascend310P or Ascend910: float16, float32, int8, int32, uint8. \n
+* Must be one of the following types on Ascend310P: float16, float32, int8, int32, uint8. \n
+* Must be one of the following types on Ascend910 or Ascend910B: float16, float32, int8, int32, uint8, int64. \n
 * @li threshold: A Tensor which should have the shape (1,), the value to threshold at.
 * Must be one of the following types on Ascend310: float16, int8, int32, uint8.
-* Must be one of the following types on Ascend310P or Ascend910: float16, float32, int8, int32, uint8. \n
+* Must be one of the following types on Ascend310P: float16, float32, int8, int32, uint8. \n
+* Must be one of the following types on Ascend910 or Ascend910B: float16, float32, int8, int32, uint8, int64. \n
 * @li value: A Tensor which should have the shape (1,), the value to replace with. default value is 0.
 * Must be one of the following types on Ascend310: float16, int8, int32, uint8.
-* Must be one of the following types on Ascend310P or Ascend910: float16, float32, int8, int32, uint8. \n
+* Must be one of the following types on Ascend310P: float16, float32, int8, int32, uint8. \n
+* Must be one of the following types on Ascend910 or Ascend910B: float16, float32, int8, int32, uint8, int64. \n
 
 * @par Outputs:
 * y: A Tensor which has the same shape and type as the input x. \n

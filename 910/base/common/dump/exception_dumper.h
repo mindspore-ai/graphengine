@@ -60,10 +60,6 @@ class ExceptionDumper {
 
   static void Reset(ExtraOpInfo &extra_op_info);
 
-  const std::vector<OpDescInfo> &GetSavedOpDescInfo() const {
-    return op_desc_info_;
-  }
-
   void Clear() {
     const std::lock_guard<std::mutex> lock(mutex_);
     op_desc_info_.clear();

@@ -24,7 +24,7 @@
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/parallelism/tensor_parallel_attrs.h"
-#include "pne/model/flow_model.h"
+#include "framework/pne/flow_model.h"
 
 namespace ge {
 class HeterogeneousVarManager {

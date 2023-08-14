@@ -51,6 +51,7 @@ typedef enum tagRtAicpuDeployType {
 typedef enum tagRtFeatureType {
     FEATURE_TYPE_MEMCPY = 0,
     FEATURE_TYPE_MEMORY,
+    FEATURE_TYPE_UPDATE_SQE,
     FEATURE_TYPE_RSV
 } rtFeatureType_t;
 
@@ -70,6 +71,10 @@ typedef enum tagMemoryInfo {
     MEMORY_INFO_TS_LIMITED = 0,
     MEMORY_INFO_RSV
 } rtMemoryInfo_t;
+
+typedef enum tagUpdateSQEInfo {
+    UPDATE_SQE_SUPPORT_DSA = 0
+} rtUpdateSQEInfo_t;
 
 typedef enum tagRtDeviceModuleType {
     RT_MODULE_TYPE_SYSTEM = 0,  /**< system info*/

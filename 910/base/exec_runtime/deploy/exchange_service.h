@@ -30,6 +30,7 @@ constexpr size_t kMaxUserDataSize = 64U;
 struct MemQueueAttr {
   uint32_t depth;
   uint32_t work_mode;
+  bool is_client = false;
   bool overwrite = false;
 };
 /// Interfaces for data exchange operations
@@ -54,6 +55,7 @@ class ExchangeService {
     MsgInfo *msg_info = nullptr;
     bool is_shared_input = false;
     int8_t user_data[kMaxUserDataSize] = {};
+    bool is_proxy_q = false;
   };
   ExchangeService() = default;
   ExchangeService(const ExchangeService &) = delete;

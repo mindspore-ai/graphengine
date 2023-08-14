@@ -45,18 +45,18 @@ const uint16_t MSPROF_REPORT_HCCL_NODE_LEVEL = 5500;
 const uint16_t MSPROF_REPORT_RUNTIME_LEVEL = 5000;
 
 /* Msprof report type of acl(20000) level(acl), offset: 0x000000 */
-const uint32_t MSPROF_REPORT_ACL_OP_BASE_TYPE            = 0x010000;
-const uint32_t MSPROF_REPORT_ACL_MODEL_BASE_TYPE         = 0x020000;
-const uint32_t MSPROF_REPORT_ACL_RUNTIME_BASE_TYPE       = 0x030000;
-const uint32_t MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        = 0x040000;
+const uint32_t MSPROF_REPORT_ACL_OP_BASE_TYPE            = 0x010000U;
+const uint32_t MSPROF_REPORT_ACL_MODEL_BASE_TYPE         = 0x020000U;
+const uint32_t MSPROF_REPORT_ACL_RUNTIME_BASE_TYPE       = 0x030000U;
+const uint32_t MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        = 0x040000U;
 
 
 /* Msprof report type of acl(20000) level(host api), offset: 0x050000 */
-const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000;
-const uint32_t MSPROF_REPORT_ACL_ASCENDC_TYPE            = 0x060000;
-const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000;
-const uint32_t MSPROF_REPORT_ACL_DVPP_BASE_TYPE          = 0x090000;
-const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0a0000;
+const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000U;
+const uint32_t MSPROF_REPORT_ACL_ASCENDC_TYPE            = 0x060000U;
+const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000U;
+const uint32_t MSPROF_REPORT_ACL_DVPP_BASE_TYPE          = 0x090000U;
+const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0a0000U;
 
 /* Msprof report type of model(15000) level, offset: 0x000000 */
 const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;         /* type info: graph_id_map */
@@ -64,8 +64,8 @@ const uint32_t MSPROF_REPORT_MODEL_EXECUTE_TYPE         = 1;         /* type inf
 const uint32_t MSPROF_REPORT_MODEL_LOAD_TYPE            = 2;         /* type info: load */
 const uint32_t MSPROF_REPORT_MODEL_EXEOM_TYPE           = 3;         /* type info: exeom */
 const uint32_t MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    = 7;         /* type info: logic_stream_info */
-const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE        = 0x010000;  /* type info: udf_info */
-const uint32_t MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      = 0x020000;  /* type info: aicpu */
+const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE        = 0x010000U;  /* type info: udf_info */
+const uint32_t MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      = 0x020000U;  /* type info: aicpu */
 
 /* Msprof report type of node(10000) level, offset: 0x000000 */
 const uint32_t MSPROF_REPORT_NODE_BASIC_INFO_TYPE       = 0;  /* type info: node_basic_info */
@@ -77,14 +77,14 @@ const uint32_t MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      = 6;  /* type info: task
 const uint32_t MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     = 8;  /* type info: op exec */
 
 /* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
-const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000; /* type info: ge api */
-const uint32_t MSPROF_REPORT_NODE_HCCL_BASE_TYPE        = 0x020000; /* type info: hccl api */
-const uint32_t MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    = 0x030000; /* type info: dvpp api */
+const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000U; /* type info: ge api */
+const uint32_t MSPROF_REPORT_NODE_HCCL_BASE_TYPE        = 0x020000U; /* type info: hccl api */
+const uint32_t MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    = 0x030000U; /* type info: dvpp api */
 
 /* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
-const uint32_t MSPROF_REPORT_HCCL_NODE_BASE_TYPE        = 0x010000;
-const uint32_t MSPROF_REPORT_HCCL_MASTER_TYPE           = 0x010001;
-const uint32_t MSPROF_REPORT_HCCL_SLAVE_TYPE            = 0x010002;
+const uint32_t MSPROF_REPORT_HCCL_NODE_BASE_TYPE        = 0x010000U;
+const uint32_t MSPROF_REPORT_HCCL_MASTER_TYPE           = 0x010001U;
+const uint32_t MSPROF_REPORT_HCCL_SLAVE_TYPE            = 0x010002U;
 
 enum ProfileCallbackType {
     PROFILE_CTRL_CALLBACK = 0,

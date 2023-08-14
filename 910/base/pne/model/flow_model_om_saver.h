@@ -17,7 +17,7 @@
 #ifndef BASE_PNE_MODEL_FLOW_MODEL_OM_SAVER_H_
 #define BASE_PNE_MODEL_FLOW_MODEL_OM_SAVER_H_
 
-#include "pne/model/flow_model.h"
+#include "framework/pne/flow_model.h"
 #include "google/protobuf/message.h"
 #include "common/model/model_relation.h"
 #include "framework/common/helper/om_file_helper.h"

@@ -9,7 +9,6 @@
 #include "base.h"
 #include "rt_ffts_plus_define.h"
 #include "rt_stars_define.h"
-
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
@@ -34,6 +33,8 @@ typedef struct tagFftsPlusTaskInfo {
     size_t      descBufLen;                // the length of descBuf
     rtFftsPlusDumpInfo_t fftsPlusDumpInfo; // used only in the dynamic shape
     uint32_t descAddrType;                 // 0:host addr 1:device addr
+    uint32_t argsHandleInfoNum;
+    void **argsHandleInfoPtr;
 } rtFftsPlusTaskInfo_t;
 
 #pragma pack(pop)

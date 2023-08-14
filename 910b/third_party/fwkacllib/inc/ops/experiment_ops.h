@@ -435,7 +435,8 @@ REG_OP(InitEmbeddingHashmap)
 * @li embedding_dim: A ListInt. indicates the hashtable value number.
 * @li value_total_length: A ListInt. indicates the hashtable total length, inclue m+v or accum.
 * @li only_var: A Bool. only import var.
-* @li file_type: A String. indicates the import file . \n
+* @li file_type: A String. indicates the import file .
+* @li table_name: A List String. represents table name corresponding to table id . \n
 */
 REG_OP(EmbeddingTableImport)
     .INPUT(file_path, TensorType({DT_STRING}))
@@ -445,6 +446,7 @@ REG_OP(EmbeddingTableImport)
     .REQUIRED_ATTR(value_total_len, ListInt)
     .ATTR(only_var_flag, Bool, false)
     .ATTR(file_type, String, "bin")
+    .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingTableImport)
 
 /**
@@ -622,7 +624,8 @@ REG_OP(EmbeddingApplyAdamW)
 * @li value_total_length: A ListInt. indicates the hashtable total length, inclue m+v or accum.
 * @li export_mode: A String. export mode, Defaults to "all".
 * @li only_var: A Bool. only export var, Defaults to "false".
-* @li file_type: A String. indicates the export file, Defaults to "bin". \n
+* @li file_type: A String. indicates the export file, Defaults to "bin".
+* @li table_name: A List String. represents table name corresponding to table id . \n
 */
 REG_OP(EmbeddingTableExport)
     .INPUT(file_path, TensorType({DT_STRING}))
@@ -633,6 +636,7 @@ REG_OP(EmbeddingTableExport)
     .ATTR(export_mode, String, "all")
     .ATTR(only_var_flag, Bool, false)
     .ATTR(file_type, String, "bin")
+    .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingTableExport)
 
 /**
@@ -695,13 +699,16 @@ REG_OP(EmbeddingApplyAdaGrad)
 * @par Inputs:
 * @li file_path: A String, indicates the export file path.
 * @li ps_id: A Int, dtype is int32, indicates the ps server id.
-* @li table_id: A Int, dtype is int32, indicates the hashtable id.
+* @li table_id: A Int, dtype is int32, indicates the hashtable id. \n
 
+* @par Attributes:
+* @li table_name: A List String. represents table name corresponding to table id . \n
 */
 REG_OP(EmbeddingComputeVarExport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
+    .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingComputeVarExport)
 
 /**
@@ -712,11 +719,14 @@ REG_OP(EmbeddingComputeVarExport)
 * @li ps_id: A Int, dtype is int32, indicates the ps server id.
 * @li table_id: A Int, dtype is int32, indicates the hashtable id.
 
+* @par Attributes:
+* @li table_name: A List String. represents table name corresponding to table id . \n
 */
 REG_OP(EmbeddingComputeVarImport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
+    .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingComputeVarImport)
 
 /**

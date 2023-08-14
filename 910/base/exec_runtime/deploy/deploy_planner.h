@@ -61,6 +61,8 @@ class DeployPlan {
     int32_t fusion_offset = 0;
     uint32_t instance_num;
     uint32_t instance_idx;
+    bool is_proxy_q = false;
+    bool is_push = false;
   };
 
   struct InvokedModelQueueInfo {
@@ -166,8 +168,6 @@ class DeployPlannerBase {
   /// @param deploy_plan      output DeployPlan
   /// @return                 SUCCESS if built successfully, otherwise returns appropriate error code
   Status BuildPlan(DeployPlan &deploy_plan);
-  Status BuildTransferPlan(const std::pair<DeployPlan::DeviceInfo, DeployPlan::DeviceInfo> &routes,
-                           DeployPlan &deploy_plan);
 
   struct ModelQueueIndex {
     std::string model_name;
@@ -192,9 +192,20 @@ class DeployPlannerBase {
 
  protected:
   virtual Status PrepareModelsAndRelation(ModelRelation &model_relation) = 0;
+  virtual bool NeedProxyQ(const std::string &model_instance_name) = 0;
   DeployPlan::SubmodelInfo &MutableSubmodelInfo(const std::string &name);
   static Status ValidateModelAndRelation(const std::map<std::string, PneModelPtr> &models,
                                          const ModelRelation &model_relation);
+  bool IsHeadOrTail(const std::string &name) const;
+  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info);
+  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info, int32_t &queue_idx);
+  Status CreateGroupEntry(const DeployPlan::QueueInfo &queue_info, int32_t &entry_index);
+  Status CreateGroupInfo(const DeployPlan::QueueInfo &queue_info,
+                         const std::vector<int32_t> &grouped_indices,
+                         int32_t &group_index);
+  void AddEndpointBindings(int32_t src_index, int32_t dst_index);
+  static std::atomic<int64_t> plan_id_gen_;
+  DeployPlan deploy_plan_;
 
  private:
   Status Initialize();
@@ -216,19 +227,13 @@ class DeployPlannerBase {
   Status ResolveDataFlows();
   Status ResolveModelInputs(const std::string &model_instance_name,
                             const ModelRelation::ModelEndpointInfo &model_endpoint_info);
-  void AddEndpointBindings(int32_t src_index, int32_t dst_index);
   void LogDataFlow() const;
   Status ResolveReusableQueues();
   Status AssignDequeueQueues();
   Status BindRemoteOutputGroupToInput();
   Status BindOutputToRemoteInputs();
   void UpdateDeployPlan();
-  Status CreateEndpointInfo(const DeployPlan::QueueInfo &queue_info, int32_t &queue_idx);
   Status CreateEndpointInfo(std::shared_ptr<DeployPlan::EventInfo> event_info, const std::string &model_instance_name);
-  Status CreateGroupEntry(const DeployPlan::QueueInfo &queue_info, int32_t &entry_index);
-  Status CreateGroupInfo(const DeployPlan::QueueInfo &queue_info,
-                         const std::vector<int32_t> &grouped_indices,
-                         int32_t &group_index);
   Status CreateOutputQueueDefs(const std::string &model_instance_name,
                                const std::vector<std::string> &queue_names,
                                const bool is_owned = true);
@@ -254,21 +259,17 @@ class DeployPlannerBase {
                           const DeployPlan::QueueInfo &dst_queue_info,
                           int32_t &src_tag_idx,
                           int32_t &dst_tag_idx);
-  Status CreateTransferInfo(const std::string &route_name,
-                            const DeployPlan::DeviceInfo &src_device_info,
-                            const DeployPlan::DeviceInfo &dst_device_info);
   std::vector<std::string> ToEndpointDescs(const std::vector<int32_t> &endpoint_indices,
                                            const bool is_group_entry = false) const;
   std::string ToEndpointDesc(const int32_t endpoint_indices, const bool is_group_entry = false) const;
   static void BuildEventInfo(Endpoint &endpoint, const std::string &model_instance_name,
                              std::shared_ptr<DeployPlan::EventInfo> event_info);
   DeployPlan::QueueInfo BuildQueueInfo(Endpoint &queue_def,
-                                       const std::string &model_instance_name);
+                                       const std::string &model_instance_name, bool is_client_q = false);
   std::string GetEndpointFullName(const DeployPlan::QueueInfo &endpoint_info, const ModelQueueIndex &model_queue_index);
   const std::string &GetSubmodelType(const std::string &name);
   bool CheckAndAddRelation(const int32_t src_endpoint_idx, const int32_t dst_endpoint_idx);
 
-  DeployPlan deploy_plan_;
   ModelRelation model_relation_;
   std::unique_ptr<ModelRelationReader> relation_reader_;
   std::map<std::string, std::vector<int32_t>> src_endpoint_indices_;
@@ -298,7 +299,6 @@ class DeployPlannerBase {
   std::map<std::string, std::string> instance_to_model_name_;
   std::map<std::string, std::set<std::string>> deploy_to_devlist_;
   std::set<std::string> relations_;  // key: src_endpoint_index_to_dst_endpoint_index
-  static std::atomic<int64_t> plan_id_gen_;
 };
 
 class ModelRelationFlattener {
@@ -334,6 +334,9 @@ class DeployPlanner : public DeployPlannerBase {
 
  protected:
   Status PrepareModelsAndRelation(ModelRelation &model_relation) override;
+  bool NeedProxyQ(const std::string&) override {
+    return false;
+  }
 
  private:
   const PneModelPtr root_model_;

@@ -1033,6 +1033,18 @@ RTS_API rtError_t rtCleanDeviceSatStatus(rtStream_t stm);
  */
 RTS_API rtError_t rtGetConditionKernelBin(const char_t * const binFileName, char_t **const buffer, uint32_t *length);
 
+/**
+ * @ingroup dvrt_mem
+ * @brief HCCL copy ffts args
+ * @param [in] stm task stream
+ * @param [in] argsInfo args info
+ * @param [out] devArgsAddr device mem addr for args
+ * @param [out] argsHandle copy handler
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtGetDevArgsAddr(rtStream_t stm, rtArgsEx_t *argsInfo, void **devArgsAddr, void **argsHandle);
 #if defined(__cplusplus)
 }
 #endif

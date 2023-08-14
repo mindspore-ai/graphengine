@@ -689,8 +689,8 @@ REG_OP(ReverseV2D)
 * Three inputs, including:
 * @li condition: A Tensor of type bool.
 * @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32,
- * int32, int8, uint8, int16, uint16, double, complex64, int64, complex128
- * half, qint8, quint8, qint16, quint16, qint32, quint32, uint32, uint64.
+ * int32, int8, uint8, int16, uint16, double, complex64, int64, complex128, bool,
+ * qint8, quint8, qint16, quint16, qint32, uint32, uint64, string.
  * format:ND
 * @li x2: A Tensor of the same type as "x1".format:ND
 
@@ -702,9 +702,9 @@ REG_OP(ReverseV2D)
 */
 REG_OP(Select)
     .INPUT(condition, TensorType({DT_BOOL}))
-    .INPUT(x1,TensorType::BasicType())
-    .INPUT(x2,TensorType::BasicType())
-    .OUTPUT(y,TensorType::BasicType())
+    .INPUT(x1, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .INPUT(x2, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .OP_END_FACTORY_REG(Select)
 
 /**

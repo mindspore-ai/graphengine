@@ -659,26 +659,26 @@ REG_OP(ReduceProdD)
     .OP_END_FACTORY_REG(ReduceProdD)
 
 /**
-*@brief Reduces "x" along the dimensions according to "axis" . \n
+* @brief Reduces "x" along the dimensions according to "axis" . \n
 
-*@par Inputs:
-*Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8.
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, bfloat16.
 * @li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
 *   - If None (the default), reduces all dimensions.
 *   - Must be in the range [-rank(x), rank(x)) . \n
 
-*@par Attributes:
-*keep_dims: A bool or NoneType.
+* @par Attributes:
+* keep_dims: A bool or NoneType.
 * - If true, retains reduced dimensions with length 1.
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
-*noop_with_empty_axes: A bool.
+* noop_with_empty_axes: A bool.
 * - If true, when axes = [], not reduce.
 * - If false, when axes = [], reduce all.
-*@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with the TensorFlow operator ReduceMean.
 */
 REG_OP(ReduceMean)

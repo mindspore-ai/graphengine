@@ -132,8 +132,8 @@ class NanoDbgData {
   Status AddDbgWorkspace(const OpDescPtr &op_desc, NanoDbgOpDesc &dbg_op) const;
   Status AddDbgBuffer(NanoDbgOpDesc &dbg_op);
   Status AddDbgMemInfo(const OpDescPtr &op_desc, NanoDbgOpDesc &dbg_op) const;
-  void GenMemType(const int64_t &id, const ge::NodePtr &node);
-  void SaveMemType(std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> &mem_types, const int64_t &id,
+  void GenMemType(const int64_t id, const ge::NodePtr &node);
+  void SaveMemType(std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> &mem_types, const int64_t id,
                    const ge::NodePtr &node) const;
 
   Status InitDbgTlv();

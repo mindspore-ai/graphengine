@@ -38,12 +38,15 @@ typedef struct {
 } DataBuffer;
 
 typedef struct {
-  Vector blobs; // type : DataBuffer
-} InputData;
+  DataBuffer *dataBuffer;
+} DataBlob;
 
 typedef struct {
-  Vector blobs; // type : DataBuffer
-} OutputData;
+  Vector blobs; // type : DataBlob
+} DataSet;
+
+typedef DataSet InputData;
+typedef DataSet OutputData;
 
 typedef struct {
   void *stream;

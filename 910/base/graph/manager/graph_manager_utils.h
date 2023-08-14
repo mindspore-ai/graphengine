@@ -38,7 +38,7 @@
 #include "graph/model.h"
 #include "common/model/ge_model.h"
 #include "common/model/ge_root_model.h"
-#include "pne/model/flow_model.h"
+#include "framework/pne/flow_model.h"
 #include "external/register/register_fmk_types.h"
 #include "external/ge/ge_api_types.h"
 #include "external/ge/ge_graph_compile_summary.h"
@@ -132,11 +132,7 @@ class GraphNode {
   GraphId GetGraphId() const { return graph_id_; }
 
   ConstGraphPtr GetGraph() const { return graph_; }
-  void SetGraph(const GraphPtr &graph) {
-    graph_ = graph;
-    graphs_.emplace_back(graph);
-  }
-  std::vector<ConstGraphPtr> &GetGraphs() { return graphs_; }
+  void SetGraph(const GraphPtr &graph) { graph_ = graph; }
 
   ComputeGraphPtr GetComputeGraph() const { return compute_graph_; }
   void SetComputeGraph(const ComputeGraphPtr &compute_graph) { compute_graph_ = compute_graph; }
@@ -241,8 +237,6 @@ class GraphNode {
   OmeContext context_;
 
   GraphPtr graph_;
-  // record graphs got multiple graphs
-  std::vector<ConstGraphPtr> graphs_;
   ComputeGraphPtr compute_graph_;
   // set true only when Session::CompileGraph is called
   bool compiled_flag_{false};

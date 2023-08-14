@@ -1,7 +1,7 @@
 /**
  * @file aoe_tuning_api.h
  *
- * Copyright (c) Huawei Technologies Co., Ltd. 2021-2022. All rights reserved.\n
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2023. All rights reserved.\n
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -59,10 +59,13 @@ const std::set<ge::AscendString> GLOBAL_OPTION_SET = {
     ge::AscendString(DETERMINISTIC),
     ge::AscendString(OPTION_HOST_ENV_OS),
     ge::AscendString(OPTION_HOST_ENV_CPU),
+    ge::AscendString(HOST_ENV_OS),
+    ge::AscendString(HOST_ENV_CPU),
     ge::AscendString(COMPRESSION_OPTIMIZE_CONF),
     ge::AscendString(OPTION_GRAPH_RUN_MODE),
     ge::AscendString(OP_TUNE_MODE),
     ge::AscendString(SOC_VER),
+    ge::AscendString(OPTION_SCREEN_PRINT_MODE),
 };
 
 // this set for tuning option key
@@ -117,6 +120,7 @@ const std::set<ge::AscendString> TUNING_OPTION_SET = {
     ge::AscendString(OP_TUNE_KERNEL_NAME),
     ge::AscendString(IMPL_MODE),
     ge::AscendString(DETERMINISTIC),
+    ge::AscendString(OPTION_SCREEN_PRINT_MODE),
 };
 
 /**

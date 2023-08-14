@@ -39,6 +39,9 @@ GE_FUNC_VISIBILITY void FreeModelData(ModelData *data);
 GE_FUNC_VISIBILITY Status UnloadModel(uint32_t modelId);
 GE_FUNC_VISIBILITY Status GetModelDescInfoFromMem(const ModelData *modelData, ModelInOutInfo *info);
 GE_FUNC_VISIBILITY void DestoryModelInOutInfo(ModelInOutInfo *info);
+GE_FUNC_VISIBILITY Status GeDbgInit(const char *configPath);
+GE_FUNC_VISIBILITY Status GeDbgDeInit(void);
+GE_FUNC_VISIBILITY Status GeNofifySetDevice(uint32_t chipId, uint32_t deviceId);
 #if defined(__cplusplus)
 }
 #endif

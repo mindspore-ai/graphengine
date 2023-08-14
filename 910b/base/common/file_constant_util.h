@@ -23,7 +23,7 @@
 #include "ge/ge_api_error_codes.h"
 #include "graph/op_desc.h"
 #include "graph/ge_tensor.h"
-#include "pne/model/flow_model.h"
+#include "framework/pne/flow_model.h"
 
 namespace ge {
 struct FileConstantInfo {

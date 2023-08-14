@@ -106,7 +106,7 @@ REG_OP(SplitD)
 * @li x: An ND Tensor.
 * Must be one of the types:float16, float32, double, int64, int32, uint8,
   uint16, uint32, uint64, int8, int16, bool, complex64, complex128, qint8,
-  quint8, qint16, quint16, qint32. \n
+  quint8, qint16, quint16, qint32, string. \n
 * @li size_splits: Must be one of the types:int32, int64. Specifies a list
   containing the sizes of each output tensor along the split dimension.
 * @li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
@@ -126,16 +126,16 @@ REG_OP(SplitD)
 * Compatible with the TensorFlow operator SplitV.
 */
 REG_OP(SplitV)
-    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
-                          DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
-                          DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
-                          DT_BF16,       DT_BOOL}))
+    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT16,
+                          DT_INT32, DT_INT64, DT_INT8, DT_QINT16, DT_QINT32, DT_QINT8,
+                          DT_QUINT16, DT_QUINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_UINT8,
+                          DT_BF16, DT_BOOL, DT_STRING}))
     .INPUT(size_splits, TensorType::IndexNumberType())
     .INPUT(split_dim, TensorType({DT_INT32}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
-                                   DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
-                                   DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
-                                   DT_BF16,       DT_BOOL}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT16,
+                                   DT_INT32, DT_INT64, DT_INT8, DT_QINT16, DT_QINT32, DT_QINT8,
+                                   DT_QUINT16, DT_QUINT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_UINT8,
+                                   DT_BF16, DT_BOOL, DT_STRING}))
     .REQUIRED_ATTR(num_split, Int)
     .OP_END_FACTORY_REG(SplitV)
 
@@ -248,7 +248,7 @@ REG_OP(ConcatV2D)
 *@li Dynamic input "x" is A ND Tensor.
 *Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
-*     complex128, uint32, uint64, qint16, quint16.
+*     complex128, uint32, uint64, qint16, quint16, bool, string.
 *@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
 
 *@par Attributes:
@@ -264,9 +264,9 @@ REG_OP(ConcatV2D)
 * Compatible with the TensorFlow operator ConcatV2.
 */
 REG_OP(ConcatV2)
-    .DYNAMIC_INPUT(x, TensorType({BasicType(), DT_BOOL}))
+    .DYNAMIC_INPUT(x, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .INPUT(concat_dim, TensorType::IndexNumberType())
-    .OUTPUT(y, TensorType({BasicType(), DT_BOOL}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .ATTR(N, Int, 1)
     .OP_END_FACTORY_REG(ConcatV2)
 
@@ -343,7 +343,7 @@ REG_OP(Concat)
 *@par Inputs:
 * x: A list of N Tensors. Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
-*     complex128, uint32, uint64, qint16, quint16. It's a dynamic input. \n
+*     complex128, uint32, uint64, qint16, quint16, bool, string. It's a dynamic input. \n
 
 *@par Attributes:
 *@li axis: A optional int, default value is 0.
@@ -357,8 +357,8 @@ REG_OP(Concat)
 * Compatible with the TensorFlow operator Pack.
 */
 REG_OP(Pack)
-    .DYNAMIC_INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .DYNAMIC_INPUT(x, TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .ATTR(axis, Int, 0)
     .REQUIRED_ATTR(N, Int)
     .OP_END_FACTORY_REG(Pack)

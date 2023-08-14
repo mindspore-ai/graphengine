@@ -406,7 +406,7 @@ struct MsprofHcclInfo {
     uint32_t rankSize;
     uint32_t workFlowMode;
     uint32_t planeID;
-    uint32_t reserve1;
+    uint32_t ctxId;
     uint64_t notifyID;
     uint32_t stage;
     uint32_t role; // role {0: dst, 1:src}

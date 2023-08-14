@@ -1,7 +1,7 @@
 /**
  * @file aoe_types.h
  *
- * Copyright (c) Huawei Technologies Co., Ltd. 2021-2022. All rights reserved.\n
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2023. All rights reserved.\n
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -127,6 +127,8 @@ const char * const TUNE_DEVICE_IDS                           = "ge.exec.tuneDevi
 const char * const OPTION_GRAPH_RUN_MODE                     = "ge.graphRunMode";
 const char * const OP_TUNE_KERNEL_NAME                       = "_kernelname";
 const char * const IMPL_MODE                                 = "ge.opSelectImplmode";
+const char * const OPTION_SCREEN_PRINT_MODE                  = "ge.screen_print_mode";
+
 
 // 其他常量定义
 constexpr char NO_DYNAMIC_PARAM[] = "no_dynamic_param";

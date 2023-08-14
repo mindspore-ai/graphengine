@@ -17,9 +17,6 @@
 #ifndef INC_FRAMEWORK_COMMON_TLV_TLV_H_
 #define INC_FRAMEWORK_COMMON_TLV_TLV_H_
 
-#include <cstdint>
-#include "framework/common/fmk_types.h"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

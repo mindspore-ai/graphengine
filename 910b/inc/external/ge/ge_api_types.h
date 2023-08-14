@@ -139,6 +139,9 @@ const std::string MODEL_RELATION_CONFIG = "ge.offline_model_relation";
 const std::string CLUSTER_CONFIG = "ge.cluster_config";
 const std::string OPTION_HCCL_COMPILER_OFFLINE = "ge.offline_hccl_compile";
 
+// option for screen log
+const char_t *const OPTION_SCREEN_PRINT_MODE = "ge.screen_print_mode";
+
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
 const char_t *const HEAD_STREAM = "ge.headStream";
@@ -634,5 +637,5 @@ const std::set<std::string> global_options = {CORE_TYPE,
 #endif
 }  // namespace ir_option
 }  // namespace ge
-#endif
+#endif // GE_API_TYPES_DEF
 #endif  // INC_EXTERNAL_GE_GE_API_TYPES_H_

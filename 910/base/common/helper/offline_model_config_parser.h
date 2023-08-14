@@ -34,7 +34,7 @@ struct SubModelNameId {
   uint32_t submode_id;
 };
 struct ConfigModelRelation {
-  std::string edge_type; // now only support flow type. it maybe support event in the future
+  std::string edge_type; // it is only support flow type which maybe support event in the future
   std::string edge_src;  // -1:0 input0 of root model; 1:0 output0 of submodel1
   std::string edge_dst;  // -1:0 output0 of root model; 1:0 input0 of submodel1
 };
@@ -43,7 +43,7 @@ class OfflineModelRelation {
 public:
   struct EdgeInfo {
     int32_t related_model_instance_id; // -1 means root model
-    uint32_t related_indeices; // indices of related model input or output（while type is flow)
+    uint32_t related_indices; // indices of related model input or output (while type is flow)
   };
 
   struct SubmodelConfigInfo {
@@ -66,8 +66,7 @@ public:
   void SetWithRelation(const bool is_with_relation) { with_model_relation_ = is_with_relation; }
 
   // find name and indices according to model file
-  void GetModelInputIndices(const std::string &model_file, std::string &model_name,
-                            std::map<uint32_t, uint32_t> &related_indices) const;
+  void GetModelNameByFileName(const std::string &model_file, std::string &model_name) const;
   // find indices according to model name
   void GetModelInputIndices(const std::string &model_name,
                             std::map<uint32_t, uint32_t> &related_indices) const;
@@ -106,9 +105,8 @@ class OfflineModelConfigParser {
   Status ParserOfflineModelConfig(const std::string &offline_model_relation_path,
                                   const std::vector<std::string> &src_graph_names);
 
-  // find name and indices according to model file
-  void GetModelInputIndices(const std::string &model_file, std::string &model_name,
-                            std::map<uint32_t, uint32_t> &related_indices) const;
+  // find name according to model file
+  void GetModelNameByFileName(const std::string &model_file, std::string &model_name) const;
   // find indices according to model name
   void GetModelInputIndices(const std::string &model_name,
                             std::map<uint32_t, uint32_t> &related_indices) const;

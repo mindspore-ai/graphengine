@@ -28,8 +28,8 @@ namespace ge {
 *@brief Computes the gradient for log softmax activations . \n
 
 *@par Inputs:
-*@li grad: A Tensor. Must be one of the following types: float16, float32.
-*@li x: A Tensor. Must be one of the following types: float16, float32 . \n
+* @li grad: A Tensor. Must be one of the following types: float16, bfloat16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, bfloat16, float32 . \n
 
 *@par Attributes:
 * axis: An optional list of ints. Defaults to "{-1}" . \n
@@ -42,9 +42,9 @@ namespace ge {
 */
 
 REG_OP(LogSoftmaxGrad)
-    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(axis, ListInt, {-1})
     .OP_END_FACTORY_REG(LogSoftmaxGrad)
 
@@ -443,7 +443,7 @@ REG_OP(SoftmaxV2WithDropOutDoMaskV3D)
 
 *@par Inputs:
 *One input:
-* logits: A Tensor. Must be one of the following types: double, float16, float32 . \n
+* logits: A Tensor. Must be one of the following types: double, bfloat16, float16, float32 . \n
 
 *@par Attributes:
 * axes: An optional list of ints. Defaults to "{-1}" . \n
@@ -455,8 +455,8 @@ REG_OP(SoftmaxV2WithDropOutDoMaskV3D)
 *Compatible with the TensorFlow operator LogSoftmax.
 */
 REG_OP(LogSoftmaxV2)
-    .INPUT(logits, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(logsoftmax, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(logits, TensorType({DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(logsoftmax, TensorType({DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT}))
     .ATTR(axes, ListInt, {-1})
     .OP_END_FACTORY_REG(LogSoftmaxV2)
 
@@ -637,6 +637,42 @@ REG_OP(LayerNorm)
     .OP_END_FACTORY_REG(LayerNorm)
 
 /**
+*@brief LayernormV3 operator interface implementation
+*  calculating: x, gamma, beta
+*  mean  = np.mean(x, reduce_axis, keepdims=True)
+*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
+*  y = gamma*((x - mean) * rstd) + beta
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li beta: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+*@par Attributes:
+* @li begin_norm_axis: A optional attribute, the type is int32. Defaults to 0.
+* @li begin_params_axis: A optional attribute, the type is int32. Defaults to 0.
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-5 . \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+*/
+REG_OP(LayerNormV3)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(rstd, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .ATTR(begin_norm_axis, Int, 0)
+    .ATTR(begin_params_axis, Int, 0)
+    .ATTR(epsilon, Float, 0.00001)
+    .OP_END_FACTORY_REG(LayerNormV3)
+
+/**
 *@brief Returns a tensor where each sub-tensor of input along dimension 
 *       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
 
@@ -706,6 +742,49 @@ REG_OP(LayerNormGrad)
     .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(LayerNormGrad)
+
+/**
+*@brief LayerNormGradV3 operator interface implementation
+*  calculating: dy, x, rstd, mean, gamma
+*  pd_xl = data_dy*data_gamma
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
+*           np.power(rstd, 3)),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*  pd_x = pd_xl*rstd +
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean)*rstd), param_axis, keepdims=True)
+*  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
+
+*@par Inputs:
+*Five inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(LayerNormGradV3)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(rstd, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OP_END_FACTORY_REG(LayerNormGradV3)
 
 /**
 *@brief LayerNormXBackprop operator interface implementation
@@ -790,6 +869,46 @@ REG_OP(LayerNormXBackpropV2)
     .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(LayerNormXBackpropV2)
+
+/**
+*@brief LayerNormXBackpropV3 operator interface implementation
+*  calculating: dy, x, rstd, mean, gamma
+*  pd_xl = data_dy*data_gamma
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
+*           np.power(rstd, 3)),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*  pd_x = pd_xl*rstd +
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*  res_for_gamma = (data_x - data_mean) * rstd
+
+*@par Inputs:
+*Five inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li res_for_gamma: A Tensor. Must be one of the following types: float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(LayerNormXBackpropV3)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(rstd, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(LayerNormXBackpropV3)
 
 /**
 *@brief LayerNormBetaGammaBackprop operator interface implementation

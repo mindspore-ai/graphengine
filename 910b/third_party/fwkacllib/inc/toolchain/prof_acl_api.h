@@ -93,8 +93,8 @@ constexpr uint64_t PROF_OP_DETAIL_MASK            = 0x0000080000000ULL;
 constexpr uint64_t PROF_AICPU_MODEL_MASK          = 0x4000000000000000ULL;
 constexpr uint64_t PROF_MODEL_LOAD_MASK           = 0x8000000000000000ULL;
 
-constexpr int PROF_MAX_DEV_NUM = 64; // 64 : dev max number
-constexpr int PROF_DEFAULT_HOST_ID = PROF_MAX_DEV_NUM;
+constexpr int32_t PROF_MAX_DEV_NUM = 64; // 64 : dev max number
+constexpr int32_t PROF_DEFAULT_HOST_ID = PROF_MAX_DEV_NUM;
 
 /**
  * @name  ProfAicoreMetrics
@@ -110,7 +110,7 @@ enum ProfAicoreMetrics {
     PROF_AICORE_L2_CACHE = 6,
     PROF_AICORE_PIPE_EXECUTE_UTILIZATION = 7,
     PROF_AICORE_METRICS_COUNT,
-    PROF_AICORE_NONE = 0xff,
+    PROF_AICORE_NONE = 0xFF,
 };
 
 /**

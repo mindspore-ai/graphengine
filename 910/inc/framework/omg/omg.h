@@ -62,15 +62,6 @@ GE_FUNC_VISIBILITY domi::Status ParseGraph(ge::Graph &graph, const std::map<std:
                                            const char *op_conf = nullptr, const char *target = nullptr,
                                            RunMode run_mode = RunMode::GEN_OM_MODEL, bool is_dynamic_input = false);
 
-/**
- * @ingroup domi_omg
- * @brief generate graph based on the input model file and weight file
- * @param [out] graph graph
- * @param [in] model_file path of model file
- * @return Status result code
- */
-GE_FUNC_VISIBILITY domi::Status ParseGraph(ge::Graph &graph, const char *model_file,
-                                           const std::string &output, domi::FrameworkType type);
 
 /**
  * @ingroup domi_omg

@@ -218,7 +218,8 @@ REG_OP(SparseApplyAdagradD)
 *@li update_slots: An optional bool. Defaults to "True". If "False", the computation logic will be different . \n
 
 *@par Outputs:
-*var: A Tensor. Has the same type and format as input "var" . \n
+*@li var: A Tensor. Has the same type and format as input "var" .
+*@li accum: A Tensor. Has the same type and format as input "accum" . \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator SparseApplyAdagradV2.
@@ -231,6 +232,7 @@ REG_OP(SparseApplyAdagradV2)
     .INPUT(grad, TensorType({DT_FLOAT}))
     .INPUT(indices, TensorType({DT_INT32}))
     .OUTPUT(var, TensorType({DT_FLOAT}))
+    .OUTPUT(accum, TensorType({DT_FLOAT}))
     .ATTR(use_locking, Bool, false)
     .ATTR(update_slots, Bool, true)
     .OP_END_FACTORY_REG(SparseApplyAdagradV2)
@@ -1615,7 +1617,8 @@ REG_OP(ApplyProximalAdagradD)
 *     If "False", the behavior is undefined, but may exhibit less contention.
 
 *@par Outputs:
-*var: A mutable Tensor. Has the same type as "var" . \n
+*@li var: A mutable Tensor. Has the same type as "var" .
+*@li accum:  A mutable Tensor. Has the same type as "accum" . \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator SparseApplyProximalAdagrad.
@@ -1629,6 +1632,7 @@ REG_OP(SparseApplyProximalAdagrad)
     .INPUT(grad, TensorType::NumberType())
     .INPUT(indices, TensorType::IndexNumberType())
     .OUTPUT(var, TensorType::NumberType())
+    .OUTPUT(accum, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyProximalAdagrad)
 
@@ -2319,7 +2323,9 @@ REG_OP(LarsV2Update)
 * but may exhibit less contention . \n
 
 * @par Outputs:
-* var: A Tensor. Has the same type and format as input "var" . \n
+* @li var: A Tensor. Has the same type and format as input "var" .
+* @li accum: A Tensor. Has the same type and format as input "accum".
+* @li linear: A Tensor. Has the same type and format as input "linear" . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseApplyFtrl.
@@ -2335,6 +2341,8 @@ REG_OP(SparseApplyFtrl)
     .INPUT(l2, TensorType({DT_FLOAT}))
     .INPUT(lr_power, TensorType({DT_FLOAT}))
     .OUTPUT(var, TensorType({DT_FLOAT}))
+    .OUTPUT(accum, TensorType({DT_FLOAT}))
+    .OUTPUT(linear, TensorType({DT_FLOAT}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyFtrl)
 
@@ -2417,7 +2425,9 @@ REG_OP(SparseApplyFtrlD)
 * but may exhibit less contention . \n
 
 * @par Outputs:
-* var: A Tensor. Has the same type and format as input "var" . \n
+* @li var: A Tensor. Has the same type and format as input "var" .
+* @li accum: A Tensor. Has the same type and format as input "accum".
+* @li linear: A Tensor. Has the same type and format as input "linear" . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseApplyFtrlV2.
@@ -2434,6 +2444,8 @@ REG_OP(SparseApplyFtrlV2)
     .INPUT(l2_shrinkage, TensorType({DT_FLOAT}))
     .INPUT(lr_power, TensorType({DT_FLOAT}))
     .OUTPUT(var, TensorType({DT_FLOAT}))
+    .OUTPUT(accum, TensorType({DT_FLOAT}))
+    .OUTPUT(linear, TensorType({DT_FLOAT}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyFtrlV2)
 
@@ -2520,7 +2532,9 @@ REG_OP(SparseApplyFtrlV2D)
 * behavior is undefined, but may exhibit less contention.
 *
 * @par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
+* @li var: A mutable tensor. Has the same type as input "var".
+* @li ms:  A mutable tensor. Must have the same type as input "ms".
+* @li mom: A mutable tensor. Must have the same type as input "mom".
 *
 * @attention Constraints:
 * @li Note that in this sparse implementation, "ms" and "mom" will not update
@@ -2541,6 +2555,8 @@ REG_OP(SparseApplyRMSProp)
     .INPUT(grad, TensorType::NumberType())
     .INPUT(indices, TensorType::IndexNumberType())
     .OUTPUT(var, TensorType::NumberType())
+    .OUTPUT(ms, TensorType::NumberType())
+    .OUTPUT(mom, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyRMSProp)
 
@@ -2628,7 +2644,9 @@ REG_OP(SparseApplyRMSPropD)
 * behavior is undefined, but may exhibit less contention.
 *
 * @par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
+* @li var: A mutable tensor. Has the same type as input "var".
+* @li accum:  A mutable tensor. Must have the same type as input "accum".
+* @li accum_update: A mutable tensor. Must have the same type as input "accum_update".
 *
 * @attention Constraints:
 * @li Note that in this sparse implementation, "accum" and "accum_update" will not update
@@ -2648,6 +2666,8 @@ REG_OP(SparseApplyAdadelta)
     .INPUT(grad, TensorType::NumberType())
     .INPUT(indices, TensorType::IndexNumberType())
     .OUTPUT(var, TensorType::NumberType())
+    .OUTPUT(accum, TensorType::NumberType())
+    .OUTPUT(accum_update, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyAdadelta)
 

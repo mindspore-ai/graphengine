@@ -43,6 +43,8 @@ typedef struct {
 
 typedef struct {
   Vector blobs; // type : DataBlob
+  uint64_t* io_addr;
+  uint32_t ioa_size;
 } DataSet;
 
 typedef DataSet InputData;

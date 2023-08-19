@@ -68,7 +68,7 @@ REG_OP(Merge)
  *@par Inputs:
  *x: The input tensors, one of which will become available.
  *   Must be one of the following types: float16, float32, float64, int8,
- *   int16, int32, int64, uint8, uint16, uint32, uint64, bool . It's a dynamic input. \n
+ *   int16, int32, int64, uint8, uint16, uint32, uint64, bool, string . It's a dynamic input. \n
 
  *@par Outputs:
  *@li y: The available tensor. Has the same type as "x".
@@ -98,7 +98,7 @@ REG_OP(RefMerge)
  *@par Inputs:
  *@li data: The tensor to be forwarded.
  *          Must be one of the following types: float16, float32, float64,
- *          int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool.
+ *          int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool, string.
  *@li pred: A boolean scalar. The output port that will receive data . \n
 
  *@par Outputs:
@@ -133,7 +133,7 @@ REG_OP(Switch)
  *@par Inputs:
  *@li data: The ref tensor to be forwarded.
  *          Must be one of the following types: float16, float32, float64,
- *          int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool.
+ *          int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool, string.
  *@li pred: A boolean scalar. The output port that will receive data . \n
 
  *@par Outputs:

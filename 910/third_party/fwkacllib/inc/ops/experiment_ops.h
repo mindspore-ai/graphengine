@@ -405,6 +405,8 @@ REG_OP(UninitPartitionMap)
 * @li seed: A Int, Defaults to "0". \n
 * @li seed2: A Int, Defaults to "0". \n
 * @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter". \n
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode, Defaults to "".
+* @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
 REG_OP(InitEmbeddingHashmap)
     .INPUT(table_id, TensorType({DT_INT32}))
@@ -421,6 +423,8 @@ REG_OP(InitEmbeddingHashmap)
     .ATTR(seed, Int, 0)
     .ATTR(seed2, Int, 0)
     .ATTR(filter_mode, String, "no_filter")
+    .ATTR(optimizer_mode, String, "")
+    .ATTR(optimizer_params, ListFloat, {})
     .OP_END_FACTORY_REG(InitEmbeddingHashmap)
 
 /**
@@ -509,7 +513,9 @@ REG_OP(UninitEmbeddingHashmap)
 * @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
 * @li default_key_or_value: A bool, indicates the default value get way.
 * @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
-* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.\n
+* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode, Defaults to "".
+* @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
 REG_OP(EmbeddingTableFindAndInit)
     .INPUT(table_id, TensorType({DT_INT32}))
@@ -530,6 +536,8 @@ REG_OP(EmbeddingTableFindAndInit)
     .ATTR(default_key_or_value, Bool, false)
     .ATTR(default_key, Int, 0)
     .ATTR(default_value, Float, 0)
+    .ATTR(optimizer_mode, String, "")
+    .ATTR(optimizer_params, ListFloat, {})
     .OP_END_FACTORY_REG(EmbeddingTableFindAndInit)
 
 /**
@@ -1774,6 +1782,23 @@ REG_OP(Conv2DTransposeDCompress)
     .ATTR(offset_x, Int, 0)
     .ATTR(alg, String, "weight_sparse_4_2")
     .OP_END_FACTORY_REG(Conv2DTransposeDCompress)
+
+/**
+* @brief Detect whether there is Inf or Nan in scaled_grads, set found_inf to 1 if it exists, 
+* and do not operate on found_inf if it does not. Finally, multiply all values of scaled_grads by inv_scale
+* @par Inputs:
+ * Three inputs:
+ * @li scaled_grads: A tensor list containing multiple tensors, can be float16, float,
+ * meanwhile, this value is also an output, store the value multiplied by inv_scale.
+ * @li found_inf: A tensor with only one element, the shape must be (1,), must be float,
+ * meanwhile, this value is also an output, indicating whether there is Inf or Nan present.
+ * @li inv_scale: A tensor with only one element, the shape must be (1,), must be float.
+*/
+REG_OP(ForeachNonFiniteCheckAndUnscale)
+    .DYNAMIC_INPUT(scaled_grads, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(found_inf, TensorType({DT_FLOAT}))
+    .INPUT(inv_scale, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
 }  // namespace ge
 
 

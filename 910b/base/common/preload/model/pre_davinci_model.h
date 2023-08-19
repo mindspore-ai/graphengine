@@ -33,10 +33,10 @@ class PreDavinciModel {
   Status DoTaskSink(const EngineType engine_type);
   Status InitNodes(const ComputeGraphPtr &compute_graph);
   void InitKernelOffset();
+  void InitRuntimeParams();
   void DoReset() const;
 
  private:
-  void InitRuntimeParams();
   // get Op
   OpDescPtr GetOpByIndex(const uint32_t op_index) const;
   Status GetEngineName(const EngineType engine_type, const uint32_t task_type,

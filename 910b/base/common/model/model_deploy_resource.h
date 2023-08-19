@@ -25,6 +25,7 @@ struct ModelDeployResource {
   std::string processor_core_num;
   std::string memory;
   std::string share_memory;
+  bool is_heavy_load = false;
 };
 
 struct HcomCommGroup {

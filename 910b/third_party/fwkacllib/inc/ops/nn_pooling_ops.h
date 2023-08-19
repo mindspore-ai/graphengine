@@ -481,7 +481,7 @@ REG_OP(MaxPool3D)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
     .ATTR(pads, ListInt, {0,0,0,0,0,0})
-    .ATTR(dilation, ListInt, {1,1,1,1,1,1})
+    .ATTR(dilation, ListInt, {1, 1, 1, 1, 1})
     .ATTR(ceil_mode, Int, 0)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(MaxPool3D)
@@ -898,8 +898,8 @@ REG_OP(MaxPoolGradGradWithArgmax)
 * out_grad: A mutable tensor with the same shape and type as "orig_input_shape". \n
 
 * @par Third-party framework compatibility
-* @li Compatible with the TensorFlow operator AvgPoolGrad. 
-* TensorFlow operator AvgPoolGrad are difference from our operator AvgPoolGrad in 
+* @li Compatible with the TensorFlow operator AvgPoolGrad.
+* TensorFlow operator AvgPoolGrad are difference from our operator AvgPoolGrad in
 * following two case:
 * -- kernel_h > input_h && hernel_h // 2 < input_h - 1
 * -- kernel_w > input_w && hernel_w // 2 < input_w - 1
@@ -1779,7 +1779,7 @@ REG_OP(MaxPoolGradWithArgmaxV1)
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "x".
-* argmax:  A Tensor. type:uint16. \n
+* argmax:  A Tensor. type:uint16, int32. \n
 
 * @attention Constraints:
 * @li The MaxPoolWithArgmaxV2 operator has the same function, and it is recommended to use the V2 operator.

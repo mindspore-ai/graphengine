@@ -1355,6 +1355,48 @@ ACL_FUNC_VISIBILITY aclError aclrtGetOverflowStatus(void *outputAddr, size_t out
  */
 ACL_FUNC_VISIBILITY aclError aclrtResetOverflowStatus(aclrtStream stream);
 
+/**
+ * @ingroup AscendCL
+ * @brief The thread that handles the hostFunc function on the Stream
+ *
+ * @param hostFuncThreadId [IN] thread ID
+ * @param exeStream        [IN] stream handle
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSubscribeHostFunc(uint64_t hostFuncThreadId, aclrtStream exeStream);
+
+/**
+ * @ingroup AscendCL
+ * @brief After waiting for a specified time, trigger hostFunc callback function processing
+ *
+ * @par Function
+ *  The thread processing callback specified by the aclrtSubscribeHostFunc interface
+ *
+ * @param timeout [IN]   timeout value
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see aclrtSubscribeHostFunc
+ */
+ACL_FUNC_VISIBILITY aclError aclrtProcessHostFunc(int32_t timeout);
+
+/**
+ * @ingroup AscendCL
+ * @brief Cancel thread registration,
+ *        the hostFunc function on the specified Stream
+ *        is no longer processed by the specified thread
+ *
+ * @param hostFuncThreadId [IN]   thread ID
+ * @param exeStream        [IN]   stream handle
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtUnSubscribeHostFunc(uint64_t hostFuncThreadId, aclrtStream exeStream);
+
 #ifdef __cplusplus
 }
 #endif

@@ -99,6 +99,7 @@ const std::set<ge::AscendString> TUNING_OPTION_SET = {
     ge::AscendString(TUNE_OPTIMIZATION_LEVEL),
     ge::AscendString(FEATURE_DEEPER_OPAT),
     ge::AscendString(FEATURE_NONHOMO_SPLIT),
+    ge::AscendString(FEATURE_INNER_AXIS_CUT),
     ge::AscendString(FEATURE_OP_FORMAT),
     ge::AscendString(OUT_FILE_NAME),
     ge::AscendString(HOST_ENV_OS),

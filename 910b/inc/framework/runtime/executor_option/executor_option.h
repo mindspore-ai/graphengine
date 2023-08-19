@@ -35,6 +35,9 @@ enum class ExecutorType {
   // 基于拓扑的多线程执行器
   kTopologicalMultiThread,
 
+  // 基于tprt的多线程执行器
+  kTprt,
+
   kEnd
 };
 

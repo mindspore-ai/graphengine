@@ -53,8 +53,6 @@ namespace ge {
 
   Status CheckIsUnknownShape(bool &is_dynamic_shape) const;
 
-  void SetTrainFlag(const bool flag) { train_flag_ = flag; }
-
   Status SerializeModel(ModelBufferData &model_buff) override;
 
   Status UnSerializeModel(const ModelBufferData &model_buff) override;
@@ -117,7 +115,6 @@ namespace ge {
   // In multithread online secenario, same graph can owns different davinci_model for for concurrency
   std::vector<uint32_t> model_ids_;
   std::mutex model_ids_mutex_;
-  bool train_flag_ = false;
   bool is_specific_stream_ = false;
 
   // loaded model info

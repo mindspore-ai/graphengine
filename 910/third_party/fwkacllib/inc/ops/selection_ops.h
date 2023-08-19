@@ -367,7 +367,7 @@ REG_OP(StridedSlice)
 
 * @par Inputs:
 * x: A Tensor. Must be one of the following types: float32, int32, uint8, int8,
-*  int64, float16, uint64 , bfloat16. \n
+*  int64, float16, bool, bfloat16, complex32, complex64. \n
 
 * @par Attributes:
 * @li begin: A Tensor of type int32 or int64.
@@ -400,9 +400,9 @@ REG_OP(StridedSlice)
 */
 REG_OP(StridedSliceD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT64, DT_UINT8, DT_INT8,
-                          DT_BOOL, DT_BF16}))
+                          DT_BOOL, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT64, DT_UINT8, DT_INT8,
-                          DT_BOOL, DT_BF16}))
+                          DT_BOOL, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
     .REQUIRED_ATTR(begin, ListInt)
     .REQUIRED_ATTR(end, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -2306,19 +2306,19 @@ REG_OP(InplaceIndexAdd)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor of dtype is bfloat16 or float16 or float32 or int64 or int32 or int8.
+* @li x: A Tensor of dtype is bfloat16 or float16 or float32 or int64 or int32 or int8 or bool.
 * @li mask: A Tensor of dtype bool.
-* @li value: A Tensor of dtype bfloat16 or float16 or float32 or int64 or int32 or int8. \n
+* @li value: A Tensor of dtype bfloat16 or float16 or float32 or int64 or int32 or int8 or bool. \n
 
 * @par Outputs:
 * y: A tensor. Must be one of the following dtypes:
-* bfloat16, float16, float32, int64, int32, int8.
+* bfloat16, float16, float32, int64, int32, int8, bool.
 */
 REG_OP(MaskedFill)
-    .INPUT(x, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64, DT_BOOL}))
     .INPUT(mask, TensorType({DT_BOOL}))
-    .INPUT(value, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .INPUT(value, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64, DT_BOOL}))
     .OP_END_FACTORY_REG(MaskedFill)
 
 /**

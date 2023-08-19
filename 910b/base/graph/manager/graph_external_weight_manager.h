@@ -21,18 +21,24 @@
 #include <set>
 #include <mutex>
 #include <vector>
+#include <algorithm>
 #include "external/ge/ge_api_types.h"
 
 namespace ge {
+struct FileConstantMeta {
+  std::map<std::string, std::string> file_to_exist_file;
+  std::map<std::string, std::vector<std::string>> hash_to_files;
+};
 class ExternalWeightManager {
  public:
   explicit ExternalWeightManager(const uint64_t session_id);
 
   ~ExternalWeightManager() = default;
 
-  bool CanReuseExternalWeight(std::string &file_name, const uint8_t *const data, const size_t data_length);
+  static bool CanReuseExternalWeight(FileConstantMeta &meta, const std::string &file_dir, std::string &file_name,
+                                     const uint8_t *const data, const size_t data_length);
 
-  bool IsWeightExist(std::string &file_name);
+  static bool IsWeightExist(const FileConstantMeta& meta, std::string &file_name);
 
   bool IsWeightLoaded(const std::string &file_name, const uint32_t device_id);
 
@@ -40,6 +46,8 @@ class ExternalWeightManager {
 
   void Finalize() noexcept;
 
+  void SetWeightPath(const std::string &weight_path) { weight_path_ = weight_path; }
+  const std::string &GetWeigthPath() const { return weight_path_; };
  private:
   static Status CheckFilesSame(const std::string &file_name,
                                const uint8_t *const data,
@@ -48,9 +56,8 @@ class ExternalWeightManager {
 
   std::mutex mutex_;
   uint64_t session_id_;
+  std::string weight_path_;
   std::map<uint32_t, std::set<std::string>> loaded_external_weight_files_;
-  std::map<size_t, std::vector<std::string>> hash_to_files_;
-  std::map<std::string, std::string> file_to_exist_file_;
 };
 
 using ExternalWeightManagerPtr = std::shared_ptr<ExternalWeightManager>;

@@ -1611,17 +1611,17 @@ REG_OP(ApplyProximalAdagradD)
 * @li indices: A vector of indices into the first dimension of "var" and "accum".
 *     TensorType::IndexNumberType(). Can contain duplicate values . \n
 
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False".
 *     If "True", updating of the var and accum tensors will be protected by a lock;
 *     If "False", the behavior is undefined, but may exhibit less contention.
 
-*@par Outputs:
-*@li var: A mutable Tensor. Has the same type as "var" .
-*@li accum:  A mutable Tensor. Has the same type as "accum" . \n
+* @par Outputs:
+* @li var: A mutable Tensor. Has the same type as "var" .
+* @li accum: A mutable Tensor. Has the same type as "accum" . \n
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator SparseApplyProximalAdagrad.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseApplyProximalAdagrad.
 */
 REG_OP(SparseApplyProximalAdagrad)
     .INPUT(var, TensorType::NumberType())

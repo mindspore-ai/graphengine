@@ -39,6 +39,7 @@ const char * const OP_TUNE_KERNEL_PATH                       = "op_tune_kernel_p
 const char * const TUNE_OPTIMIZATION_LEVEL                   = "tune_optimization_level";
 const char * const FEATURE_DEEPER_OPAT                       = "Fdeeper_opat";
 const char * const FEATURE_NONHOMO_SPLIT                     = "Fnonhomo_split";
+const char * const FEATURE_INNER_AXIS_CUT                    = "Finner_axis_cut";
 const char * const FEATURE_OP_FORMAT                         = "Fop_format";
 const char * const RELOAD                                    = "reload";
 const char * const MODEL                                     = "model";

@@ -23,7 +23,18 @@ typedef enum tagRtArchType {
     ARCH_V100 = ARCH_BEGIN,
     ARCH_V200 = 1,
     ARCH_V300 = 2,
-    ARCH_END = 3,
+    ARCH_C100 = 3, /* Ascend910 */
+    ARCH_C220 = 4, /* Ascend910B & Ascend910C */
+    ARCH_M100 = 5, /* Ascend310 */
+    ARCH_M200 = 6, /* Ascend310P & Ascend610 */
+    ARCH_M201 = 7, /* BS9SX1A */
+    ARCH_T300 = 8, /* Tiny */
+    ARCH_N350 = 9, /* Nano */
+    ARCH_M300 = 10, /* Ascend310B & AS31XM1X */
+    ARCH_M310 = 11, /* Ascend610Lite */
+    ARCH_S200 = 12, /* Hi3796CV300ES & TsnsE */
+    ARCH_S202 = 13, /* Hi3796CV300CS & OPTG & SD3403 &TsnsC */
+    ARCH_END,
 } rtArchType_t;
 
 typedef enum tagRtChipType {

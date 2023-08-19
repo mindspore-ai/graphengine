@@ -49,6 +49,7 @@ class PreModelPartitionUtils {
   std::shared_ptr<TaskBuildBuf> &GetNanoTaskBuildBuf(const uint8_t type) {
     return nano_partition_type_to_buf_[type];
   }
+  void AddNanoHostFuncParamData(const std::shared_ptr<uint8_t> &nano_hostfunc_param_data);
 
  private:
   Status PrepareDefaultPartitionData(const PreTaskDescInfo &task_desc);
@@ -62,6 +63,8 @@ class PreModelPartitionUtils {
   uint64_t kernel_args_info_size_ = 0UL;
   std::shared_ptr<TaskBuildBuf> task_build_buf_ = nullptr;
   std::unordered_map<uint8_t, std::shared_ptr<TaskBuildBuf>> nano_partition_type_to_buf_;
+  uint32_t total_tlv_len_ = 0U;
+  std::vector<std::shared_ptr<uint8_t>> nano_hostfunc_param_data_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PRELOAD_PRE_MODEL_PARTITION_UTILS_H_

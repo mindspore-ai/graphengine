@@ -125,6 +125,24 @@ REG_OP(SwishGrad)
     .OP_END_FACTORY_REG(SwishGrad)
 
 /**
+*@brief Computes the gradient for the Silu of "x" . \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, bfloat16, float32
+* @li x: A Tensor of the same type as "grad" . \n
+*@par Outputs:
+*dx: A Tensor. Has the same type as "grad".
+*@par Third-party framework compatibility
+*Compatible with the Torch operator SiluGrad
+*/
+REG_OP(SiluGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OP_END_FACTORY_REG(SiluGrad)
+
+/**
 * @brief Computes the gradient for the gelu of "x" .
 
 * @par Inputs:
@@ -657,9 +675,9 @@ REG_OP(PReluGrad)
 *x: A float16, float32 or double, for the input data type . \n
 
 *@par Attributes:
-*alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
-*scale: A float32. Input data scaling factor. Defaults to "1.0". \n
-*input_scale: A float32. Negative data scaling factor. Defaults to "1.0". \n
+*alpha: An optional float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+*scale: An optional float32. Input data scaling factor. Defaults to "1.0". \n
+*input_scale: An optional float32. Negative data scaling factor. Defaults to "1.0". \n
 
 *@par Outputs:
 *y: A float16, float32 or double, for the normalized result . \n

@@ -70,6 +70,11 @@ Status ChangeFilePathAttr(const ComputeGraphPtr &compute_graph, const std::strin
                           std::map<std::string, std::string> &old_file_to_new_file);
 
 Status MoveFilePath(const std::map<std::string, std::string> &old_file_to_new_file);
+
+Status ReadExternalWeightFromFile(const std::string &file_path,
+                                  const size_t offset,
+                                  const size_t file_length,
+                                  char_t *const bin_buff);
 }
 
 #endif // INC_FRAMEWORK_COMMON_FILE_CONSTANT_UTIL_H

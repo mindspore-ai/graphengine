@@ -50,37 +50,37 @@ static inline bool IsLogEnable(const int32_t module_name, const int32_t log_leve
 
 #define LOGE(fmt, ...)                                                                            \
   do {                                                                                            \
-      printf("[ERROR] GE %s:%s:%d: "#fmt "\n", __func__, __FILE__, __LINE__, ##__VA_ARGS__);      \
+      printf("[ERROR] GE %s:%s:%d: "fmt "\n", __func__, __FILE__, __LINE__, ##__VA_ARGS__);      \
   } while (false)
 
 #ifdef RUN_TEST
 #define GELOGD(fmt, ...)                                                                                  \
   do {                                                                                                    \
-    printf("[DEBUG] [%s:%d]%ld: %s " #fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
+    printf("[DEBUG] [%s:%d]%ld: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
            ##__VA_ARGS__);                                                                                \
   } while (false)
 
 #define GELOGI(fmt, ...)                                                                                 \
   do {                                                                                                   \
-    printf("[INFO] [%s:%d]%ld: %s " #fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
+    printf("[INFO] [%s:%d]%ld: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
            ##__VA_ARGS__);                                                                               \
   } while (false)
 
 #define GELOGW(fmt, ...)                                                                                    \
   do {                                                                                                      \
-    printf("[WARNING] [%s:%d]%ld: %s " #fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
+    printf("[WARNING] [%s:%d]%ld: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
            ##__VA_ARGS__);                                                                                  \
   } while (false)
 
 #define GELOGE(ERROR_CODE, fmt, ...)                                                                                   \
   do {                                                                                                                 \
-    printf("[ERROR] [%s:%d]%lu: %s ErrorNo: %ld " #fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
+    printf("[ERROR] [%s:%d]%lu: %s ErrorNo: %ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
            (long int)ERROR_CODE, ##__VA_ARGS__);                                                                       \
   } while (false)
 
 #define GEEVENT(fmt, ...)                                                                                 \
   do {                                                                                                    \
-    printf("[EVENT] [%s:%d]%lu: %s " #fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
+    printf("[EVENT] [%s:%d]%lu: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
            ##__VA_ARGS__);                                                                                \
   } while (false)
 #else

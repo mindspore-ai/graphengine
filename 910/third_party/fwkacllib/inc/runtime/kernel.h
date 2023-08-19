@@ -1045,6 +1045,36 @@ RTS_API rtError_t rtGetConditionKernelBin(const char_t * const binFileName, char
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtGetDevArgsAddr(rtStream_t stm, rtArgsEx_t *argsInfo, void **devArgsAddr, void **argsHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief subscribe stream for hostFunc thread.
+ * @param [in] threadId   thread id for stream
+ * @param [in] stream     stream for subscribe
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSubscribeHostFunc(uint64_t threadId, rtStream_t stream);
+
+/**
+ * @ingroup rt_kernel
+ * @brief process hostFunc callback report and hostFunc callback function.
+ * @param [in] timeout           if timeout=-1, while(1); else timeout
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtProcessHostFunc(int32_t timeout);
+
+/**
+ * @ingroup rt_kernel
+ * @brief unsubscribe hostFunc callback report.
+ * @param [in] threadId   thread id for stream
+ * @param [in] stream     stream for subscribe
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtUnSubscribeHostFunc(uint64_t threadId, rtStream_t stream);
+
 #if defined(__cplusplus)
 }
 #endif

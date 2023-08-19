@@ -1372,7 +1372,7 @@ REG_OP(AssignAdd)
 *@brief Updates "ref" by assigning "value" to it. \n
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: bfloat16, float16, float32,
+* @li ref: A Tensor. Must be one of the following types: bfloat16, float16, float32,
 *    double, int8, int16, int32, int64, uint8, uint16, uint32, uint64,
 *    complex64, complex128, qint8, quint8, qint16, qint32, quint16, bool, string.
 *@li value: A Tensor of the same type as "ref". \n
@@ -1395,7 +1395,7 @@ REG_OP(AssignAdd)
 */
 REG_OP(Assign)
     .INPUT(ref, TensorType({BasicType(), DT_BOOL, DT_STRING}))
-    .INPUT(value,TensorType({BasicType(), DT_BOOL, DT_STRING}))
+    .INPUT(value, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .OUTPUT(ref, TensorType({BasicType(), DT_BOOL, DT_STRING}))
     .ATTR(validate_shape, Bool, true)
     .ATTR(use_locking, Bool, false)
@@ -4139,7 +4139,7 @@ REG_OP(CastLike)
 * y: A Tensor. Has the same type as "x". \n
 
 * @par Third-party framework compatibility
-* Compatible with the pytorch operator clip.
+* Compatible with the Pytorch operator clip.
 */
 REG_OP(ClipByValueV2)
     .INPUT(x, TensorType::NumberType())

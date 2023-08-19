@@ -105,6 +105,7 @@ class DeployPlan {
   struct SubmodelInfo {
     int32_t process_id = 0;
     DeviceInfo device_info;
+    DeviceInfo queue_device_info;
     RankInfo rank_info;
     LoadInfo load_info;
     PneModelPtr model;

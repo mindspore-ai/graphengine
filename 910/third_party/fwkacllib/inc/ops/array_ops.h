@@ -872,7 +872,7 @@ REG_OP(SqueezeV3)
 *@brief Returns an integer representing the rank of input tensor. The rank of a tensor is the number of indices required to uniquely select each element of the tensor, that is, the dimension size of the tensor. \n
 
 *@par Inputs:
-*x: A Tensor of type float32, float16, int8, int16, uint16, uint8, int32, int64, uint32, uint64, bool, double. \n
+*x: A Tensor of type float32, float16, int8, int16, uint16, uint8, int32, int64, uint32, uint64, bool, double, string. \n
 
 *@par Outputs:
 *y: A tensor. The rank of input tensor. Type is int32. \n

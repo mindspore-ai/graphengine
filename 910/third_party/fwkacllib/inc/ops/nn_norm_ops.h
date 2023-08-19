@@ -62,7 +62,7 @@ REG_OP(LogSoftmaxGrad)
 
 *@par Outputs:
 *@li loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
-*@li backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). 
+*@li backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix).
 Has the same type as "features" . \n
 
 *@par Third-party framework compatibility
@@ -204,9 +204,9 @@ REG_OP(SigmoidCrossEntropyWithLogitsV2)
 
 * @par Attributes:
 * @li gamma: An optional float, specifying the exponent of the modulating factor (1 - pt)
-* to balance easy/hard examples. Defaults to 2.0. 
+* to balance easy/hard examples. Defaults to 2.0.
 * @li alpha: An optional float, specifying the weighting factor in range (1, 0) to balance
-* the importance of positive/negative examples or less than 0 for ignore. Defaults to 0.25. 
+* the importance of positive/negative examples or less than 0 for ignore. Defaults to 0.25.
 * @li reduction: A optional character string from "none", "mean", and "sum", specifying the
 * reduction type to be applied to the output. Defaults to "mean".  \n
 
@@ -237,9 +237,9 @@ REG_OP(SigmoidFocalLoss)
 
 * @par Attributes:
 * @li gamma: An optional float, specifying the exponent of the modulating factor (1 - pt)
-* to balance easy/hard examples. Defaults to 2.0. 
+* to balance easy/hard examples. Defaults to 2.0.
 * @li alpha: An optional float, specifying the weighting factor in range (1, 0) to balance
-* the importance of positive/negative examples or less than 0 for ignore. Defaults to 0.25. 
+* the importance of positive/negative examples or less than 0 for ignore. Defaults to 0.25.
 * @li reduction: A optional character string from "none", "mean", and "sum", specifying the
 * reduction type to be applied to the output. Defaults to "mean".  reduction only support
 * "none" currently for matching mmcv.\n
@@ -673,7 +673,7 @@ REG_OP(LayerNormV3)
     .OP_END_FACTORY_REG(LayerNormV3)
 
 /**
-*@brief Returns a tensor where each sub-tensor of input along dimension 
+*@brief Returns a tensor where each sub-tensor of input along dimension
 *       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
 
 *@par Inputs:
@@ -681,7 +681,7 @@ REG_OP(LayerNormV3)
 * x: A Tensor. Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
-* @li p: Specify L_p norm, the type is float. 
+* @li p: Specify L_p norm, the type is float.
 * @li dim: The processed dim, the type is int.
 * @li maxnorm: Threshold for comparison, the type is float.  \n
 
@@ -1675,7 +1675,7 @@ REG_OP(Centralization)
 *@par Inputs:
 *One inputs, including:
 * x: A tensor . Must be one of the following types:
-*     float16, bfloat16, float32, int32, uint32, int8, uint8. \n
+*     float16, bfloat16, float32, int32, uint32, int8, uint8, int64. \n
 
 *@par Attributes:
 * @li shifts: The number of places by which the elements of the tensor are shifted. \n
@@ -1688,8 +1688,8 @@ REG_OP(Centralization)
 *Compatible with the Pytorch operator Roll. \n
 */
 REG_OP(Roll)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8, DT_BF16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8, DT_BF16, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8, DT_BF16, DT_INT64}))
     .REQUIRED_ATTR(shifts, ListInt)
     .ATTR(dims, ListInt, {})
     .OP_END_FACTORY_REG(Roll)
@@ -1777,7 +1777,7 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
 /**
- * @brief Calculate the PoissonNllLoss function. 
+ * @brief Calculate the PoissonNllLoss function.
  *        target follow distribution of Poisson(input)loss(input,target) = input - target * log(input) + log(target!) \n
 
  * @par Inputs:
@@ -1816,7 +1816,7 @@ REG_OP(PoissonNllLoss)
  * @li num_step: A required int.\n
  * @li hidden_size: A required int. \n
  *
- * 
+ *
  * @par Ouputs:
  * y: A mutable Tensor of type float16, with the shape of [num_step, batch_size, hidden_size]. \n
  *
@@ -1829,9 +1829,9 @@ REG_OP(RnnGenMask)
     .OP_END_FACTORY_REG(RnnGenMask)
 
 /**
-* @brief Creates a criterion that optimizes a multi-class multi-classification hinge loss (margin-based loss) 
+* @brief Creates a criterion that optimizes a multi-class multi-classification hinge loss (margin-based loss)
 *        between input x (a 2D mini-batch Tensor) and output y (which is a 2D Tensor of target class indices) \n
- 
+
 * @par Inputs:
 * Two inputs, including:
 * @li x: A tensor. Must be one of the following types:
@@ -1957,7 +1957,7 @@ REG_OP(DropoutWithMulsAndSoftmaxGrad)
 * @li scores: A Tensor. Must be one of the following types: half, float32, double.
 * A "batch_size * num_classes" matrix.
 * @li labels: A Tensor. Must be one of the following types: "int32", "int64".
-* @li weights: A manual rescaling weight given to each class. 
+* @li weights: A manual rescaling weight given to each class.
 * If given, it has to be a 1D Tensor assigning weight to each of the classes.
 * Otherwise, it is treated as if having all ones. \n
 
@@ -2038,7 +2038,7 @@ REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
 * @li alpha: A attribute is used to reweight the sample. The type is float . \n
 * @li gamma: A attribute is used to calculate the power of the probability.
 *     The type is float . \n
-* @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss. 
+* @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss.
                 'sum' means computing the sum of the loss, 'none' means no reducing .\n
 
 * @par Outputs:
@@ -2075,7 +2075,7 @@ REG_OP(SigmoidFocalLossGrad)
 * @li alpha: A attribute is used to reweight the sample. The type is float . \n
 * @li gamma: A attribute is used to calculate the power of the probability.
 *     The type is float . \n
-* @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss. 
+* @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss.
                 'sum' means computing the sum of the loss, 'none' means no reducing .\n
 
 * @par Outputs:

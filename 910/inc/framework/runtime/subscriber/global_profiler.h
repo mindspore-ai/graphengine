@@ -56,7 +56,16 @@ enum class GeProfInfoType {
   kCompatibleTiling,
   kStreamSync,
   kStepInfo,
-  kEnd
+  kNodeLevelEnd,
+  // acl level
+  kIsGraphNeedRebuild = MSPROF_REPORT_ACL_GRAPH_BASE_TYPE + 1,
+  kRemoveGraph,
+  kAddGraph,
+  kBuildGraph,
+  kRunGraphAsync,
+  kGEInitialize,
+  kGEFinalize,
+  kAclLevelEnd
 };
 
 struct ContextIdInfoWrapper {
@@ -239,6 +248,33 @@ class ScopeProfiler {
   size_t event_;
 };
 
+class GraphProfilingReporter {
+ public:
+  GraphProfilingReporter(const GeProfInfoType api_id) : graphApi_(api_id) {
+    if (GlobalProfilingWrapper::GetInstance()->IsEnabled(ProfilingType::kTaskTime)) {
+      start_time_ = MsprofSysCycleTime();
+    }
+  }
+
+  ~GraphProfilingReporter() {
+    if (GlobalProfilingWrapper::GetInstance()->IsEnabled(ProfilingType::kTaskTime)) {
+      const uint64_t end_time_ = MsprofSysCycleTime();
+      MsprofApi api{};
+      api.beginTime = start_time_;
+      api.endTime = end_time_;
+      thread_local static auto tid = mmGetTid();
+      api.threadId = static_cast<uint32_t>(tid);
+      api.level = MSPROF_REPORT_ACL_LEVEL;
+      api.type = static_cast<uint32_t>(graphApi_);
+      (void)MsprofReportApi(true, &api);
+    }
+  }
+
+ private:
+  uint64_t start_time_ = 0UL;
+  const GeProfInfoType graphApi_;
+};
+
 class VISIBILITY_EXPORT ProfilerRegistry {
  public:
   ProfilerRegistry(const ProfilerRegistry &) = delete;
@@ -361,4 +397,5 @@ class ProfLaunchTypeRegistry {
 #define RT2_PROFILING_SCOPE(element, event) gert::ScopeProfiler profiler((element), event)
 #define RT2_PROFILING_SCOPE_CONST(element, event) const gert::ScopeProfiler profiler((element), (event))
 #define RT2_PROFILING_SCOPE_ELEMENT(element) profiler.SetElement(element)
+#define GRAPH_PROFILING_REG(api_id) const gert::GraphProfilingReporter profilingReporter(api_id)
 #endif

@@ -317,7 +317,6 @@ REG_OP(MatMulV2Compress)
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
     .ATTR(offset_x, Int, 0)
-    .ATTR(alg, String, "weight_unzip")
     .OP_END_FACTORY_REG(MatMulV2Compress)
 
 /**

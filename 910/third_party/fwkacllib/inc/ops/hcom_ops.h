@@ -59,7 +59,7 @@ REG_OP(HcomAllGather)
  * @brief Outputs a tensor containing the reduction across all input tensors
   passed to op.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+ * x: A tensor. Must be one of the following types: int8, int16, int32, int64, float16,
   float32.
  * @par Attributes:
  * @li reduction: A required string identifying the reduction operation to
@@ -77,8 +77,8 @@ REG_OP(HcomAllGather)
   as the name of a world group.
  */
 REG_OP(HcomAllReduce)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64}))
     .REQUIRED_ATTR(reduction, String)
     .REQUIRED_ATTR(group, String)
     .ATTR(fusion, Int, 1)
@@ -122,7 +122,7 @@ REG_OP(HcomBroadcast)
  * @par Inputs:
 * @li root_rank: A required integer identifying the root rank in the op
   the reduction result will be on this root rank
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+ * x: A tensor. Must be one of the following types: int8, int16, int32, int64, float16,
   float32.
  * @par Attributes:
  * @li reduction: A required string identifying the reduction operation to
@@ -140,8 +140,8 @@ REG_OP(HcomBroadcast)
   as the name of a world group.
  */
 REG_OP(HcomReduce)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64}))
     .REQUIRED_ATTR(root_rank, Int)
     .REQUIRED_ATTR(reduction, String)
     .REQUIRED_ATTR(group, String)
@@ -153,7 +153,7 @@ REG_OP(HcomReduce)
   blocks among ranks, each rank getting a chunk of data based on its rank
   index.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+ * x: A tensor. Must be one of the following types: int8, int16, int32, int64, float16,
   float32.
  * @par Attributes:
  * @li reduction: A required string identifying the reduction operation to
@@ -173,8 +173,8 @@ REG_OP(HcomReduce)
   as the name of a world group.
  */
 REG_OP(HcomReduceScatter)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64}))
     .REQUIRED_ATTR(reduction, String)
     .ATTR(fusion, Int, 0)
     .ATTR(fusion_id, Int, -1)

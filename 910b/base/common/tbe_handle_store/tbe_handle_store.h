@@ -21,6 +21,7 @@
 
 #include <map>
 #include <set>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -80,12 +81,15 @@ class TBEHandleStore {
   /// @return NA
   void EraseTBEHandle(const std::map<std::string, uint32_t> &names);
 
+  void* GetUniqueIdPtr(void* handle);
+
  private:
   TBEHandleStore() = default;
   ~TBEHandleStore() = default;
 
   std::mutex mutex_;
   std::unordered_map<std::string, TbeHandleInfo> kernels_;
+  std::unordered_map<void *, std::list<uint8_t>> handle_unique_ids_;
 };
 
 class KernelHolder {

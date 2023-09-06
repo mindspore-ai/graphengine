@@ -75,9 +75,9 @@ extern "C" {
 #define RUN_LOG_MASK        (0x01000000)    // print log to directory run
 #define STDOUT_LOG_MASK     (0x10000000)    // print log to stdout
 
-#define LOG_SAVE_MODE_DEF   (0x0)           // default
-#define LOG_SAVE_MODE_UNI   (0xFE756E69)    // unify save mode
-#define LOG_SAVE_MODE_SEP   (0xFE736570)    // separate save mode
+#define LOG_SAVE_MODE_DEF   (0x0U)          // default
+#define LOG_SAVE_MODE_UNI   (0xFE756E69U)   // unify save mode
+#define LOG_SAVE_MODE_SEP   (0xFE736570U)   // separate save mode
 
 typedef struct tagKV {
     char *kname;
@@ -215,12 +215,12 @@ DLL_EXPORT int dlog_setlevel(int moduleId, int level, int enableEvent);
 DLL_EXPORT int CheckLogLevel(int moduleId, int logLevel);
 
 /**
- * @ingroup slog
- * @brief DlogSetAttr: set log attr, default pid is 0, default device id is 0, default process type is APPLICATION
- * @param [in]logAttr: attr info, include pid(must be larger than 0), process type and device id(chip ID)
- * @return: 0: SUCCEED, others: FAILED
+ * @ingroup     : slog
+ * @brief       : set log attr, default pid is 0, default device id is 0, default process type is APPLICATION
+ * @param [in]  : logAttrInfo   attr info, include pid(must be larger than 0), process type and device id(chip ID)
+ * @return      : 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
+DLL_EXPORT int DlogSetAttr(LogAttr logAttrInfo);
 
 /**
  * @ingroup     : slog
@@ -416,10 +416,10 @@ DLL_EXPORT int CheckLogLevelForC(int moduleId, int logLevel);
 /**
  * @ingroup slog
  * @brief DlogSetAttrForC: set log attr, default pid is 0, default device id is 0, default process type is APPLICATION
- * @param [in]logAttr: attr info, include pid(must be larger than 0), process type and device id(chip ID)
+ * @param [in]logAttrInfo: attr info, include pid(must be larger than 0), process type and device id(chip ID)
  * @return: 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogSetAttrForC(LogAttr logAttr);
+DLL_EXPORT int DlogSetAttrForC(LogAttr logAttrInfo);
 
 /**
  * @ingroup slog

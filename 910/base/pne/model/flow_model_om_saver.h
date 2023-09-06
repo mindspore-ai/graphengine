@@ -35,6 +35,7 @@ class FlowModelOmSaver {
   Status AddModelDefPartition();
   Status AddFlowModelPartition();
   Status AddFlowSubModelPartitions();
+  Status AddFlowModelCompileResource(flow_model::proto::FlowModelDef &flow_model_def) const;
   Status UpdateModelHeader();
   Status AddPartition(const google::protobuf::Message &partition_msg, ModelPartitionType partition_type);
   Status AddPartition(Buffer &buffer, ModelPartitionType partition_type);

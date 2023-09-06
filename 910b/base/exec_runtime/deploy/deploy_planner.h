@@ -73,6 +73,7 @@ class DeployPlan {
   struct RankInfo {
     bool deploy_with_rank = false;
     uint32_t rank_id;
+    std::string hcom_cluster_name;
   };
 
   struct EventInfo {
@@ -133,14 +134,17 @@ class DeployPlan {
   const std::vector<int32_t> &GetInputQueueIndices() const;
   const std::vector<int32_t> &GetControlInputQueueIndices() const;
   const std::vector<int32_t> &GetControlOutputQueueIndices() const;
+  const DeployPlan::DeviceInfo &GetRootModelQueueDeviceInfo() const;
   std::vector<int32_t> GetAllInputQueueIndices() const;
   const std::vector<int32_t> &GetOutputQueueIndices() const;
   const std::map<std::string, SubmodelInfo> &GetSubmodels() const;
   std::map<std::string, SubmodelInfo> &MutableSubmodels();
   const std::map<int32_t, std::vector<int32_t>> &GetGroups() const;
   bool IsGroupEndpoint(const int32_t queue_index) const;
-  const std::vector<HcomCommGroup> &GetCommGroups() const;
-  void AddCommGroup(const HcomCommGroup &comm_group);
+  const std::vector<HcomCommGroup> &GetCommGroups(const std::string &hcom_cluster_name) const;
+  void AddCommGroup(const std::string &hcom_cluster_name, const HcomCommGroup &comm_group);
+  void AddHcomRankTable(const std::string &name, const std::string &rank_table);
+  const std::string &GetHcomRankTable(const std::string &hcom_cluster_name) const;
 
  private:
   friend class DeployPlannerBase;
@@ -156,7 +160,8 @@ class DeployPlan {
   std::map<int32_t, std::vector<int32_t>> groups_;
   std::map<std::string, int32_t> groups_key_to_idx_;
   std::vector<QueueInfo> group_entries_;
-  std::vector<HcomCommGroup> comm_groups_;
+  std::map<std::string, std::vector<HcomCommGroup>> cluster_name_to_comm_groups_;
+  std::map<std::string, std::string> cluster_name_to_rank_table_;
 };
 
 class DeployPlannerBase {
@@ -193,6 +198,9 @@ class DeployPlannerBase {
 
  protected:
   virtual Status PrepareModelsAndRelation(ModelRelation &model_relation) = 0;
+  virtual void SelectHeadAndTailDevice(DeployPlan::DeviceInfo &device_info) {
+    device_info = DeployPlan::DeviceInfo();
+  }
   virtual bool NeedProxyQ(const std::string &model_instance_name) = 0;
   DeployPlan::SubmodelInfo &MutableSubmodelInfo(const std::string &name);
   static Status ValidateModelAndRelation(const std::map<std::string, PneModelPtr> &models,
@@ -205,6 +213,7 @@ class DeployPlannerBase {
                          const std::vector<int32_t> &grouped_indices,
                          int32_t &group_index);
   void AddEndpointBindings(int32_t src_index, int32_t dst_index);
+
   static std::atomic<int64_t> plan_id_gen_;
   DeployPlan deploy_plan_;
 
@@ -265,8 +274,8 @@ class DeployPlannerBase {
   std::string ToEndpointDesc(const int32_t endpoint_indices, const bool is_group_entry = false) const;
   static void BuildEventInfo(Endpoint &endpoint, const std::string &model_instance_name,
                              std::shared_ptr<DeployPlan::EventInfo> event_info);
-  DeployPlan::QueueInfo BuildQueueInfo(Endpoint &queue_def,
-                                       const std::string &model_instance_name, bool is_client_q = false);
+  DeployPlan::QueueInfo BuildQueueInfo(const Endpoint &queue_def,
+                                       const std::string &model_instance_name, bool is_proxy_q = false);
   std::string GetEndpointFullName(const DeployPlan::QueueInfo &endpoint_info, const ModelQueueIndex &model_queue_index);
   const std::string &GetSubmodelType(const std::string &name);
   bool CheckAndAddRelation(const int32_t src_endpoint_idx, const int32_t dst_endpoint_idx);

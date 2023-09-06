@@ -732,6 +732,101 @@ RTS_API rtError_t rtSetIpcMemPid(const char_t *name, int32_t pid[], int32_t num)
  */
 RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stm);
 
+
+typedef struct DrvMemHandle {
+    int32_t id;
+    uint32_t side;
+    uint32_t devid;
+    uint64_t pg_num;
+} rtDrvMemHandle_t;
+
+typedef struct DrvMemProp {
+    uint32_t side;
+    uint32_t devid;
+    uint32_t module_id;
+
+    uint32_t pg_type;
+    uint32_t mem_type;
+    uint64_t reserve;
+} rtDrvMemProp_t;
+
+/**
+ * @ingroup dvrt_mem
+ * @brief This command is used to reserve a virtual address range
+ * @attention Only support ONLINE scene
+ * @param [in] devPtr Resulting pointer to start of virtual address range allocated.
+ * @param [in] size Size of the reserved virtual address range requested.
+ * @param [in] alignment Alignment of the reserved virtual address range requested,  Currently unused, must be zero.
+ * @param [in] devAddr Expected virtual address space start address Currently, Currently unused, must be zero.
+ * @param [in] flags currently unused, must be zero.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtReserveMemAddress(void** devPtr, size_t size, size_t alignment, void *devAddr, uint64_t flags);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief This command is used to free a virtual address range reserved by halMemAddressReserve.
+ * @attention Only support ONLINE scene.
+ * @param [in] devPtr Starting address of the virtual address range to free.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtReleaseMemAddress(void* devPtr);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief This command is used to alloc physical memory.
+ * @attention Only support ONLINE scene.
+ * @param [out] handle Value of handle returned,all operations on this allocation are to be performed using this handle.
+ * @param [in] size Size of the allocation requested.
+ * @param [in] prop Properties of the allocation to create.
+ * @param [in] flags Currently unused, must be zero.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtMallocPhysical(rtDrvMemHandle_t** handle, size_t size, rtDrvMemProp_t* prop, uint64_t flags);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief This command is used to free physical memory.
+ * @attention Only support ONLINE scene.
+ * @param [in] handle Value of handle which was returned previously by halMemCreate.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtFreePhysical(rtDrvMemHandle_t* handle);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief This command is used to map an allocation handle to a reserved virtual address range.
+ * @attention Only support ONLINE scene.
+ * @param [in] devPtr Address where memory will be mapped.
+ * @param [in] size Size of the memory mapping.
+ * @param [in] offset Currently unused, must be zero.
+ * @param [in] handle Value of handle which was returned previously by halMemCreate.
+ * @param [in] flag Currently unused, must be zero.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtMapMem(void* devPtr, size_t size, size_t offset, rtDrvMemHandle_t* handle, uint64_t flags);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief This command is used to unmap the backing memory of a given address range.
+ * @attention Only support ONLINE scene.
+ * @param [in] devPtr Starting address for the virtual address range to unmap.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtUnmapMem(void* devPtr);
+
 #if defined(__cplusplus)
 }
 #endif

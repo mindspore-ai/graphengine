@@ -46,7 +46,8 @@ class Executor {
    * @param [in] GraphNode: node of graph.
    * @return Status result of function
    */
-  virtual Status LoadGraph(const FlowModelPtr &flow_model, const GraphNodePtr &graph_node) = 0;
+  virtual Status LoadGraph(const FlowModelPtr &flow_model, const GraphNodePtr &graph_node,
+                           const rtStream_t stream = nullptr) = 0;
 
   /**
    * @ingroup ge
@@ -88,7 +89,7 @@ class Executor {
    * @return Status result of function
    */
   virtual Status RunGraphWithStream(const GraphNodePtr &graph_node, const GraphId graph_id, const rtStream_t stream,
-                                    const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs) = 0;
+                                    const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) = 0;
 
   /**
    * @ingroup ge

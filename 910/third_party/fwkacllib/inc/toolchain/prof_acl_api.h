@@ -152,6 +152,7 @@ using ACL_PROF_SUB_CINFIG_CONST_PTR = const aclprofSubscribeConfig *;
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
 
+using PROFAPI_SUBSCRIBECONFIG_CONST_PTR = const void *;
 namespace Msprofiler {
 namespace Api {
 /**
@@ -171,6 +172,8 @@ extern "C" {
 #endif
 
 MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
+MSVP_PROF_API int32_t ProfOpSubscribe(uint32_t devId, PROFAPI_SUBSCRIBECONFIG_CONST_PTR profSubscribeConfig);
+MSVP_PROF_API int32_t ProfOpUnSubscribe(uint32_t devId);
 
 using Status = int32_t;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig1;

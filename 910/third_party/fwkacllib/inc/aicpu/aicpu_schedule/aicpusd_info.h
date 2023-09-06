@@ -67,6 +67,7 @@ enum __attribute__((visibility("default"))) AICPUSubEvent {
     AICPU_SUB_EVENT_END_GRAPH,
     AICPU_SUB_EVENT_ACTIVE_MODEL,
     AICPU_SUB_EVENT_PREPARE_MEM,
+    AICPU_SUB_EVENT_TABLE_UNLOCK,
     AICPU_SUB_EVENT_MAX_NUM,
 };
 
@@ -105,6 +106,10 @@ struct __attribute__((visibility("default"))) AICPUSharderTaskInfo {
     }
 };
 
+struct __attribute__((visibility("default"))) AICPUUnLockTableInfo {
+    uint32_t tableId;
+};
+
 struct __attribute__((visibility("default"))) AICPUSubEventInfo {
     uint32_t modelId;
     union {
@@ -113,6 +118,7 @@ struct __attribute__((visibility("default"))) AICPUSubEventInfo {
         AICPULoadSoInfo loadSoInfo;
         AICPUEndGraphInfo endGraphInfo;
         AICPUSharderTaskInfo sharderTaskInfo;
+        AICPUUnLockTableInfo unlockTableInfo;
     } para;
 };
 

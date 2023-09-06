@@ -1353,7 +1353,7 @@ REG_OP(SortV2)
 * @par Inputs:
 * One inputs, including:
 * @li x: A Tensor. Must be one of the following types:
-*     float16, float32, int32, int8, uint8, bool. \n
+*     float16, float32, int32, int8, uint8, bool, bfloat16. \n
 * @li shape: A Tensor to specify the shape that the input tensor expanded to. \n
 
 * @par Outputs:
@@ -1364,9 +1364,9 @@ REG_OP(SortV2)
 */
 
 REG_OP(Expand)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32,DT_INT64, DT_INT8, DT_UINT8, DT_BOOL}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32,DT_INT64, DT_INT8, DT_UINT8, DT_BOOL, DT_BF16}))
     .INPUT(shape, TensorType({DT_INT16, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32,DT_INT64, DT_INT8, DT_UINT8, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32,DT_INT64, DT_INT8, DT_UINT8, DT_BOOL, DT_BF16}))
     .OP_END_FACTORY_REG(Expand)
 
 /**

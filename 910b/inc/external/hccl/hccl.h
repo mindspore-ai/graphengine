@@ -181,10 +181,28 @@ uint8, uint16, uint32, uint64, float16, float32, float64.
  * @param stream A pointer identifying the stream information.
  * @return HcclResult
  */
-
 extern HcclResult HcclAlltoAllV(const void *sendBuf, const void *sendCounts, const void *sdispls, HcclDataType sendType,
                          const void *recvBuf, const void *recvCounts, const void *rdispls, HcclDataType recvType,
                          HcclComm comm, aclrtStream stream);
+
+/**
+ * @brief AlltoAll operator.
+ *
+ * @param sendBuff A pointer identifying the input data address of the operator.
+ * @param sendCount Integer, number of elements to send to each proces.
+ * @param sendType Datatype of send buffer elements, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64, bfloat16.
+ * @param recvBuf A pointer identifying the output data address of the operator.
+ * @param recvCount Integer, number of elements received from any process.
+ * @param recvType Datatype of receive buffer elements, must be one of the following types: int8, int16, int32, int64,
+uint8, uint16, uint32, uint64, float16, float32, float64.
+ * @param comm A pointer identifying the communication resource based on.
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult
+ */
+extern HcclResult HcclAlltoAll(const void *sendBuf, uint64_t sendCount, HcclDataType sendType,
+                               const void *recvBuf, uint64_t recvCount, HcclDataType recvType,
+                               HcclComm comm, aclrtStream stream);
 
 /**
  * @brief Reduce operator.

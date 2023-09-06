@@ -263,6 +263,7 @@ REG_OP(ROIAlign)
     .REQUIRED_ATTR(pooled_width, Int)
     .ATTR(sample_num, Int, 2)
     .ATTR(roi_end_mode, Int, 1)
+    .ATTR(pool_mode, String, "avg")
     .OP_END_FACTORY_REG(ROIAlign)
 
 /**
@@ -727,7 +728,7 @@ REG_OP(YoloV5DetectionOutput)
 *@li The preceding layer of operator Yolov5DetectionOutput must be three Yolo operators.
 *@see Yolo()
 *@par Third-party framework compatibility
-* It is a custom operator. 
+* It is a custom operator.
 */
 REG_OP(YoloV5DetectionOutputD)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1732,10 +1733,10 @@ whether boxes overlap too much with respect to IOU.
 deciding when to remove boxes based on score . \n
 
 *@par Attributes:
-*center_point_box:Integer indicate the format of the box data. 
-The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
-where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
-of box corners and the coordinates can be provided as normalized 
+*center_point_box:Integer indicate the format of the box data.
+The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2]
+where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair
+of box corners and the coordinates can be provided as normalized
 (i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
 1 - the box data is supplied as [x_center, y_center, width, height].
  Mostly used for Pytorch models. \n
@@ -1784,14 +1785,14 @@ deciding when to remove boxes based on score . \n
 the last dim representing (batch_id,class_id,index_id)  . \n
 
 *@par Attributes:
-*@li center_point_box:Integer indicate the format of the box data. 
-The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
-where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
-of box corners and the coordinates can be provided as normalized 
+*@li center_point_box:Integer indicate the format of the box data.
+The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2]
+where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair
+of box corners and the coordinates can be provided as normalized
 (i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
 1 - the box data is supplied as [x_center, y_center, width, height].
  Mostly used for Pytorch models. \n
-*@li max_boxes_size: An optional attribute integer representing the real maximum 
+*@li max_boxes_size: An optional attribute integer representing the real maximum
 *number of boxes to be selected by non max suppression . \n
 
 *@par Outputs:
@@ -2116,7 +2117,7 @@ REG_OP(DIoUGrad)
 * @li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
 * with shape (4, M). "M" indicates the number of ground truth boxes, and
 * the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] .
-* @li atan_sub: Intermediate result of forward calculation, 
+* @li atan_sub: Intermediate result of forward calculation,
 * a 1D Tensor of type float16 or float32 with shape (N,). \n
 
 * @par Attributes:
@@ -2213,8 +2214,8 @@ REG_OP(RotatedIou)
 * "B" indicates the number of batch size
 * "N" indicates the number of bounding boxes, and the value "5" refers to
 * "x0", "x1", "y0", "y1" and "angle".
-*@li gt_box: A 3D Tensor of float32 (float16) with shape (B, 5, N). 
-* "B" indicates the number of batch size 
+*@li gt_box: A 3D Tensor of float32 (float16) with shape (B, 5, N).
+* "B" indicates the number of batch size
 * "N" indicates the number of bounding boxes, and the value "5" refers to
 * "x0", "x1", "y0", "y1" and "angle". \n
 
@@ -2242,8 +2243,8 @@ REG_OP(RotatedBoxEncode)
 * "B" indicates the number of batch size
 * "N" indicates the number of bounding boxes, and the value "5" refers to
 * "x0", "x1", "y0", "y1" and "angle".
-*@li deltas: A 3D Tensor of float32 (float16) with shape (B, 5, N). 
-* "B" indicates the number of batch size 
+*@li deltas: A 3D Tensor of float32 (float16) with shape (B, 5, N).
+* "B" indicates the number of batch size
 * "N" indicates the number of bounding boxes, and the value "5" refers to
 * "x0", "x1", "y0", "y1" and "angle". \n
 
@@ -2386,7 +2387,7 @@ REG_OP(Iou3D)
 
 * @par Inputs:
 * Two inputs, including:
-* @li priors: prior sample boxes of origin image 
+* @li priors: prior sample boxes of origin image
 * A 2D Tensor of type float32 or float16 with shape (N, 4).
 * "N" indicates the number of boxes, and the value "4" refers to "x0", "x1", "y0", and "y1".
 * @li bboxes_input: bboxes predicted by the model. A 2D Tensor of type float32 or float16 with shape (B, N, 4).

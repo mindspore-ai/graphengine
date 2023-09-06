@@ -1026,7 +1026,7 @@ ACL_FUNC_VISIBILITY aclError aclrtCreateStreamV2(aclrtStream *stream, const aclr
  * Can create fast streams through the aclrtCreateStreamWithConfig interface
  *
  * @param  stream [OUT]   the created stream
- * @param  priority [IN]   the priority of stream, reserved param, must be 0
+ * @param  priority [IN]   the priority of stream, value range:0~7
  * @param  flag [IN]   indicate the function for stream
  *
  * @retval ACL_SUCCESS The function is successfully executed.

@@ -49,6 +49,8 @@ class ExecutionRuntime {
 
   static void DisableHeterogeneous();
 
+  static void EnableInHeterogeneousExecutor();
+
   static bool IsInHeterogeneousExecutor();
 
   /// Initialize ExecutionRuntime
@@ -78,6 +80,7 @@ class ExecutionRuntime {
   static void UpdateGraphOptions(const std::string &key, const std::string &value);
   static std::mutex mu_;
   static bool heterogeneous_enabled_;
+  thread_local static bool in_heterogeneous_executor_;
   static void *handle_;
   static std::shared_ptr<ExecutionRuntime> instance_;
 };

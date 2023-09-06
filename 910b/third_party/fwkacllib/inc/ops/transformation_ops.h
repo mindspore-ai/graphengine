@@ -115,21 +115,21 @@ REG_OP(TransposeD)
     .OP_END_FACTORY_REG(TransposeD)
 
 /**
-*@brief Permutes the dimensions according to perm.
-        The returned tensor's dimension i will correspond to the input dimension perm[i] . \n
+* @brief Permutes the dimensions according to perm.
+         The returned tensor's dimension i will correspond to the input dimension perm[i] . \n
 
-*@par Inputs:
-*Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor. Must be one of the following types:
 * bfloat16, float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32 . \n
-*@li perm: A Tensor of type int32 or int64. A permutation of the dimensions of "x" . \n
+* @li perm: A Tensor of type int32 or int64. A permutation of the dimensions of "x" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator Transpose.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Transpose.
 */
 REG_OP(Transpose)
     .INPUT(x, TensorType::BasicType())
@@ -138,22 +138,22 @@ REG_OP(Transpose)
     .OP_END_FACTORY_REG(Transpose)
 
 /**
-*@brief Do format transfer for various data format.
+* @brief Do format transfer for various data format.
 * In general, the framework will insert it atomatically . \n
 
-*@par Inputs:
-*src: A Tensor. For all branches can be types: bfloat16, float16, float32, int32, int8, bool.
-* For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64 . \n
+* @par Inputs:
+* src: A Tensor. For all branches can be types: bfloat16, float16, float32, int32, int8, bool.
+*      For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64 . \n
 
-*@par Attributes:
-*@li src_format: A string source data format, can be "NHWC", "NCHW" etc.
-*@li dst_format: A string target data format, can be "NCHW" etc.
-*@li src_subformat: A optional int32 for source sub-format, default value is 0.
-*@li dst_subformat: A optional int32 for target sub-format, default value is 0.
-*@li groups: A optional int32, default value is 1. \n
+* @par Attributes:
+* @li src_format: A string source data format, can be "NHWC", "NCHW" etc.
+* @li dst_format: A string target data format, can be "NCHW" etc.
+* @li src_subformat: A optional int32 for source sub-format, default value is 0.
+* @li dst_subformat: A optional int32 for target sub-format, default value is 0.
+* @li groups: A optional int32, default value is 1. \n
 
-*@par Outputs:
-*dst: A Tensor. Has the same type as "src".
+* @par Outputs:
+* dst: A Tensor. Has the same type as "src".
 */
 REG_OP(TransData)
     .INPUT(src, TensorType::BasicType())
@@ -211,35 +211,36 @@ REG_OP(Permute)
     .OP_END_FACTORY_REG(Permute)
 
 /**
-*@brief Flattens the inputs tensor into a 2D matrix. If input tensor has shape (d_0, d_1,..., d_n),
-* then the output will have shape (d_0 X d_1 ... d_(axis-1), d_axis X d_(axis + 1)...X d_n)\n
+* @brief Flattens the inputs tensor into a 2D matrix. If input tensor has shape (d_0, d_1,..., d_n),
+*        then the output will have shape (d_0 X d_1 ... d_(axis-1), d_axis X d_(axis + 1)...X d_n)\n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
 * x: A multi-dimensional Tensor. Must be one of the following types:
-* int8, uint8, int16, uint16, int32, uint32, int64,uint64, float16, float32.
+*    int8, uint8, int16, uint16, int32, uint32, int64,uint64, float16, float32, bfloat16.
 
-*@par Outputs:
+* @par Outputs:
 * y: A 2D flattened Tensor with the contents of the input tensor, with input dimensions up to axis flattened 
 * to the outer dimension of the output and remaining input dimensions flattened into the inner dimension of the output.
-* Must be one of the following data types: int8, uint8, int16, uint16, int32, uint32, int64,uint64, float16, float32 .
+* Must be one of the following data types: 
+  int8, uint8, int16, uint16, int32, uint32, int64, uint64, float16, float32, bfloat16 .
 
-*@par Attributes:
+* @par Attributes:
 * axis: A optional int32, default value is 1. Indicate up to which input dimensions (exclusive) should be flattened 
 * to the outer dimension of the output. The value for axis must be in the range [-r, r], where r is the rank of 
 * the input tensor. Negative value means counting dimensions from the back. When axis = 0, the shape of 
 * the output tensor is (1, (d_0 X d_1 ... d_n), where the shape of the input tensor is (d_0, d_1, ... d_n).
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with TensorFlow / ONNX operator Flatten.
 */
 REG_OP(Flatten)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64,
                           DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64,
-                          DT_FLOAT, DT_FLOAT16}))
+                          DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64,
                            DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64,
-                           DT_FLOAT, DT_FLOAT16}))
+                           DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(axis, Int, 1)
     .OP_END_FACTORY_REG(Flatten)
 
@@ -251,7 +252,7 @@ REG_OP(Flatten)
 * @par Inputs:
 * @li x: A N-D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
-* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 * @li crops: A 2D tensor with shape [M, 2], support int32 or int64. \n
 
 * @par Attributes:
@@ -320,7 +321,7 @@ REG_OP(BatchToSpaceNDD)
 * @par Inputs:
 * @li x: A N-D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
-* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 * @li paddings: A 2D tensor with shape [M, 2], support int32 or int64. \n
 
 * @par Attributes:
@@ -370,23 +371,23 @@ REG_OP(SpaceToBatchNDD)
     .OP_END_FACTORY_REG(SpaceToBatchNDD)
 
 /**
-*@brief Outputs a copy of the input tensor where values from the "height" and
+* @brief Outputs a copy of the input tensor where values from the "height" and
 * "width" dimensions are moved to the "depth" dimension . \n
 
-*@par Inputs:
-*x: An NHWC Tensor. Must be one of the following types:
+* @par Inputs:
+* x: An NHWC Tensor. Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
-* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 
 
-*@par Attributes:
-*@li block_size: A required int, specifying the input block size.
-*@li data_format: An optional string, specifying the data format. Defaults to
+* @par Attributes:
+* @li block_size: A required int, specifying the input block size.
+* @li data_format: An optional string, specifying the data format. Defaults to
 * "NHWC" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as input "x".
-*@par Third-party framework compatibility
+* @par Outputs:
+* y: A Tensor. Has the same type as input "x".
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToDepth.
 */
 REG_OP(SpaceToDepth)
@@ -397,23 +398,23 @@ REG_OP(SpaceToDepth)
   .OP_END_FACTORY_REG(SpaceToDepth)
 
 /**
-*@brief Rearranges data from depth into blocks of spatial data . \n
+* @brief Rearranges data from depth into blocks of spatial data . \n
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, double, int32, uint8,
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, float32, double, int32, uint8,
 *     int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, uint32, uint64
+*     complex128, uint32, uint64, bfloat16
 
-*@par Attributes:
-*Three attributes, including:
+* @par Attributes:
+* Three attributes, including:
 * @li block_size: An int >= 2, specifying the size of the spatial block.
 * @li mode: An optional string, specifying the mode. Defaults to "DCR".
 * @li data_format: An optional string, specifying the data format. Defaults to "NHWC" . \n
 
-*@par Outputs:
-*y: A Tensor of the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor of the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with TensorFlow operator DepthToSpace.
 */
 REG_OP(DepthToSpace)
@@ -432,7 +433,7 @@ REG_OP(DepthToSpace)
 * @par Inputs:
 * @li x: A 4D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
-* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 * @li crops: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
 * @par Attributes:
@@ -499,7 +500,7 @@ REG_OP(BatchToSpaceD)
 * @par Inputs:
 * @li x: A 4D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
-* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 * @li paddings: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
 * @par Attributes:

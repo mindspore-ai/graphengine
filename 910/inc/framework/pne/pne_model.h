@@ -119,9 +119,11 @@ class PneModel {
   virtual std::string GetLogicDeviceId() const { return ""; }
 
   virtual Status SetLogicDeviceId(const std::string &logic_device_id) {
-    (void)logic_device_id;
+    for (const auto &submdel : submodels_) {
+      (void)submdel.second->SetLogicDeviceId(logic_device_id);
+    }
     return SUCCESS;
-  };
+  }
 
  private:
   std::map<std::string, std::shared_ptr<PneModel>> submodels_;

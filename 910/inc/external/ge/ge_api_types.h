@@ -74,6 +74,7 @@ const char_t *const OPTION_EXEC_DYNAMIC_EXECUTE_MODE = "ge.exec.dynamicGraphExec
 const char_t *const OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE = "ge.exec.dataInputsShapeRange";
 const char_t *const OPTION_EXEC_ENABLE_COPY_OUTPUT_ADDR = "ge.exec.enableCopyOutputAddr";
 const char_t *const OPTION_EXEC_GRAPH_EXEC_TIMEOUT = "ge.exec.graphExecTimeout";
+const char_t *const OPTION_EXEC_OPTIMIZE_SHAPE = "ge.exec.dataInputsOptimizeShape";
 
 // Option key: memory init
 const char_t *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
@@ -491,6 +492,10 @@ struct OutputTensorInfo {
   }
   OutputTensorInfo(const OutputTensorInfo &) = delete;
   OutputTensorInfo &operator=(const OutputTensorInfo &)& = delete;
+};
+
+struct ModelDistibuteDesc {
+  uint32_t logic_device_number;
 };
 
 using Status = uint32_t;

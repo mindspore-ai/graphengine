@@ -597,16 +597,16 @@ REG_OP(Pdist)
     .OP_END_FACTORY_REG(Pdist)
 
 /**
- *@brief Compute element-wise finiteness, return a boolean tensor.
+ * @brief Compute element-wise finiteness, return a boolean tensor.
 
- *@par Inputs:
- *x:A Tensor of type bfloat16, float16, float32, double.
+ * @par Inputs:
+ * x:A Tensor of type bfloat16, float16, float32, double.
 
- *@par Outputs:
- *y:A Tensor. Returns which elements of x are finite
+ * @par Outputs:
+ * y:A Tensor. Returns which elements of x are finite
 
- *@par Third-party framework compatibility.
- *Compatible with tensorflow IsFinite operator.
+ * @par Third-party framework compatibility.
+ * Compatible with tensorflow IsFinite operator.
  */
 REG_OP(IsFinite)
     .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -634,7 +634,7 @@ REG_OP(IsPosInf)
  *@brief Compute element-wise infiniteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor of type float16, float32, double.
+ *x:A Tensor of type float16, float32, double, bfloat16.
 
  *@par Outputs:
  *y:A Tensor. Has the same shape as x. Returns which elements of x are isinf.
@@ -643,7 +643,7 @@ REG_OP(IsPosInf)
  *Compatible with tensorflow IsInf operator.
  */
 REG_OP(IsInf)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsInf)
 
@@ -665,24 +665,26 @@ REG_OP(IsNegInf)
     .OP_END_FACTORY_REG(IsNegInf)
 
 /**
- *@brief Computes the complex absolute value of a tensor.
+* @brief Computes the complex absolute value of a tensor.
 
- *@par Inputs:
- *x: x of complex numbers, this operation returns a tensor of type
- float or double that is the absolute value of each element in x .
+* @par Inputs:
+* x: x of complex numbers, this operation returns a tensor of type
+  float or double that is the absolute value of each element in x .
+* A Tensor of type complex32, complex64, complex128.
 
 * @par Attributes:
 * Tout: representing the output of type.
 
- *@par Outputs:
- *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
+* @par Outputs:
+* y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
+* A Tensor of type float16, float32, double.
 
- *@par Third-party framework compatibility.
- *Compatible with tensorflow ComplexAbs operator.
- */
+* @par Third-party framework compatibility.
+* Compatible with tensorflow ComplexAbs operator.
+*/
 REG_OP(ComplexAbs)
-    .INPUT(x, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_COMPLEX32, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .ATTR(Tout, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(ComplexAbs)
 
@@ -704,7 +706,7 @@ REG_OP(IsNan)
     .OP_END_FACTORY_REG(IsNan)
 
 /**
- *@brief Returns the real part of a complex number.
+ *@brief Returns the real part of a complex number. If the input is already real, it will be returned unchanged.
 
  *@par Inputs:
  *input:A Tensor. Must have numeric type.
@@ -719,9 +721,11 @@ REG_OP(IsNan)
  *Compatible with tensorflow Real operator.
  */
 REG_OP(Real)
-    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .ATTR(Tout, Type, DT_FLOAT)
+    .INPUT(input, "TSrc")
+    .OUTPUT(output, "Tout")
+    .ATTR(Tout, Int, DT_FLOAT)
+    .DATATYPE(TSrc, TensorType({DT_FLOAT16, DT_FLOAT, DT_COMPLEX32, DT_COMPLEX64, DT_COMPLEX128}))
+    .DATATYPE(Tout, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(Real)
 
 /**
@@ -746,58 +750,58 @@ REG_OP(Conj)
 
 *@par Inputs:
 *The input x and weight must have the same type. Inputs include:
-*@li x: A Tensor dtype of float32.
+*@li x: A Tensor dtype of float32 or bfloat16.
 *@li target: A Tensor dtype of int32 or int64.
-*@li weight: A Tensor dtype of float32 . \n
+*@li weight: A Tensor dtype of float32 or bfloat16. \n
 
 *@par Attributes:
 *@li reduction: An optional attribute. Defaults to "mean" .
 *@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
-*@li y: A Tensor dtype of float32.
-*@li total_weight: A Tensor dtype of float32 . \n
+*@li y: A Tensor dtype of float32 or bfloat16.
+*@li total_weight: A Tensor dtype of float32 or bfloat16. \n
 
 *@par Third-party framework compatibility
 *Compatible with pytorch NLLLoss operator
 */
 REG_OP(NLLLoss)
-    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_BF16}))
     .INPUT(target, TensorType({DT_INT32, DT_INT64}))
-    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
-    .OUTPUT(total_weight, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_BF16}))
+    .OUTPUT(total_weight, TensorType({DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
-*@brief The negative log likelihood loss grad . \n
+* @brief The negative log likelihood loss grad . \n
 
-*@par Inputs:
-*@li x:A Tensor dtype of float32.
-*@li y_grad:A Tensor dtype of float32.
-*@li target:A Tensor dtype of int32, int64.
-*@li weight:A Tensor dtype of float32.
-*@li total_weight:A Tensor dtype of float32 . \n
+* @par Inputs:
+* @li x: A Tensor dtype of float32 or bfloat16.
+* @li y_grad: A Tensor dtype of float32 or bfloat16.
+* @li target: A Tensor dtype of int32, int64.
+* @li weight: A Tensor dtype of float32 or bfloat16.
+* @li total_weight: A Tensor dtype of float32 or bfloat16. \n
 
-*@par Attributes:
-*@li reduction: An optional attribute. Defaults to "mean" .
-*@li ignore_index:An optional attribute.Defaults to -100 . \n
+* @par Attributes:
+* @li reduction: An optional attribute. Defaults to "mean" .
+* @li ignore_index: An optional attribute.Defaults to -100 . \n
 
-*@par Outputs:
-*x_grad: A Tensor. Must be the following type: float32 . \n
+* @par Outputs:
+* x_grad: A Tensor. Must be the following type: float32, bfloat16. \n
 
-*@par Third-party framework compatibility
-*Compatible with pytorch NLLLossGrad operator
+* @par Third-party framework compatibility
+* Compatible with pytorch NLLLossGrad operator
 */
 REG_OP(NLLLossGrad)
-    .INPUT(x, TensorType({DT_FLOAT}))
-    .INPUT(y_grad, TensorType({DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_BF16}))
+    .INPUT(y_grad, TensorType({DT_FLOAT, DT_BF16}))
     .INPUT(target, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(weight, TensorType({DT_FLOAT}))
-    .INPUT(total_weight, TensorType({DT_FLOAT}))
-    .OUTPUT(x_grad, TensorType({DT_FLOAT}))
+    .INPUT(weight, TensorType({DT_FLOAT, DT_BF16}))
+    .INPUT(total_weight, TensorType({DT_FLOAT, DT_BF16}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLossGrad)
@@ -1154,10 +1158,12 @@ REG_OP(LpNormUpdateV2)
 * out: An ND tensor of type complex64, complex128 \n
 */
 REG_OP(Complex)
-    .INPUT(real, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(imag, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(out, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
-    .ATTR(Tout, Type, DT_COMPLEX64)
+    .INPUT(real, "T")
+    .INPUT(imag, "T")
+    .OUTPUT(out, "Tout")
+    .ATTR(Tout, Int, DT_COMPLEX64)
+    .DATATYPE(T, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .DATATYPE(Tout, TensorType({DT_COMPLEX32, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Complex)
 
 /**

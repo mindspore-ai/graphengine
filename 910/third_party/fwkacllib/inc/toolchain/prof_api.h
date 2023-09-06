@@ -56,7 +56,7 @@ const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000U;
 const uint32_t MSPROF_REPORT_ACL_ASCENDC_TYPE            = 0x060000U;
 const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000U;
 const uint32_t MSPROF_REPORT_ACL_DVPP_BASE_TYPE          = 0x090000U;
-const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0a0000U;
+const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0A0000U;
 
 /* Msprof report type of model(15000) level, offset: 0x000000 */
 const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;         /* type info: graph_id_map */

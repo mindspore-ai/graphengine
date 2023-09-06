@@ -23,7 +23,7 @@
 
 namespace ge {
 using AttrValueMap = ::google::protobuf::Map<string, ge::flow_model::proto::ModelRelationDef::AttrValue>;
-enum class EndpointType : std::uint32_t { kQueue = 0, kEvent, kMaxEndpointTypeNum };
+enum class EndpointType : std::uint32_t { kQueue = 0, kEvent, kFlowSend, kFlowRecv, kMaxEndpointTypeNum };
 
 class Endpoint {
  public:
@@ -106,8 +106,11 @@ class QueueNodeUtils {
   QueueNodeUtils &SetDepth(const int64_t depth);
   QueueNodeUtils &SetEnqueuePolicy(const std::string &enqueue_policy);
   QueueNodeUtils &SetIsControl(const bool is_control = true);
+  static int64_t GetDepth(const Endpoint &endpoint);
   int64_t GetDepth() const;
+  static std::string GetEnqueuePolicy(const Endpoint &endpoint);
   std::string GetEnqueuePolicy() const;
+  static bool GetIsControl(const Endpoint &endpoint);
   bool GetIsControl() const;
 
  private:

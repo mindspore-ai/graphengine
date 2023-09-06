@@ -45,6 +45,7 @@ enum class BuiltInSubscriberType {
   kCannProfilerV2,
   kCannHostProfiler,
   kMemoryProfiler,
+  kHostDumper,
   kNum
 };
 
@@ -66,7 +67,8 @@ enum class DumpType {
   kDataDump = 0,
   kExceptionDump = 1,
   kOverflowDump = 2,
-  kNum = 3,
+  kHostDump = 3,
+  kNum = 4,
   kAll = kNum
 };
 static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),

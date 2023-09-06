@@ -577,7 +577,7 @@ include:
 */
 REG_OP(StatelessBernoulli)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64}))
-    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .INPUT(seed, TensorType({ DT_INT64 }))
     .INPUT(offset, TensorType({ DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32,

@@ -1005,6 +1005,20 @@ rtError_t rtLaunchKernelByFuncHandle(rtFuncHandle funcHandle, uint32_t blockDim,
 
 /**
  * @ingroup rt_kernel
+ * @brief Kernel Launch to device
+ * @param [in] funcHandle  function Handle
+ * @param [in] blockDim  block dimentions
+ * @param [in] argsHandle  args Handle
+ * @param [in] stm  associated stream
+ * @param [in] cfgInfo task config info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtLaunchKernelByFuncHandleV2(rtFuncHandle funcHandle, uint32_t blockDim, rtLaunchArgsHandle argsHandle,
+                                       rtStream_t stm, const rtTaskCfgInfo_t *cfgInfo);
+
+/**
+ * @ingroup rt_kernel
  * @brief get Saturation Status task
  * @param [in] outputAddrPtr  pointer to op output addr
  * @param [in] outputSize   op output size

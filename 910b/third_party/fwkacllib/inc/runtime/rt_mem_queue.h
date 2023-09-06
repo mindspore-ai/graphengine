@@ -101,6 +101,7 @@ typedef enum tagMemQueueQueryCmd {
 #define RT_MQ_DST_ENGINE_DVPP_CPU 6               // device DVPP CPU
 
 #define RT_MQ_SCHED_EVENT_QS_MSG 25 // same as driver's EVENT_QS_MSG
+#define RT_MQ_SCHED_EVENT_DRV_CUSTOM_MSG 56  // drvier's custom msg event
 
 /* When the destination engine is AICPU, select a policy.
    ONLY: The command is executed only on the local AICPU.

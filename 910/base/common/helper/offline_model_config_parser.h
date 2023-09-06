@@ -33,6 +33,15 @@ struct SubModelNameId {
   std::string submodel_name;
   uint32_t submode_id;
 };
+struct CfgCommGroup {
+  std::string group_name;
+  std::string rank_list;
+};
+struct CfgRankTable {
+  uint32_t rank_id;
+  uint32_t submodel_instance_id;
+};
+
 struct ConfigModelRelation {
   std::string edge_type; // it is only support flow type which maybe support event in the future
   std::string edge_src;  // -1:0 input0 of root model; 1:0 output0 of submodel1
@@ -47,10 +56,11 @@ public:
   };
 
   struct SubmodelConfigInfo {
-    uint32_t submodel_instance_id; // set by user
+    uint32_t submodel_instance_id = 0xFFFFFFFF; // set by user
     std::string submodel_name; // part of submodel path
     std::string submodel_path;
     std::string model_type; // CPU NPU
+    uint32_t rank_id = 0xFFFFFFFF;;
     std::vector<int32_t> deploy_logic_device_ids;         // nodeid:itemid:deviceid
     std::map<uint32_t, EdgeInfo> flow_input_mapping;      // key: input indices of current model
     std::map<uint32_t, std::vector<EdgeInfo>> flow_output_mapping;     // key: output indices of current model
@@ -79,10 +89,18 @@ public:
   Status GetLogicDeviceId(const std::string &model_name, std::string &logic_device_id);
   bool IsCpuModel(const std::string &model_name) const;
   void PrintSubmodelConfig() const;
-
+  Status SetGroupNameToRankIds(const std::vector<CfgCommGroup> &cfg_comm_groups);
+  Status SetRankIdToModelIds(const std::vector<CfgRankTable> &cfg_rank_table);
+  Status CheckHcomInfoValid();
+  Status GetRankIdBySubmodelName(const std::string &submodel_name, uint32_t &rank_id) const;
+  Status GetLogicDeviceIdToRankIds(std::map<std::string, std::vector<uint32_t>> &device_ids_to_rank_ids) const;
+  void GetGroupNameToRankIds(std::map<std::string, std::vector<uint32_t>> &group_name_to_rank_ids) const;
+  bool IsWithHcomInfo() const { return with_hcom_info_; }
 private:
+  Status TransferToLogicDeviceId(const std::vector<int32_t> &logic_dev_ids, std::string &logic_device_id) const;
   // data split is without model relation
   bool with_model_relation_ = false;
+  bool with_hcom_info_ = false;
  // submodel name is part of model path
   std::map<std::string, SubmodelConfigInfo> submodel_name_to_info_;
  // key submodel name, same as file name xxxx.onnx, value file path
@@ -92,6 +110,8 @@ private:
   std::map<std::string, std::map<uint32_t, uint32_t>> input_files_to_related_indices_;
   // key model file path related output;value(key:current submodel indices value: root indices)
   std::map<std::string, std::map<uint32_t, uint32_t>> output_files_to_related_indices_;
+  std::map<std::uint32_t, std::set<string>> rank_id_to_group_names_;
+  std::map<uint32_t, uint32_t> model_instance_id_to_rank_id_;
 };
 
 class OfflineModelConfigParser {
@@ -121,6 +141,10 @@ class OfflineModelConfigParser {
   bool IsActive() const;
   Status GetLogicDeviceId(const std::string &model_name, std::string &logic_device_id) const;
   bool IsCpuModel(const std::string &model_name) const;
+  Status GetRankIdBySubmodelName(const std::string &submodel_name, uint32_t &rank_id) const;
+  Status GetLogicDeviceIdToRankIds(std::map<std::string, std::vector<uint32_t>> &device_ids_to_rank_ids) const;
+  Status GetGroupNameToRankIds(std::map<std::string, std::vector<uint32_t>> &group_name_to_rank_ids) const;
+  bool IsWithHcomInfo() const;
  private:
   OfflineModelConfigParser() = default;
   ~OfflineModelConfigParser() = default;

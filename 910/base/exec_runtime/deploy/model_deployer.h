@@ -36,6 +36,7 @@ struct DeployResult {
   size_t replica_num = 1U;
   std::string input_model_name;
   bool deploy_with_flow = true;
+  int32_t device_id = 0;
 };
 
 class ModelDeployer {

@@ -376,26 +376,26 @@ REG_OP(BinaryCrossEntropyGrad)
     .OP_END_FACTORY_REG(BinaryCrossEntropyGrad)
 
 /**
-*@brief Applies the Softmax function to an n-dimensional input Tensor
-* rescaling them. so that the elements of the n-dimensional output Tensor lie
-* in the range [0,1] and sum to 1 . \n
+* @brief Applies the Softmax function to an n-dimensional input Tensor
+*  rescaling them. so that the elements of the n-dimensional output Tensor lie
+*  in the range [0,1] and sum to 1 . \n
 
-*@par Inputs:
-*One input:
-*x: A mutable Tensor. Must be one of the following types: float16, float32, bfloat16,
-* double. Should be a Variable Tensor . \n
+* @par Inputs:
+* One input:
+* x: A mutable Tensor. Must be one of the following types: float16, float32, bfloat16,
+*  double. Should be a Variable Tensor . \n
 
-*@par Attributes:
-*axes: A list of int. The dimension softmax would be performed on. Defaults
-* to "[-1]" . \n
+* @par Attributes:
+* axes: A list of int. The dimension softmax would be performed on. Defaults
+*  to "[-1]" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same dimensionality and shape as the "x" with values in
-* the range [0, 1]. Must be one of the following types: float16, float32, bfloat16,
-* double . \n
+* @par Outputs:
+* y: A Tensor. Has the same dimensionality and shape as the "x" with values in
+*  the range [0, 1]. Must be one of the following types: float16, float32, bfloat16,
+*  double . \n
 
-*@par Third-party framework compatibility
-* Compatible with the TensorFlow operator Softmax.
+* @par Third-party framework compatibility
+*  Compatible with the TensorFlow operator Softmax.
 */
 REG_OP(SoftmaxV2)
     .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT }))
@@ -637,7 +637,7 @@ REG_OP(LayerNorm)
     .OP_END_FACTORY_REG(LayerNorm)
 
 /**
-*@brief LayernormV3 operator interface implementation
+* @brief LayernormV3 operator interface implementation
 *  calculating: x, gamma, beta
 *  mean  = np.mean(x, reduce_axis, keepdims=True)
 *  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
@@ -744,7 +744,7 @@ REG_OP(LayerNormGrad)
     .OP_END_FACTORY_REG(LayerNormGrad)
 
 /**
-*@brief LayerNormGradV3 operator interface implementation
+* @brief LayerNormGradV3 operator interface implementation
 *  calculating: dy, x, rstd, mean, gamma
 *  pd_xl = data_dy*data_gamma
 *  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
@@ -871,7 +871,7 @@ REG_OP(LayerNormXBackpropV2)
     .OP_END_FACTORY_REG(LayerNormXBackpropV2)
 
 /**
-*@brief LayerNormXBackpropV3 operator interface implementation
+* @brief LayerNormXBackpropV3 operator interface implementation
 *  calculating: dy, x, rstd, mean, gamma
 *  pd_xl = data_dy*data_gamma
 *  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)

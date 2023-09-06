@@ -137,19 +137,19 @@ REG_OP(AdjustContrast)
     .OP_END_FACTORY_REG(AdjustContrast)
 
 /**
-*@brief Applies set operation along last dimension of 2 Tensor inputs . \n
+* @brief Applies set operation along last dimension of 2 Tensor inputs. \n
 
-*@par Inputs:
-*Inputs include:
-*@li xyz1: A Tensor. Must be one of the following types: float16, bfloat16, float32. Point set with shape (B, N, 2)
-*@li xyz2: A Tensor. Must have the same type and shape as x1 . \n
+* @par Inputs:
+* @li xyz1: A Tensor. Must be one of the following types: float16, bfloat16, float32. Point set with shape (B, 2, N)
+* @li xyz2: A Tensor. Must have the same type and shape as x1. \n
 
-*@par Outputs:
-*@li dist1: A Tensor. Must be one of the following types: float16, ,bfloat16, float32. with shape (B, N, 2) 
-*@li dist2: A Tensor. Must have the same type and shape as dist1 .
-*@li idx1: A Tensor of type int32 . with shape (B, N)
-*@li idx2: A Tensor. Must have the same type and shape as idx1 .
+* @par Outputs:
+* @li dist1: A Tensor. Must be one of the following types: float16, bfloat16, float32. with shape (B, N)
+* @li dist2: A Tensor. Must have the same type and shape as dist1.
+* @li idx1: A Tensor of type int32. with shape (B, N)
+* @li idx2: A Tensor. Must have the same type and shape as idx1.
 */
+
 REG_OP(ChamferDistance)
     .INPUT(xyz1, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT32}))
     .INPUT(xyz2, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT32}))

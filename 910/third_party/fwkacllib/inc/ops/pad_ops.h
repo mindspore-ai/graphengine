@@ -277,7 +277,7 @@ REG_OP(PadV3)
     .ATTR(mode, String, "constant")
     .ATTR(paddings_contiguous, Bool, true)
     .OP_END_FACTORY_REG(PadV3)
-	
+
  /**
 * @brief Cal the grad of Pads.
 
@@ -396,6 +396,58 @@ REG_OP(Diag)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32,
                            DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Diag)
+
+/**
+* @brief Create a diagonal tensor
+
+* @par Inputs:
+* One input, include:
+* x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
+*     following types:
+*     DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_INT16,
+      DT_INT8, DT_UINT8, DT_DOUBLE, DT_BOOL,
+      DT_COMPLEX32, DT_COMPLEX128, DT_COMPLEX64 . \n
+
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x" . \n
+
+* @see Diag()
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
+*/
+REG_OP(DiagV2)
+    .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64,
+                          DT_FLOAT, DT_FLOAT16, DT_BF16, DT_DOUBLE, DT_BOOL,
+                          DT_COMPLEX32, DT_COMPLEX128, DT_COMPLEX64}))
+    .ATTR(diagonal, Int, 0)
+    .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64,
+                           DT_FLOAT, DT_FLOAT16, DT_BF16, DT_DOUBLE, DT_BOOL,
+                           DT_COMPLEX32, DT_COMPLEX128, DT_COMPLEX64}))
+    .OP_END_FACTORY_REG(DiagV2)
+
+/**
+* @brief Create a diagonal tensor
+* @par Inputs:
+* One input, include:
+* x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
+*     following types:
+*     float16, float32, double, int8, int16,int32, int64, complex32, complex64, complex128 . \n
+
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x" . \n
+* @see DiagFlat()
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
+*/
+REG_OP(DiagFlat)
+    .INPUT(x, "T")
+    .ATTR(diagonal, Int, 0)
+    .OUTPUT(y, "T")
+    .DATATYPE(T, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE, 
+                             DT_INT8, DT_INT16, DT_INT32, DT_INT64,
+                             DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64,
+                             DT_BOOL, DT_COMPLEX64}))
+    .OP_END_FACTORY_REG(DiagFlat)
 
 /**
 * @brief Ascend Padding, pad the last dimension of input

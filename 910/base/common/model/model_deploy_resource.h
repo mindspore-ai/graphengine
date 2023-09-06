@@ -22,10 +22,9 @@
 namespace ge {
 struct ModelDeployResource {
   std::string resource_type;
-  std::string processor_core_num;
-  std::string memory;
-  std::string share_memory;
   bool is_heavy_load = false;
+   // key is resource name, such as cpu_num shared_memory
+  std::map<std::string, int64_t> resource_list;
 };
 
 struct HcomCommGroup {
@@ -36,6 +35,12 @@ struct HcomCommGroup {
 struct ModelCompileResource {
   std::string host_resource_type;
   std::map<std::string, std::string> logic_dev_id_to_res_type;
+  std::map<std::string, std::vector<std::pair<std::string, int64_t>>> dev_to_resource_list;
+  bool IsEmpty() const {
+    return host_resource_type.empty() &&
+           logic_dev_id_to_res_type.empty() &&
+           dev_to_resource_list.empty();
+  }
 };
 }  // namespace ge
 

@@ -41,8 +41,6 @@ struct Context {
 struct FftsPlusDumpInfo {
   std::shared_ptr<OpDesc> op;
   std::vector<Context> context;
-  std::vector<uintptr_t> input_addrs;
-  std::vector<uintptr_t> output_addrs;
 };
 
 class DumpOp {
@@ -57,15 +55,13 @@ class DumpOp {
   void SetLoopAddr(const uintptr_t global_step, const uintptr_t loop_per_iter, const uintptr_t loop_cond);
   void SetDynamicModelInfo(const std::string &dynamic_model_name, const std::string &dynamic_om_name,
                            const uint32_t dynamic_model_id);
-  void SaveFftsSubOpInfo(const OpDescPtr &op_desc, const std::vector<Context> &context,
-                         const std::vector<uintptr_t> &input_addrs,
-                         const std::vector<uintptr_t> &output_addrs);
+  void SaveFftsSubOpInfo(const OpDescPtr &op_desc, const std::vector<Context> &context);
   Status GenerateFftsDump(const DumpProperties &dump_properties, void *&load_dump_info, uint32_t &load_dump_len,
                           void *&unload_dump_info, uint32_t &unload_dump_len);
   void SetTaskId(const uint32_t task_id) {
     task_id_ = task_id;
   }
-  void SetWorkspaceAddrs(const std::vector<uint64_t> &workspace_addr) {
+  void SetWorkspaceAddrs(const std::vector<std::pair<uintptr_t, int64_t>> &workspace_addr) {
     space_addrs_.assign(workspace_addr.cbegin(), workspace_addr.cend());
   }
   void SetStreamId(const uint32_t stream_id) {
@@ -76,8 +72,10 @@ class DumpOp {
  private:
   Status ExecutorDumpOp();
   void DumpWorkspace(toolkit::aicpu::dump::Task &task);
-  Status DumpOutput(toolkit::aicpu::dump::Task &task);
-  Status DumpInput(toolkit::aicpu::dump::Task &task);
+  Status DumpOutput(toolkit::aicpu::dump::Task &task, const OpDescPtr &op_desc,
+                    const std::vector<uintptr_t> &addrs, bool ffts_flag = false) const;
+  Status DumpInput(toolkit::aicpu::dump::Task &task, const OpDescPtr &op_desc,
+                   const std::vector<uintptr_t> &addrs, bool ffts_flag = false) const;
   void DumpTask(toolkit::aicpu::dump::Task &task, const uint32_t task_id);
   Status SetDumpModelName();
   Status ProtoMallocAndMemcpy(const size_t proto_size, const std::string &proto_msg);
@@ -90,7 +88,7 @@ class DumpOp {
   OpDescPtr op_desc_;
   std::vector<uintptr_t> input_addrs_;
   std::vector<uintptr_t> output_addrs_;
-  std::vector<uint64_t> space_addrs_;
+  std::vector<std::pair<uintptr_t, int64_t>> space_addrs_;
   std::vector<FftsPlusDumpInfo> ffts_sub_op_list_;
 
   void *proto_dev_mem_ = nullptr;

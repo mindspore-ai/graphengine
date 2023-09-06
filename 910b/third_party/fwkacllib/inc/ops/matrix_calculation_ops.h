@@ -1281,6 +1281,39 @@ REG_OP(ConfusionMatrix)
 * Must be one of the following types: float16, float, int32, int8, uint8
 
 * @par Attributes:
+* @li axis: An optional attribute. Defaults to 0.
+* @li reduction: An optional attribute. Defaults to string "none" and can be
+* "update". \n
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the Mindspore operator Scatter.
+*/
+REG_OP(Scatter)
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .REQUIRED_ATTR(reduce, String)
+    .ATTR(axis, Int, 0)
+    .OP_END_FACTORY_REG(Scatter)
+
+/**
+* @brief Multiplies sparse updates into a variable reference . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li var: An ND Tensor.
+* Must be one of the following types: float16, float, int32, int8, uint8
+* @li indices: An ND Tensor.
+* Must be one of the following types: int32 or int64
+* @li updates: An ND Tensor . \n
+
+* Must be one of the following types: float16, float, int32, int8, uint8
+
+* @par Attributes:
 * use_locking: An optional bool. Defaults to "False". If "True", the operation
 * will be protected by a lock . \n
 
@@ -1721,8 +1754,8 @@ REG_OP(Eye)
 * @brief: Fill diagonal of at least 2 dimension tensors with value . \n
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types:
-*    float32, int32, int64 . \n
+* x: A Tensor. Must be one of the following types:float16, float32, float64, int8,
+                                                  int16, int32, int64, uint8, bool. \n
 
 * @par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
@@ -1735,8 +1768,8 @@ REG_OP(Eye)
 * Compatible with the Pytorch operator FillDiagonal.
 */
 REG_OP(FillDiagonal)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({BasicType(), DT_BOOL}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL}))
     .REQUIRED_ATTR(fill_value, Float)
     .ATTR(wrap, Bool, false)
     .OP_END_FACTORY_REG(FillDiagonal)

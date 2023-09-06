@@ -1524,103 +1524,88 @@ REG_OP(RGB2YUV422)
 
 * @par Inputs:
 * six inputs, including:
-* @li query: A matrix Tensor. The type support float16 and float32.
-* @li key: A matrix Tensor. The type support float16 and float32.
-* @li value: A matrix Tensor. The type support float16 and float32.
-* @li real_shift: A matrix Tensor. The type support float16 and float32.
-* @li drop_mask: A matrix Tensor. The type support float16 and float32.
-* @li padding_mask: A matrix Tensor. The type support float16 and float32.
-* @li atten_mask: A matrix Tensor. The type support float16 and float32.
+* @li query: A matrix Tensor. The type support float16, bf16, float32 .
+* @li key: A matrix Tensor. The type support float16, bf16, float32.
+* @li value: A matrix Tensor. The type support float16, bf16, float32.
+* @li real_shift: A matrix Tensor. The type support float16, bf16, float32.
+* @li drop_mask: A matrix Tensor. The type support uint8.
+* @li padding_mask: A matrix Tensor. The type support float16, bf16, float32.
+* @li atten_mask: A matrix Tensor. The type support float16, bf16, float32.
 
 * @par Attributes:
-* @li keep_prob: A mutable Tensor. Must met all of the following rules:
- shape of "keep_prob" should be (1,) or [1,].
-* @li query_transpose: A bool. If True, changes the shape of "query" from [K, M] to
- [M, K].
-* @li key_transpose: A bool. If True, changes the shape of "key" from [N, K] to
- [K, N].
-* @li value_transpose: A bool. If True, changes the shape of "mid_data" from [K, M] to
- [M, K].
-* @li scale_value: A float.
-* @li keep_prob: A float.
- * @li is_transpose_out: A bool. If True, changes the shape of "value" from [N, K] to
- [K, N].
- * @li is_flash: A bool. If True, changes the shape of "value" from [N, K] to
- [K, N].
+* @li scale_value: A float. The scale value. Default: 1.0.
+* @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
+* @li pre_tockens: A int. Previous tokens.
+* @li next_tockens: A int. Next tokens.
+* @li head_num: A int. The number of the heads.
+* @li is_flash: A bool. If True, use flash attention algorithm.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
 *
 * @par Outputs:
-* softmax_max: A matrix Tensor. The type support float16 and float32.
-* softmax_sum: A matrix Tensor. The type support float16 and float32.
-* softmax_out: A matrix Tensor. The type support float16 and float32.
-* attention_out: A matrix Tensor. The type support float16 and float32.
+* softmax_max: A matrix Tensor. The type support float32.
+* softmax_sum: A matrix Tensor. The type support float32.
+* softmax_out: A matrix Tensor. The type support float16, bf16, float32.
+* attention_out: A matrix Tensor. The type support float16, bf16, float32.
 
 
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(FlashAttentionScore)
-    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(real_shift, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
-    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(softmax_max, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(softmax_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(softmax_max, TensorType({DT_FLOAT32}))
+    .OUTPUT(softmax_sum, TensorType({DT_FLOAT32}))
+    .OUTPUT(softmax_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .ATTR(scale_value, Float, 1.0)
     .ATTR(keep_prob, Float, 1.0)
     .ATTR(pre_tockens, Int, 2147483647)
     .ATTR(next_tockens, Int, 2147483647)
     .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(is_flash, Bool)
+    .REQUIRED_ATTR(input_layout, String)
     .OP_END_FACTORY_REG(FlashAttentionScore)
 
 /**
-* @brief Function FlashAttentionScore. \n
+* @brief Function FlashAttentionScoreGrad. \n
 
 * @par Inputs:
-* six inputs, including:
-* @li query: A matrix Tensor. The type support float16 and float32.
-* @li key: A matrix Tensor. The type support float16 and float32.
-* @li value: A matrix Tensor. The type support float16 and float32.
-* @li dy: A matrix Tensor. The type support float16 and float32.
-* @li real_shift: A scalar. The type support float16 and float32.
-* @li drop_mask: A matrix Tensor. The type support float16 and float32.
-* @li padding_mask: A matrix Tensor. The type support float16 and float32.
-* @li atten_mask: A matrix Tensor. The type support float16 and float32.
-* @li softmax_max: A matrix Tensor. The type support float16 and float32.
-* @li softmax_sum: A matrix Tensor. The type support float16 and float32.
-* @li softmax_in: A matrix Tensor. The type support float16 and float32.
-* @li attention_in: A matrix Tensor. The type support float16 and float32.
+* twelve inputs, including:
+* @li query: A matrix Tensor. The type support float16, bf16, float32.
+* @li key: A matrix Tensor. The type support float16, bf16, float32.
+* @li value: A matrix Tensor. The type support float16, bf16, float32.
+* @li dy: A matrix Tensor. The type support float16, bf16, float32.
+* @li real_shift: A scalar. The type support float16, bf16, float32.
+* @li drop_mask: A matrix Tensor. The type support uint8.
+* @li padding_mask: A matrix Tensor. The type support float16, bf16, float32.
+* @li atten_mask: A matrix Tensor. The type support float16, bf16, float32.
+* @li softmax_max: A matrix Tensor. The type support float32.
+* @li softmax_sum: A matrix Tensor. The type support float32.
+* @li softmax_in: A matrix Tensor. The type support float16, bf16, float32.
+* @li attention_in: A matrix Tensor. The type support float16, bf16, float32.
 
 
 * @par Attributes:
-* @li scale_value: A mutable Tensor. Must met all of the following rules:
- shape of "keep_prob" should be (1,) or [1,].
-* @li keep_prob: A bool. If True, changes the shape of "query" from [K, M] to
- [M, K].
-* @li query_transpose: A bool. If True, changes the shape of "key" from [N, K] to
- [K, N].
-* @li key_transpose: A bool. If True, changes the shape of "key" from [N, K] to
- [K, N].
-* @li value_transpose: A bool. If True, changes the shape of "mid_data" from [K, M] to
- [M, K].
-* @li dy_transpose: A bool. If True, changes the shape of "value" from [N, K] to
- [K, N].
-* @li is_transpose_attention: A bool. If True, changes the shape of "mid_data" from [K, M] to
- [M, K].
- * @li is_flash: A bool. If True, changes the shape of "value" from [N, K] to
- [K, N].
+* @li scale_value: A float. The scale value. Default: 1.0.
+* @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
+* @li pre_tockens: A int. Previous tokens.
+* @li next_tockens: A int. Next tokens.
+* @li is_flash: A bool. If True, use flash attention algorithm.
+* @li head_num: A int. The number of the heads.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
 
 
 * @par Outputs:
-* dq: A matrix Tensor. The type support float16 and float32.
-* dk: A matrix Tensor. The type support float16 and float32.
-* dv: A matrix Tensor. The type support float16 and float32.
-* dpse: A matrix Tensor. The type support float16 and float32.
+* dq: A matrix Tensor. The type support float16, bf16, float32.
+* dk: A matrix Tensor. The type support float16, bf16, float32.
+* dv: A matrix Tensor. The type support float16, bf16, float32.
+* dpse: A matrix Tensor. The type support float16, bf16, float32.
 
 
 * @par Restrictions:
@@ -1632,11 +1617,11 @@ REG_OP(FlashAttentionScoreGrad)
     .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT8}))
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT32}))
     .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OUTPUT(dq, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
@@ -1649,6 +1634,7 @@ REG_OP(FlashAttentionScoreGrad)
     .ATTR(next_tockens, Int, 65536)
     .REQUIRED_ATTR(is_flash, Bool)
     .REQUIRED_ATTR(head_num, Int)
+    .REQUIRED_ATTR(input_layout, String)
     .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
 
 
@@ -1658,10 +1644,12 @@ REG_OP(IncreFlashAttention)
     .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .REQUIRED_ATTR(actual_seq_lengths, ListInt)
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
+    .ATTR(input_layout, String, "BSH")
+    .ATTR(num_key_value_heads, Int, 1)
     .OP_END_FACTORY_REG(IncreFlashAttention)
 
 
@@ -1671,11 +1659,14 @@ REG_OP(PromptFlashAttention)
     .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .REQUIRED_ATTR(actual_seq_lengths, ListInt)
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
-    .ATTR(pre_tokens, Int, 65535)
+    .ATTR(pre_tokens, Int, 214748647)
+    .ATTR(next_tokens, Int, 0)
+    .ATTR(input_layout, String, "BSH")
+    .ATTR(num_key_value_heads, Int, 1)
     .OP_END_FACTORY_REG(PromptFlashAttention)
 /**
 * @brief paste sub img.
@@ -1799,7 +1790,35 @@ REG_OP(ForeachNonFiniteCheckAndUnscale)
     .INPUT(found_inf, TensorType({DT_FLOAT}))
     .INPUT(inv_scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
+
+/**
+* @brief Writes the input data of the corresponding subscript to the specified register.
+* @par Inputs:
+* One inputs:
+* @li x: A Tensor of type uint64.
+* The format is ND.
+* @par Attributes:
+* One attribute:
+* @li indices: Int, indication a specific subscript value.
+*/
+REG_OP(SwitchByIndex)
+    .INPUT(x, TensorType({DT_UINT64}))
+    .REQUIRED_ATTR(indices, Int)
+    .OP_END_FACTORY_REG(SwitchByIndex)
+
+REG_OP(MoeFFN)
+    .INPUT(x, TensorType({DT_INT8, DT_FLOAT16}))
+    .INPUT(expert_tokens, TensorType({DT_INT64}))
+    .INPUT(weight1, TensorType({DT_INT8, DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias1, TensorType({DT_INT32, DT_FLOAT16}))
+    .OPTIONAL_INPUT(weight2, TensorType({DT_INT8, DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias2, TensorType({DT_INT32, DT_FLOAT16}))
+    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_FLOAT16}))
+    .ATTR(activation, String, "gelu")
+    .OP_END_FACTORY_REG(MoeFFN)
 }  // namespace ge
-
-
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

@@ -100,7 +100,7 @@ class VISIBILITY_EXPORT ModelDesc {
   void SetOutputNum(size_t output_num);
   void SetSpaceRegistry(gert::OpImplSpaceRegistry *space_registry);
   gert::OpImplSpaceRegistry *GetSpaceRegistry() const;
-  void SetFileConstantWeightDir(const ge::char_t *om_path);
+  void SetFileConstantWeightDir(const ge::char_t *file_constant_weight_dir);
   const ge::char_t *GetFileConstantWeightDir() const;
 
   ge::graphStatus GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) const;

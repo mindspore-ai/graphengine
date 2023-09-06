@@ -48,78 +48,73 @@ static inline bool IsLogEnable(const int32_t module_name, const int32_t log_leve
   return (enable == 1);
 }
 
-#define LOGE(fmt, ...)                                                                            \
-  do {                                                                                            \
-      printf("[ERROR] GE %s:%s:%d: "fmt "\n", __func__, __FILE__, __LINE__, ##__VA_ARGS__);      \
+#define LOGE(fmt, ...)                                                      \
+  do {                                                                      \
+    printf("[ERROR]GE %s:%d:" fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
   } while (false)
 
 #ifdef RUN_TEST
-#define GELOGD(fmt, ...)                                                                                  \
-  do {                                                                                                    \
-    printf("[DEBUG] [%s:%d]%ld: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
-           ##__VA_ARGS__);                                                                                \
+#define GELOGD(fmt, ...)                                                                          \
+  do {                                                                                            \
+    printf("[DEBUG][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
   } while (false)
 
-#define GELOGI(fmt, ...)                                                                                 \
-  do {                                                                                                   \
-    printf("[INFO] [%s:%d]%ld: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
-           ##__VA_ARGS__);                                                                               \
+#define GELOGI(fmt, ...)                                                                         \
+  do {                                                                                           \
+    printf("[INFO][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
   } while (false)
 
-#define GELOGW(fmt, ...)                                                                                    \
-  do {                                                                                                      \
-    printf("[WARNING] [%s:%d]%ld: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
-           ##__VA_ARGS__);                                                                                  \
+#define GELOGW(fmt, ...)                                                                            \
+  do {                                                                                              \
+    printf("[WARNING][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
   } while (false)
 
-#define GELOGE(ERROR_CODE, fmt, ...)                                                                                   \
-  do {                                                                                                                 \
-    printf("[ERROR] [%s:%d]%lu: %s ErrorNo: %ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
-           (long int)ERROR_CODE, ##__VA_ARGS__);                                                                       \
+#define GELOGE(ERROR_CODE, fmt, ...)                                                                                \
+  do {                                                                                                              \
+    printf("[ERROR][%s:%d]%ld ErrorNo:%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), (long int)ERROR_CODE, \
+           ##__VA_ARGS__);                                                                                          \
   } while (false)
 
-#define GEEVENT(fmt, ...)                                                                                 \
-  do {                                                                                                    \
-    printf("[EVENT] [%s:%d]%lu: %s " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), &__FUNCTION__[0], \
-           ##__VA_ARGS__);                                                                                \
+#define GEEVENT(fmt, ...)                                                                         \
+  do {                                                                                            \
+    printf("[EVENT][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
   } while (false)
 #else
-#define GELOGD(fmt, ...)                                                                            \
-  do {                                                                                              \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                  \
-      dlog_debug(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
-    }                                                                                               \
+#define GELOGD(fmt, ...)                                                       \
+  do {                                                                         \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                             \
+      dlog_debug(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
+    }                                                                          \
   } while (false)
 
-#define GELOGI(fmt, ...)                                                                           \
-  do {                                                                                             \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {                                                  \
-      dlog_info(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
-    }                                                                                              \
+#define GELOGI(fmt, ...)                                                      \
+  do {                                                                        \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {                             \
+      dlog_info(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
+    }                                                                         \
   } while (false)
 
-#define GELOGW(fmt, ...)                                                                           \
-  do {                                                                                             \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_WARN)) {                                                  \
-      dlog_warn(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
-    }                                                                                              \
+#define GELOGW(fmt, ...)                                                      \
+  do {                                                                        \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_WARN)) {                             \
+      dlog_warn(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
+    }                                                                         \
   } while (false)
 
-#define GELOGE(ERROR_CODE, fmt, ...)                                                                                 \
-  do {                                                                                                               \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                                   \
-      dlog_error(GE_MODULE_NAME, "%" PRIu64 " %s: ErrorNo: %" PRIuLEAST8 " (%s) %s" fmt, GetTid(), &__FUNCTION__[0], \
-                 (ERROR_CODE), GE_GET_ERRORNO_STR, GE_GET_ERROR_LOG_HEADER, ##__VA_ARGS__);                          \
-    }                                                                                                                \
+#define GELOGE(ERROR_CODE, fmt, ...)                                                                       \
+  do {                                                                                                     \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                         \
+      dlog_error(GE_MODULE_NAME, "%" PRIu64 ":ErrorNo:%" PRIuLEAST8 "(%s)%s " fmt, GetTid(), (ERROR_CODE), \
+                 GE_GET_ERRORNO_STR, GE_GET_ERROR_LOG_HEADER, ##__VA_ARGS__);                              \
+    }                                                                                                      \
   } while (false)
 
-#define GEEVENT(fmt, ...)                                                                              \
-  do {                                                                                                 \
-    dlog_event((uint32_t)(RUN_LOG_MASK) | (uint32_t)(GE_MODULE_NAME), "%" PRIu64 " %s:" fmt, GetTid(), \
-               &__FUNCTION__[0], ##__VA_ARGS__);                                                       \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                     \
-      dlog_info(GE_MODULE_NAME, "%" PRIu64 " %s:" fmt, GetTid(), &__FUNCTION__[0], ##__VA_ARGS__);     \
-    }                                                                                                  \
+#define GEEVENT(fmt, ...)                                                                                           \
+  do {                                                                                                              \
+    dlog_event((uint32_t)(RUN_LOG_MASK) | (uint32_t)(GE_MODULE_NAME), "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                                  \
+      dlog_info(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__);                                       \
+    }                                                                                                               \
   } while (false)
 #endif
 

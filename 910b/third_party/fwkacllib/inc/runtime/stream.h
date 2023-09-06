@@ -68,6 +68,17 @@ RTS_API rtError_t rtStreamCreate(rtStream_t *stm, int32_t priority);
 
 /**
  * @ingroup dvrt_stream
+ * @brief create stream instance for external api
+ * @param [in|out] stm   created stream
+ * @param [in] priority   stream priority
+ * @param [in] flags  stream op flags
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamCreateWithFlagsExternal(rtStream_t *stm, int32_t priority, uint32_t flags);
+
+/**
+ * @ingroup dvrt_stream
  * @brief create stream instance
  * @param [in|out] stm   created stream
  * @param [in] priority   stream priority

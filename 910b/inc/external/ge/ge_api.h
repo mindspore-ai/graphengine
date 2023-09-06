@@ -30,7 +30,6 @@
 #include "graph/graph.h"
 #include "graph/tensor.h"
 #include "ge/ge_allocator.h"
-
 namespace ge {
 typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
 
@@ -50,6 +49,9 @@ GE_FUNC_VISIBILITY Status GEFinalize();
 GE_FUNC_VISIBILITY std::string GEGetErrorMsg();
 
 GE_FUNC_VISIBILITY std::string GEGetWarningMsg();
+
+GE_FUNC_VISIBILITY Status GetModelDistributeDesc(const void *data, const uint64_t length,
+                                                 ModelDistibuteDesc &model_dist_desc);
 
 class GE_FUNC_VISIBILITY Session {
  public:

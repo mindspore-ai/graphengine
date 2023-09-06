@@ -331,6 +331,7 @@ typedef struct tagLabelDevInfo_t {
 }rtLabelDevInfo;
 
 typedef struct tagMdlLoad {
+    uint8_t overflow_en;
     uint16_t totalTaskNum;
     void *taskDescBaseAddr;
     void *pcBaseAddr;

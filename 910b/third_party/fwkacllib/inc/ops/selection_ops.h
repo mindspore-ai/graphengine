@@ -195,7 +195,6 @@ REG_OP(GatherNd)
 
 * @par Attributes:
 * batch_dims: An optional int. Defaults to 0.
-* is_preprocessed: An optional bool. Defaults to false.
 * negative_index_support: An optional bool. Defaults to false.
 
 * @par Outputs:
@@ -214,7 +213,6 @@ REG_OP(GatherV2)
     .INPUT(axis, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(batch_dims, Int, 0)
-    .ATTR(is_preprocessed, Bool, false)
     .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(GatherV2)
 
@@ -539,7 +537,6 @@ REG_OP(StridedSliceGrad)
 * @li segment_ids: A Tensor of type INT32,INT64.whose shape is a prefix
 * of "x.shape"
 * @li num_segments: A Tensor of type INT32,INT64
-* #li is_preprocessed: An optional bool. Defaults to "false".If it is true, it means that the repetition rate
 * of segment_ids is high
 
 * @par Outputs:
@@ -553,7 +550,6 @@ REG_OP(UnsortedSegmentSum)
     .INPUT(segment_ids, TensorType::IndexNumberType())
     .INPUT(num_segments, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
-    .ATTR(is_preprocessed, Bool, false)
     .OP_END_FACTORY_REG(UnsortedSegmentSum)
 
 /**
@@ -713,7 +709,7 @@ REG_OP(Select)
 * @par Inputs:
 * Three inputs, including:
 * @li condition: A Tensor of type bool.
-* @li then: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8.
+* @li then: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, bfloat16.
 * @li else: A Tensor of the same type as "then" . \n
 
 * @par Outputs:
@@ -875,7 +871,7 @@ REG_OP(OneHotD)
 /**
 * @brief Extracts a slice from a tensor.
 *       This operation extracts a slice of size "size" from a tensor "x"
-*		starting at the location specified by "begin" . \n
+*       starting at the location specified by "begin" . \n
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
@@ -896,6 +892,35 @@ REG_OP(Slice)
     .INPUT(size, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Slice)
+
+/**
+* @brief Extracts a slice from a tensor.
+*       This operation extracts a slice of size "size" from a tensor "x"
+*       starting at the location specified by "begin" . \n
+
+* @par Inputs:
+* @li x: A Tensor. Must be one of the following types:
+* bfloat16, float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* @li offsets: A Tensor of type int32 or int64. The starting location for the slice.
+* @li size: A Tensor of type int32 or int64. The tensor shape . \n
+
+* @par Attributes:
+* @li axes: list of ints. The axes for the slice. \n
+
+* @par Outputs:
+* y: A Tensor. Has the same type as "x". The slice extracted from the tensor . \n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Slice.
+*/
+REG_OP(SliceWithAxes)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(offsets, TensorType::IndexNumberType())
+    .INPUT(size, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(axes, ListInt)
+    .OP_END_FACTORY_REG(SliceWithAxes)
 
 /**
 * @brief Extracts a slice from a tensor.
@@ -1356,7 +1381,6 @@ REG_OP(StridedSliceAssignD)
 * @par Attributes:
 * @li validate_indices: A bool specifying whether to verify the argument of "indice" .
 * @li batch_dims: An optional int. Defaults to 0.
-* @li is_preprocessed: An optional bool. Defaults to false.
 * @li negative_index_support: An optional bool. Defaults to false.
 
 * @par Outputs:
@@ -1375,7 +1399,6 @@ REG_OP(Gather)
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(validate_indices, Bool, true)
     .ATTR(batch_dims, Int, 0)
-    .ATTR(is_preprocessed, Bool, false)
     .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(Gather)
 
@@ -2347,7 +2370,8 @@ REG_OP(MaskedSelectV2)
 
 * @par Inputs:
 * three inputs, including:
-*  @li x: A Tensor of dtype is float16 or float32 or float64 or int64 or int32 or int16 or int8 or uint8 or bool.
+*  @li x: A Tensor of dtype is float16 or float32 or float64 or 
+*      int64 or int32 or int16 or int8 or uint8 or bool or bfloat16.
 *  @li mask: A Tensor of dtype is bool.
 *  @li updates: A tensor with the same type as x. \n
 
@@ -2356,12 +2380,12 @@ REG_OP(MaskedSelectV2)
 */
 REG_OP(MaskedScatter)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                          DT_INT16, DT_INT32, DT_INT64, DT_BOOL}))
+                          DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_BF16}))
     .INPUT(mask, TensorType({DT_BOOL}))
     .INPUT(updates, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8,
-                                DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL}))
+                                DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_INT16, DT_INT32, DT_INT64, DT_BOOL}))
+                           DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_BF16}))
     .OP_END_FACTORY_REG(MaskedScatter)
 
 /**
@@ -2400,7 +2424,7 @@ REG_OP(SliceLastDim)
 * Five inputs, including:
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, 
 *     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, float16, uint32, uint64, complex64, complex128. 
+*     complex128, float16, uint32, uint64, complex64, complex128, bool
 * @li begin: A Tensor of type int32 or int64, for the index of the first value to select.
 * @li end: A Tensor of type int32 or int64, for the index of the last value to select.
 * @li axes: A Tensor of type int32 or int64, indicate axis to be select.
@@ -2436,7 +2460,7 @@ REG_OP(SliceLastDim)
 * Compatible with the onnx operator Slice.
 */
 REG_OP(StridedSliceV2)
-    .INPUT(x, TensorType::BasicType())
+    .INPUT(x, TensorType({TensorType::BasicType(), DT_BOOL}))
     .INPUT(begin, TensorType::IndexNumberType())
     .INPUT(end, TensorType::IndexNumberType())
     .OPTIONAL_INPUT(axes, TensorType::IndexNumberType())

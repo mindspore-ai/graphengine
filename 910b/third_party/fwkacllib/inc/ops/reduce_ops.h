@@ -629,31 +629,31 @@ REG_OP(ReduceProd)
     .OP_END_FACTORY_REG(ReduceProd)
 
 /**
-*@brief Computes the product of elements across dimensions of a tensor . \n
+* @brief Computes the product of elements across dimensions of a tensor . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x: A Tensor. Must be one of the following types: float16, float, int8, uint8 . \n
+* x: A Tensor. Must be one of the following types: float16, float, int8, uint8, bfloat16 . \n
 
-*@par Attributes:
-*@li axes: A required int8, int16, int32, or int64. Specifies the dimensions to reduce. No default value.
-*@li keep_dims: An optional bool. If "True", retains reduced dimensions with length 1. Defaults to "False" . \n
+* @par Attributes:
+* @li axes: A required int8, int16, int32, or int64. Specifies the dimensions to reduce. No default value.
+* @li keep_dims: An optional bool. If "True", retains reduced dimensions with length 1. Defaults to "False" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * "keep_dims" is in the range [-rank(input_tensor), rank(input_tensor)] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator ReduceProd.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceProd instead.
 */
 REG_OP(ReduceProdD)
-    .INPUT(x,TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16}))
-    .OUTPUT(y,TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceProdD)
@@ -690,34 +690,34 @@ REG_OP(ReduceMean)
     .OP_END_FACTORY_REG(ReduceMean)
 
 /**
-*@brief Reduces "x" along the dimensions according to "axis" . \n
+* @brief Reduces "x" along the dimensions according to "axis" . \n
 
-*@par Inputs:
-*One input:
-* @li x: A Tensor. Must be one of the following types: float16, float32 . \n
+* @par Inputs:
+* One input:
+* @li x: A Tensor. Must be one of the following types: float16, float32 ,bfloat16. \n
 
-*@par Attributes:
-*@li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
+* @par Attributes:
+* @li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
 * If None (the default), reduces all dimensions.
 * Must be in the range [-rank(x), rank(x)).
-*@li keep_dims: A bool or NoneType.
+* @li keep_dims: A bool or NoneType.
 * - If true, retains reduced dimensions with length 1.
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
-*@li noop_with_empty_axes: A bool default False.
+* @li noop_with_empty_axes: A bool default False.
 * - If true, same as tf.
 * - If false, when x's shape is [], reduce all dims, for onnx.
-*@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
 
-*@par Third-party framework compatibility:
+* @par Third-party framework compatibility:
 * Compatible with the TensorFlow operator ReduceMean.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMean instead.
 */
 REG_OP(ReduceMeanD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .ATTR(noop_with_empty_axes, Bool, false)
@@ -754,23 +754,23 @@ REG_OP(ReduceMax)
     .OP_END_FACTORY_REG(ReduceMax)
 
 /**
-*@brief Returns the maximum of elements across dimensions of a Tensor . \n
+* @brief Returns the maximum of elements across dimensions of a Tensor . \n
 
-*@par Inputs:
-*x: A multi-dimensional Tensor of type float16, float32, or int16 . \n
+* @par Inputs:
+* x: A multi-dimensional Tensor of type float16, float32, bfloat16 or int16 . \n
 
-*@par Attributes:
+* @par Attributes:
 * Two attributes, including:
-*@li axes: A required listint, specifying the axes information of the index with the maximum value.
-*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false" . \n
+* @li axes: A required listint, specifying the axes information of the index with the maximum value.
+* @li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false" . \n
 
-*@par Outputs:
-*y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor. Has the same type as "x". (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
+* @par Outputs:
+* y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor. Has the same type as "x". (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
 
-*@attention Constraints:
+* @attention Constraints:
 * The value range of "axis" is [-dims, dims - 1]. "dims" indicates the dimension length of "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with TensorFlow operator Max.
 *
 * @par Restrictions:
@@ -778,30 +778,30 @@ REG_OP(ReduceMax)
 */
 REG_OP(ReduceMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8, DT_INT8,
-                          DT_FLOAT16, DT_INT32}))
+                          DT_FLOAT16, DT_INT32, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8, DT_INT8,
-                           DT_FLOAT16, DT_INT32}))
+                           DT_FLOAT16, DT_INT32, DT_BF16}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMaxD)
 
 /**
-*@brief Computes the minimum of elements across dimensions of a tensor . \n
+* @brief Computes the minimum of elements across dimensions of a tensor . \n
 
-*@par Inputs:
-*@li input_tensor: A Tensor. Must be one of the following types: float16, float32, int8, uint8.
-*@li axes: A Tensor of type int8 or int32. Specifies the dimensions to reduce. Defaults to "None".
+* @par Inputs:
+* @li input_tensor: A Tensor. Must be one of the following types: float16, float32, int8, uint8, bfloat16.
+* @li axes: A Tensor of type int8 or int32. Specifies the dimensions to reduce. Defaults to "None".
 
-*@par Attributes:
-*keep_dims: An optional bool. If "True", reduced dimensions will be retained. Defaults to "False".
+* @par Attributes:
+* keep_dims: An optional bool. If "True", reduced dimensions will be retained. Defaults to "False".
 
-*@par Outputs:
-*output_tensor: A Tensor. Must be one of the following types: float16, float32, int8, uint8 . \n
+* @par Outputs:
+* output_tensor: A Tensor. Must be one of the following types: float16, float32, int8, uint8 . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)) . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator reduce_min.
 */
 REG_OP(ReduceMin)
@@ -812,30 +812,30 @@ REG_OP(ReduceMin)
     .OP_END_FACTORY_REG(ReduceMin)
 
 /**
-*@brief Computes the minimum of elements across dimensions of a tensor . \n
+* @brief Computes the minimum of elements across dimensions of a tensor . \n
 
-*@par Inputs:
-*input_min: A Tensor. Must be one of the following types: float16, float32, int8, uint8 . \n
+* @par Inputs:
+* input_min: A Tensor. Must be one of the following types: float16, float32, int8, uint8 ,bfloat16. \n
 
-*@par Attributes:
-*@li axes: An optional int32, list, tuple, or NoneType value. Specifies the dimensions to reduce. Defaults to "None".
-*@li keep_dims: An optional bool or NoneType value. If "True", reduced dimensions will be retained. Defaults to "None" (equivalent to "False").
+* @par Attributes:
+* @li axes: An optional int32, list, tuple, or NoneType value. Specifies the dimensions to reduce. Defaults to "None".
+* @li keep_dims: An optional bool or NoneType value. If "True", reduced dimensions will be retained. Defaults to "None" (equivalent to "False").
 
-*@par Outputs:
-*output_min: A Tensor. Must be one of the following types: float16, float32, int8, uint8 . \n
+* @par Outputs:
+* output_min: A Tensor. Must be one of the following types: float16, float32, int8, uint8 . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)) . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator reduce_min.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMin instead.
 */
 REG_OP(ReduceMinD)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8,DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8,DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT32, DT_BF16}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMinD)

@@ -88,6 +88,8 @@ void EnableOverflowDump();
 
 void EnableExceptionDump();
 
+void EnableHostDump();
+
 void EnableTrainingTrace();
 
 void EnableGeHostProfiling();

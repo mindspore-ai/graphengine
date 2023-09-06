@@ -25,6 +25,7 @@ namespace ge {
 class FlowModelOmLoader {
  public:
   static Status LoadToFlowModel(const ge::ModelData &model_data, FlowModelPtr &flow_model);
+  static Status LoadToFlowModelDesc(const ge::ModelData &model_data, FlowModelPtr &flow_model);
 
  private:
   static Status CheckModelPartitions(const std::vector<ModelPartition> &model_partitions);

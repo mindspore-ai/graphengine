@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "ge/ge_api_error_codes.h"
+#include "ge_common/ge_api_error_codes.h"
 
 namespace ge {
 enum ProfDataTypeConfig {

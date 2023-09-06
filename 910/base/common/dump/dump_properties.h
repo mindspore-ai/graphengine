@@ -24,6 +24,13 @@
 #include "external/ge/ge_api_types.h"
 
 namespace ge {
+enum class StepCheckErrorCode : uint32_t {
+  kNoError,
+  kTooManySets,
+  kIncorrectFormat,
+  kReverseStep
+};
+
 class DumpProperties {
  public:
   DumpProperties();
@@ -113,6 +120,8 @@ class DumpProperties {
   Status SetDumpOptions();
 
   Status CheckDumpStep(const std::string &dump_step) const;
+
+  StepCheckErrorCode CheckDumpStepInner(const std::string &dump_step) const;
 
   Status CheckDumpMode(const std::string &dump_mode) const;
 

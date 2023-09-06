@@ -31,7 +31,7 @@ namespace ge {
 * @li x: An ND Tensor.
 * Must be one of the types:float16, float32, double, int64, int32, uint8,
   uint16, uint32, uint64, int8, int16, bool, complex64, complex128, qint8,
-  quint8, qint16, quint16, qint32.
+  quint8, qint16, quint16, qint32, bfloat16.
 * @li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
 
 * @par Attributes:
@@ -68,7 +68,7 @@ REG_OP(Split)
 * One input:
 * @li x:An ND Tensor.
 * Must be one of the following types: float16, float32, int32, int8, int16,
-  int64, uint8, uint16, uint32, uint64, bool.\n
+  int64, uint8, uint16, uint32, uint64, bool, bfloat16.\n
 
 * @par Attributes:
 * @li split_dim: A required int32. Specifies the dimension along which to split. No default value.
@@ -89,10 +89,10 @@ REG_OP(Split)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Split instead.
 */
 REG_OP(SplitD)
-    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                    DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                             DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
+    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_BF16,
+                          DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_BF16,
+                                   DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
     .REQUIRED_ATTR(split_dim, Int)
     .REQUIRED_ATTR(num_split, Int)
     .OP_END_FACTORY_REG(SplitD)
@@ -106,7 +106,7 @@ REG_OP(SplitD)
 * @li x: An ND Tensor.
 * Must be one of the types:float16, float32, double, int64, int32, uint8,
   uint16, uint32, uint64, int8, int16, bool, complex64, complex128, qint8,
-  quint8, qint16, quint16, qint32, string. \n
+  quint8, qint16, quint16, qint32, string, bfloat16. \n
 * @li size_splits: Must be one of the types:int32, int64. Specifies a list
   containing the sizes of each output tensor along the split dimension.
 * @li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
@@ -172,10 +172,10 @@ REG_OP(SplitV)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use SplitV instead.
 */
 REG_OP(SplitVD)
-    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                    DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                                             DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
+    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_BF16,
+                          DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_BF16,
+                                   DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT, DT_FLOAT16, DT_BOOL}))
     .REQUIRED_ATTR(size_splits, ListInt)
     .REQUIRED_ATTR(split_dim, Int)
     .REQUIRED_ATTR(num_split, Int)
@@ -207,29 +207,30 @@ REG_OP(ParallelConcat)
     .OP_END_FACTORY_REG(ParallelConcat)
 
 /**
-*@brief Concatenates tensors along one dimension . \n
+* @brief Concatenates tensors along one dimension . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x: Dynamic input.A ND Tensor.
-*Must be one of the following types: bfloat16, float16, float32, int32,
-*     int8, int16, int64, uint8, uint16, uint32, uint64
+* x: Dynamic input.A ND Tensor.
+*    Must be one of the following types: bfloat16, float16, float32, int32,
+*    int8, int16, int64, uint8, uint16, uint32, uint64
 
-*@par Attributes:
-*concat_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to concatenate. No default value.
-*N: An attribute int8, int16, int32, or int64. Specifies the number of elements in "x". Defaults to "1".
+* @par Attributes:
+* concat_dim: A required int8, int16, int32, or int64.
+              Specifies the dimension along which to concatenate. No default value.
+* N: An attribute int8, int16, int32, or int64. Specifies the number of elements in "x". Defaults to "1".
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li "x" is a list of at least 2 "tensor" objects of the same type.
-*@li "concat_dim" is in the range [-len(x.shape), len(x.shape)] . \n
+* @attention Constraints:
+* @li "x" is a list of at least 2 "tensor" objects of the same type.
+* @li "concat_dim" is in the range [-len(x.shape), len(x.shape)] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator ConcatV2.
-*@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED. Please use ConcatV2 instead.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ConcatV2 instead.
 */
 REG_OP(ConcatV2D)
     .DYNAMIC_INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT64,
@@ -241,26 +242,26 @@ REG_OP(ConcatV2D)
     .OP_END_FACTORY_REG(ConcatV2D)
 
 /**
-*@brief Concatenates tensors along one dimension . \n
+* @brief Concatenates tensors along one dimension . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li Dynamic input "x" is A ND Tensor.
-*Must be one of the following types: bfloat16, float16, float32, double, int32,
+* @li Dynamic input "x" is A ND Tensor.
+* Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
 *     complex128, uint32, uint64, qint16, quint16, bool, string.
-*@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
+* @li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
 
-*@par Attributes:
-*N: An optional int8, int16, int32, or int64. Specifies the number of elements in "x". No default value . \n
+* @par Attributes:
+* N: An optional int8, int16, int32, or int64. Specifies the number of elements in "x". No default value . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * "x" is a list of at least 2 "tensor" objects of the same type . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator ConcatV2.
 */
 REG_OP(ConcatV2)
@@ -271,32 +272,33 @@ REG_OP(ConcatV2)
     .OP_END_FACTORY_REG(ConcatV2)
 
 /**
-*@brief Concatenates tensors along one dimension . \n
+* @brief Concatenates tensors along one dimension . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x:Dynamic input. A ND Tensor.
-*Must be one of the following types: bfloat16, float16, float32, int32,
-*     int8, int16, int64, uint8, uint16, uint32, uint64
+* x: Dynamic input. A ND Tensor.
+*    Must be one of the following types: bfloat16, float16, float32, int32,
+*    int8, int16, int64, uint8, uint16, uint32, uint64
 
-*@par Attributes:
-*@li concat_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to concatenate. No default value.
-*@li N:  An optional int8, int16, int32, or int64. Specifies the number of elements in "x". No default value . \n
+* @par Attributes:
+* @li concat_dim: A required int8, int16, int32, or int64.
+                  Specifies the dimension along which to concatenate. No default value.
+* @li N:  An optional int8, int16, int32, or int64. Specifies the number of elements in "x". No default value . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li "x" is a list of at least 2 "tensor" objects of the same type.
-*@li "concat_dim" is in the range [-len(x.shape), len(x.shape)] . \n
+* @attention Constraints:
+* @li "x" is a list of at least 2 "tensor" objects of the same type.
+* @li "concat_dim" is in the range [-len(x.shape), len(x.shape)] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Concat.
-*@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED. Please use Concat instead.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Concat instead.
 */
 REG_OP(ConcatD)
-    .DYNAMIC_INPUT(x, TensorType({DT_BF16, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, 
+    .DYNAMIC_INPUT(x, TensorType({DT_BF16, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16,
                                   DT_INT32, DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64}))
     .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_INT32,
                            DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64}))
@@ -305,27 +307,27 @@ REG_OP(ConcatD)
     .OP_END_FACTORY_REG(ConcatD)
 
 /**
-*@brief Concatenates tensors along one dimension . \n
+* @brief Concatenates tensors along one dimension . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: Dynamic input.A ND Tensor.
-*Must be one of the following types: bfloat16, float16, float32, double, int32,
+* @li x: Dynamic input.A ND Tensor.
+* Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
 *     complex128, uint32, uint64, qint16, quint16.
-*@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
+* @li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate . \n
 
-*@par Attributes:
-*N: An optional int8, int16, int32, or int64. Specifies the number of elements in "x" . \n
+* @par Attributes:
+* N: An optional int8, int16, int32, or int64. Specifies the number of elements in "x" . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as "x" . \n
 
-*@attention Constraints:
-*@li "x" is a list of at least 2 "tensor" objects of the same type.
-*@li "concat_dim" is in the range [-len(x.shape), len(x.shape)] . \n
+* @attention Constraints:
+* @li "x" is a list of at least 2 "tensor" objects of the same type.
+* @li "concat_dim" is in the range [-len(x.shape), len(x.shape)] . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Concat.
 */
 REG_OP(Concat)

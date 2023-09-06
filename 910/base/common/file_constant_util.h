@@ -24,6 +24,8 @@
 #include "graph/op_desc.h"
 #include "graph/ge_tensor.h"
 #include "framework/pne/flow_model.h"
+#include "graph/manager/graph_external_weight_manager.h"
+#include "nlohmann/json.hpp"
 
 namespace ge {
 struct FileConstantInfo {
@@ -34,6 +36,12 @@ struct FileConstantInfo {
 struct OptionInfo {
     std::vector<FileConstantInfo> info;
 };
+
+void from_json(const nlohmann::json &j, FileConstantMeta &meta);
+void to_json(nlohmann::json &j, const FileConstantMeta &meta);
+void from_json(const nlohmann::json &j, FileConstantInfo &info);
+
+Status ReplaceNode(const NodePtr &new_node, const NodePtr &old_node, const ComputeGraphPtr &compute_graph);
 
 Status GetFilePathFromOption(std::map<std::string, std::string> &file_id_and_path_map);
 
@@ -59,6 +67,10 @@ Status SetExternalPath(const ComputeGraphPtr &compute_graph, const std::string &
 std::string GetTmpWeightDir(const int32_t pid, const uint64_t session_id);
 
 Status ConvertFileConstToConst(const ComputeGraphPtr &compute_graph);
+
+Status ConvertConstToFileConstWithMeta(const ComputeGraphPtr &compute_graph,
+                                       const ExternalWeightManagerPtr &external_weight_manager,
+                                       const std::string &file_const_dir, FileConstantMeta &meta);
 
 Status ConvertConstToFileConst(const ComputeGraphPtr &compute_graph);
 

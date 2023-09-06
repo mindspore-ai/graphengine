@@ -29,7 +29,7 @@ struct HostFuncTensorDescInfo {
   std::string name;
   int32_t dtype;
   int32_t format;
-  int8_t mem_base_type;  // data, weight, workspace
+  uint8_t mem_base_type;  // data, weight, workspace
   uint64_t mem_offset;
   uint32_t dims_num;
   vector<int64_t> dims;
@@ -53,8 +53,8 @@ class NanoHostfuncParam {
   NanoHostfuncParam(const domi::TaskDef &task_def, const OpDescPtr &op_desc, const PreTaskInput &pre_task_input);
   ~NanoHostfuncParam() = default;
   Status GenHostFuncParamBufDesc(rtParamBufDesc_t &param_buf_desc);
-  std::shared_ptr<uint8_t> Data();
-  uint32_t DataSize();
+  std::shared_ptr<uint8_t> Data() const;
+  uint32_t DataSize() const;
 
  private:
   Status ParamBufTlvInit();
@@ -62,31 +62,33 @@ class NanoHostfuncParam {
   void GenAllAttrsLen();
   void GenTensorLen(const vector<HostFuncTensorDescInfo> &tensor_vec);
   void GenInOutPutCommonDesc(const GeTensorDescPtr &tensor_desc, HostFuncTensorDescInfo &desc_info) const;
+  uint64_t ConvertOffset(const uint64_t offset, const std::unordered_map<int64_t, uint32_t> &offset_to_ids,
+                         const KernelArgsParam &args_param) const;
   Status GenInputDesc();
   Status GenOutputDesc();
 
   // save buffer
-  Status UpdateBuffer(const void *src, size_t count);
+  Status UpdateBuffer(const void *src, const size_t count);
   Status GenParamBufTlvData();
   Status SaveExtInfoTlv();
   Status SaveSoNameTlv();
   Status SaveFuncNameTlv();
-  Status SaveTensorDescTlv(bool is_input);
+  Status SaveTensorDescTlv(const bool is_input);
   Status SaveAttrTlv();
-  Status SaveAttrValueTlv(GeAttrValue attr_value);
+  Status SaveAttrValueTlv(const GeAttrValue &attr_value);
 
   // parse
-  void ParseSubBuffer(uint8_t *buffer, uint32_t count);
+  void ParseSubBuffer(const uint8_t *buffer, const uint32_t count) const;
 
   // the flowing function should write [type, value_list_num, value_list_info, value_len, value]
   template <typename T>
-  Status SaveAttrValue(uint32_t type, const GeAttrValue attr_value);
-  Status SaveAttrStringValue(uint32_t type, const GeAttrValue attr_value);
+  Status SaveAttrValue(const uint32_t type, const GeAttrValue &attr_value);
+  Status SaveAttrStringValue(const uint32_t type, const GeAttrValue &attr_value);
   template <typename T>
-  Status SaveAttrListValue(uint32_t type, const GeAttrValue attr_value);
-  Status SaveAttrStringListValue(uint32_t type, const GeAttrValue attr_value);
+  Status SaveAttrListValue(const uint32_t type, const GeAttrValue &attr_value);
+  Status SaveAttrStringListValue(const uint32_t type, const GeAttrValue &attr_value);
   template <typename T>
-  Status SaveAttrListListValue(uint32_t type, const GeAttrValue attr_value);
+  Status SaveAttrListListValue(const uint32_t type, const GeAttrValue &attr_value);
 
   const OpDescPtr op_desc_;
   const domi::TaskDef &task_def_;

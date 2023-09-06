@@ -44,14 +44,14 @@ struct InitFlowGwInfo {
 typedef enum {
     TSD_CAPABILITY_PIDQOS = 0,
     TSD_CAPABILITY_LEVEL  = 1,
-    TSD_CAPABILITY_BUT    = 0xff
+    TSD_CAPABILITY_BUT    = 0xFF
 } TsdCapabilityType;
 
 typedef enum {
     SUB_PROCESS_STATUS_NORMAL = 0,
     SUB_PROCESS_STATUS_EXITED = 1,
     SUB_PROCESS_STATUS_STOPED = 2,
-    SUB_PROCESS_STATUS_MAX    = 0xff
+    SUB_PROCESS_STATUS_MAX    = 0xFF
 } SubProcessStatus;
 
 typedef enum {
@@ -62,7 +62,7 @@ typedef enum {
     TSD_SUB_PROC_UDF            = 4,           // udf process
     TSD_SUB_PROC_NPU            = 5,           // npu process
     TSD_SUB_PROC_PROXY          = 6,           // proxy process
-    TSD_SUB_PROC_MAX            = 0xff
+    TSD_SUB_PROC_MAX            = 0xFF
 } SubProcType;
 
 struct ProcStatusInfo {
@@ -357,7 +357,8 @@ TDT_LIB_EXPORT uint32_t TsdFileUnLoad(const uint32_t logicDeviceId, const char *
 * @retval TDT_OK Success
 * @retval OtherValues Failure
 */
-TDT_LIB_EXPORT uint32_t TsdGetProcStatus(const uint32_t logicDeviceId, ProcStatusInfo *pidArry, uint32_t arrayLen);
+TDT_LIB_EXPORT uint32_t TsdGetProcStatus(const uint32_t logicDeviceId, ProcStatusInfo *pidInfo,
+                                         const uint32_t arrayLen);
 
 /**
 * @ingroup TsdProcessOpen

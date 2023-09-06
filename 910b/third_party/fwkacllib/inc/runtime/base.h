@@ -75,10 +75,17 @@ typedef enum tagRtCondition {
     RT_LESS_OR_EQUAL
 } rtCondition_t;
 
+typedef enum schemModeType {
+    RT_SCHEM_MODE_NORMAL = 0,
+    RT_SCHEM_MODE_BATCH,
+    RT_SCHEM_MODE_SYNC,
+    RT_SCHEM_MODE_END
+} rtschemModeType_t;
+
 typedef struct tagRtTaskCfgInfo {
     uint8_t qos;
     uint8_t partId;
-    uint8_t schemMode; // 0:normal;1:batch;2:sync
+    uint8_t schemMode; // rtschemModeType_t 0:normal;1:batch;2:sync
     uint8_t res[1]; // res
 } rtTaskCfgInfo_t;
 
@@ -344,6 +351,23 @@ RTS_API rtError_t rtSetExceptCallback(rtErrorCallback callback);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
+
+typedef enum DevCallBackDir {
+    DEV_CB_POS_FRONT = 1,
+    DEV_CB_POS_BACK = 2,
+    DEV_CB_POS_END
+} rtDevCallBackDir_t;
+/**
+ * @ingroup dvrt_base
+ * @brief register callback for deviceid by position
+ * @param [in] regName unique register name, can't be null
+ * @param [in] callback Device state callback function
+ * @param [in] notifyPos callback notify Postion
+ * @param [out] NA
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtRegDeviceStateCallbackEx(const char_t *regName, rtDeviceStateCallback callback,
+    const rtDevCallBackDir_t notifyPos);
 
 /**
  * @ingroup dvrt_base

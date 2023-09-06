@@ -125,16 +125,15 @@ REG_OP(SwishGrad)
     .OP_END_FACTORY_REG(SwishGrad)
 
 /**
-*@brief Computes the gradient for the Silu of "x" . \n
-
-*@par Inputs:
-*Three inputs, including:
+* @brief Computes the gradient for the Silu of "x" . \n
+* @par Inputs:
+* Three inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, bfloat16, float32
 * @li x: A Tensor of the same type as "grad" . \n
-*@par Outputs:
-*dx: A Tensor. Has the same type as "grad".
-*@par Third-party framework compatibility
-*Compatible with the Torch operator SiluGrad
+* @par Outputs:
+* dx: A Tensor. Has the same type as "grad".
+* @par Third-party framework compatibility
+* Compatible with the Torch operator SiluGrad
 */
 REG_OP(SiluGrad)
     .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -164,33 +163,33 @@ REG_OP(GeluGrad)
     .OP_END_FACTORY_REG(GeluGrad)
 
 /**
-*@brief The FastGelu activation function is x*e^(0.851*x)*(x-|x|)/(1+e^(-1.702|x|)). \n
+* @brief The FastGelu activation function is x*e^(0.851*x)*(x-|x|)/(1+e^(-1.702|x|)). \n
 
-*@par Inputs:
-*One input, including:
-*x: A Tensor. Must be one of the following types: bfloat16, float16, float32
+* @par Inputs:
+* One input, including:
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator FastGelu
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator FastGelu
 */
 REG_OP(FastGelu)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(FastGelu)
 /**
-*@brief The FastGeluV2 activation function is x*(sgn(x)*[(a/2)*(clip(|x|,max=-b)+b)^2+0.5]+0.5),
-*       where sgn(x) function is (x+0.000000000001)/|(x+0.000000000001)|. \n
+* @brief The FastGeluV2 activation function is x*(sgn(x)*[(a/2)*(clip(|x|,max=-b)+b)^2+0.5]+0.5),
+*        where sgn(x) function is (x+0.000000000001)/|(x+0.000000000001)|. \n
 
-*@par Inputs:
-*One input, including:
-*x: A Tensor. Must be one of the following types: bfloat16, float16, float32
+* @par Inputs:
+* One input, including:
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator FastGeluV2
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator FastGeluV2
 */
 REG_OP(FastGeluV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -347,29 +346,38 @@ REG_OP(Relu6Grad)
     .INPUT(features, TensorType::RealNumberType())
     .OUTPUT(backprops, TensorType::RealNumberType())
     .OP_END_FACTORY_REG(Relu6Grad)
+
 /**
 *@brief Calculate the elu_grad_v2 function.
 *Applies the element-wise function:
-* Computes the backward for the elu: if x>0, 1; otherwise elu() + alpha .
+* Computes the backward for the elu.
+*
 *@par Inputs:
 *Two inputs, including:
 * @li grads: A tensor. Must be one of the following types:
-*     float16, float32.
+*     float16, float32, bfloat16.
 * @li activations: A tensor. Must be one of the following types:
-*     float16, float32.
+*     float16, float32, bfloat16.
 *
 *@par Outputs:
 *y: A Tensor with the same type and shape of grads's.
 *
 *@par Attributes:
-*alpha: scalar parameter, default value = 1.0
+* @li alpha: scalar parameter, default value = 1.0
+* @li scale: scalar parameter, default value = 1.0
+* @li input_scale: scalar parameter, default value = 1.0
+* @li is_result: optional bool, true for 'result', false for 'self'
 */
 REG_OP(EluGradV2)
-    .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(activations, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(activations, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(alpha, Float, 1.0)
+    .ATTR(scale, Float, 1.0)
+    .ATTR(input_scale, Float, 1.0)
+    .ATTR(is_result, Bool, false)
     .OP_END_FACTORY_REG(EluGradV2)
+
 /**
 * @brief Compute sigmoid of "x" element-wise . \n
 

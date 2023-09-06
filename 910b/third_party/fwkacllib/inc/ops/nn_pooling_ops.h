@@ -1722,7 +1722,7 @@ REG_OP(AdaptiveAvgPool2dGrad)
 * Three inputs, including:
 * @li x: A tensor of type float16,float32.
 * @li grad: A tensor of type float16,float32.
-* @li argmax: A tensor of type uint16 or int64. \n
+* @li argmax: A tensor of type uint16,int32. \n
 
 * @par Attributes:
 * @li ksize: A required list of int8, int16, int32, or int64 values,

@@ -181,10 +181,10 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
                                             const uint32_t api_type);
   static ge::Status ReportTaskMemoryInfo(const std::string &node_name);
   static ge::Status ReportTensorInfo(const uint32_t tid, const bool is_aging, const ge::TaskDescInfo &task_desc_info);
-  static void BuildNodeBasicInfo(const uint64_t prof_time, const uint32_t block_dim,
+  static void BuildNodeBasicInfo(const ge::OpDescPtr &op_desc, const uint32_t block_dim,
                                  const std::pair<uint64_t, uint64_t> &op_name_and_type_hash, const uint32_t task_type,
                                  MsprofCompactInfo &node_basic_info);
-
+  static void BuildCompactInfo(const uint64_t prof_time, MsprofCompactInfo &node_basic_info);
   static void BuildApiInfo(const std::pair<uint64_t, uint64_t> &prof_time, const uint32_t api_type,
                            const uint64_t item_id, MsprofApi &api);
   static void BuildContextIdInfo(const uint64_t prof_time, const std::vector<uint32_t> &context_ids,
@@ -201,6 +201,11 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
 
   static void BuildFusionOpInfo(const ProfFusionMemSize &mem_size, const std::vector<std::string> &origin_op_names,
                                 const size_t op_name, std::vector<MsprofAdditionalInfo> &infos);
+
+  static unsigned int ReportLogicStreamInfo(
+      const uint64_t timestamp, const uint32_t tid,
+      const std::unordered_map<uint32_t, std::vector<uint32_t>> &logic_stream_ids_to_physic_stream_ids,
+      const uint16_t is_aging);
 
  private:
   GlobalProfilingWrapper();
@@ -250,7 +255,7 @@ class ScopeProfiler {
 
 class GraphProfilingReporter {
  public:
-  GraphProfilingReporter(const GeProfInfoType api_id) : graphApi_(api_id) {
+  explicit GraphProfilingReporter(const GeProfInfoType api_id) : graphApi_(api_id) {
     if (GlobalProfilingWrapper::GetInstance()->IsEnabled(ProfilingType::kTaskTime)) {
       start_time_ = MsprofSysCycleTime();
     }

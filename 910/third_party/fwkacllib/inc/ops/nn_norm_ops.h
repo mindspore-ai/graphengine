@@ -1538,9 +1538,9 @@ REG_OP(LpLoss)
 * @brief Computes gradients of mse loss.
 
 * @par Inputs:
-* @li predict: An ND tensor of type float16, float32.
-* @li label: An ND tensor of type float16, float32.
-* @li dout: An ND tensor of type float16, float32. \n
+* @li predict: An ND tensor of type float16, float32 or bfloat16.
+* @li label: An ND tensor of type float16, float32 or bfloat16.
+* @li dout: An ND tensor of type float16, float32 or bfloat16. \n
 
 * @par Attributes:
 * reduction: An optional string.Defaults to "mean". \n
@@ -1552,10 +1552,10 @@ REG_OP(LpLoss)
 * Compatible with the Pytorch operator MseLossGrad.
 */
 REG_OP(MseLossGrad)
-    .INPUT(predict, TensorType({DT_FLOAT32, DT_FLOAT16}))
-    .INPUT(label, TensorType({DT_FLOAT32, DT_FLOAT16}))
-    .INPUT(dout, TensorType({DT_FLOAT32, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(predict, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
+    .INPUT(dout, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(MseLossGrad)
 
@@ -1563,8 +1563,8 @@ REG_OP(MseLossGrad)
 * @brief Computes mse loss.
 * @par Inputs:
 * two inputs, including:
-*  @li predict: An ND Tensor of dtype float16 or float32.
-*  @li label: An ND Tensor of dtype float16 or float32.\n
+*  @li predict: An ND Tensor of dtype float16, float32 or bfloat16.
+*  @li label: An ND Tensor of dtype float16, float32 or bfloat16.\n
 *
 * @par Attributes:
 * reduction:An optional str from sum, none, mean, Defaults to "mean".\n
@@ -1574,9 +1574,9 @@ REG_OP(MseLossGrad)
 *    same type and shape as "predict".\n
 */
 REG_OP(MseLoss)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(MseLoss)
 

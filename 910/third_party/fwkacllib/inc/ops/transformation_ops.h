@@ -586,8 +586,8 @@ REG_OP(Unpack)
 
 * @par Inputs:
 * x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of the
-*    following types:float32, double, int32, uint8, int16, int8, int64, uint16,
-*    float16, uint32, uint64. The inputs must have data_format with one of follows:
+*    following types: int8, int16, int32, int64, uint8, uint16, uint32, uint64,
+*    float16, float32, double, bfloat16. The inputs must have data_format with one of follows:
 *    NHWC, NCHW.
 
 * @par Attributes:

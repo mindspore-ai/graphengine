@@ -24,6 +24,8 @@
 namespace ge {
 constexpr int64_t kNoNeedCompress = 0xFFFFFFFFFFFFFFFF;
 constexpr int64_t kNeedCompressVersion = 0x1;
+const string kKernelName = "_kernelname";
+const string kAtomicKernelName = "_atomic_kernelname";
 const std::set<std::string> kUnusedAttrNames = { "_l2fusion_ToOpStruct", "_op_slice_info", "_ir_attr_names" };
 
 class ModelCompressManager {
@@ -31,9 +33,13 @@ class ModelCompressManager {
   static Status Compress(const GeModelPtr &ge_model);
   static Status Decompress(const GeModelPtr &ge_model);
   static Status CpyModelAttrs2Dst(const GeModelPtr &src_ge_model, const GeModelPtr &dst_ge_model);
+  static void DeleteModelAttrs(const GeModelPtr &ge_model);
 
  private:
   static Status ProcessAttrsForOp(const OpDescPtr &op_desc, const bool is_compress);
+  static Status ProcessKernelNameAttrsForOp(const OpDescPtr &op_desc);
+  static Status ProcessKernelName(const OpDescPtr &op_desc);
+  static Status ProcessAtomicKernelName(const OpDescPtr &op_desc);
   static Status ProcessAttrsForTensor(const OpDescPtr &op_desc, const bool is_compress);
   static Status ProcessForTensor(const GeTensorDescPtr &tensor, const bool is_compress);
   static Status AddEnumAttrsToModel(const GeModelPtr &ge_model);

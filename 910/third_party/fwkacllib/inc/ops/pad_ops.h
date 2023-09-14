@@ -146,7 +146,7 @@ REG_OP(BroadcastToD)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+* @li x: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li paddings: A Tensor of type int32 or int64 . \n
@@ -167,7 +167,7 @@ REG_OP(Pad)
 * @brief Pads a tensor . \n
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32, int32 . \n
 
 * @par Attributes:
 * paddings: An optional "vector<vector<int>>". Defaults to "{}".
@@ -186,8 +186,8 @@ REG_OP(Pad)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
 */
 REG_OP(PadD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(paddings, ListListInt)
     .OP_END_FACTORY_REG(PadD)
 
@@ -196,7 +196,7 @@ REG_OP(PadD)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+* @li x: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
 * @li constant_values: A Tensor. Must have the same type as input.

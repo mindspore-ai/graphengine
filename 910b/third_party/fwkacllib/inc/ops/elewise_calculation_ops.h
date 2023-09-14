@@ -124,7 +124,7 @@ REG_OP(MinimumGrad)
 
 *@par Inputs:
 *One input:
-*x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8, bfloat16, uint1,
+* x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8, bfloat16, uint1,
    int64, uint64, int16, uint16, double, complex32, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
    For float32 type, the actual calculation on the chip is based on float16.  \n
 
@@ -140,7 +140,8 @@ REG_OP(Cast)
                           DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32, DT_BF16, DT_UINT1}))
     .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
                            DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
-                           DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32, DT_BF16, DT_COMPLEX32}))
+                           DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32,
+                           DT_BF16, DT_COMPLEX32}))
     .REQUIRED_ATTR(dst_type, Int)
     .OP_END_FACTORY_REG(Cast)
 
@@ -609,21 +610,21 @@ REG_OP(InvGrad)
     .OP_END_FACTORY_REG(InvGrad)
 
 /**
-*@brief: Returns the truth value of (x <= y) element-wise. \n
-*when input is int32 and (x2 - x1) > 2**31 or < -2**31
-*aicore accuracy is not guaranteed \n
+* @brief: Returns the truth value of (x <= y) element-wise. \n
+* when input is int32 and (x2 - x1) > 2**31 or < -2**31
+* aicore accuracy is not guaranteed \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float32, float64,
+* @li x1: A Tensor. Must be one of the following types: float32, double,
 * int32, uint8, int16, int8, int64, qint8, quint8, qint32, uint16,
-* float16, uint32, uint64.
-*@li x2: A Tensor of the same type as "x1". \n
+* float16, uint32, uint64, bfloat16, complex64, complex128.
+* @li x2: A Tensor of the same type as "x1". \n
 
-*@par Outputs:
-*y: A Tensor of type bool. \n
+* @par Outputs:
+* y: A Tensor of type bool. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator LessEqual.
 */
 REG_OP(LessEqual)
@@ -2306,6 +2307,10 @@ REG_OP(Rint)
 *Inputs including:
 * x: A required ND Tensor of type bfloat16, float16, float, int64, double, complex64,
 * complex128 or int32.
+
+* @par Attributes:
+* decimals: number of decimal places to round to. Defaults to "0".
+
 *@par Outputs:
 *y: A required ND Tensor. Has the same data type and shape as "x".
 *@par Third-party framework compatibility
@@ -2316,6 +2321,7 @@ REG_OP(Round)
                          DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128))
     .OUTPUT(y, TensorType(DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32, DT_INT64,
                           DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128))
+    .ATTR(decimals, Int, 0)
     .OP_END_FACTORY_REG(Round)
 
 /**
@@ -2532,7 +2538,7 @@ REG_OP(ArgMaxD)
 
 *@par Inputs:
 *One input: \n
-*x: A multi-dimensional Tensor of type bfloat16 float16 or float32 or int64. \n
+* x: A multi-dimensional Tensor of type bfloat16 float16 or float32 or int64. \n
 
 *@par Attributes:
 *@li dimension: An integer of type int32, specifying the axis information of
@@ -2569,7 +2575,7 @@ REG_OP(ArgMaxWithValue)
 /**
 *@par Inputs:
 *One input: \n
-*x: A multi-dimensional Tensor of type bfloat16 float16 or float32 or int64. \n
+* x: A multi-dimensional Tensor of type bfloat16 float16 or float32 or int64. \n
 
 *@par Attributes:
 *@li dimension: An integer of type int32, specifying the axis information of
@@ -2599,7 +2605,7 @@ REG_OP(ArgMaxWithValue)
 */
 REG_OP(ArgMinWithValue)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT64}))
-    .OUTPUT(indice,TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(indice, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(values, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT64}))
     .REQUIRED_ATTR(dimension, Int)
     .ATTR(keep_dims, Bool, false)
@@ -3394,8 +3400,8 @@ REG_OP(ArgMaxWithK)
 * Compatible with the Pytorch operator muls.
 */
 REG_OP(Muls)
-     .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16,DT_BF16,DT_COMPLEX32,DT_COMPLEX64}))
-     .OUTPUT(y, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16,DT_BF16,DT_COMPLEX32,DT_COMPLEX64}))
+     .INPUT(x, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
      .REQUIRED_ATTR(value, Float)
      .OP_END_FACTORY_REG(Muls)
 

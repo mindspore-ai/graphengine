@@ -169,6 +169,7 @@ struct HcomRemoteOperationParams {
     void *psSeg{};
     void *psSegNum{};
     std::string hcclType;
+    s32 flags{};
 };
 
 struct HcomAllToAllVParams {

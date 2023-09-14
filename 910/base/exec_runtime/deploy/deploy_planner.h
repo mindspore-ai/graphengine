@@ -34,6 +34,8 @@ class DeployPlan {
     DeviceInfo(const int32_t type, const int32_t node_id, const int32_t device_id) noexcept;
     DeviceInfo(const int32_t type, const int32_t node_id, const int32_t device_id,
                const int32_t phy_device_id) noexcept;
+    static const DeviceInfo &ExternalDevice();
+    static bool IsExternal(const DeviceInfo &device_info);
     int32_t GetType() const;
     int32_t GetNodeId() const;
     int32_t GetDeviceId() const;
@@ -63,6 +65,7 @@ class DeployPlan {
     uint32_t instance_idx;
     bool is_proxy_q = false;
     bool is_push = false;
+    bool is_local = false;
   };
 
   struct InvokedModelQueueInfo {
@@ -145,6 +148,8 @@ class DeployPlan {
   void AddCommGroup(const std::string &hcom_cluster_name, const HcomCommGroup &comm_group);
   void AddHcomRankTable(const std::string &name, const std::string &rank_table);
   const std::string &GetHcomRankTable(const std::string &hcom_cluster_name) const;
+  const std::map<std::string, DeployPlan::DeviceInfo> &GetFlowSendTagNameToLocalDeviceInfo() const;
+  const std::map<std::string, DeployPlan::DeviceInfo> &GetFlowRecvTagNameToLocalDeviceInfo() const;
 
  private:
   friend class DeployPlannerBase;
@@ -162,6 +167,8 @@ class DeployPlan {
   std::vector<QueueInfo> group_entries_;
   std::map<std::string, std::vector<HcomCommGroup>> cluster_name_to_comm_groups_;
   std::map<std::string, std::string> cluster_name_to_rank_table_;
+  std::map<std::string, DeployPlan::DeviceInfo> flow_send_tag_name_to_local_device_info_;
+  std::map<std::string, DeployPlan::DeviceInfo> flow_recv_tag_name_to_local_device_info_;
 };
 
 class DeployPlannerBase {
@@ -213,6 +220,9 @@ class DeployPlannerBase {
                          const std::vector<int32_t> &grouped_indices,
                          int32_t &group_index);
   void AddEndpointBindings(int32_t src_index, int32_t dst_index);
+  static Status ConvertToTagInfo(const Endpoint &endpoint, std::vector<DeployPlan::QueueInfo> &tag_infos);
+  void SetFlowSends(const std::map<std::string, std::vector<DeployPlan::QueueInfo>> &flow_sends);
+  void SetFlowRecvs(const std::map<std::string, std::vector<DeployPlan::QueueInfo>> &flow_recvs);
 
   static std::atomic<int64_t> plan_id_gen_;
   DeployPlan deploy_plan_;
@@ -279,6 +289,8 @@ class DeployPlannerBase {
   std::string GetEndpointFullName(const DeployPlan::QueueInfo &endpoint_info, const ModelQueueIndex &model_queue_index);
   const std::string &GetSubmodelType(const std::string &name);
   bool CheckAndAddRelation(const int32_t src_endpoint_idx, const int32_t dst_endpoint_idx);
+  Status ResolveExternalFlowEndpoints();
+  static bool IsExternalEndpoint(const DeployPlan::QueueInfo &endpoint_info);
 
   ModelRelation model_relation_;
   std::unique_ptr<ModelRelationReader> relation_reader_;
@@ -304,6 +316,9 @@ class DeployPlannerBase {
   ModelRelation::ModelEndpointInfo tail_model_queue_info_;
   DeployPlan::SubmodelInfo head_model_info_;
   DeployPlan::SubmodelInfo tail_model_info_;
+  DeployPlan::SubmodelInfo external_model_info_;
+  std::map<std::string, std::vector<DeployPlan::QueueInfo>> flow_sends_;
+  std::map<std::string, std::vector<DeployPlan::QueueInfo>> flow_recvs_;
   static std::atomic<int64_t> endpoint_name_id_gen_;
   std::map<std::string, std::string> short_names_;
   std::map<std::string, std::string> instance_to_model_name_;

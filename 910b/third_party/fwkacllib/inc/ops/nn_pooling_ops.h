@@ -1669,6 +1669,29 @@ REG_OP(Dilation2DBackpropInput)
     .OP_END_FACTORY_REG(Dilation2DBackpropInput)
 
 /**
+* @brief Applies a 1D/2D/3D adaptive average pooling over
+*       an input signal composed of several input planes.  \n
+
+* @par Inputs:
+* Two input, including:
+* @li x: A Tensor. Must be one of the following data types:
+*     float16, float32. \n
+* @li output_size: A required tensor of shape must be 1 or 2 or 3 ,
+*  specifying the size  of the output tensor. \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same data type as "x" \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator AdaptiveAvgPool.
+*/
+REG_OP(AdaptiveAvgPool)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(output_size, TensorType({DT_INT64, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(AdaptiveAvgPool)
+
+/**
 * @brief Applies a 2D adaptive average pooling over
 *       an input signal composed of several input planes.  \n
 

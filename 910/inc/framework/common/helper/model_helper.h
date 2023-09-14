@@ -40,14 +40,15 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
                        ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
   Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
-                         const size_t mode_index, const bool is_dyn_root) const;
+                         GeModelPtr &first_ge_model, const size_t mode_index,
+                         const bool is_dyn_root) const;
   Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
                            ModelBufferData &model, const bool is_unknown_shape) override;
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
   static Status GetModelFileHead(const ge::ModelData &model_data, const ModelFileHeader *&file_header);
-  static void SetModelToGeModel(const GeModelPtr &ge_model, Model &model);
+  static Status SetModelToGeModel(const GeModelPtr &ge_model, const GeModelPtr &first_ge_model, Model &model);
   static std::string GetOutputFileName() { return output_file_name_; }
   Status LoadPartInfoFromModel(const ge::ModelData &model_data, ModelPartition &partition);
 
@@ -122,6 +123,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   GeRootModelPtr root_model_;
   OpSoStore op_so_store_;
   bool is_repack_so_ = false;
+  bool is_need_compress_ = true;
   static std::string output_file_name_;
   std::unordered_set<std::string> custom_compiler_versions_{};
 
@@ -130,7 +132,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper);
 
   Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
-                       const size_t mode_index) const;
+                       const GeModelPtr &first_ge_model, const size_t mode_index) const;
   virtual Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                      const size_t mode_index) const;
   Status LoadTask(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model, const size_t mode_index) const;

@@ -633,7 +633,8 @@ REG_OP(EmbeddingApplyAdamW)
 * @li export_mode: A String. export mode, Defaults to "all".
 * @li only_var: A Bool. only export var, Defaults to "false".
 * @li file_type: A String. indicates the export file, Defaults to "bin".
-* @li table_name: A List String. represents table name corresponding to table id . \n
+* @li table_name: A List String. represents table name corresponding to table id .
+* @li filter_export_flag: A Bool. represents filter export flag on counter filter scenario. \n
 */
 REG_OP(EmbeddingTableExport)
     .INPUT(file_path, TensorType({DT_STRING}))
@@ -645,6 +646,7 @@ REG_OP(EmbeddingTableExport)
     .ATTR(only_var_flag, Bool, false)
     .ATTR(file_type, String, "bin")
     .ATTR(table_name, ListString, {})
+    .ATTR(filter_export_flag, Bool, false)
     .OP_END_FACTORY_REG(EmbeddingTableExport)
 
 /**
@@ -867,6 +869,27 @@ REG_OP(SearchN)
     .INPUT(scale_w, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(n, TensorType({DT_INT8}))
     .OP_END_FACTORY_REG(SearchN)
+
+/**
+* @brief The operator generates three assist matrixs which will be used in AdaptiveAvgPool. \n
+
+* @par Input:
+* input_size: A Tensor of type int64.  \n
+* output_size: A Tensor of type int64.  \n
+
+* @par Outputs:
+* three inputs, including:
+* @li left_matrix: A Tensor of type float32.  \n
+* @li right_matrix: A Tensor of type float32.  \n
+* @li weight_matrix: A Tensor of type float32.  \n
+*/
+REG_OP(AdaptiveAvgPoolAssistMatrix)
+    .INPUT(input_size, TensorType({DT_INT64}))
+    .INPUT(output_size, TensorType({DT_INT64}))
+    .OUTPUT(left_matrix, TensorType({DT_FLOAT}))
+    .OUTPUT(right_matrix, TensorType({DT_FLOAT}))
+    .OUTPUT(weight_matrix, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(AdaptiveAvgPoolAssistMatrix)
 
 /**
 * @brief The operator generates three assist matrixs which will be used in AdaptiveAvgPool2d. \n
@@ -1129,6 +1152,7 @@ REG_OP(HcomRemoteLookup)
   the op. Defaults to "hccl_world_group".
  * @li max_num: A required integer identifying the keys max num.
  * @li embedding_dim: A required integer identifying Apply memory usage for output or infer shape.
+ * @li flags: An integer identifying counter filter feature.
  */
 REG_OP(HcomCollRemoteLookup)
     .INPUT(table_id, TensorType({DT_INT32}))
@@ -1139,6 +1163,7 @@ REG_OP(HcomCollRemoteLookup)
     .ATTR(group, String, "hccl_world_group")
     .REQUIRED_ATTR(max_num, Int)
     .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(flags, Int, 0)
     .OP_END_FACTORY_REG(HcomCollRemoteLookup)
 
 /**
@@ -1183,6 +1208,7 @@ REG_OP(HcomCollRemoteUpdate)
   the op. Defaults to "hccl_world_group".
  * @li max_num: A required integer identifying the keys max num.
  * @li embedding_dim: A required integer identifying Apply memory usage for output or infer shape.
+ * @li flags: An integer identifying counter filter feature.
  */
 REG_OP(HcomCollRemoteLookupPaired)
     .INPUT(table_id, TensorType({DT_INT32}))
@@ -1197,6 +1223,7 @@ REG_OP(HcomCollRemoteLookupPaired)
     .ATTR(group, String, "hccl_world_group")
     .REQUIRED_ATTR(max_num, Int)
     .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(flags, Int, 0)
     .OP_END_FACTORY_REG(HcomCollRemoteLookupPaired)
 
 /**
@@ -1596,7 +1623,6 @@ REG_OP(FlashAttentionScore)
 * @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
 * @li pre_tockens: A int. Previous tokens.
 * @li next_tockens: A int. Next tokens.
-* @li is_flash: A bool. If True, use flash attention algorithm.
 * @li head_num: A int. The number of the heads.
 * @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
 
@@ -1632,11 +1658,70 @@ REG_OP(FlashAttentionScoreGrad)
     .ATTR(keep_prob, Float, 1.0)
     .ATTR(pre_tockens, Int, 65536)
     .ATTR(next_tockens, Int, 65536)
-    .REQUIRED_ATTR(is_flash, Bool)
     .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(input_layout, String)
     .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
 
+/**
+* @brief Function MultiHeadAttentionScoreGrad. \n
+
+* @par Inputs:
+* twelve inputs, including:
+* @li query: A matrix Tensor. The type support float32.
+* @li key: A matrix Tensor. The type support float32.
+* @li value: A matrix Tensor. The type support float32.
+* @li dy: A matrix Tensor. The type support float32.
+* @li real_shift: A scalar. The type support float32.
+* @li drop_mask: A matrix Tensor. The type support uint8.
+* @li padding_mask: A matrix Tensor. The type support float32.
+* @li atten_mask: A matrix Tensor. The type support float32.
+* @li softmax_max: A matrix Tensor. The type support float32.
+* @li softmax_sum: A matrix Tensor. The type support float32.
+* @li softmax_in: A matrix Tensor. The type support float32.
+* @li attention_in: A matrix Tensor. The type support float32.
+
+
+* @par Attributes:
+* @li scale_value: A float. The scale value. Default: 1.0.
+* @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
+* @li pre_tockens: A int. Previous tokens.
+* @li next_tockens: A int. Next tokens.
+* @li head_num: A int. The number of the heads.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
+
+
+* @par Outputs:
+* dq: A matrix Tensor. The type support float32.
+* dk: A matrix Tensor. The type support float32.
+* dv: A matrix Tensor. The type support float32.
+* dpse: A matrix Tensor. The type support float32.
+
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(MultiHeadAttentionScoreGrad)
+    .INPUT(query, TensorType({DT_FLOAT32}))
+    .INPUT(key, TensorType({DT_FLOAT32}))
+    .INPUT(value, TensorType({DT_FLOAT32}))
+    .INPUT(dy, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT32}))
+    .OUTPUT(dq, TensorType({DT_FLOAT32}))
+    .OUTPUT(dk, TensorType({DT_FLOAT32}))
+    .OUTPUT(dv, TensorType({DT_FLOAT32}))
+    .OUTPUT(dpse, TensorType({DT_FLOAT32}))
+    .ATTR(scale_value, Float, 1.0)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(pre_tockens, Int, 65536)
+    .ATTR(next_tockens, Int, 65536)
+    .REQUIRED_ATTR(head_num, Int)
+    .REQUIRED_ATTR(input_layout, String)
+    .OP_END_FACTORY_REG(MultiHeadAttentionScoreGrad)
 
 REG_OP(IncreFlashAttention)
     .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))

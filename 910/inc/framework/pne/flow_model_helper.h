@@ -23,11 +23,11 @@ namespace ge {
 class GE_FUNC_VISIBILITY FlowModelHelper {
  public:
   static Status LoadToFlowModel(const std::string &model_path, FlowModelPtr &flow_model);
-  static Status AssignConstantVarMem(FlowModelPtr &flow_model, const std::string &weight_dir, const uint64_t session_id,
-                                     const uint32_t graph_id);
+  static Status UpdateSessionGraphId(const FlowModelPtr &flow_model, const std::string &session_graph_id);
 
  private:
   static Status LoadGeRootModelToFlowModel(const ModelData &model, FlowModelPtr &flow_model);
+  static Status UpdateSessionGraphId(const ComputeGraphPtr &graph, const std::string &session_graph_id);
 };
 
 }  // namespace ge

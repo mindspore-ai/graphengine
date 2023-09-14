@@ -51,6 +51,16 @@ typedef enum tagRtDeviceMode {
 
 /**
  * @ingroup dvrt_base
+ * @brief device status.
+ */
+typedef enum tagRtDeviceStatus {
+    RT_DEVICE_STATUS_NORMAL = 0,
+    RT_DEVICE_STATUS_ABNORMAL,
+    RT_DEVICE_STATUS_END = 0xFFFF
+} rtDeviceStatus;
+
+/**
+ * @ingroup dvrt_base
  * @brief runtime exception numbers.
  */
 typedef enum tagRtExceptionType {

@@ -20,12 +20,17 @@
 #include "framework/pne/flow_model.h"
 #include "framework/common/types.h"
 #include "framework/common/helper/om_file_helper.h"
+#include "graph/manager/graph_var_manager.h"
 
 namespace ge {
+using NodeRefreshInfo = std::map<NodePtr, std::map<NodePtr, std::vector<int64_t>>>;
+
 class FlowModelOmLoader {
  public:
   static Status LoadToFlowModel(const ge::ModelData &model_data, FlowModelPtr &flow_model);
   static Status LoadToFlowModelDesc(const ge::ModelData &model_data, FlowModelPtr &flow_model);
+  static Status AssignConstantVarMem(FlowModelPtr &flow_model, const std::string &model_path, const uint64_t session_id,
+                                     const uint32_t graph_id, const bool is_cache = false);
 
  private:
   static Status CheckModelPartitions(const std::vector<ModelPartition> &model_partitions);
@@ -34,6 +39,10 @@ class FlowModelOmLoader {
                                        std::vector<string> &submodel_names);
   static Status LoadFlowSubmodelPartition(const std::vector<ModelPartition> &model_partitions,
                                           std::map<std::string, PneModelPtr> &flow_submodels);
+  static Status RecordOffsetsRefreshInfo(const ComputeGraphPtr &graph,
+                                         const std::map<NodePtr, int64_t> &unrefreshed_offsets,
+                                         NodeRefreshInfo &inputs_need_refresh, NodeRefreshInfo &outputs_need_refresh);
+  static Status RefreshNodeOffset(NodeRefreshInfo &inputs_need_refresh, NodeRefreshInfo &outputs_need_refresh);
 };
 }  // namespace ge
 #endif  // BASE_PNE_MODEL_FLOW_MODEL_OM_LOADER_H_

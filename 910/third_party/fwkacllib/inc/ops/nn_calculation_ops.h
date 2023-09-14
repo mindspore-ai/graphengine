@@ -596,9 +596,9 @@ REG_OP(Deconvolution)
 *@brief Computes the gradients of convolution with respect to the filter
 *@par Inputs:
  * Three inputs:
- * @li x: A Tensor. Must be one of the following types: float16.
- * 4-D with shape [batch, in_height, in_width, in_channels] or
- * [batch, in_channels, in_height, in_width].
+ * @li x: A 4D Tensor of input image. With the format "NHWC" which shape is
+ * [batch, in_height, in_width, in_channels] or the format "NCHW" which shape
+ * is [batch, in_channels, in_height, in_width].
  * @li filter_size: A const Tensor of type int32. Currently does not support
  * data tensor. An integer vector representing the tensor shape of filter,
  * where filter is a 4-D tensor [filter_height, filter_width, in_channels,
@@ -613,14 +613,16 @@ REG_OP(Deconvolution)
  * The following are the supported data types and data formats:\n
  *\n
  *\n
-    | Tensor    | x       | out_backprop | y       |\n
-    |-----------|---------|--------------|---------|\n
-    | Data Type | float16 |    float16   | float32 |\n
-    | Format    | NCHW    |     NCHW     | NCHW    |\n
-    |           | NHWC    |     NHWC     | HWCN    |\n
+    | Tensor    | x        | out_backprop | y       |\n
+    |-----------|--------- |--------------|---------|\n
+    | Data Type | float16  |    float16   | float32 |\n
+    |           | bfloat16 |    bfloat16  | float32 |\n
+    |           | float32  |    float32   | float32 |\n
+    | Format    | NCHW     |     NCHW     | NCHW    |\n
+    |           | NHWC     |     NHWC     | HWCN    |\n
  *\n
- * For float32 and float64 type of x and outbackprop, the actual calculation
- *  on the chip is based on float16.
+ * For float32 and float64 type of x and outbackprop, the actual calculation on the chip is
+ * based on float16 before V220.
  *\n
  *
 *@par Attributes:
@@ -675,9 +677,9 @@ REG_OP(Deconvolution)
  * Compatible with Tensorflow's conv2d_backprop_filter
 */
 REG_OP(Conv2DBackpropFilter)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .INPUT(filter_size, TensorType({DT_INT32}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -690,9 +692,9 @@ REG_OP(Conv2DBackpropFilter)
 *@brief Computes the gradients of convolution with respect to the filter.
 *@par Inputs:
  * Two inputs:
- * @li x: A Tensor. Type is float16.
- * 4-D with shape [batch, in_height, in_width, in_channels] or [batch,
- * in_channels, in_height, in_width].
+ * @li x: A 4D Tensor of input image. With the format "NHWC" which shape is
+ * [batch, in_height, in_width, in_channels] or the format "NCHW" which shape
+ * is [batch, in_channels, in_height, in_width].
  * @li out_backprop: A Tensor. Must have the same type as x. 4-D with shape
  * [batch, out_height, out_width, out_channels] or [batch, out_channels,
  * out_height, out_width]. Gradients with respect to the output of the
@@ -723,8 +725,8 @@ REG_OP(Conv2DBackpropFilter)
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv2DBackpropFilter instead.
 */
 REG_OP(Conv2DBackpropFilterD)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(filter_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -1609,8 +1611,8 @@ REG_OP(Conv2DTransposeD)
 *@brief Computes the deformed convolution output with the expected input
 * @par Inputs:
  * Two inputs:
- * @li x: A Tensor of type float16,float32
- * @li offsets: A Tensor of type float16,float32.Deformation offset parameter.
+ * @li x: A Tensor of type float16,float32,bfloat16.
+ * @li offsets: A Tensor of type float16,float32,bfloat16.Deformation offset parameter.
 *@par Attributes:
  * @li strides: A tuple/list of 4 integers.The stride of the sliding window for
  * height and width for H/W dimension.
@@ -1623,12 +1625,12 @@ REG_OP(Conv2DTransposeD)
  * @li deformable_groups: Specify the c-axis grouping number of input x.
  * @li modulated: Specify version of DeformableConv2D, true means v2, false means v1
 *@par Outputs:
- * y: A Tensor. A Tensor of type float16, float32.
+ * y: A Tensor. A Tensor of type float16, float32, bfloat16.
 */
 REG_OP(DeformableOffsets)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .REQUIRED_ATTR(ksize, ListInt)
@@ -1642,9 +1644,9 @@ REG_OP(DeformableOffsets)
 *@brief Computes the gradients of DeformableOffsets with respect to input and offsets
 * @par Inputs:
  * Three inputs:
- * @li grad: A Tensor of type float16,float32. gradients with respect to DeformableOffsets output
- * @li x: A Tensor of type float16,float32.
- * @li offsets: A Tensor of type float16,float32.Deformation offset parameter.
+ * @li grad: A Tensor of type float16,float32, bfloat16. gradients with respect to DeformableOffsets output
+ * @li x: A Tensor of type float16,float32,bfloat16.
+ * @li offsets: A Tensor of type float16,float32,bfloat16.Deformation offset parameter.
 *@par Attributes:
  * @li strides: A tuple/list of 4 integers.The stride of the sliding window for
  * height and width for H/W dimension.
@@ -1661,9 +1663,9 @@ REG_OP(DeformableOffsets)
  * @li grad_offsets: A Tensor of type float16, float32. Gradients with respect to input_offsets
 */
 REG_OP(DeformableOffsetsGrad)
-    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(grad_x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(grad_offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(strides, ListInt)

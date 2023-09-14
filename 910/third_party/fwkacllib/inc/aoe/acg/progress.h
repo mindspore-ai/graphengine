@@ -104,6 +104,7 @@ private:
     ProgressReportFunc progressFunc_;
     ProgressAttr attr_;
     std::unordered_set<std::shared_ptr<Progress>> subProgressSet_;
+    std::recursive_mutex rmtx_;
     std::mutex mtx_;
 };
 

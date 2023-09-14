@@ -81,7 +81,7 @@ class TBEHandleStore {
   /// @return NA
   void EraseTBEHandle(const std::map<std::string, uint32_t> &names);
 
-  void* GetUniqueIdPtr(void* handle);
+  void* GetUniqueIdPtr(void *const handle);
 
  private:
   TBEHandleStore() = default;

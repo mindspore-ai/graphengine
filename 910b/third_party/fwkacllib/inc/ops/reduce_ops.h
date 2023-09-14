@@ -25,171 +25,169 @@
 
 namespace ge {
 /**
-*@brief Performs reduced batch normalization .
+* @brief Performs reduced batch normalization .
 
-*@par Inputs:
-*x: A tensor of type float16 or float32. \n
+* @par Inputs:
+* x: A tensor of type float16 or float32 or bfloat16. \n
 
-*@par Outputs:
-*@li sum: A 1D Tensor of type float32 for SUM reduced "x".
-*@li square_sum: A 1D Tensor of type float32 for SUMSQ reduced "x" . \n
+* @par Outputs:
+* @li sum: A 1D Tensor of type float32 for SUM reduced "x".
+* @li square_sum: A 1D Tensor of type float32 for SUMSQ reduced "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * This operator is a BatchNorm fusion operator for updating the moving
 * averages for training.
 * This operator is used in conjunction with BNTrainingReduce.
 */
 REG_OP(BNTrainingReduce)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(sum, TensorType({DT_FLOAT}))
     .OUTPUT(square_sum, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingReduce)
 
 /**
-*@brief Performs reduced batch normalization . \n
+* @brief Performs reduced batch normalization . \n
 
-*@par Inputs:
-*x: A tensor of type float16 or float32. \n
+* @par Inputs:
+* x: A tensor of type float16 or float32 or bfloat16. \n
 
-*@par Outputs:
-*@li sum: A tensor of type float32 for SUM reduced "x".
-*@li square_sum: A tensor of type float32 for SUMSQ reduced "x" . \n
+* @par Outputs:
+* @li sum: A tensor of type float32 for SUM reduced "x".
+* @li square_sum: A tensor of type float32 for SUMSQ reduced "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * This operator is a BatchNorm fusion operator for updating the moving
 * averages for training.
 * This operator is used in conjunction with BN3DTrainingReduce.
 */
 REG_OP(BN3DTrainingReduce)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(sum, TensorType({DT_FLOAT}))
     .OUTPUT(square_sum, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BN3DTrainingReduce)
 
 /**
-*@brief Performs the backpropagation of BatchNorm .
+* @brief Performs the backpropagation of BatchNorm .
 
-*@par Inputs:
+* @par Inputs:
 * Seven inputs, including:
-*@li grads: A tensor of type float16 or float32, for
-* the gradient.
-*@li x: A tensor of type float16 or float32.
-*@li diff_scale: A tensor of type float32,
+* @li grads: A tensor of type float16 or float32 or bfloat16, for the gradient.
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li diff_scale: A tensor of type float32,
 * for the mean of "x".
-*@li diff_offset: A tensor of type float32,
+* @li diff_offset: A tensor of type float32,
 * for the variance of "x".
-*@li scale: A tensor of type float32.
-*@li batch_mean: A tensor of type float32,
+* @li scale: A tensor of type float32.
+* @li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A tensor of type float32,
+* @li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
-*@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* @par Attributes:
+* epsilon: An optional float32. Defaults to "0.0001". A small float number
 * added to the variance of "x" . \n
 
-*@par Outputs:
-*y: A Tensor of type float16 or float32, for the offset
+* @par Outputs:
+* y: A Tensor of type float16 or float32, for the offset
 * of "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * The preceding layer of this operator must be BNTrainingUpdateGrad . \n
 
-*@see BNTrainingUpdateGrad
+* @see BNTrainingUpdateGrad
 */
 REG_OP(BNTrainingReduceGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(diff_scale, TensorType({DT_FLOAT}))
     .INPUT(diff_offset, TensorType({DT_FLOAT}))
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(batch_mean, TensorType({DT_FLOAT}))
     .INPUT(batch_variance, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(epsilon, Float, 0.0001)
     .OP_END_FACTORY_REG(BNTrainingReduceGrad)
 
 /**
-*@brief Performs the backpropagation of BatchNorm . \n
+* @brief Performs the backpropagation of BatchNorm . \n
 
-*@par Inputs:
+* @par Inputs:
 * Seven inputs, including:
-*@li grads: A tensor of type float16 or float32, for
-* the gradient.
-*@li x: A tensor of type float16 or float32.
-*@li diff_scale: A tensor of type float32,
+* @li grads: A tensor of type float16 or float32, for the gradient.
+* @li x: A tensor of type float16 or float32.
+* @li diff_scale: A tensor of type float32,
 * for the mean of "x".
-*@li diff_offset: A tensor of type float32,
+* @li diff_offset: A tensor of type float32,
 * for the variance of "x".
-*@li scale: A tensor of type float32.
-*@li batch_mean: A tensor of type float32,
+* @li scale: A tensor of type float32.
+* @li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A tensor of type float32,
+* @li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
-*@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* @par Attributes:
+* epsilon: An optional float32. Defaults to "0.0001". A small float number
 * added to the variance of "x" . \n
 
-*@par Outputs:
-*y: A Tensor of type float16 or float32, for the offset
+* @par Outputs:
+* y: A Tensor of type float16 or float32, for the offset
 * of "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * The preceding layer of this operator must be BN3DTrainingReduceGrad . \n
 
-*@see BN3DTrainingReduceGrad
+* @see BN3DTrainingReduceGrad
 */
 REG_OP(BN3DTrainingReduceGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(diff_scale, TensorType({DT_FLOAT}))
     .INPUT(diff_offset, TensorType({DT_FLOAT}))
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(batch_mean, TensorType({DT_FLOAT}))
     .INPUT(batch_variance, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(epsilon, Float, 0.0001)
     .OP_END_FACTORY_REG(BN3DTrainingReduceGrad)
 
 /**
-*@brief Performs reduced batch normalization .
+* @brief Performs reduced batch normalization .
 
-*@par Inputs:
+* @par Inputs:
 * Seven inputs, including:
-*@li x: A tensor of type float16 or float32.
-*@li sum: A 1D Tensor of type float32 for the output of operator
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li sum: A 1D Tensor of type float32 for the output of operator
 * BNTrainingReduce.
-*@li square_sum: A 1D Tensor of type float32 for the output of operator
+* @li square_sum: A 1D Tensor of type float32 for the output of operator
 * BNTrainingReduce.
-*@li scale: A 1D Tensor of type float32, for the scaling factor.
-*@li offset: A 1D Tensor of type float32, for the scaling offset.
-*@li mean: A 1D Tensor of type float32, for the updated mean.
-*@li variance: A 1D Tensor of type float32, for the updated variance . \n
+* @li scale: A 1D Tensor of type float32, for the scaling factor.
+* @li offset: A 1D Tensor of type float32, for the scaling offset.
+* @li mean: A 1D Tensor of type float32, for the updated mean.
+* @li variance: A 1D Tensor of type float32, for the updated variance . \n
 
-*@par Attributes:
-*@li epsilon: A required float32, specifying the small value added to variance
+* @par Attributes:
+* @li epsilon: A required float32, specifying the small value added to variance
 * to avoid dividing by zero.
-*@li factor: A required float32, specifying the weight for updating the mean
+* @li factor: A required float32, specifying the weight for updating the mean
 * and variance . \n
 
-*@par Outputs:
+* @par Outputs:
 * Five outputs, including:
-*@li y: A tensor of type float16 or float32, for normalized "x".
-*@li mean: A tensor of type float32, for the updated mean.
-*@li variance: A tensor of type float32, for the updated variance.
-*@li batch_mean: A 1D Tensor of type float32, for the mean of "x".
-*@li batch_variance: A 1D Tensor of type float32, for the variance of "x" . \n
+* @li y: A tensor of type float16 or float32 or bfloat16, for normalized "x".
+* @li mean: A tensor of type float32, for the updated mean.
+* @li variance: A tensor of type float32, for the updated variance.
+* @li batch_mean: A 1D Tensor of type float32, for the mean of "x".
+* @li batch_variance: A 1D Tensor of type float32, for the variance of "x" . \n
 
-*@attention Constraints:
-*@li This operator is a BatchNorm fusion operator for updating the moving
+* @attention Constraints:
+* @li This operator is a BatchNorm fusion operator for updating the moving
 * averages for training. This operator is used in conjunction with
 * BNTrainingUpdate.
-*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to the
+* @li For Ascend 310, the result accuracy fails to reach 1/1000 due to the
 * square root instruction.
 */
 REG_OP(BNTrainingUpdate)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(sum, TensorType({DT_FLOAT}))
     .INPUT(square_sum, TensorType({DT_FLOAT}))
     .INPUT(scale, TensorType({DT_FLOAT}))
@@ -198,7 +196,7 @@ REG_OP(BNTrainingUpdate)
     .INPUT(variance, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(factor, Float)
     .REQUIRED_ATTR(epsilon, Float)
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(mean, TensorType({DT_FLOAT}))
     .OUTPUT(variance, TensorType({DT_FLOAT}))
     .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
@@ -206,43 +204,43 @@ REG_OP(BNTrainingUpdate)
     .OP_END_FACTORY_REG(BNTrainingUpdate)
 
 /**
-*@brief Performs reduced batch normalization . \n
+* @brief Performs reduced batch normalization . \n
 
-*@par Inputs:
+* @par Inputs:
 * Seven inputs, including:
-*@li x: A tensor of type float16 or float32.
-*@li sum: A tensor of type float32 for the output of operator
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li sum: A tensor of type float32 for the output of operator
 * BN3DTrainingUpdate.
-*@li square_sum: A tensor of type float32 for the output of operator
+* @li square_sum: A tensor of type float32 for the output of operator
 * BN3DTrainingUpdate.
-*@li scale: A tensor of type float32, for the scaling factor.
-*@li offset: A tensor of type float32, for the scaling offset.
-*@li mean: A tensor of type float32, for the updated mean.
-*@li variance: A tensor of type float32, for the updated variance . \n
+* @li scale: A tensor of type float32, for the scaling factor.
+* @li offset: A tensor of type float32, for the scaling offset.
+* @li mean: A tensor of type float32, for the updated mean.
+* @li variance: A tensor of type float32, for the updated variance . \n
 
-*@par Attributes:
-*@li epsilon: A required float32, specifying the small value added to variance
+* @par Attributes:
+* @li epsilon: A required float32, specifying the small value added to variance
 * to avoid dividing by zero.
-*@li factor: A required float32, specifying the weight for updating the mean
+* @li factor: A required float32, specifying the weight for updating the mean
 * and variance . \n
 
-*@par Outputs:
+* @par Outputs:
 * Five outputs, including:
-*@li y: A tensor of type float16 or float32, for normalized "x".
-*@li mean: A tensor of type float32, for the updated mean.
-*@li variance: A tensor of type float32, for the updated variance.
-*@li batch_mean: A tensor of type float32, for the mean of "x".
-*@li batch_variance: A tensor of type float32, for the variance of "x" . \n
+* @li y: A tensor of type float16 or float32 or bfloat16, for normalized "x".
+* @li mean: A tensor of type float32, for the updated mean.
+* @li variance: A tensor of type float32, for the updated variance.
+* @li batch_mean: A tensor of type float32, for the mean of "x".
+* @li batch_variance: A tensor of type float32, for the variance of "x" . \n
 
-*@attention Constraints:
-*@li This operator is a BatchNorm fusion operator for updating the moving
-averages for training.
-*This operator is used in conjunction with BN3DTrainingUpdate.
-*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to the square
+* @attention Constraints:
+* @li This operator is a BatchNorm fusion operator for updating the moving
+  averages for training.
+* This operator is used in conjunction with BN3DTrainingUpdate.
+* @li For Ascend 310, the result accuracy fails to reach 1/1000 due to the square
 * root instruction.
 */
 REG_OP(BN3DTrainingUpdate)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(sum, TensorType({DT_FLOAT}))
     .INPUT(square_sum, TensorType({DT_FLOAT}))
     .INPUT(scale, TensorType({DT_FLOAT}))
@@ -251,7 +249,7 @@ REG_OP(BN3DTrainingUpdate)
     .INPUT(variance, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(factor, Float)
     .REQUIRED_ATTR(epsilon, Float)
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(mean, TensorType({DT_FLOAT}))
     .OUTPUT(variance, TensorType({DT_FLOAT}))
     .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
@@ -259,116 +257,116 @@ REG_OP(BN3DTrainingUpdate)
     .OP_END_FACTORY_REG(BN3DTrainingUpdate)
 
 /**
-*@brief Performs batch normalization for inference .
+* @brief Performs batch normalization for inference .
 
-*@par Inputs:
+* @par Inputs:
 * Five inputs, including:
-*@li x: A tensor of type float16 or float32.
-*@li scale: A tensor of type float32, for the scaling factor.
-*@li offset: A tensor of type float32, for the scaling offset.
-*@li mean: A tensor of type float32, for the mean.
-*@li variance: A tensor of type float32, for the variance . \n
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li scale: A tensor of type float32, for the scaling factor.
+* @li offset: A tensor of type float32, for the scaling offset.
+* @li mean: A tensor of type float32, for the mean.
+* @li variance: A tensor of type float32, for the variance . \n
 
-*@par Attributes:
-*epsilon: An optional float32, specifying the small value added to variance to
+* @par Attributes:
+* epsilon: An optional float32, specifying the small value added to variance to
 * avoid dividing by zero. Defaults to "0.0001" . \n
 
-*@par Outputs:
-*y: A tensor of type float16 or float32 for the normalized "x" . \n
+* @par Outputs:
+* y: A tensor of type float16 or float32 or bfloat16 for the normalized "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * For Ascend 310, the result accuracy fails to reach 1/1000 due to the
 * square root instruction.
 */
 REG_OP(BNInfer)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(offset, TensorType({DT_FLOAT}))
     .INPUT(mean, TensorType({DT_FLOAT}))
     .INPUT(variance, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(epsilon, Float)
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(BNInfer)
 
 /**
-*@brief Performs reduced batch normalization. For some scenes which don't
+* @brief Performs reduced batch normalization. For some scenes which don't
 * contain assign moving average .
 
-*@par Inputs:
-*Five inputs, including:
-*@li x: A tensor of type float16 or float32.
-*@li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A tensor of type float32 for the output of operator
+* @par Inputs:
+* Five inputs, including:
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+* @li square_sum: A tensor of type float32 for the output of operator
 * BNTrainingReduce.
-*@li scale: A tensor of type float32, for the scaling factor.
-*@li offset: A tensor of type float32, for the scaling offset . \n
+* @li scale: A tensor of type float32, for the scaling factor.
+* @li offset: A tensor of type float32, for the scaling offset . \n
 
-*@par Attributes:
-*epsilon: A required float32, specifying the small value added to
+* @par Attributes:
+* epsilon: A required float32, specifying the small value added to
 * variance to avoid dividing by zero . \n
 
-*@par Outputs:
-*Three outputs, including:
-*@li y: A tensor of type float16 or float32, for normalized "x".
-*@li batch_mean: A tensor of type float32, for the mean of "x".
-*@li batch_variance: A tensor of type float32, for the variance of "x" . \n
+* @par Outputs:
+* Three outputs, including:
+* @li y: A tensor of type float16 or float32 or bfloat16, for normalized "x".
+* @li batch_mean: A tensor of type float32, for the mean of "x".
+* @li batch_variance: A tensor of type float32, for the variance of "x" . \n
 
-*@attention Constraints:
-*@li This operator is used in conjunction with BNTrainingReduce.
-*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to
+* @attention Constraints:
+* @li This operator is used in conjunction with BNTrainingReduce.
+* @li For Ascend 310, the result accuracy fails to reach 1/1000 due to
 * the square root instruction.
 */
 REG_OP(BNTrainingUpdateV2)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(sum, TensorType({DT_FLOAT}))
     .INPUT(square_sum, TensorType({DT_FLOAT}))
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(offset, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(epsilon, Float)
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingUpdateV2)
 
 /**
-*@brief Performs reduced batch normalization v3. For some scenes which
+* @brief Performs reduced batch normalization v3. For some scenes which
 * don't contain assign moving average .
 
-*@par Inputs:
+* @par Inputs:
 * Five inputs, including:
-*@li x: A tensor of type float16 or float32.
-*@li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A tensor of type float32 for the output of operator
+* @li x: A tensor of type float16 or float32.
+* @li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
+* @li square_sum: A tensor of type float32 for the output of operator
 * BNTrainingReduce.
-*@li scale: A tensor of type float32, for the scaling factor.
-*@li offset: A tensor of type float32, for the scaling offset . \n
+* @li scale: A tensor of type float32, for the scaling factor.
+* @li offset: A tensor of type float32, for the scaling offset . \n
 
-*@par Attributes:
-*epsilon: A required float32, specifying the small value added to variance
+* @par Attributes:
+* epsilon: A required float32, specifying the small value added to variance
 * to avoid dividing by zero . \n
 
-*@par Outputs:
-*@li y: A tensor of type float16 or float32, for normalized "x".
-*@li batch_mean: A tensor of type float32, for the mean of "x".
-*@li batch_variance: A tensor of type float32, for the variance of "x".
-*@li reserve_1: A tensor of type float32, for the mean of batch "x".
+* @par Outputs:
+* @li y: A tensor of type float16 or float32, for normalized "x".
+* @li batch_mean: A tensor of type float32, for the mean of "x".
+* @li batch_variance: A tensor of type float32, for the variance of "x".
+* @li reserve_1: A tensor of type float32, for the mean of batch "x".
 * Has the same type as batch_mean.
-*@li reserve_2: A tensor of type float32, for the variance of batch "x".
+* @li reserve_2: A tensor of type float32, for the variance of batch "x".
 * Has the same type as batch_mean . \n
 
-*@attention Constraints:
-*@li This operator is used in conjunction with BNTrainingReduce.
-*@li For Ascend 310, the result accuracy fails to reach 1/1000 due to
+* @attention Constraints:
+* @li This operator is used in conjunction with BNTrainingReduce.
+* @li For Ascend 310, the result accuracy fails to reach 1/1000 due to
 * the square root instruction.
 */
 REG_OP(BNTrainingUpdateV3)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(sum, TensorType({DT_FLOAT}))
     .INPUT(square_sum, TensorType({DT_FLOAT}))
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(offset, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(epsilon, Float)
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OUTPUT(reserve_1, TensorType({DT_FLOAT}))
@@ -376,32 +374,32 @@ REG_OP(BNTrainingUpdateV3)
     .OP_END_FACTORY_REG(BNTrainingUpdateV3)
 
 /**
-*@brief Performs the backpropagation of BatchNorm .
+* @brief Performs the backpropagation of BatchNorm .
 
-*@par Inputs:
+* @par Inputs:
 * Four inputs, including:
-*@li grads: A tensor of type float16 or float32,
+* @li grads: A tensor of type float16 or float32 or bfloat16,
 * for the gradient.
-*@li x: A tensor of type float16 or float32.
-*@li batch_mean: A tensor of type float32,
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A tensor of type float32,
+* @li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
-*@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* @par Attributes:
+* epsilon: An optional float32. Defaults to "0.0001". A small float number
 * added to the variance of "x" . \n
 
-*@par Outputs:
-*@li diff_scale: A Tensor of type float32,
+* @par Outputs:
+* @li diff_scale: A Tensor of type float32,
 * for the offset of "scale".
-*@li diff_offset: A Tensor of type float32,
+* @li diff_offset: A Tensor of type float32,
 * for the offset of "offset" . \n
 
 */
 REG_OP(BNTrainingUpdateGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(batch_mean, TensorType({DT_FLOAT}))
     .INPUT(batch_variance, TensorType({DT_FLOAT}))
     .ATTR(epsilon, Float, 0.0001)
@@ -410,32 +408,32 @@ REG_OP(BNTrainingUpdateGrad)
     .OP_END_FACTORY_REG(BNTrainingUpdateGrad)
 
 /**
-*@brief Performs the backpropagation of BatchNorm . \n
+* @brief Performs the backpropagation of BatchNorm . \n
 
-*@par Inputs:
+* @par Inputs:
 * Four inputs, including:
-*@li grads: A tensor of type float16 or float32,
+* @li grads: A tensor of type float16 or float32 or bfloat16,
 * for the gradient.
-*@li x: A tensor of type float16 or float32.
-*@li batch_mean: A tensor of type float32,
+* @li x: A tensor of type float16 or float32 or bfloat16.
+* @li batch_mean: A tensor of type float32,
 * for the mean of "x".
-*@li batch_variance: A tensor of type float32,
+* @li batch_variance: A tensor of type float32,
 * for the variance of "x" . \n
 
-*@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* @par Attributes:
+* epsilon: An optional float32. Defaults to "0.0001". A small float number
 * added to the variance of "x" . \n
 
-*@par Outputs:
-*@li diff_scale: A Tensor of type float32,
+* @par Outputs:
+* @li diff_scale: A Tensor of type float32,
 * for the offset of "scale".
-*@li diff_offset: A Tensor of type float32,
+* @li diff_offset: A Tensor of type float32,
 * for the offset of "offset" . \n
 
 */
 REG_OP(BN3DTrainingUpdateGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(batch_mean, TensorType({DT_FLOAT}))
     .INPUT(batch_variance, TensorType({DT_FLOAT}))
     .ATTR(epsilon, Float, 0.0001)
@@ -444,29 +442,29 @@ REG_OP(BN3DTrainingUpdateGrad)
     .OP_END_FACTORY_REG(BN3DTrainingUpdateGrad)
 
 /**
-*@brief Performs the backpropagation of BatchNorm for inference .
+* @brief Performs the backpropagation of BatchNorm for inference .
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li grads: A tensor of type float16 or float32, for the gradient.
-*@li scale: A tensor of type float32.
-*@li batch_variance: A tensor of type float32. It is an output of BatchNorm . \n
+* @li grads: A tensor of type float16 or float32 or bfloat16, for the gradient.
+* @li scale: A tensor of type float32.
+* @li batch_variance: A tensor of type float32. It is an output of BatchNorm . \n
 
-*@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* @par Attributes:
+* epsilon: An optional float32. Defaults to "0.0001". A small float number
 * added to the variance of "x" . \n
 
-*@par Outputs:
-*x_backprop: A Tensor of type float16 or float32, for the offset of "x" . \n
+* @par Outputs:
+* x_backprop: A Tensor of type float16 or float32 or bfloat16, for the offset of "x" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * The preceding layer of this operator must be operator BatchNorm.
 */
 REG_OP(BNInferGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(batch_variance, TensorType({DT_FLOAT}))
-    .OUTPUT(x_backprop, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(x_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(epsilon, Float, 0.0001)
     .OP_END_FACTORY_REG(BNInferGrad)
 

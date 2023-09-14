@@ -101,9 +101,9 @@ REG_OP(FusedBatchNormV2)
     .OUTPUT(reserve_space_1, TensorType({DT_FLOAT}))
     .OUTPUT(reserve_space_2, TensorType({DT_FLOAT}))
     .ATTR(epsilon, Float, 0.0001)
-    .ATTR(exponential_avg_factor, Float, 1.0)
     .ATTR(data_format, String, "NHWC")
     .ATTR(is_training, Bool, true)
+    .ATTR(exponential_avg_factor, Float, 1.0)
     .OP_END_FACTORY_REG(FusedBatchNormV2)
 
 /**

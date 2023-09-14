@@ -422,6 +422,15 @@ RTS_API rtError_t rtModelCheckCompatibility(const char_t *omSocVersion, const ch
 
 /**
  * @ingroup dvrt_dev
+ * @brief get device status
+ * @param [in] devId   the device id
+ * @param [out] deviceStatus the device statue
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtDeviceStatusQuery(const uint32_t devId, rtDeviceStatus *deviceStatus);
+
+/**
+ * @ingroup dvrt_dev
  * @brief get status
  * @param [in] devId   the logical device id
  * @param [in] otherDevId   the other logical device id

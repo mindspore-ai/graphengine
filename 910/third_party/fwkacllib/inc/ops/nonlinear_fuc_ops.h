@@ -382,7 +382,7 @@ REG_OP(EluGradV2)
 * @brief Compute sigmoid of "x" element-wise . \n
 
 * @par Inputs:
-* A Tensor of type complex64, complex128, float16, float32 or double . \n
+* A Tensor of type complex64, complex128, bfloat16, float16, float32 or double . \n
 
 * @par Outputs:
 * A Tensor. Has the same type as "x" . \n

@@ -46,6 +46,7 @@ class PneModel {
 
  public:
   inline Status AddSubModel(const shared_ptr<PneModel> &submodel, const std::string &type = "") {
+    const std::lock_guard<std::mutex> lk(pne_model_mutex_);
     if (submodel == nullptr) {
       GELOGE(INTERNAL_ERROR, "submodel is nullptr, type = %s", type.c_str());
       return INTERNAL_ERROR;
@@ -60,6 +61,7 @@ class PneModel {
   }
 
   inline const std::shared_ptr<PneModel> GetSubmodel(const std::string &name) const {
+    const std::lock_guard<std::mutex> lk(pne_model_mutex_);
     const auto &it = submodels_.find(name);
     if (it == submodels_.end()) {
       return nullptr;
@@ -67,9 +69,13 @@ class PneModel {
     return it->second;
   }
 
-  inline const std::map<std::string, std::shared_ptr<PneModel>> &GetSubmodels() const { return submodels_; }
+  inline const std::map<std::string, std::shared_ptr<PneModel>> &GetSubmodels() const {
+    const std::lock_guard<std::mutex> lk(pne_model_mutex_);
+    return submodels_;
+  }
 
   inline void SetSubmodels(std::map<std::string, std::shared_ptr<PneModel>> submodels) {
+    const std::lock_guard<std::mutex> lk(pne_model_mutex_);
     submodels_ = std::move(submodels);
   }
 
@@ -126,6 +132,7 @@ class PneModel {
   }
 
  private:
+  mutable std::mutex pne_model_mutex_;
   std::map<std::string, std::shared_ptr<PneModel>> submodels_;
   std::shared_ptr<ModelRelation> model_relation_;
   std::shared_ptr<ModelDeployResource> deploy_resource_;

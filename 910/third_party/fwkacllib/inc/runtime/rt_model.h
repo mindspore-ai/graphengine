@@ -403,6 +403,17 @@ RTS_API rtError_t rtMsgSend(uint32_t tId, uint32_t sendTid, int32_t timeout, voi
 RTS_API rtError_t rtUpdateTaskDescDumpFlag(void *taskDescBaseAddr, uint32_t taskId);
 
 /**
+ * @ingroup rtSetTaskDescDumpFlag
+ * @brief nano set taskdesc dump flag
+ * @param [in] taskDescBaseAddr  TaskDesc Base Addr
+ * @param [in] taskDescSize      Static TaskDesc Partition size
+ * @param [in] taskId   task id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetTaskDescDumpFlag(void *taskDescBaseAddr, size_t taskDescSize, uint32_t taskId);
+
+/**
  * @ingroup rt_dump_Init
  * @brief nano dump init
  * @return RT_ERROR_NONE for ok

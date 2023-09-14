@@ -56,13 +56,12 @@ void GetFileConstantPath(const OpDescPtr &op_desc, std::string &file_path, size_
 Status SetFileConstantPath(const OpDescPtr &op_desc, const std::string &file_path, const int64_t offset = 0,
                            const int64_t length = 0);
 
-Status TransferOmPathToWeightDir(const std::string &om_path, std::string &weight_dir);
+Status TransferOmPathToExternalWeightDir(const std::string &om_path, string &file_constant_weight_dir);
+Status GetExternalWeightDirFromModelData(const ge::ModelData &model_data, std::string &file_constant_weight_dir);
 
-Status SetExternalPathInner(const OpDescPtr &op_desc, const std::string &weight_dir);
+Status SetExternalPath(const OpDescPtr &op_desc, const std::string &weight_dir);
 
-Status SetExternalPath(const OpDescPtr &op_desc, const std::string &om_path);
-
-Status SetExternalPath(const ComputeGraphPtr &compute_graph, const std::string &om_path);
+Status SetExternalPath(const ComputeGraphPtr &compute_graph, const std::string &weight_dir);
 
 std::string GetTmpWeightDir(const int32_t pid, const uint64_t session_id);
 

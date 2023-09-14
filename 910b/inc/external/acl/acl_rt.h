@@ -19,8 +19,9 @@
 extern "C" {
 #endif
 
-#define ACL_EVENT_SYNC      0x00000001u
-#define ACL_EVENT_TIME_LINE 0x00000008u
+#define ACL_EVENT_SYNC                    0x00000001u
+#define ACL_EVENT_CAPTURE_STREAM_PROGRESS 0x00000002u
+#define ACL_EVENT_TIME_LINE               0x00000008u
 
 #define ACL_STREAM_FAST_LAUNCH 0x00000001u
 #define ACL_STREAM_FAST_SYNC   0x00000002u
@@ -55,6 +56,12 @@ typedef enum aclrtEventWaitStatus {
     ACL_EVENT_WAIT_STATUS_NOT_READY = 1,
     ACL_EVENT_WAIT_STATUS_RESERVED  = 0xFFFF,
 } aclrtEventWaitStatus;
+
+typedef enum aclrtStreamStatus {
+    ACL_STREAM_STATUS_COMPLETE  = 0,
+    ACL_STREAM_STATUS_NOT_READY = 1,
+    ACL_STREAM_STATUS_RESERVED  = 0xFFFF,
+} aclrtStreamStatus;
 
 typedef enum aclrtCallbackBlockType {
     ACL_CALLBACK_NO_BLOCK,
@@ -134,6 +141,34 @@ typedef struct aclrtUtilizationInfo {
 typedef struct tagRtGroupInfo aclrtGroupInfo;
 
 typedef struct rtExceptionInfo aclrtExceptionInfo;
+
+typedef enum aclrtMemLocationType {
+    ACL_MEM_LOCATION_TYPE_HOST = 0, /**< reserved enum, current version not support */
+    ACL_MEM_LOCATION_TYPE_DEVICE,
+} aclrtMemLocationType;
+
+typedef struct aclrtMemLocation {
+    uint32_t id;
+    aclrtMemLocationType type;
+} aclrtMemLocation;
+
+typedef enum aclrtMemAllocationType {
+    ACL_MEM_ALLOCATION_TYPE_PINNED = 0,
+} aclrtMemAllocationType;
+
+typedef enum aclrtMemHandleType {
+    ACL_MEM_HANDLE_TYPE_NONE = 0,
+} aclrtMemHandleType;
+
+typedef struct aclrtPhysicalMemProp {
+    aclrtMemHandleType handleType;
+    aclrtMemAllocationType allocationType;
+    aclrtMemAttr memAttr;
+    aclrtMemLocation location;
+    uint64_t reserve;
+} aclrtPhysicalMemProp;
+
+typedef void* aclrtDrvMemHandle;
 
 typedef void (*aclrtCallback)(void *userData);
 
@@ -964,6 +999,106 @@ ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr,
 
 /**
  * @ingroup AscendCL
+ * @brief Allocate an address range reservation
+ *
+ * @param virPtr [OUT]      Resulting pointer to start of virtual address range allocated
+ * @param size [IN]         Size of the reserved virtual address range requested
+ * @param alignment [IN]    Alignment of the reserved virtual address range requested
+ * @param expectPtr [IN]    Fixed starting address range requested, must be nullptr
+ * @param flags [IN]        Flag of page type
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtReleaseMemAddress | aclrtMallocPhysical | aclrtMapMem
+ */
+ACL_FUNC_VISIBILITY aclError aclrtReserveMemAddress(void **virPtr,
+                                                    size_t size,
+                                                    size_t alignment,
+                                                    void *expectPtr,
+                                                    uint64_t flags);
+
+/**
+ * @ingroup AscendCL
+ * @brief Free an address range reservation
+ *
+ * @param virPtr [IN]   Starting address of the virtual address range to free
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtReserveMemAddress
+ */
+ACL_FUNC_VISIBILITY aclError aclrtReleaseMemAddress(void *virPtr);
+
+/**
+ * @ingroup AscendCL
+ * @brief Create a memory handle representing a memory allocation of a given size described by the given properties
+ *
+ * @param handle [OUT]  Value of handle returned. All operations on this allocation are to be performed using this handle.
+ * @param size [IN]     Size of the allocation requested
+ * @param prop [IN]     Properties of the allocation to create
+ * @param flags [IN]    Currently unused, must be zero
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtFreePhysical | aclrtReserveMemAddress | aclrtMapMem
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMallocPhysical(aclrtDrvMemHandle *handle,
+                                                 size_t size,
+                                                 const aclrtPhysicalMemProp *prop,
+                                                 uint64_t flags);
+
+/**
+ * @ingroup AscendCL
+ * @brief Release a memory handle representing a memory allocation which was previously allocated through aclrtMallocPhysical
+ *
+ * @param handle [IN]   Value of handle which was returned previously by aclrtMallocPhysical
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtMallocPhysical
+ */
+ACL_FUNC_VISIBILITY aclError aclrtFreePhysical(aclrtDrvMemHandle handle);
+
+/**
+ * @ingroup AscendCL
+ * @brief Maps an allocation handle to a reserved virtual address range
+ *
+ * @param virPtr [IN]   Address where memory will be mapped
+ * @param size [IN]     Size of the memory mapping
+ * @param offset [IN]   Offset into the memory represented by handle from which to start mapping
+ * @param handle [IN]   Handle to a shareable memory
+ * @param flags [IN]    Currently unused, must be zero
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtUnmapMem | aclrtReserveMemAddress | aclrtMallocPhysical
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMapMem(void *virPtr,
+                                         size_t size,
+                                         size_t offset,
+                                         aclrtDrvMemHandle handle,
+                                         uint64_t flags);
+
+/**
+ * @ingroup AscendCL
+ * @brief Unmap the backing memory of a given address range
+ *
+ * @param virPtr [IN]   Starting address for the virtual address range to unmap
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtMapMem
+ */
+ACL_FUNC_VISIBILITY aclError aclrtUnmapMem(void *virPtr);
+
+/**
+ * @ingroup AscendCL
  * @brief Create config handle of stream
  *
  * @retval the aclrtStreamConfigHandle pointer
@@ -1096,6 +1231,18 @@ ACL_FUNC_VISIBILITY aclError aclrtSynchronizeStream(aclrtStream stream);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtSynchronizeStreamWithTimeout(aclrtStream stream, int32_t timeout);
+
+/**
+ * @ingroup AscendCL
+ * @brief Query a stream for completion status.
+ *
+ * @param  stream [IN]   the stream to query
+ * @param  status [OUT]  stream status
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtStreamQuery(aclrtStream stream, aclrtStreamStatus *status);
 
 /**
  * @ingroup AscendCL

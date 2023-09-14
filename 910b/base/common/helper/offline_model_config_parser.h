@@ -24,7 +24,9 @@
 #include "nlohmann/json.hpp"
 #include "ge/ge_api_error_codes.h"
 #include "common/model/model_relation.h"
+#include "common/model/model_deploy_resource.h"
 namespace ge {
+void to_json(nlohmann::json &json_obj, const HcomCommGroup &comm_group);
 struct DeployConfig {
   std::string submodel_name;
   std::string deploy_device;
@@ -56,11 +58,11 @@ public:
   };
 
   struct SubmodelConfigInfo {
-    uint32_t submodel_instance_id = 0xFFFFFFFF; // set by user
+    uint32_t submodel_instance_id = 0xFFFFFFFFU; // set by user
     std::string submodel_name; // part of submodel path
     std::string submodel_path;
     std::string model_type; // CPU NPU
-    uint32_t rank_id = 0xFFFFFFFF;;
+    uint32_t rank_id = 0xFFFFFFFFU;;
     std::vector<int32_t> deploy_logic_device_ids;         // nodeid:itemid:deviceid
     std::map<uint32_t, EdgeInfo> flow_input_mapping;      // key: input indices of current model
     std::map<uint32_t, std::vector<EdgeInfo>> flow_output_mapping;     // key: output indices of current model
@@ -96,6 +98,7 @@ public:
   Status GetLogicDeviceIdToRankIds(std::map<std::string, std::vector<uint32_t>> &device_ids_to_rank_ids) const;
   void GetGroupNameToRankIds(std::map<std::string, std::vector<uint32_t>> &group_name_to_rank_ids) const;
   bool IsWithHcomInfo() const { return with_hcom_info_; }
+  Status GetCfgGroupNameTable(std::string &hcom_group_to_ranks) const;
 private:
   Status TransferToLogicDeviceId(const std::vector<int32_t> &logic_dev_ids, std::string &logic_device_id) const;
   // data split is without model relation
@@ -145,6 +148,7 @@ class OfflineModelConfigParser {
   Status GetLogicDeviceIdToRankIds(std::map<std::string, std::vector<uint32_t>> &device_ids_to_rank_ids) const;
   Status GetGroupNameToRankIds(std::map<std::string, std::vector<uint32_t>> &group_name_to_rank_ids) const;
   bool IsWithHcomInfo() const;
+  Status GetCfgGroupNameTable(std::string &hcom_group_to_ranks) const;
  private:
   OfflineModelConfigParser() = default;
   ~OfflineModelConfigParser() = default;

@@ -69,6 +69,8 @@ class FlowModel : public PneModel {
   }
 
  private:
+  HcomClusterDesc &GetOrCreateHcomClusterDesc(const std::string &name);
+  mutable std::mutex flow_model_mutex_;
   std::map<std::string, std::map<std::string, int32_t>> models_esched_priority_;
   std::map<std::string, HcomClusterDesc> hcom_cluster_descs_;
   std::map<std::string, std::pair<std::string, uint32_t>> model_name_to_cluster_and_rank_id_;

@@ -17,7 +17,7 @@
 extern "C" {
 #endif // __cplusplus
 
-#define MSPROF_DATA_HEAD_MAGIC_NUM  0x5a5a
+#define MSPROF_DATA_HEAD_MAGIC_NUM  0x5A5A
 
 enum MsprofDataTag {
     MSPROF_ACL_DATA_TAG = 0,            // acl data tag, range: 0~19

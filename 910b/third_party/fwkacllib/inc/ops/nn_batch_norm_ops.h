@@ -140,9 +140,9 @@ REG_OP(BatchNorm)
     .OUTPUT(reserve_space_2, TensorType({DT_FLOAT}))
     .OUTPUT(reserve_space_3, TensorType({DT_FLOAT}))
     .ATTR(epsilon, Float, 0.0001)
-    .ATTR(exponential_avg_factor, Float, 1.0)
     .ATTR(data_format, String, "NHWC")
     .ATTR(is_training, Bool, true)
+    .ATTR(exponential_avg_factor, Float, 1.0)
     .OP_END_FACTORY_REG(BatchNorm)
 
 /**
@@ -554,68 +554,71 @@ REG_OP(BatchNormGradExt2)
 
 
 /**
-*@brief Performs batch normalization . \n
+* @brief Performs batch normalization . \n
 
-*@par Inputs:
-*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
-*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum: A Tensor,represents the mean and the variance's scale factor
-*@li scale: An optional tensor of type float16 or float32, no use
-*@li offset: An optional tensor of type float16 or float32, no use
-*@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
-*@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional input, not use
-*@par Outputs:
-*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
+* @par Inputs:
+* @li x: A 4D or 5D Tensor of type float16 or float32 or bfloat16, with format NHWC or NCHW.
+* @li mean: A Tensor of type float32 or float16 or bfloat16. Must be 1D if input "x".
+      Specifies the mean used for inference.
+* @li variance: A Tensor of type float32 or float16 or bfloat16 . Must be 1D if input "x".
+      Specifies the variance used for inference.
+* @li momentum: A Tensor,represents the mean and the variance's scale factor
+* @li scale: An optional tensor of type float16 or float32 or bfloat16, no use
+* @li offset: An optional tensor of type float16 or float32 or bfloat16, no use
+* @par Attributes:
+* @li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero.
+      Defaults to "0.00001".
+* @li use_global_stats: mean inference mode , only can be "True".
+* @li mode: An optional input, not use
+* @par Outputs:
+* @li y: A 4D or 5D Tensor of type float16 or float32 or bfloat16 for the normalized "x"
 */
 REG_OP(BNInference)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(mean, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(variance, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(momentum, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(variance, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(momentum, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(epsilon, Float,1e-5f)
     .ATTR(use_global_stats, Bool,true)
     .ATTR(mode, Int,1)
     .OP_END_FACTORY_REG(BNInference)
 
 /**
-*@brief Performs batch normalization .
+* @brief Performs batch normalization .
 
-*@par Inputs:
-*@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW.
-*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"
+* @par Inputs:
+* @li x: A 4D or 5D Tensor of type float16 or float32 or bfloat16, with format NHWC or NCHW.
+* @li mean: A Tensor of type float32 or float16 or bfloat16. Must be 1D if input "x"
 * Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"
+* @li variance: A Tensor of type float32 or float16 or bfloat16 . Must be 1D if input "x"
 * Specifies the variance used for inference.
-*@li scale: An optional tensor of type float16 or float32, no use.
-*@li offset: An optional tensor of type float16 or float32, no use. \n
+* @li scale: An optional tensor of type float16 or float32 or bfloat16, no use.
+* @li offset: An optional tensor of type float16 or float32 or bfloat16, no use. \n
 
-*@par Attributes:
-*@li momentum: An optional float32 num, represents the mean and
+* @par Attributes:
+* @li momentum: An optional float32 num, represents the mean and
 * the variance's scale factor.
-*@li epsilon: An optional float32, specifying the small value
+* @li epsilon: An optional float32, specifying the small value
 * added to variance to avoid dividing by zero. Defaults to "0.00001".
-*@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional attr, not use. \n
+* @li use_global_stats: mean inference mode , only can be "True".
+* @li mode: An optional attr, not use. \n
 
-*@par Outputs:
-*@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x". \n
+* @par Outputs:
+* @li y: A 4D or 5D Tensor of type float16 or float32 or bfloat16 for the normalized "x". \n
 
-*@par Restrictions:
+* @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use BNInference instead.
 */
 REG_OP(BNInferenceD)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(mean, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(variance, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(variance, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(momentum, Float,0.9)
     .ATTR(epsilon, Float,1e-5f)
     .ATTR(use_global_stats, Bool,true)

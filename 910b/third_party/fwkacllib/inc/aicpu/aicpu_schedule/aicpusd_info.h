@@ -199,7 +199,8 @@ struct __attribute__((visibility("default"))) ModelCfgInfo {
     uint32_t modelType;
     uint64_t commGroupsAddr;       // communication groups ptr
     int32_t psId;                  // ps id
-    char rsv[104UL];
+    bool supportCounterFilter;     // counter filter flag
+    char rsv[103UL];
 } __attribute__((packed));
 
 struct __attribute__((visibility("default"))) ModelInfo {

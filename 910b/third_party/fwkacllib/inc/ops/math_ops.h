@@ -692,7 +692,7 @@ REG_OP(ComplexAbs)
  *@brief Returns which elements of x are NaN.
 
  *@par Inputs:
- *x:A Tensor of type float16, float32, double.
+ *x:A Tensor of type float16, bfloat16, float32, double.
 
  *@par Outputs:
  *y:A Tensor. Has the same shape as x. Returns which elements of x are isnan
@@ -701,7 +701,7 @@ REG_OP(ComplexAbs)
  *Compatible with tensorflow IsNan operator.
  */
 REG_OP(IsNan)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsNan)
 

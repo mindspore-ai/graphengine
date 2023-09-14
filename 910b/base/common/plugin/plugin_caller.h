@@ -22,18 +22,19 @@
 #include "framework/common/debug/log.h"
 #include "common/ge_common/scope_guard.h"
 #include "mmpa/mmpa_api.h"
+#include "inc/common/checker.h"
 
 namespace ge {
 class PluginCaller {
  public:
   explicit PluginCaller(const std::string &lib_name) : handle_(nullptr), lib_name_(lib_name) {}
   ~PluginCaller() = default;
-  template <typename FuncType, typename... Args>
-  ge::Status CallFunction(const std::string &function_name, Args... args) {
-    GE_CHK_STATUS_RET_NOLOG(LoadLib());
+  template <typename RetType, typename FuncType, typename... Args>
+  RetType CallFunction(const std::string &function_name, Args... args) {
+    GE_ASSERT_SUCCESS(LoadLib());
     GE_MAKE_GUARD(unload_libs, [this]() { UnloadLib(); });
     const auto func = reinterpret_cast<FuncType>(mmDlsym(handle_, function_name.c_str()));
-    GE_CHECK_NOTNULL(func, "Failed to find symbol %s.", function_name.c_str());
+    GE_ASSERT_NOTNULL(func, "Failed to find symbol %s.", function_name.c_str());
     return func(args...);
   }
 

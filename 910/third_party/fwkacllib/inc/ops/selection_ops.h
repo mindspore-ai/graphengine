@@ -98,7 +98,7 @@ REG_OP(RangeD)
 * Two inputs, including:
 * @li x: A Tensor.
 * Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16,
-uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 * @li multiples: A 1D Tensor of type int32 or int64.
 *     The length must be the same as the number of dimensions in "input"
 
@@ -120,7 +120,7 @@ REG_OP(Tile)
 * @brief Constructs a tensor by tiling a given tensor . \n
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types: float32, float16, int32 . \n
+* x: A Tensor. Must be one of the following types: float32, float16, int32, bfloat16 . \n
 
 * @par Attributes:
 * multiples: A required Tensor of type int32 or int64.
@@ -137,8 +137,8 @@ REG_OP(Tile)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Tile instead.
 */
 REG_OP(TileD)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32， DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
     .REQUIRED_ATTR(multiples, ListInt)
     .OP_END_FACTORY_REG(TileD)
 
@@ -553,7 +553,7 @@ REG_OP(UnsortedSegmentSum)
     .OP_END_FACTORY_REG(UnsortedSegmentSum)
 
 /**
-* @brief Creates a one-dimensional tensor of size steps whose values are evenly spaced from start to 
+* @brief Creates a one-dimensional tensor of size steps whose values are evenly spaced from start to
 *	end, inclusive, on a logarithmic scale with base base. \n
 
 * @par Inputs:
@@ -808,9 +808,9 @@ REG_OP(SegmentMaxD)
 * @par Inputs:
 * Four inputs, including:
 * @li x: A Tensor of indices. Must be one of the following types: int32, uint8, int64.
-* @li depth: A scalar of type int32. The depth of the one hot dimension.
+* @li depth: A scalar of type int32 or int64. The depth of the one hot dimension.
 * @li on_value: A scalar. The value to fill in output when indices[j] = i,
-*     Must be one of the following types: float16, float32, int32, int8, uint8.
+*     Must be one of the following types: float16, float32, int64, int32, int8, uint8.
 * @li off_value: A scalar. The value to fill in output when indices[j] != i,
 *     Has the same type as "on_value" . \n
 
@@ -975,7 +975,7 @@ REG_OP(SliceDV2)
     .OUTPUT(y, TensorType::BasicType())
     .REQUIRED_ATTR(size, ListInt)
     .OP_END_FACTORY_REG(SliceDV2)
-    
+
 /**
 * @brief Finds values and indices of the "k" largest elements for the last
 * dimension . \n
@@ -2061,8 +2061,8 @@ REG_OP(Crop)
       .OP_END_FACTORY_REG(Crop)
 
 /**
-* @brief Returns a namedtuple (values, indices) where values is the cumulative 
-* the cumulative minimum of elements of input in the dimension dim. 
+* @brief Returns a namedtuple (values, indices) where values is the cumulative
+* the cumulative minimum of elements of input in the dimension dim.
 * And indices is the index location of each maximum value found in the dimension dim. \n
 
 * @par Inputs:
@@ -2088,8 +2088,8 @@ REG_OP(Cummin)
     .OP_END_FACTORY_REG(Cummin)
 
 /**
-* @brief Returns a namedtuple (values, indices) where values is the cumulative 
-* the cumulative maximum of elements of input in the dimension dim. 
+* @brief Returns a namedtuple (values, indices) where values is the cumulative
+* the cumulative maximum of elements of input in the dimension dim.
 * And indices is the index location of each maximum value found in the dimension dim. \n
 
 * @par Inputs:
@@ -2370,7 +2370,7 @@ REG_OP(MaskedSelectV2)
 
 * @par Inputs:
 * three inputs, including:
-*  @li x: A Tensor of dtype is float16 or float32 or float64 or 
+*  @li x: A Tensor of dtype is float16 or float32 or float64 or
 *      int64 or int32 or int16 or int8 or uint8 or bool or bfloat16.
 *  @li mask: A Tensor of dtype is bool.
 *  @li updates: A tensor with the same type as x. \n
@@ -2415,14 +2415,14 @@ REG_OP(SliceLastDim)
     .OP_END_FACTORY_REG(SliceLastDim)
 
 /**
-* @brief Extracts a strided slice of a tensor. Roughly speaking, this op 
-*   extracts a slice of size (end-begin)/stride from the given input tensor. 
-*   Starting at the location specified by begin the slice continues by 
+* @brief Extracts a strided slice of a tensor. Roughly speaking, this op
+*   extracts a slice of size (end-begin)/stride from the given input tensor.
+*   Starting at the location specified by begin the slice continues by
 *   adding stride to the index until all dimensions are not less than end. \n
 *
 * @par Inputs:
 * Five inputs, including:
-* @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, 
+* @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
 *     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, float16, uint32, uint64, complex64, complex128, bool
 * @li begin: A Tensor of type int32 or int64, for the index of the first value to select.
@@ -2577,7 +2577,7 @@ REG_OP(MaskedFillRange)
 * @li topk_pq_ivf: A Tensor of type int32 , the bucket number corresponding to topk_pq_distance.
 * @li pq_distance: A Tensor of type float32 or float16,
 * the new data set will be reordered with topk_pq_distance and updated to topk_pq_distance.
-* @li pq_index: A Tensor of type int32, index corresponding to pq_distance. 
+* @li pq_index: A Tensor of type int32, index corresponding to pq_distance.
 * @li pq_ivf: A scalar of type int32 , the bucket number corresponding to pq_distance. \n
 *
 * @par Attributes:
@@ -2600,13 +2600,13 @@ REG_OP(InplaceTopKDistance)
 * @brief After a set of sorted data and a new set of data are re-sorted, get the first k data. \n
 *
 * @par Inputs:
-* @li sorted_distance: A sorted Tensor, Will be updated after calculation. Must be one of the following types: float16. 
+* @li sorted_distance: A sorted Tensor, Will be updated after calculation. Must be one of the following types: float16.
 * @li pq_ivf: A Tensor of type int32, index corresponding to sorted_distance.
 * @li pq_index: A Tensor of type int32 , the bucket number corresponding to sorted_distance. \n
 *
 * @par Outputs:
 * @li topk_distance: A Tensor of type float16, the new data set will be reordered with sorted_distance and updated to topk_distance.
-* @li topk_ivf: A Tensor of type int32, index corresponding to topk_distance. 
+* @li topk_ivf: A Tensor of type int32, index corresponding to topk_distance.
 * @li topk_index: A scalar of type int32 , the bucket number corresponding to topk_distance. \n
 *
 * @par Attributes:
@@ -2762,9 +2762,9 @@ REG_OP(NonMaxSuppressionBucketize)
 * @brief insert the values into the sorted sequence and return the index. \n
 
 * @par Inputs:
-* @li sorted_sequence: A Tensor of {DT_FLOAT16,DT_FLOAT,DT_INT16,DT_INT8,DT_UINT8,DT_INT32,DT_INT64}, 
+* @li sorted_sequence: A Tensor of {DT_FLOAT16,DT_FLOAT,DT_INT16,DT_INT8,DT_UINT8,DT_INT32,DT_INT64},
                        the values of the last dim are sorted by ascending order.
-* @li values: the inserted Tensor. Must have the same type as input. only the last dim can be different from 
+* @li values: the inserted Tensor. Must have the same type as input. only the last dim can be different from
               the sorted_sequence.
 * @li sorter:  if provided, a tensor matching the shape of the unsorted sorted_sequence containing a sequence of indices
                that sort it in the ascending order on the innermost dimension  \n
@@ -2776,17 +2776,17 @@ REG_OP(NonMaxSuppressionBucketize)
 * @li dtype: An optional type. Default value is DT_INT64, only supports DT_INT64/DT_INT32.
 
 * @li right: An optional bool. Default value is false, false means the inserted position aligns to the left side when
-             the sequence contains same value and the position candidates are not unique, while true means aligning to 
-             the right side when in such situation. \n    
+             the sequence contains same value and the position candidates are not unique, while true means aligning to
+             the right side when in such situation. \n
 
 * @par Third-party framework compatibility
 * Compatible with pytorch1.8.1 searchsorted operator.
 */
 
 REG_OP(SearchSorted)
-    .INPUT(sorted_sequence, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT16, DT_INT8, 
+    .INPUT(sorted_sequence, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT16, DT_INT8,
                                 DT_UINT8, DT_INT32, DT_INT64}))
-    .INPUT(values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT16, DT_INT8, 
+    .INPUT(values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT16, DT_INT8,
                                 DT_UINT8, DT_INT32, DT_INT64}))
     .OPTIONAL_INPUT(sorter, TensorType({DT_INT64}))
     .OUTPUT(out, TensorType(DT_INT32, DT_INT64))

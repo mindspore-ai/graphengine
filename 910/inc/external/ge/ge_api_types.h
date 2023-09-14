@@ -118,6 +118,7 @@ const char_t *const OPTION_EXEC_WORKER_NUM = "ge.exec.workerNum";
 const char_t *const OPTION_EXECUTE_TIMES = "ge.execute_times";
 const char_t *const OPTION_MAX_KEY_NUM = "ge.max_num";
 const char_t *const OPTION_EMBEDDING_DIM = "ge.embedding_dim";
+const char_t *const OPTION_USE_COUNTER_FILTER = "ge.use_counter_filter";
 
 // Option key: Offload
 constexpr char_t const OPTION_EXEC_RANK_MAP[] = "ge.exec.rankMap";

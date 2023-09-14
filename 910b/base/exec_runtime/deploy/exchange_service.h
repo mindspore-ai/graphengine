@@ -57,6 +57,10 @@ class ExchangeService {
     int8_t user_data[kMaxUserDataSize] = {};
     bool is_proxy_q = false;
   };
+  struct BuffInfo {
+    void *addr;
+    size_t len;
+  };
   ExchangeService() = default;
   ExchangeService(const ExchangeService &) = delete;
   ExchangeService &operator=(const ExchangeService &) = delete;
@@ -85,6 +89,8 @@ class ExchangeService {
                          const ControlInfo &control_info) = 0;
   virtual Status Enqueue(const int32_t device_id, const uint32_t queue_id, const size_t size,
                          const FillFunc &fill_func, const ControlInfo &control_info) = 0;
+  virtual Status Enqueue(const int32_t device_id, const uint32_t queue_id, const std::vector<BuffInfo> &buffs,
+                         const ControlInfo &control_info) = 0;
   virtual Status Peek(const int32_t device_id, const uint32_t queue_id, size_t &size) = 0;
   virtual Status Dequeue(const int32_t device_id, const uint32_t queue_id, void *const data, const size_t size,
                          ControlInfo &control_info) = 0;

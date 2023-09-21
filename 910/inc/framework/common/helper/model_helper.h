@@ -22,14 +22,14 @@
 
 #include "framework/common/helper/om_file_helper.h"
 #include "framework/common/helper/model_save_helper.h"
-#include "common/model/ge_model.h"
-#include "common/model/ge_root_model.h"
 #include "framework/common/types.h"
 #include "graph/model.h"
 #include "platform/platform_info.h"
 #include "common/op_so_store/op_so_store.h"
 
 namespace ge {
+class GeModel;
+class GeRootModel;
 class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  public:
   ModelHelper() noexcept = default;

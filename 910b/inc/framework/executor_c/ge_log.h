@@ -48,11 +48,6 @@ static inline bool IsLogEnable(const int32_t module_name, const int32_t log_leve
   return (enable == 1);
 }
 
-#define LOGE(fmt, ...)                                                      \
-  do {                                                                      \
-    printf("[ERROR]GE %s:%d:" fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
-  } while (false)
-
 #ifdef RUN_TEST
 #define GELOGD(fmt, ...)                                                                          \
   do {                                                                                            \

@@ -63,8 +63,6 @@ class DeployPlan {
     int32_t fusion_offset = 0;
     uint32_t instance_num;
     uint32_t instance_idx;
-    bool is_proxy_q = false;
-    bool is_push = false;
     bool is_local = false;
   };
 
@@ -219,7 +217,7 @@ class DeployPlannerBase {
   Status CreateGroupInfo(const DeployPlan::QueueInfo &queue_info,
                          const std::vector<int32_t> &grouped_indices,
                          int32_t &group_index);
-  void AddEndpointBindings(int32_t src_index, int32_t dst_index);
+  void AddEndpointBindings(int32_t src_index, int32_t dst_index, bool skip_if_dst_exists = true);
   static Status ConvertToTagInfo(const Endpoint &endpoint, std::vector<DeployPlan::QueueInfo> &tag_infos);
   void SetFlowSends(const std::map<std::string, std::vector<DeployPlan::QueueInfo>> &flow_sends);
   void SetFlowRecvs(const std::map<std::string, std::vector<DeployPlan::QueueInfo>> &flow_recvs);
@@ -291,6 +289,10 @@ class DeployPlannerBase {
   bool CheckAndAddRelation(const int32_t src_endpoint_idx, const int32_t dst_endpoint_idx);
   Status ResolveExternalFlowEndpoints();
   static bool IsExternalEndpoint(const DeployPlan::QueueInfo &endpoint_info);
+  Status CreateAndBindGroup(const DeployPlan::QueueInfo &group_info,
+                            const std::vector<int32_t> &grouped_indices,
+                            const int32_t dst_endpoint_index,
+                            bool skip_if_dst_exists = true);
 
   ModelRelation model_relation_;
   std::unique_ptr<ModelRelationReader> relation_reader_;
@@ -324,6 +326,7 @@ class DeployPlannerBase {
   std::map<std::string, std::string> instance_to_model_name_;
   std::map<std::string, std::set<std::string>> deploy_to_devlist_;
   std::set<std::string> relations_;  // key: src_endpoint_index_to_dst_endpoint_index
+  std::set<std::string> no_group_endpoint_names_;
 };
 
 class ModelRelationFlattener {

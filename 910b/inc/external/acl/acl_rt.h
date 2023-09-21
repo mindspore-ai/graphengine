@@ -174,6 +174,12 @@ typedef void (*aclrtCallback)(void *userData);
 
 typedef void (*aclrtExceptionInfoCallback)(aclrtExceptionInfo *exceptionInfo);
 
+typedef enum aclrtDeviceStatus {
+    ACL_RT_DEVICE_STATUS_NORMAL = 0,
+    ACL_RT_DEVICE_STATUS_ABNORMAL,
+    ACL_RT_DEVICE_STATUS_END = 0xFFFF,
+} aclrtDeviceStatus;
+
 /**
  * @ingroup AscendCL
  * @brief Set a callback function to handle exception information
@@ -1001,15 +1007,15 @@ ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *devPtr,
  * @ingroup AscendCL
  * @brief Allocate an address range reservation
  *
- * @param virPtr [OUT]      Resulting pointer to start of virtual address range allocated
- * @param size [IN]         Size of the reserved virtual address range requested
- * @param alignment [IN]    Alignment of the reserved virtual address range requested
- * @param expectPtr [IN]    Fixed starting address range requested, must be nullptr
- * @param flags [IN]        Flag of page type
+ * @param virPtr [OUT]    Resulting pointer to start of virtual address range allocated
+ * @param size [IN]       Size of the reserved virtual address range requested
+ * @param alignment [IN]  Alignment of the reserved virtual address range requested
+ * @param expectPtr [IN]  Fixed starting address range requested, must be nullptr
+ * @param flags [IN]      Flag of page type
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
- * 
+ *
  * @see aclrtReleaseMemAddress | aclrtMallocPhysical | aclrtMapMem
  */
 ACL_FUNC_VISIBILITY aclError aclrtReserveMemAddress(void **virPtr,
@@ -1022,27 +1028,29 @@ ACL_FUNC_VISIBILITY aclError aclrtReserveMemAddress(void **virPtr,
  * @ingroup AscendCL
  * @brief Free an address range reservation
  *
- * @param virPtr [IN]   Starting address of the virtual address range to free
+ * @param virPtr [IN]  Starting address of the virtual address range to free
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
- * 
+ *
  * @see aclrtReserveMemAddress
  */
 ACL_FUNC_VISIBILITY aclError aclrtReleaseMemAddress(void *virPtr);
 
 /**
  * @ingroup AscendCL
- * @brief Create a memory handle representing a memory allocation of a given size described by the given properties
+ * @brief Create a memory handle representing a memory allocation of a given
+ * size described by the given properties
  *
- * @param handle [OUT]  Value of handle returned. All operations on this allocation are to be performed using this handle.
+ * @param handle [OUT]  Value of handle returned. All operations on this
+ * allocation are to be performed using this handle.
  * @param size [IN]     Size of the allocation requested
  * @param prop [IN]     Properties of the allocation to create
  * @param flags [IN]    Currently unused, must be zero
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
- * 
+ *
  * @see aclrtFreePhysical | aclrtReserveMemAddress | aclrtMapMem
  */
 ACL_FUNC_VISIBILITY aclError aclrtMallocPhysical(aclrtDrvMemHandle *handle,
@@ -1052,13 +1060,14 @@ ACL_FUNC_VISIBILITY aclError aclrtMallocPhysical(aclrtDrvMemHandle *handle,
 
 /**
  * @ingroup AscendCL
- * @brief Release a memory handle representing a memory allocation which was previously allocated through aclrtMallocPhysical
+ * @brief Release a memory handle representing a memory allocation which was
+ * previously allocated through aclrtMallocPhysical
  *
- * @param handle [IN]   Value of handle which was returned previously by aclrtMallocPhysical
+ * @param handle [IN]  Value of handle which was returned previously by aclrtMallocPhysical
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
- * 
+ *
  * @see aclrtMallocPhysical
  */
 ACL_FUNC_VISIBILITY aclError aclrtFreePhysical(aclrtDrvMemHandle handle);
@@ -1067,15 +1076,15 @@ ACL_FUNC_VISIBILITY aclError aclrtFreePhysical(aclrtDrvMemHandle handle);
  * @ingroup AscendCL
  * @brief Maps an allocation handle to a reserved virtual address range
  *
- * @param virPtr [IN]   Address where memory will be mapped
- * @param size [IN]     Size of the memory mapping
- * @param offset [IN]   Offset into the memory represented by handle from which to start mapping
- * @param handle [IN]   Handle to a shareable memory
- * @param flags [IN]    Currently unused, must be zero
+ * @param virPtr [IN]  Address where memory will be mapped
+ * @param size [IN]    Size of the memory mapping
+ * @param offset [IN]  Offset into the memory represented by handle from which to start mapping
+ * @param handle [IN]  Handle to a shareable memory
+ * @param flags [IN]   Currently unused, must be zero
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
- * 
+ *
  * @see aclrtUnmapMem | aclrtReserveMemAddress | aclrtMallocPhysical
  */
 ACL_FUNC_VISIBILITY aclError aclrtMapMem(void *virPtr,
@@ -1088,11 +1097,11 @@ ACL_FUNC_VISIBILITY aclError aclrtMapMem(void *virPtr,
  * @ingroup AscendCL
  * @brief Unmap the backing memory of a given address range
  *
- * @param virPtr [IN]   Starting address for the virtual address range to unmap
+ * @param virPtr [IN]  Starting address for the virtual address range to unmap
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
- * 
+ *
  * @see aclrtMapMem
  */
 ACL_FUNC_VISIBILITY aclError aclrtUnmapMem(void *virPtr);
@@ -1543,6 +1552,18 @@ ACL_FUNC_VISIBILITY aclError aclrtProcessHostFunc(int32_t timeout);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtUnSubscribeHostFunc(uint64_t hostFuncThreadId, aclrtStream exeStream);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get device status
+ *
+ * @param deviceId       [IN]   device ID
+ * @param deviceStatus   [OUT]  device status
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtQueryDeviceStatus(int32_t deviceId, aclrtDeviceStatus *deviceStatus);
 
 #ifdef __cplusplus
 }

@@ -884,8 +884,8 @@ REG_OP(SearchN)
 * @li weight_matrix: A Tensor of type float32.  \n
 */
 REG_OP(AdaptiveAvgPoolAssistMatrix)
-    .INPUT(input_size, TensorType({DT_INT64}))
-    .INPUT(output_size, TensorType({DT_INT64}))
+    .INPUT(input_size, TensorType({DT_INT64, DT_INT32}))
+    .INPUT(output_size, TensorType({DT_INT64, DT_INT32}))
     .OUTPUT(left_matrix, TensorType({DT_FLOAT}))
     .OUTPUT(right_matrix, TensorType({DT_FLOAT}))
     .OUTPUT(weight_matrix, TensorType({DT_FLOAT}))
@@ -1472,6 +1472,9 @@ REG_OP(BlendFaceBgPartTwo)
 *     The data is h_out and w_out, which indicates the output height and width.
 * @li gamma: A 1D Tensor, dtype is float32, shape is (4,).
 *
+* @par Attributes:
+* @li bayer_pattern: A string. choce calculate mode, the value must be one of ["binning", "quad"]. Default: "binning".
+*
 * @par Outputs:
 * @li raw_img: A 2D Tensor, dtype is uint16, shape is (h_out, w_out). the output raw image. \n
 */
@@ -1483,6 +1486,7 @@ REG_OP(ImgRawDecodePostHandle)
     .INPUT(img_size, TensorType({DT_INT32}))
     .INPUT(gamma, TensorType({DT_FLOAT}))
     .OUTPUT(raw_img, TensorType({DT_UINT16}))
+    .ATTR(bayer_pattern, String, "binning")
     .OP_END_FACTORY_REG(ImgRawDecodePostHandle)
 
 /**
@@ -1860,7 +1864,7 @@ REG_OP(Conv2DTransposeDCompress)
     .OP_END_FACTORY_REG(Conv2DTransposeDCompress)
 
 /**
-* @brief Detect whether there is Inf or Nan in scaled_grads, set found_inf to 1 if it exists, 
+* @brief Detect whether there is Inf or Nan in scaled_grads, set found_inf to 1 if it exists,
 * and do not operate on found_inf if it does not. Finally, multiply all values of scaled_grads by inv_scale
 * @par Inputs:
  * Three inputs:
@@ -1877,6 +1881,18 @@ REG_OP(ForeachNonFiniteCheckAndUnscale)
     .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
 
 /**
+* @brief multiply scalar foreach element in each tensor in tesnorlist, this is an in-place operation.
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors, can be float16, float, and int32.
+ * @li scalar: A scalar to be multiplied, the data type must be the same as tensors.
+*/
+REG_OP(ForeachMulScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMulScalarInplace)
+
+/**
 * @brief Writes the input data of the corresponding subscript to the specified register.
 * @par Inputs:
 * One inputs:
@@ -1890,6 +1906,35 @@ REG_OP(SwitchByIndex)
     .INPUT(x, TensorType({DT_UINT64}))
     .REQUIRED_ATTR(indices, Int)
     .OP_END_FACTORY_REG(SwitchByIndex)
+
+
+/**
+* @brief Computes the transpose of convolution 2d with respect to the input.
+* @par Inputs:
+* Four inputs:
+* @li x1: A Tensor of type int8. The format is ND.
+* @li X2: A Tensor of type int8. Must have the same type as "x". The format is ND.
+* @li bias: A Tensor of type int32. The format is ND.
+* @li deq_scale: A tensor for quantized inference. The format is NHWC. Type is uint64.
+* @par Required Attributes:
+* y: A Tensor of type fp16. The format is ND.
+* @par Attributes:
+* Two attributes:
+* @li adj_x1: A bool, if true means x1 is transposed.
+* @li adj_x2: A bool, if true means x2 is transposed.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(QuantBatchMatmul)
+    .INPUT(x1, TensorType({DT_INT8}))
+    .INPUT(x2, TensorType({DT_INT8}))
+    .INPUT(bias, TensorType({DT_INT32}))
+    .INPUT(deq_scale, TensorType({DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .ATTR(adj_x1, Bool, false)
+    .ATTR(adj_x2, Bool, false)
+    .OP_END_FACTORY_REG(QuantBatchMatmul)
+
 
 REG_OP(MoeFFN)
     .INPUT(x, TensorType({DT_INT8, DT_FLOAT16}))
@@ -1905,5 +1950,1220 @@ REG_OP(MoeFFN)
     .OUTPUT(y, TensorType({DT_INT8, DT_FLOAT16}))
     .ATTR(activation, String, "gelu")
     .OP_END_FACTORY_REG(MoeFFN)
+
+
+/**
+* @brief Apply add operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value add by the scale.
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+*/
+REG_OP(ForeachAddScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAddScalarInplace)
+
+
+/**
+* @brief Apply add operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are add by the scale
+*/
+REG_OP(ForeachAddScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAddScalar)
+
+
+/**
+* @brief Apply add operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors,
+ * meanwhile, this value is also an output, store the value add by the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachAddScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAddScalarListInplace)
+
+
+/**
+* @brief Apply add operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are add by the scales in scalar list
+*/
+REG_OP(ForeachAddScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAddScalarList)
+
+
+/**
+* @brief Apply add operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Three inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value add by the scale.
+ * @li x2: Another tensor list containing multiple tensors
+ * @li alpha: The elements in x2 should perform multipy with alpha which is a scalar
+*/
+REG_OP(ForeachAddListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAddListInplace)
+
+
+/**
+* @brief Apply add operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Three inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensors
+ * @li alpha: The elements in x2 should perform multipy with alpha which is a scalar
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are add by the scales in scalar list
+*/
+REG_OP(ForeachAddList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAddList)
+
+
+/**
+* @brief Apply sub operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value sub by the scale.
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+*/
+REG_OP(ForeachSubScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachSubScalarInplace)
+
+
+/**
+* @brief Apply sub operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are sub by the scale
+*/
+REG_OP(ForeachSubScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachSubScalar)
+
+
+/**
+* @brief Apply sub operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value sub by the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachSubScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachSubScalarListInplace)
+
+
+/**
+* @brief Apply sub operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are sub by the scales in scalar list
+*/
+REG_OP(ForeachSubScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachSubScalarList)
+
+
+/**
+* @brief Apply sub operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Three inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value sub by the scale.
+ * @li x2: Another tensor list containing multiple tensors
+ * @li alpha: The elements in x2 should perform multipy with alpha which is a scalar
+*/
+REG_OP(ForeachSubListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachSubListInplace)
+
+
+/**
+* @brief Apply sub operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Three inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensors
+ * @li alpha: The elements in x2 should perform multipy with alpha which is a scalar
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are sub by the scales in scalar list
+*/
+REG_OP(ForeachSubList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachSubList)
+
+
+/**
+* @brief Apply mul operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are mul by the scale
+*/
+REG_OP(ForeachMulScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMulScalar)
+
+
+/**
+* @brief Apply mul operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value mul by the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachMulScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMulScalarListInplace)
+
+
+/**
+* @brief Apply mul operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are mul by the scales in scalar list
+*/
+REG_OP(ForeachMulScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMulScalarList)
+
+
+/**
+* @brief Apply mul operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value mul by the scale.
+ * @li x2: Another tensor list containing multiple tensors
+*/
+REG_OP(ForeachMulListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMulListInplace)
+
+
+/**
+* @brief Apply mul operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensorsr
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are mul by the scales in scalar list
+*/
+REG_OP(ForeachMulList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMulList)
+
+
+/**
+* @brief Apply div operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value div by the scale.
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+*/
+REG_OP(ForeachDivScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachDivScalarInplace)
+
+
+/**
+* @brief Apply div operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are div by the scale
+*/
+REG_OP(ForeachDivScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachDivScalar)
+
+/**
+* @brief Apply div operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value div by the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachDivScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachDivScalarListInplace)
+
+
+/**
+* @brief Apply div operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are div by the scales in scalar list
+*/
+REG_OP(ForeachDivScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachDivScalarList)
+
+
+/**
+* @brief Apply Div operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value Div by the scale.
+ * @li x2: Another tensor list containing multiple tensors
+*/
+REG_OP(ForeachDivListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachDivListInplace)
+
+
+/**
+* @brief Apply div operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensorsr
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are div by the scales in scalar list
+*/
+REG_OP(ForeachDivList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachDivList)
+
+
+/**
+* @brief Apply maximum operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value maximum with the scale.
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+*/
+REG_OP(ForeachMaximumScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMaximumScalarInplace)
+
+
+/**
+* @brief Apply maximum operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are maximum with the scale
+*/
+REG_OP(ForeachMaximumScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMaximumScalar)
+
+
+/**
+* @brief Apply maximum operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value maximum with the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachMaximumScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMaximumScalarListInplace)
+
+
+/**
+* @brief Apply maximum operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are maximum with the scales in scalar list
+*/
+REG_OP(ForeachMaximumScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMaximumScalarList)
+
+
+/**
+* @brief Apply maximum operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value maximum with the scale.
+ * @li x2: Another tensor list containing multiple tensors
+*/
+REG_OP(ForeachMaximumListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMaximumListInplace)
+
+
+/**
+* @brief Apply maximum operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensorsr
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are maximum with the scales in scalar list
+*/
+REG_OP(ForeachMaximumList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMaximumList)
+
+
+/**
+* @brief Apply minimum operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value minimum with the scale.
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+*/
+REG_OP(ForeachMinimumScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMinimumScalarInplace)
+
+
+/**
+* @brief Apply minimum operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are minimum with the scale
+*/
+REG_OP(ForeachMinimumScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMinimumScalar)
+
+
+/**
+* @brief Apply minimum operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value minimum with the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachMinimumScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMinimumScalarListInplace)
+
+
+/**
+* @brief Apply minimum operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are minimum with the scales in scalar list
+*/
+REG_OP(ForeachMinimumScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMinimumScalarList)
+
+
+/**
+* @brief Apply minimum operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value minimum with the scale.
+ * @li x2: Another tensor list containing multiple tensors
+*/
+REG_OP(ForeachMinimumListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMinimumListInplace)
+
+
+/**
+* @brief Apply minimum operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensorsr
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are minimum with the scales in scalar list
+*/
+REG_OP(ForeachMinimumList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachMinimumList)
+
+
+/**
+* @brief Apply power operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value power with the scale.
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+*/
+REG_OP(ForeachPowScalarInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachPowScalarInplace)
+
+
+/**
+* @brief Apply power operation for each tensor in tensor list with a scalar in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalar: A scalar in form of tensor with only one element, the shape must be (1,)
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are power with the scale
+*/
+REG_OP(ForeachPowScalar)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalar, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachPowScalar)
+
+
+/**
+* @brief Apply power operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value power with the scale.
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+*/
+REG_OP(ForeachPowScalarListInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachPowScalarListInplace)
+
+
+/**
+* @brief Apply power operation for each tensor in tensor list with a list of scalar in manner
+* of element-wise the number of tensors in tensor list shall be equal to the number of scalars
+* in scalar list
+* @par Inputs:
+ * Two inputs:
+ * @li x: A tensor list containing multiple tensors
+ * @li scalars: A scalar list in form of tensor with only multiple elements
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are power with the scales in scalar list
+*/
+REG_OP(ForeachPowScalarList)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(scalars, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachPowScalarList)
+
+
+/**
+* @brief Apply power operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * meanwhile, this value is also an output, store the value power with the scale.
+ * @li x2: Another tensor list containing multiple tensors
+*/
+REG_OP(ForeachPowListInplace)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachPowListInplace)
+
+
+/**
+* @brief Apply power operation for each tensor in a tensor list with each tensor in another
+* tensor list in manner of element-wise
+* @par Inputs:
+ * Two inputs:
+ * @li x1: A tensor list containing multiple tensors
+ * @li x2: Another tensor list containing multiple tensorsr
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are power with the scales in scalar list
+*/
+REG_OP(ForeachPowList)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachPowList)
+
+
+/**
+* @brief Apply abs operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachAbsInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAbsInplace)
+
+
+/**
+* @brief Apply abs operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the abs value of the x
+*/
+REG_OP(ForeachAbs)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachAbs)
+
+
+/**
+* @brief Apply arc cos operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachACosInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachACosInplace)
+
+
+/**
+* @brief Apply arc cos operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the arc cos value of the x
+*/
+REG_OP(ForeachACos)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachACos)
+
+
+/**
+* @brief Apply arc sin operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachASinInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachASinInplace)
+
+
+/**
+* @brief Apply arc sin operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the arc sin value of the x
+*/
+REG_OP(ForeachASin)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachASin)
+
+
+/**
+* @brief Apply arc tan operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachATanInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachATanInplace)
+
+
+/**
+* @brief Apply arc tan operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the arc tan value of the x
+*/
+REG_OP(ForeachATan)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachATan)
+
+
+/**
+* @brief Apply cos operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachCosInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachCosInplace)
+
+
+/**
+* @brief Apply cos operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the cos value of the x
+*/
+REG_OP(ForeachCos)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachCos)
+
+
+/**
+* @brief Apply cos operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachSinInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSinInplace)
+
+
+/**
+* @brief Apply cos operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the cos value of the x
+*/
+REG_OP(ForeachSin)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSin)
+
+
+/**
+* @brief Apply tan operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachTanInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachTanInplace)
+
+
+/**
+* @brief Apply tan operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the tan value of the x
+*/
+REG_OP(ForeachTan)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachTan)
+
+
+/**
+* @brief Apply cosh operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachCoshInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachCoshInplace)
+
+
+/**
+* @brief Apply cosh operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the cosh value of the x
+*/
+REG_OP(ForeachCosh)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachCosh)
+
+
+/**
+* @brief Apply sinh operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachSinhInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSinhInplace)
+
+
+/**
+* @brief Apply sinh operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the sinh value of the x
+*/
+REG_OP(ForeachSinh)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSinh)
+
+
+/**
+* @brief Apply tanh operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachTanhInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachTanhInplace)
+
+
+/**
+* @brief Apply tanh operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the tanh value of the x
+*/
+REG_OP(ForeachTanh)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachTanh)
+
+
+/**
+* @brief Apply sqrt operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachSqrtInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSqrtInplace)
+
+
+/**
+* @brief Apply sqrt operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the sqrt value of the x
+*/
+REG_OP(ForeachSqrt)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSqrt)
+
+
+/**
+* @brief Apply neg operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachNegInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachNegInplace)
+
+
+/**
+* @brief Apply neg operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the neg value of the x
+*/
+REG_OP(ForeachNeg)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OP_END_FACTORY_REG(ForeachNeg)
+
+
+/**
+* @brief Apply exp operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachExpInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachExpInplace)
+
+
+/**
+* @brief Apply exp operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the exp value of the x
+*/
+REG_OP(ForeachExp)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachExp)
+
+
+/**
+* @brief Apply expm1 operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachExpm1Inplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachExpm1Inplace)
+
+
+/**
+* @brief Apply expm1 operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the expm1 value of the x
+*/
+REG_OP(ForeachExpm1)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachExpm1)
+
+
+/**
+* @brief Apply log operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachLogInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLogInplace)
+
+
+/**
+* @brief Apply log operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the log value of the x
+*/
+REG_OP(ForeachLog)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog)
+
+
+/**
+* @brief Apply log2 operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachLog2Inplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog2Inplace)
+
+
+/**
+* @brief Apply log2 operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the log2 value of the x
+*/
+REG_OP(ForeachLog2)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog2)
+
+
+/**
+* @brief Apply log10 operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachLog10Inplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog10Inplace)
+
+
+/**
+* @brief Apply log10 operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the log10 value of the x
+*/
+REG_OP(ForeachLog10)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog10)
+
+
+/**
+* @brief Apply log1p operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachLog1pInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog1pInplace)
+
+
+/**
+* @brief Apply log1p operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the log1p value of the x
+*/
+REG_OP(ForeachLog1p)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachLog1p)
+
+
+/**
+* @brief Apply reciprocal operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachReciprocalInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachReciprocalInplace)
+
+
+/**
+* @brief Apply reciprocal operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the reciprocal value of the x
+*/
+REG_OP(ForeachReciprocal)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachReciprocal)
+
+
+/**
+* @brief Apply zero operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachZeroInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachZeroInplace)
+
+
+/**
+* @brief Apply sigmoid operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors meanwhile, this value is also an output
+*/
+REG_OP(ForeachSigmoidInplace)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSigmoidInplace)
+
+
+/**
+* @brief Apply sigmoid operation for each tensor in a tensor list in manner of element-wise
+* @par Inputs:
+ * One inputs:
+ * @li x: A tensor list containing multiple tensors
+* @par Outputs:
+ * @li y: A tensor list which store the tensors whose value are the sigmoid value of the x
+*/
+REG_OP(ForeachSigmoid)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ForeachSigmoid)
+
+/**
+* @brief Performs the backpropagation of ROI Align Rotated . \n
+
+* @par Inputs:
+* @li x: A tensor of type float32, describing the feature_map.
+* @li rois: A tensor of type float32, with shape(n, 6) with each roi decoded as
+*     (batch_index, center_x, center_y, w, h, angle). The angle is in radian.
+
+* @par Attributes:
+* @li pooled_h: A required int32, specifying the pooled H. Must be greater than 0.
+* @li pooled_w: A required int32, specifying the pooled W. Must be greater than 0.
+* @li spatial_scale: An required scaling factor for mapping the input coordinates
+*     to the ROI coordinates.
+* @li sampling_ratio: An required number of inputs samples to take for each output sample. 
+*     0 to take samples densely for current models.
+* @li aligned: A required bool, if False, use the legacy implementation.
+*     If True, align the results more perfectly. Default: True.
+* @li clockwise: A required bool, if True, the angle in each proposal follows a clockwise 
+*     fashion in image space, Otherwise, the angle is counterclockwise. Default: False. \n
+
+* @par Outputs:
+* @li y: A tensor of type float32, describing the result. \n
+
+* @par Third-party framework compatibility
+* It has a corresponding operator in MMCV.
+*/
+REG_OP(RoiAlignRotatedGrad)
+    .INPUT(x_grad, TensorType({DT_FLOAT}))
+    .INPUT(rois, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(y_grad_shape, ListInt)
+    .REQUIRED_ATTR(pooled_h, Int)
+    .REQUIRED_ATTR(pooled_w, Int)
+    .REQUIRED_ATTR(spatial_scale, Float)
+    .ATTR(sampling_ratio, Int, 0)
+    .ATTR(aligned, Bool, true)
+    .ATTR(clockwise, Bool, false)
+    .OUTPUT(y_grad, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(RoiAlignRotatedGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

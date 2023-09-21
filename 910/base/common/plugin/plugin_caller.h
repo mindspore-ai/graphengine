@@ -30,8 +30,11 @@ class PluginCaller {
   explicit PluginCaller(const std::string &lib_name) : handle_(nullptr), lib_name_(lib_name) {}
   ~PluginCaller() = default;
   template <typename RetType, typename FuncType, typename... Args>
-  RetType CallFunction(const std::string &function_name, Args... args) {
-    GE_ASSERT_SUCCESS(LoadLib());
+  auto CallFunction(const std::string &function_name, Args... args) -> RetType {
+    const Status ret = LoadLib();
+    GE_CHK_BOOL_RET_SPECIAL_STATUS(ret == NOT_CHANGED, SUCCESS, "[Load][Lib] failed, function_name = %s.",
+                                   function_name.c_str());
+    GE_ASSERT_SUCCESS(ret);
     GE_MAKE_GUARD(unload_libs, [this]() { UnloadLib(); });
     const auto func = reinterpret_cast<FuncType>(mmDlsym(handle_, function_name.c_str()));
     GE_ASSERT_NOTNULL(func, "Failed to find symbol %s.", function_name.c_str());

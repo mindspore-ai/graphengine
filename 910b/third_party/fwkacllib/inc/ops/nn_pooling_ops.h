@@ -1687,7 +1687,7 @@ REG_OP(Dilation2DBackpropInput)
 */
 REG_OP(AdaptiveAvgPool)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(output_size, TensorType({DT_INT64, DT_INT64}))
+    .INPUT(output_size, TensorType({DT_INT64, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(AdaptiveAvgPool)
 

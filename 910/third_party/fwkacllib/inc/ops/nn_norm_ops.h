@@ -386,8 +386,10 @@ REG_OP(BinaryCrossEntropyGrad)
 *  double. Should be a Variable Tensor . \n
 
 * @par Attributes:
-* axes: A list of int. The dimension softmax would be performed on. Defaults
+* @li axes: A list of int. The dimension softmax would be performed on. Defaults
 *  to "[-1]" . \n
+* @li half_to_float: An optional bool. Defaults to "false".If it is true and input type is float16,
+*  output type should be float32, otherwise output type should be same as input type. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same dimensionality and shape as the "x" with values in
@@ -401,6 +403,7 @@ REG_OP(SoftmaxV2)
     .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT }))
     .OUTPUT(y, TensorType({ DT_DOUBLE, DT_FLOAT16, DT_BF16, DT_FLOAT }))
     .ATTR(axes, ListInt, {-1})
+    .ATTR(half_to_float, Bool, false)
     .OP_END_FACTORY_REG(SoftmaxV2)
 
 /**

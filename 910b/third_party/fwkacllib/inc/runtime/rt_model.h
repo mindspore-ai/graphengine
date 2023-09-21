@@ -50,6 +50,8 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_NPU_GET_FLOAT_STATUS,
     RT_MODEL_TASK_NPU_CLEAR_FLOAT_STATUS,
     RT_MODEL_TASK_DVPP,
+    RT_MODEL_TASK_NPU_GET_DEBUG_FLOAT_STATUS,
+    RT_MODEL_TASK_NPU_CLEAR_DEBUG_FLOAT_STATUS
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {
@@ -276,6 +278,18 @@ typedef struct tagrtNpuClearFloatStatusTask_t {
     uint8_t reserved[36];
 } rtNpuClearFloatStatusTask_t;
 
+typedef struct tagrtNpuGetFloatDebugStatusTask_t {
+    uint64_t outputAddr;
+    uint64_t outputSize;
+    uint32_t checkMode;
+    uint8_t reserved[20];
+} rtNpuGetFloatDebugStatusTask_t;
+
+typedef struct tagrtNpuClearFloatDebugStatusTask_t {
+    uint32_t checkMode;
+    uint8_t reserved[36];
+} rtNpuClearFloatDebugStatusTask_t;
+
 typedef struct tagTaskInfo {
     uint32_t type;
     uint32_t streamID;
@@ -303,6 +317,8 @@ typedef struct tagTaskInfo {
         rtStreamLabelGotoTask_t streamLabelGotoTask;
         rtNpuGetFloatStatusTask_t npuGetFloatStatusTask;
         rtNpuClearFloatStatusTask_t npuClearFloatStatusTask;
+        rtNpuGetFloatDebugStatusTask_t npuGetFloatDebugStatusTask;
+        rtNpuClearFloatDebugStatusTask_t npuClearFloatDebugStatusTask;
         uint32_t reserved[10];
     } u;
 } rtTaskInfo_t;
@@ -391,16 +407,6 @@ RTS_API rtError_t rtNanoModelExecute(rtMdlExecute_t *modelExec);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMsgSend(uint32_t tId, uint32_t sendTid, int32_t timeout, void *sendInfo, uint32_t size);
-
-/**
- * @ingroup rtUpdateTaskDescDumpFlag
- * @brief nano update taskdesc dump flag
- * @param [in] taskDescBaseAddr      TaskDesc Base Addr
- * @param [in] taskId   task id
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtUpdateTaskDescDumpFlag(void *taskDescBaseAddr, uint32_t taskId);
 
 /**
  * @ingroup rtSetTaskDescDumpFlag

@@ -1417,25 +1417,25 @@ REG_OP(ReduceStdV2Update)
     .OP_END_FACTORY_REG(ReduceStdV2Update)
 
 /**
-*@brief Computes the log and sum and exp of elements across dimensions of a tensor.
+* @brief Computes the log and sum and exp of elements across dimensions of a tensor.
 * Reduces "x" along the dimensions given in "axes".
 * Unless "keep_dims" is true, the rank of the tensor is reduced by 1 for each
 * entry in "axes". If "keep_dims" is true, the reduced dimensions
 * are retained with length 1.
 *
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
+* @li x: A Tensor. Must be one of the following types:
 *     float32, float16, int32, int64, uint32, uint64, double
-*@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+* @li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
 *
-*@par Attributes:
-*keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+* @par Attributes:
+* keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
 *
-*@par Outputs:
-*y: The reduced tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: The reduced tensor. Has the same type and format as input "x" . \n
 *
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the Onnx operator ReduceLogSumExp.
 */
 REG_OP(ReduceLogSumExp)
@@ -1446,25 +1446,25 @@ REG_OP(ReduceLogSumExp)
     .OP_END_FACTORY_REG(ReduceLogSumExp)
 
 /**
-*@brief Computes the log and sum of elements across dimensions of a tensor.
+* @brief Computes the log and sum of elements across dimensions of a tensor.
 * Reduces "x" along the dimensions given in "axes".
 * Unless "keep_dims" is true, the rank of the tensor is reduced by 1 for each
 * entry in "axes". If "keep_dims" is true, the reduced dimensions
 * are retained with length 1.
 *
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
+* @li x: A Tensor. Must be one of the following types:
 *     float32, float16, int32, int64, uint32, uint64, double
-*@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+* @li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
 *
-*@par Attributes:
-*keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+* @par Attributes:
+* keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
 *
-*@par Outputs:
-*y: The reduced tensor. Has the same type and format as input "x" . \n
+* @par Outputs:
+* y: The reduced tensor. Has the same type and format as input "x" . \n
 *
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the Onnx operator ReduceLogSum.
 */
 REG_OP(ReduceLogSum)
@@ -1473,6 +1473,34 @@ REG_OP(ReduceLogSum)
     .OUTPUT(y, TensorType::NumberType())
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceLogSum)
+
+/**
+* @brief Computes the sum of elements across dimensions of a tensor,
+* treating Not a Numbers(NaNs) as zero .
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor. Must be one of the following types:
+*     float32, float16, bfloat16
+* @li axis: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+
+* @par Attributes:
+* keepdims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+
+* @par Outputs:
+* y: The reduced tensor. Has the same type and format as input "x" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator ReduceNansum.
+*/
+REG_OP(ReduceNansum)
+    .INPUT(x, "T1")
+    .INPUT(axes, "T2")
+    .OUTPUT(y, "T1")
+    .ATTR(keep_dims, Bool, false)
+    .DATATYPE(T1, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .DATATYPE(T2, TensorType::IndexNumberType())
+    .OP_END_FACTORY_REG(ReduceNansum)
 } //namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_REDUCE_OPS_H_

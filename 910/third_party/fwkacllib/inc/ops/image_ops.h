@@ -600,37 +600,37 @@ REG_OP(ResizeBicubic)
     .OP_END_FACTORY_REG(ResizeBicubic)
 
 /**
-*@brief Computes the gradient of nearest neighbor interpolation . \n
+* @brief Computes the gradient of nearest neighbor interpolation . \n
 
-*@par Inputs:
-*Input grads must be a 4-D tensor. Inputs include:
-*@li grads: A Tensor. Must be one of the following types: uint8, int8, int32,
-float16, float, double. Must set the format, supported format list ["NCHW, NHWC"]
-*@li size: A 1-D int32 Tensor of 2 elements: orig_height, orig_width.
+* @par Inputs:
+* Input grads must be a 4-D tensor. Inputs include:
+* @li grads: A Tensor. Must be one of the following types: uint8, int8, int32,
+float16, float, double, bfloat16. Must set the format, supported format list ["NCHW, NHWC"]
+* @li size: A 1-D int32 Tensor of 2 elements: orig_height, orig_width.
 The original input size . \n
 
-*@par Attributes:
-*@li align_corners: An optional bool. Defaults to False. If true, the centers
+* @par Attributes:
+* @li align_corners: An optional bool. Defaults to False. If true, the centers
 of the 4 corner pixels of the input and grad tensors are aligned. Defaults to
 false.
-*@li half_pixel_centers: An optional bool. Defaults to False . \n
+* @li half_pixel_centers: An optional bool. Defaults to False . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as grads . \n
+* @par Outputs:
+* y: A Tensor. Has the same type as grads . \n
 
-*@attention Constraints:
-*Input grads must be a 4-D tensor . \n
+* @attention Constraints:
+* Input grads must be a 4-D tensor . \n
 
-*@par Third-party framework compatibility
-*Compatible with tensorflow ResizeNearestNeighborV2Grad operator.
+* @par Third-party framework compatibility
+* Compatible with tensorflow ResizeNearestNeighborV2Grad operator.
 */
 
 REG_OP(ResizeNearestNeighborV2Grad)
     .INPUT(grads, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                              DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+                              DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .INPUT(size, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                           DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+                           DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
     .OP_END_FACTORY_REG(ResizeNearestNeighborV2Grad)
@@ -966,33 +966,33 @@ REG_OP(SampleDistortedBoundingBoxExt2)
     .OP_END_FACTORY_REG(SampleDistortedBoundingBoxExt2)
 
 /**
-*@brief Resize images to size using nearest neighbor interpolation . \n
+* @brief Resize images to size using nearest neighbor interpolation . \n
 
-*@par Inputs:
-*Input x must be a 4-D tensor. Inputs include:
-*@li x: 4-D tensor. Must set the format, supported format list ["NCHW, NHWC"].
-*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width.
+* @par Inputs:
+* Input x must be a 4-D tensor. Inputs include:
+* @li x: 4-D tensor. Must set the format, supported format list ["NCHW, NHWC"].
+* @li size: A 1-D int32 Tensor of 2 elements: new_height, new_width.
 The new size for the images . \n
 
-*@par Attributes:
-*@li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input and
+* @par Attributes:
+* @li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input and
 output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false . \n
-*@li half_pixel_centers: An optional bool. Defaults to False . \n
+* @li half_pixel_centers: An optional bool. Defaults to False . \n
 
-*@par Outputs:
-*y: A Tensor with the same type and format as input "images" . \n
+* @par Outputs:
+* y: A Tensor with the same type and format as input "images" . \n
 
-*@par Third-party framework compatibility
-*Compatible with tensorflow ResizeNearestNeighbor operator.
+* @par Third-party framework compatibility
+* Compatible with tensorflow ResizeNearestNeighbor operator.
 */
 
 REG_OP(ResizeNearestNeighborV2)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                               DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+                          DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .INPUT(size, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
-                           DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+                           DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
     .OP_END_FACTORY_REG(ResizeNearestNeighborV2)

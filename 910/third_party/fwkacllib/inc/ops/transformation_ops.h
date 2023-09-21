@@ -154,6 +154,52 @@ REG_OP(Transpose)
 
 * @par Outputs:
 * dst: A Tensor. Has the same type as "src".
+*\n
+*\n
+* The following value ranges must be met.
+* '<===>' indicates that foramt is bidirectionly supported, either input or output.
+* '===>' indicates that foramt is unbidirectionly supported, and the input and
+* output data types must be correspond to each other. \n
+*\n
+*\n
+| src_format <===> dst_format | dtype                              | C0    | groups |\n
+| :-------------------------: | :--------------------------------: |:-----:| :----: |\n
+| NCHW <====> NC1HWC0         | float32, int32,uint32              | 8,16  | 1      |\n
+| NCHW <====> NC1HWC0         | bfloat16, float16                  | 16    | 1      |\n
+| NCHW <====> NC1HWC0         | int8, uint8                        | 32    | 1      |\n
+| NHWC <====> NC1HWC0         | float32, int32,uint32              | 8,16  | 1      |\n
+| NHWC <====> NC1HWC0         | bfloat16, float16                  | 16    | 1      |\n
+| NHWC <====> NC1HWC0         | int8,  uint8                       | 32    | 1      |\n
+| ND <====> FRACTAL_NZ        | float32, int32,uint32              | 16    | 1      |\n
+| ND <====> FRACTAL_NZ        | bfloat16, float16                  | 16    | 1      |\n
+| ND <====> FRACTAL_NZ        | int8, uint8                        | 32    | 1      |\n
+| NCHW <====> FRACTAL_Z       | float32, int32,uint32              | 8,16  | 1      |\n
+| NCHW <====> FRACTAL_Z       | bfloat16, float16                  | 16    | 1      |\n
+| NCHW <====> FRACTAL_Z       | int8,  uint8                       | 32    | 1      |\n
+| HWCN <====> FRACTAL_Z       | float32, int32,uint32              | 8,16  | 1      |\n
+| HWCN <====> FRACTAL_Z       | bfloat16, float16                  | 16    | 1      |\n
+| HWCN <====> FRACTAL_Z       | int8, uint8                        | 32    | 1      |\n
+| NCDHW <====> NDC1HWC0       | float32, int32,uint32              | 16    | 1      |\n
+| NCDHW <====> NDC1HWC0       | bfloat16, float16                  | 16    | 1      |\n
+| NCDHW <====> NDC1HWC0       | int8, uint8                        | 32    | 1      |\n
+| NDHWC <====> NDC1HWC0       | float32, int32,uint32              | 16    | 1      |\n
+| NDHWC <====> NDC1HWC0       | bfloat16, float16                  | 16    | 1      |\n
+| NDHWC <====> NDC1HWC0       | int8, uint8                        | 32    | 1      |\n
+| NCDHW <====> FRACTAL_Z_3D   | float32, int32,uint32              | 16    | 1      |\n
+| NCDHW <====> FRACTAL_Z_3D   | bfloat16, float16                  | 16    | 1      |\n
+| NCDHW <====> FRACTAL_Z_3D   | int8, uint8                        | 32    | 1      |\n
+| DHWCN <====> FRACTAL_Z_3D   | float32, int32,uint32              | 16    | 1      |\n
+| DHWCN <====> FRACTAL_Z_3D   | bfloat16, float16                  | 16    | 1      |\n
+| DHWCN <====> FRACTAL_Z_3D   | int8, uint8                        | 32    | 1      |\n
+| NCHW <====> FRACTAL_Z       | float32, uint32, int32             | 8     | >1     |\n
+| NCHW <====> FRACTAL_Z       | float16, bfloat16, uint16, int16   | 16    | >1     |\n
+| HWCN ====> FRACTAL_Z        | float16, bfloat16, uint16, int16   | 16    | >1     |\n
+| NCDHW <====> FRACTAL_Z_3D   | float32, uint32, int32             | 8     | >1     |\n
+| NCDHW <====> FRACTAL_Z_3D   | float16, bfloat16, uint16, int16   | 16    | >1     |\n
+| FRACTAL_Z_3D ====> DHWCN    | float32, uint32, int32             | 8     | >1     |\n
+| FRACTAL_Z_3D ====> DHWCN    | float16, bfloat16, uint16, int16   | 16    | >1     |\n
+*\n
+*
 */
 REG_OP(TransData)
     .INPUT(src, TensorType::BasicType())
@@ -661,48 +707,50 @@ REG_OP(ExtractVolumePatches)
     .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**
-*@brief Confuse reshape and transpose . \n
+* @brief Confuse reshape and transpose . \n
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32, int8, int16,
+                int32, int64, uint8, uint16, uint32, uint64 . \n
 
-*@par Attributes:
-*@li perm: A permutation of the dimensions of "x".
-*@li shape: The shape of the input.
-*@li transpose_first: If True, the transpose is first, otherwise the reshape is first . \n
+* @par Attributes:
+* @li perm: A permutation of the dimensions of "x".
+* @li shape: The shape of the input.
+* @li transpose_first: If True, the transpose is first, otherwise the reshape is first . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ConfusionTranspose instead.
 */
 REG_OP(ConfusionTransposeD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                        DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
+                          DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
-                         DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
+                           DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(perm, ListInt)
     .REQUIRED_ATTR(shape, ListInt)
     .REQUIRED_ATTR(transpose_first, Bool)
     .OP_END_FACTORY_REG(ConfusionTransposeD)
 
 /**
-*@brief Confuse reshape and transpose . \n
+* @brief Confuse reshape and transpose . \n
 
-*@par Inputs:
-*@li x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-*@li shape: The shape of the input . \n
+* @par Inputs:
+* @li x: A Tensor. Must be one of the following types: bfloat16, float16, float32, int8, int16,
+                   int32, int64, uint8, uint16, uint32, uint64.
+* @li shape: The shape of the input . \n
 
-*@par Attributes:
-*@li perm: A permutation of the dimensions of "x".
-*@li transpose_first: If True, the transpose is first, otherwise the reshape is first . \n
+* @par Attributes:
+* @li perm: A permutation of the dimensions of "x".
+* @li transpose_first: If True, the transpose is first, otherwise the reshape is first . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionTranspose)
     .INPUT(x, TensorType::BasicType())

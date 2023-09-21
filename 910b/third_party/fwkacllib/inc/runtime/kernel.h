@@ -734,6 +734,29 @@ RTS_API rtError_t rtNpuGetFloatStatus(void *outputAddrPtr, uint64_t outputSize, 
  */
 RTS_API rtError_t rtNpuClearFloatStatus(uint32_t checkMode, rtStream_t stm);
 
+/**
+ * @ingroup rt_kernel
+ * @brief launch npu get float status task
+ * @param [in] outputAddrPtr  pointer to op output addr
+ * @param [in] outputSize   op output size
+ * @param [in] checkMode   check mode
+ * @param [in] stm   associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNpuGetFloatDebugStatus(void *outputAddrPtr, uint64_t outputSize, uint32_t checkMode,
+                                           rtStream_t stm);
+
+/**
+ * @ingroup rt_kernel
+ * @brief launch npu clear float status task
+ * @param [in] checkMode   check mode
+ * @param [in] stm   associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNpuClearFloatDebugStatus(uint32_t checkMode, rtStream_t stm);
+
 #ifndef __CLANG_CCE_RUNTIME_H__
 #define __CLANG_CCE_RUNTIME_H__
 /**

@@ -213,6 +213,7 @@ REG_OP(GatherV2)
     .INPUT(axis, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(batch_dims, Int, 0)
+    .ATTR(is_preprocessed, Bool, false)
     .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(GatherV2)
 
@@ -550,6 +551,7 @@ REG_OP(UnsortedSegmentSum)
     .INPUT(segment_ids, TensorType::IndexNumberType())
     .INPUT(num_segments, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
+    .ATTR(is_preprocessed, Bool, false)
     .OP_END_FACTORY_REG(UnsortedSegmentSum)
 
 /**
@@ -1399,6 +1401,7 @@ REG_OP(Gather)
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(validate_indices, Bool, true)
     .ATTR(batch_dims, Int, 0)
+    .ATTR(is_preprocessed, Bool, false)
     .ATTR(negative_index_support, Bool, false)
     .OP_END_FACTORY_REG(Gather)
 

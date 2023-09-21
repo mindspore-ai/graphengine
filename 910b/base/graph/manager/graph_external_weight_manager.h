@@ -35,6 +35,8 @@ class ExternalWeightManager {
 
   ~ExternalWeightManager() = default;
 
+  Status CreateWeightPath();
+
   static bool CanReuseExternalWeight(FileConstantMeta &meta, const std::string &file_dir, std::string &file_name,
                                      const uint8_t *const data, const size_t data_length);
 

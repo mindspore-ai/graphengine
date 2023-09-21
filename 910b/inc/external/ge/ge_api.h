@@ -254,6 +254,17 @@ class GE_FUNC_VISIBILITY Session {
                            int32_t timeout);
 
   /// @ingroup ge_graph
+  /// @brief Feed input data to graph.
+  /// @param [in] graph_id graph id
+  /// @param [in] indexes fetch output data order(index cannot be duplicated)
+  /// @param [in] inputs input data
+  /// @param [in] info intput data flow flag
+  /// @param [in] timeout data feed timeout(ms), -1 means never timeout
+  /// @return Status result of function
+  Status FeedDataFlowGraph(uint32_t graph_id, const std::vector<uint32_t> &indexes, const std::vector<Tensor> &inputs,
+                           const DataFlowInfo &info, int32_t timeout);
+
+  /// @ingroup ge_graph
   /// @brief Fetch graph output data in order.
   /// @param [in] graph_id graph id
   /// @param [out] outputs output data

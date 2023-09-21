@@ -81,6 +81,16 @@ using TsdCallbackFuncType = void (*)(struct Tsd2dmReqMsg *req);
 * @li tsdclient.h: Header file where the interface declaration is located.
 */
 int32_t RegisterTsdEzcomCallBack(const TsdCallbackFuncType callBack);
+
+/**
+* @ingroup UnregisterTsdEzcomCallBack
+* @brief used for datamaster to unregist ezcom message handler
+*
+* @param NA
+* @par Dependency
+* @li tsdclient.h: Header file where the interface declaration is located.
+*/
+void UnregisterTsdEzcomCallBack();
 }  // namespace tsd
 #ifdef __cplusplus
 }

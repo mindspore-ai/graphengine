@@ -326,16 +326,17 @@ REG_OP(Sub)
 
 /**
 *@brief Returns x1 and x2 greatest common divisor element-wise.
+
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: 
-* int32, uint8, int16, int8, int64, int64, uint16, uint32, uint64.
+* @li x1: A Tensor. Must be one of the following types:
+*     int32, uint8, int16, int8, int64, int64, uint16, uint32, uint64.
 * @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+* y: A Tensor. Has the same type as "x1".
 *@par Third-party framework compatibility
-*Compatible with the Pytorch operator gcd.
+* Compatible with the Pytorch operator gcd.
 */
 REG_OP(Gcd)
     .INPUT(x1, "T")
@@ -2185,7 +2186,7 @@ REG_OP(Ceil)
 *@brief Returns element-wise largest integer not greater than "x". \n
 
 *@par Inputs:
-*x: A Tensor of type float16, float32 or double. \n
+*x: A Tensor of type bfloat16, float16, float32 or double. \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
@@ -3657,10 +3658,14 @@ REG_OP(Addcmul)
 * Compatible with the Pytorch operator Axpy.
 */
 REG_OP(AxpyV2)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
-    .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .INPUT(x1, "T1")
+    .INPUT(x2, "T2")
+    .INPUT(alpha, "T3")
+    .OUTPUT(y, "T4")
+    .DATATYPE(T1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .DATATYPE(T3, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .DATATYPE(T4, Promote({"T1", "T2"}))
     .OP_END_FACTORY_REG(AxpyV2)
 
 /**

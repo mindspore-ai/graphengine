@@ -1273,12 +1273,12 @@ REG_OP(ConfusionMatrix)
 * @par Inputs:
 * Three inputs, including:
 * @li var: An ND Tensor.
-* Must be one of the following types: float16, float, int32, int8, uint8
+* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16
 * @li indices: An ND Tensor.
 * Must be one of the following types: int32 or int64
 * @li updates: An ND Tensor . \n
 
-* Must be one of the following types: float16, float, int32, int8, uint8
+* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16
 
 * @par Attributes:
 * @li axis: An optional attribute. Defaults to 0.
@@ -1292,10 +1292,10 @@ REG_OP(ConfusionMatrix)
 * Compatible with the Mindspore operator Scatter.
 */
 REG_OP(Scatter)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BF16}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BF16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BF16}))
     .REQUIRED_ATTR(reduce, String)
     .ATTR(axis, Int, 0)
     .OP_END_FACTORY_REG(Scatter)

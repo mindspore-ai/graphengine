@@ -26,6 +26,7 @@
 #include "common/dump/dump_properties.h"
 #include "exe_graph/runtime/dfx_info_filler.h"
 #include "common/dump/kernel_tracing_utils.h"
+#include "framework/common/debug/ge_log.h"
 
 namespace ge {
 struct ExtraOpInfo {
@@ -41,6 +42,26 @@ struct ExtraOpInfo {
   std::vector<uint64_t> output_sizes;
   bool is_host_args{false};
   std::vector<std::pair<uintptr_t, int64_t>> workspace_info{};
+  void DebugLogString() {
+    std::stringstream ss;
+    ss << "Node Info: " << node_info;
+    GELOGD("%s", ss.str().c_str());
+    ss.str("");
+    ss << "Tiling key: " << tiling_key;
+    ss << "Tiling data: " << tiling_data;
+    GELOGD("%s", ss.str().c_str());
+    ss.str("");
+    ss << "Args before execute: " << args_before_execute;
+    ss << "Args addr: " << args;
+    ss << "Args size: " << args_size;
+    GELOGD("%s", ss.str().c_str());
+    ss.str("");
+    for (const auto &ele : workspace_info) {
+      ss << "Workspace addr: " << ele.first;
+      ss << "Workspace size: " << ele.second;
+    }
+    GELOGD("%s", ss.str().c_str());
+  }
 };
 
 class ExecutorExceptionDumpInfoWrapper : public gert::ExceptionDumpInfoWrapper {

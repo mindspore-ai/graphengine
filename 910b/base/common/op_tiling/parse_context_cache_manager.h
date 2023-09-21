@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2023
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,15 +28,15 @@ using ParseContextHolderPtr = std::shared_ptr<gert::KernelContextHolder>;
 class ParseContextCacheManager {
  public:
   ParseContextCacheManager(const ParseContextCacheManager &) = delete;
-  ParseContextCacheManager &operator=(const ParseContextCacheManager &) = delete;
+  ParseContextCacheManager &operator=(const ParseContextCacheManager &)& = delete;
   static ParseContextCacheManager &Instance();
 
   ParseContextHolderPtr GetParseContext(const std::string &compile_key) const;
   void AddParseContext(const std::string &compile_key, const ParseContextHolderPtr &parse_context);
 
  private:
-  ParseContextCacheManager();
-  ~ParseContextCacheManager();
+  ParseContextCacheManager() = default;
+  ~ParseContextCacheManager() = default;
   mutable std::mutex parse_context_mutex_;
   std::unordered_map<std::string, ParseContextHolderPtr> compile_keys_to_parse_contexts_;
 };

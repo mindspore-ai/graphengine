@@ -34,7 +34,7 @@ typedef struct tagIpcIntNoticeInfo {
     uint8_t  ntcEventId;
     uint8_t  msgLen;
     uint8_t  msg[RT_IPCINT_MSGLEN_MAX];
-    uint8_t  reserved1[2];
+    uint16_t phyDevId;
 } rtIpcIntNoticeInfo_t;
 
 /**

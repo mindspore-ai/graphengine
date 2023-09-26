@@ -311,6 +311,7 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_KERNEL_HOST_ONLY (0x20U)
 #define RT_KERNEL_HOST_FIRST (0x40U)
 #define RT_KERNEL_BIUPERF_FLAG (0x80U)
+#define RT_KERNEL_CMDLIST_NOT_FREE                (0x40U) // cmdlist does not need to be released by the runtime.
 
 /**
  * @ingroup rt_kernel

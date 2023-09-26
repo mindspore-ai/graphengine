@@ -32,6 +32,7 @@ namespace tsd {
         TSD_DEVICE_DISCONNECTED = 102U,
         TSD_VERIFY_OPP_FAIL = 103U,
         TSD_ADD_AICPUSD_TO_CGROUP_FAILED = 104U,
+        TSD_OPEN_NOT_SUPPORT_FOR_MDC = 200U,
     };
 }
 #endif  // INC_TDT_STATUS_H

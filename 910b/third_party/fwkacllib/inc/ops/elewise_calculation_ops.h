@@ -21,6 +21,7 @@
 #ifndef OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
 #define OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
 #include "graph/operator_reg.h"
+#include "graph/types.h"
 
 namespace ge {
 /**
@@ -943,7 +944,8 @@ REG_OP(AsinGrad)
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, bfloat16, float32, float64, int32, int64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, bfloat16, float32,
+*     float64, int32, int64, complex64, complex128.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -1011,8 +1013,8 @@ REG_OP(Acosh)
 
 *
 *@par Inputs:
-*@li y: A tensor of type float16 or bfloat16 or float32.
-*@li dy: A tensor of the same type as "y".
+* @li y: A tensor of type float16 or bfloat16 or float32.
+* @li dy: A tensor of the same type as "y".
 *
 *@attention Constraints:
 * "dy" has the same type as "y".
@@ -1199,15 +1201,16 @@ REG_OP(Log)
 * Compatible with the TensorFlow operator Multiply.
 */
 REG_OP(Mul)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
-                           DT_COMPLEX64, DT_COMPLEX128, DT_COMPLEX32}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
-                           DT_COMPLEX64, DT_COMPLEX128, DT_COMPLEX32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
-                           DT_COMPLEX64, DT_COMPLEX128, DT_COMPLEX32}))
+    .INPUT(x1, "T1")
+    .INPUT(x2, "T2")
+    .OUTPUT(y, "T3")
+    .DATATYPE(T1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
+                              DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
+                              DT_COMPLEX64, DT_COMPLEX128, DT_COMPLEX32}))
+    .DATATYPE(T2, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
+                              DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BF16,
+                              DT_COMPLEX64, DT_COMPLEX128, DT_COMPLEX32}))
+    .DATATYPE(T3, Promote({"T1", "T2"}))
     .OP_END_FACTORY_REG(Mul)
 
 /**
@@ -1313,8 +1316,9 @@ REG_OP(FusedMulAddAdd)
 
 *
 *@par Inputs:
-*@li x1: A tensor. Must be one of the following types: bfloat16, float16, float32, float64, uint8, int8, int16, int32, int64, complex64, complex128.
-*@li x2: A tensor of the same type as "x1".
+* @li x1: A tensor. Must be one of the following types: bfloat16, float16, float32, float64,
+*     uint8, int8, int16, int32, int64, complex64, complex128.
+* @li x2: A tensor of the same type as "x1".
 *
 *@attention Constraints:
 * AddV2 supports broadcasting.
@@ -1339,26 +1343,27 @@ REG_OP(AddV2)
     .OP_END_FACTORY_REG(AddV2)
 
 /**
-*@brief Updates "ref" by adding "value" to it. \n
+* @brief Updates "ref" by adding "value" to it. \n
 
-*@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-*@li value: A Tensor of the same type as "ref". \n
+* @par Inputs:
+* @li ref: A Tensor. Must be one of the following types: bfloat16, float16, float32, int8,
+                     int16, int32, int64, uint8, uint16, uint32, uint64.
+* @li value: A Tensor of the same type as "ref". \n
 
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False".
               If "True", the addition will be protected by a lock;
               otherwise the behavior is undefined, but may exhibit less contention.
 *             This attribute is reserved. \n
 
-*@par Outputs:
-*ref: A Tensor that holds the new value of ref after the value has been added. \n
+* @par Outputs:
+* ref: A Tensor that holds the new value of ref after the value has been added. \n
 
-*@attention Constraints:
-*An input tensor of type int64 must have a shape with size 1. \n
+* @attention Constraints:
+* An input tensor of type int64 must have a shape with size 1. \n
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator AssignAdd.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator AssignAdd.
 */
 REG_OP(AssignAdd)
     .INPUT(ref, TensorType::BasicType())
@@ -2186,7 +2191,7 @@ REG_OP(Ceil)
 *@brief Returns element-wise largest integer not greater than "x". \n
 
 *@par Inputs:
-*x: A Tensor of type bfloat16, float16, float32 or double. \n
+* x: A Tensor of type bfloat16, float16, float32 or double. \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
@@ -2273,12 +2278,14 @@ REG_OP(FloorMod)
 * Compatible with the TensorFlow operator Pow.
 */
 REG_OP(Pow)
-    .INPUT(x1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
-                           DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
-    .INPUT(x2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
-                           DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
-                           DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(x1, "T1")
+    .INPUT(x2, "T2")
+    .OUTPUT(y, "T3")
+    .DATATYPE(T1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+                              DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .DATATYPE(T2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+                              DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .DATATYPE(T3, Promote({"T1", "T2"}))
     .OP_END_FACTORY_REG(Pow)
 
 /**
@@ -3411,7 +3418,7 @@ REG_OP(Muls)
 
 *@par Inputs:
 *One input, including:
-* x: A Tensor. Must be one of the following types:bfloat16, float16, float32, float64, int8,
+* x: A Tensor. Must be one of the following types:float16, float32, float64, int8,
                                                   int16, int32, int64, uint8, bool.
 
 *@par Outputs:
@@ -3424,8 +3431,8 @@ REG_OP(Muls)
 * Compatible with the Pytorch operator fills.
 */
 REG_OP(Fills)
-     .INPUT(x, TensorType({BasicType(), DT_BOOL, DT_BF16}))
-     .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_BF16}))
+     .INPUT(x, TensorType({BasicType(), DT_BOOL}))
+     .OUTPUT(y, TensorType({BasicType(), DT_BOOL}))
      .REQUIRED_ATTR(value, Float)
      .OP_END_FACTORY_REG(Fills)
 
@@ -3446,8 +3453,8 @@ REG_OP(Fills)
 * Compatible with the Pytorch operator adds.
 */
  REG_OP(Adds)
-     .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16,DT_BF16}))
-     .OUTPUT(y, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16,DT_BF16}))
+     .INPUT(x, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16}))
+     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16}))
      .REQUIRED_ATTR(value,Float)
      .OP_END_FACTORY_REG(Adds)
 
@@ -3574,7 +3581,7 @@ REG_OP(TensorMove)
 
 * @par Inputs:
 * One inputs, including:
-* x: A Tensor. Must be one of the following types: 
+* x: A Tensor. Must be one of the following types:
      bfloat16, float16, float32, int8, uint8, int16, uint16,int32, uint32, int64, uint64. \n
 
 * @par Outputs:

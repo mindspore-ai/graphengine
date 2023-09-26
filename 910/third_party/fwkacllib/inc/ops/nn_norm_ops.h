@@ -720,17 +720,17 @@ REG_OP(Renorm)
 
 *@par Inputs:
 *Five inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li variance: A Tensor. Must be one of the following types: float16, float32.
-* @li mean: A Tensor. Must be one of the following types: float16, float32.
-* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
+* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li variance: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16 . \n
 
 *@par Outputs:
 *Three outputs, including:
-* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
-* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
-* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.

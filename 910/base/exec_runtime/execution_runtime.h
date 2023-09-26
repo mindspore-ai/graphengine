@@ -51,6 +51,8 @@ class ExecutionRuntime {
 
   static void EnableInHeterogeneousExecutor();
 
+  static void EnableGlobalInHeterogeneousExecutor();
+
   static bool IsInHeterogeneousExecutor();
 
   /// Initialize ExecutionRuntime
@@ -81,6 +83,7 @@ class ExecutionRuntime {
   static std::mutex mu_;
   static bool heterogeneous_enabled_;
   thread_local static bool in_heterogeneous_executor_;
+  static bool global_in_heterogeneous_executor_;
   static void *handle_;
   static std::shared_ptr<ExecutionRuntime> instance_;
 };

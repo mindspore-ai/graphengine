@@ -268,7 +268,7 @@ REG_OP(Permute)
 * @par Outputs:
 * y: A 2D flattened Tensor with the contents of the input tensor, with input dimensions up to axis flattened 
 * to the outer dimension of the output and remaining input dimensions flattened into the inner dimension of the output.
-* Must be one of the following data types: 
+* Must be one of the following data types:
   int8, uint8, int16, uint16, int32, uint32, int64, uint64, float16, float32, bfloat16 .
 
 * @par Attributes:
@@ -830,6 +830,7 @@ REG_OP(CompressFcOp)
 .INPUT(weight, TensorType({DT_INT8}))
 .OUTPUT(weight_compress, TensorType({DT_INT8}))
 .OUTPUT(compress_index, TensorType({DT_INT8}))
+.OUTPUT(compress_info, TensorType({DT_UINT32}))
 .REQUIRED_ATTR(compress_parameters, ListInt)
 .OP_END_FACTORY_REG(CompressFcOp)
 

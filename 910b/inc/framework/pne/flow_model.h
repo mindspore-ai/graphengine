@@ -68,6 +68,10 @@ class FlowModel : public PneModel {
     logic_dev_id_to_mem_cfg_ = std::move(logic_dev_id_to_mem_cfg);
   }
 
+  const std::map<std::string, std::pair<uint32_t, uint32_t>> &GetLogicDeviceToMemCfg() const {
+    return logic_dev_id_to_mem_cfg_;
+  }
+
  private:
   HcomClusterDesc &GetOrCreateHcomClusterDesc(const std::string &name);
   mutable std::mutex flow_model_mutex_;

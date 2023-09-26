@@ -708,13 +708,13 @@ REG_OP(AttentionScoreGrad)
 * @li var: An ND Tensor.
 * Must be one of the following types: float16, float32, int8, uint8, double,
  * int64, complex64, qint8, quint8, qint32, uint16, complex128, half, uint32,
- * uint64
+ * uint64, bfloat16
 * @li indices: An ND Tensor.
 * Must be one of the following types: int32 or int64
 * @li updates: An ND Tensor.
 * Must be one of the following types: float16, float32, int8, uint8, double,
  * int64, complex64, qint8, quint8, qint32, uint16, complex128, half, uint32,
- * uint64
+ * uint64, bfloat16
 
 * @par Attributes:
 * use_locking: An optional bool. Defaults to "False". If "True",
@@ -1431,13 +1431,13 @@ REG_OP(ScatterMaxWithArgmax)
 * Three inputs, including:
 * @li var: An ND Tensor .
 
-* Must be one of the following types: float16, float, int32, int8, uint8
+* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16
 * @li indices: An ND Tensor . \n
 
 * Must be one of the following types: int32 or int64
 * @li updates: An ND Tensor .
 
-* Must be one of the following types: float16, float, int32, int8, uint8
+* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16
 
 * @par Attributes:
 * use_locking: An optional bool. Defaults to "False". If "True",
@@ -1450,10 +1450,10 @@ REG_OP(ScatterMaxWithArgmax)
 * Compatible with the TensorFlow operator ScatterUpdate.
 */
 REG_OP(ScatterUpdate)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BFLOAT16}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BFLOAT16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BFLOAT16}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterUpdate)
 

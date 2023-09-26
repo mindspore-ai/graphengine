@@ -746,24 +746,24 @@ REG_OP(Conj)
     .OP_END_FACTORY_REG(Conj)
 
 /**
-*@brief The negative log likelihood loss . \n
+* @brief The negative log likelihood loss . \n
 
-*@par Inputs:
-*The input x and weight must have the same type. Inputs include:
-*@li x: A Tensor dtype of float32 or bfloat16.
-*@li target: A Tensor dtype of int32 or int64.
-*@li weight: A Tensor dtype of float32 or bfloat16. \n
+* @par Inputs:
+* The input x and weight must have the same type. Inputs include:
+* @li x: A Tensor dtype of float32 or bfloat16.
+* @li target: A Tensor dtype of int32 or int64.
+* @li weight: A Tensor dtype of float32 or bfloat16. \n
 
-*@par Attributes:
-*@li reduction: An optional attribute. Defaults to "mean" .
-*@li ignore_index:An optional attribute.Defaults to -100 . \n
+* @par Attributes:
+* @li reduction: An optional attribute. Defaults to "mean" .
+* @li ignore_index:An optional attribute.Defaults to -100 . \n
 
-*@par Outputs:
-*@li y: A Tensor dtype of float32 or bfloat16.
-*@li total_weight: A Tensor dtype of float32 or bfloat16. \n
+* @par Outputs:
+* @li y: A Tensor dtype of float32 or bfloat16.
+* @li total_weight: A Tensor dtype of float32 or bfloat16. \n
 
-*@par Third-party framework compatibility
-*Compatible with pytorch NLLLoss operator
+* @par Third-party framework compatibility
+* Compatible with pytorch NLLLoss operator
 */
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT, DT_BF16}))
@@ -807,27 +807,28 @@ REG_OP(NLLLossGrad)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
-*@brief IFMR(Input Feature Map Reconstruction). \n
+* @brief IFMR(Input Feature Map Reconstruction). \n
 
-*@par Inputs:
-*@li data: A Tensor of feature map.
-*@li data_min: A Tensor of min value of feature map.
-*@li data_max: A Tensor of max value of feature map.
-*@li cumsum: A Tensor of cumsum bin of data . \n
+* @par Inputs:
+* @li data: A Tensor of feature map.
+* @li data_min: A Tensor of min value of feature map.
+* @li data_max: A Tensor of max value of feature map.
+* @li cumsum: A Tensor of cumsum bin of data . \n
 
-*@par Attributes:
-*@li min_percentile: min init percentile.
-*@li max_percentile: max init percentile.
-*@li search_range: search range.
-*@li search_step: step size of searching.
-*@li with_offset: whether using offset . \n
+* @par Attributes:
+* @li min_percentile: min init percentile.
+* @li max_percentile: max init percentile.
+* @li search_range: search range.
+* @li search_step: step size of searching.
+* @li with_offset: whether using offset .
+* @li quant_bits: bits of quant, an optional attr, default value is 8. \n
 
-*@par Outputs:
-*@li scale: optimal scale.
-*@li offset: optimal offset . \n
+* @par Outputs:
+* @li scale: optimal scale.
+* @li offset: optimal offset . \n
 
-*@par Third-party framework compatibility
-*Compatible with mindspore
+* @par Third-party framework compatibility
+* Compatible with mindspore
 */
 
 REG_OP(IFMR)
@@ -842,6 +843,7 @@ REG_OP(IFMR)
   .REQUIRED_ATTR(search_range, ListFloat)
   .REQUIRED_ATTR(search_step, Float)
   .REQUIRED_ATTR(with_offset, Bool)
+  .ATTR(quant_bits, Int, 8)
   .OP_END_FACTORY_REG(IFMR)
 
 /**

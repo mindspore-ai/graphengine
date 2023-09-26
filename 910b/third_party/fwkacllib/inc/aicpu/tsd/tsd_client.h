@@ -137,6 +137,26 @@ TDT_LIB_EXPORT uint32_t TsdOpen(const uint32_t logicDeviceId, const uint32_t ran
 TDT_LIB_EXPORT uint32_t TsdOpenEx(const uint32_t logicDeviceId, const uint32_t rankSize, const uint32_t deviceMode);
 
 /**
+* @ingroup OpenAicpuSd
+* @brief Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @par Function
+* Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @param logicDeviceId [IN] type #unsigned int. Logic device ID
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tsd_client.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_LIB_EXPORT uint32_t TsdOpenAicpuSd(const uint32_t logicDeviceId);
+
+/**
 * @ingroup InitialQs
 * @brief Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of QS processes

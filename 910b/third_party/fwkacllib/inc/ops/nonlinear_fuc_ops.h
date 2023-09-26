@@ -261,7 +261,7 @@ REG_OP(Tanh)
 *
 * @par Inputs:
 * x: A tensor. Must be one of the following types: float32, float64, int32, uint8,
-*     int16, int8, int64, uint16, float16, qint8.
+*     int16, int8, int64, uint16, float16, qint8, bfloat16.
 *
 * @par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -274,10 +274,10 @@ REG_OP(Tanh)
 REG_OP(Relu)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE,
                           DT_INT8, DT_INT32, DT_INT16, DT_INT64,
-                          DT_UINT8, DT_UINT16, DT_QINT8}))
+                          DT_UINT8, DT_UINT16, DT_QINT8, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE,
                            DT_INT8, DT_INT32, DT_INT16, DT_INT64,
-                           DT_UINT8, DT_UINT16, DT_QINT8}))
+                           DT_UINT8, DT_UINT16, DT_QINT8, DT_BF16}))
     .OP_END_FACTORY_REG(Relu)
 
 /**

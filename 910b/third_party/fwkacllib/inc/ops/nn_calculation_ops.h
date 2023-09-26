@@ -355,7 +355,7 @@ REG_OP(BiasAddGrad)
  * data tensor. An integer vector representing the shape of input, where
  * input is a 4-D tensor [batch, height, width, channels]
  * or [batch, channels, height, width].
- * @li filter: A Tensor. Must be one of the following types: float16.
+ * @li filter: A Tensor. Must be one of the following types: float16/float32/bfloat16.
  * 4-D with shape [filter_height, filter_width, in_channels, out_channels]
  * or [out_channels, filter_height, filter_width, in_channels]
  * or [out_channels, in_channel, filter_height, filter_width].
@@ -368,11 +368,13 @@ REG_OP(BiasAddGrad)
  * The following are the supported data types and data formats:\n
  *\n
  *\n
-    | Tensor    | out_bckprop | filter  | y      |\n
-    |-----------|-------------|---------|--------|\n
-    | Data Type | float16     | float16 | float16|\n
-    | Format    | NCHW        | NCHW    | NCHW   |\n
-    |           | NHWC        | HWCN    | NHWC   |\n
+    | Tensor    | out_bckprop | filter   | y       |\n
+    |-----------|-------------|----------|---------|\n
+    | Data Type | float16     | float16  | float16 |\n
+    | Data Type | float32     | float32  | float32 |\n
+    | Data Type | bfloat16    | bfloat16 | bfloat16|\n
+    | Format    | NCHW        | NCHW     | NCHW    |\n
+    | Format    | NHWC        | HWCN     | NHWC    |\n
  *\n
  *
 *@par Attributes:
@@ -435,9 +437,9 @@ REG_OP(BiasAddGrad)
 */
 REG_OP(Conv2DBackpropInput)
     .INPUT(input_size, TensorType({DT_INT32}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -1563,8 +1565,8 @@ REG_OP(Conv2DTranspose)
 *@brief Computes the transpose of convolution 2d with respect to the input.
 * @par Inputs:
  * Four inputs:
- * @li x: A Tensor of type float16, int8, int4.
- * @li filter: A Tensor of type float16, int8, int4. Must have the same type as "x".
+ * @li x: A Tensor of type float16, int8, float32, int4.
+ * @li filter: A Tensor of type float16, int8, float32, int4. Must have the same type as "x".
  * @li bias: An optional 1D tensor of the same type as "x".
  * @li offset_w: An optional 1D tensor for quantized inference. Type is int8, int4.
 *@par Required Attributes:

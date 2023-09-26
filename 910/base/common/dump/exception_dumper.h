@@ -97,7 +97,7 @@ class ExecutorExceptionDumpInfoWrapper : public gert::ExceptionDumpInfoWrapper {
   }
 
  private:
-  ExtraOpInfo *dump_unit_{};
+  ExtraOpInfo *dump_unit_;
 };
 
 class ExceptionDumper {

@@ -241,6 +241,13 @@ extern HcclResult HcclCommDestroy(HcclComm comm);
  */
 extern HcclResult HcclCommInitAll(uint32_t ndev, int32_t* devices, HcclComm* comms);
 
+/**
+ * @brief Get hccl error.
+ * @param comm A pointer identifying the communication resource based on.
+ * @param asyncError A pointer identifying the communication error.
+*/
+extern HcclResult HcclGetCommAsyncError(HcclComm comm, HcclResult *asyncError);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

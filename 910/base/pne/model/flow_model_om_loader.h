@@ -23,7 +23,7 @@
 #include "graph/manager/graph_var_manager.h"
 
 namespace ge {
-using NodeRefreshInfo = std::map<NodePtr, std::map<NodePtr, std::vector<int64_t>>>;
+using NodeRefreshInfo = std::map<NodePtr, std::map<NodePtr, std::vector<std::pair<size_t, int64_t>>>>;
 
 class FlowModelOmLoader {
  public:
@@ -42,7 +42,11 @@ class FlowModelOmLoader {
   static Status RecordOffsetsRefreshInfo(const ComputeGraphPtr &graph,
                                          const std::map<NodePtr, int64_t> &unrefreshed_offsets,
                                          NodeRefreshInfo &inputs_need_refresh, NodeRefreshInfo &outputs_need_refresh);
-  static Status RefreshNodeOffset(NodeRefreshInfo &inputs_need_refresh, NodeRefreshInfo &outputs_need_refresh);
+  static Status RefreshNodeOffset(NodeRefreshInfo &inputs_need_refresh,
+                                  NodeRefreshInfo &outputs_need_refresh,
+                                  std::map<int64_t, int64_t> &logical_addr_mapping);
+  static Status UpdateModelTaskAddr(const PneModelPtr &pne_model,
+                                    const std::map<int64_t, int64_t> &logical_addr_mapping);
 };
 }  // namespace ge
 #endif  // BASE_PNE_MODEL_FLOW_MODEL_OM_LOADER_H_

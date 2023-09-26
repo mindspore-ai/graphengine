@@ -22,12 +22,6 @@
 #include "graph/any_value.h"
 
 namespace ge {
-constexpr int64_t kNoNeedCompress = 0xFFFFFFFFFFFFFFFF;
-constexpr int64_t kNeedCompressVersion = 0x1;
-const string kKernelName = "_kernelname";
-const string kAtomicKernelName = "_atomic_kernelname";
-const std::set<std::string> kUnusedAttrNames = { "_l2fusion_ToOpStruct", "_op_slice_info", "_ir_attr_names" };
-
 class ModelCompressManager {
  public:
   static Status Compress(const GeModelPtr &ge_model);

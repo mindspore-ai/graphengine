@@ -17,4 +17,7 @@
 #ifndef AIR_INC_FRAMEWORK_COMMON_UTIL_H_
 #define AIR_INC_FRAMEWORK_COMMON_UTIL_H_
 #include "common/ge_common/util.h"
+namespace ge {
+GE_FUNC_VISIBILITY Status ConvertToInt64(const std::string &str, int64_t &val);
+}
 #endif  // AIR_INC_FRAMEWORK_COMMON_UTIL_H_

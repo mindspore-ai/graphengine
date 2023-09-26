@@ -147,7 +147,7 @@ REG_OP(SplitV)
 * One input:
 * @li x: An ND Tensor.
 * Must be one of the following types: float16, float32, int32, int8, int16,
-  int64, uint8, uint16, uint32, uint64, bool. \n
+  int64, uint8, bfloat16, uint16, uint32, uint64, bool. \n
 
 * @par Attributes:
 * @li size_splits: A required list of int32. Specifies a list containing

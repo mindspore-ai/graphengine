@@ -113,8 +113,8 @@ REG_OP(BNTrainingReduceGrad)
 
 * @par Inputs:
 * Seven inputs, including:
-* @li grads: A tensor of type float16 or float32, for the gradient.
-* @li x: A tensor of type float16 or float32.
+* @li grads: A tensor of type float16 or float32 or bfloat16, for the gradient.
+* @li x: A tensor of type float16 or float32 or bfloat16.
 * @li diff_scale: A tensor of type float32,
 * for the mean of "x".
 * @li diff_offset: A tensor of type float32,
@@ -130,7 +130,7 @@ REG_OP(BNTrainingReduceGrad)
 * added to the variance of "x" . \n
 
 * @par Outputs:
-* y: A Tensor of type float16 or float32, for the offset
+* y: A Tensor of type float16 or float32 or bfloat16, for the offset
 * of "x" . \n
 
 * @attention Constraints:
@@ -334,7 +334,7 @@ REG_OP(BNTrainingUpdateV2)
 
 * @par Inputs:
 * Five inputs, including:
-* @li x: A tensor of type float16 or float32.
+* @li x: A tensor of type float16 or float32 or bfloat16.
 * @li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
 * @li square_sum: A tensor of type float32 for the output of operator
 * BNTrainingReduce.
@@ -346,7 +346,7 @@ REG_OP(BNTrainingUpdateV2)
 * to avoid dividing by zero . \n
 
 * @par Outputs:
-* @li y: A tensor of type float16 or float32, for normalized "x".
+* @li y: A tensor of type float16 or float32 or bfloat16, for normalized "x".
 * @li batch_mean: A tensor of type float32, for the mean of "x".
 * @li batch_variance: A tensor of type float32, for the variance of "x".
 * @li reserve_1: A tensor of type float32, for the mean of batch "x".

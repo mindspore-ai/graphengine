@@ -18,7 +18,6 @@
 #define INC_PNE_DATA_FLOW_MODEL_PP_H_
 
 #include "pne/data_flow/inner_pp.h"
-#include "common/ge_visibility.h"
 #include "ge/ge_api_error_codes.h"
 
 namespace ge {

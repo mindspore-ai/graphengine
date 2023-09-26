@@ -568,6 +568,63 @@ RTS_API rtError_t rtStreamSetMode(rtStream_t stm, const uint64_t stmMode);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtStreamGetMode(rtStream_t const stm, uint64_t * const stmMode);
+
+#define RT_PROCESS_SIGN_LENGTH (49)
+
+typedef enum tagRtDevDrvProcessType {
+    RT_DEVDRV_PROCESS_CP1 = 0,   /* aicpu_scheduler */
+    RT_DEVDRV_PROCESS_CP2,       /* custom_process */
+    RT_DEVDRV_PROCESS_DEV_ONLY,  /* TDT */
+    RT_DEVDRV_PROCESS_QS,        /* queue_scheduler */
+    RT_DEVDRV_PROCESS_HCCP,      /* hccp server */
+    RT_DEVDRV_PROCESS_USER,      /* user proc, can bind many on host or device */
+    RT_DEVDRV_PROCESS_CPTYPE_MAX
+} rtDevDrvProcessType_t;
+
+typedef struct tagRtBindHostpidInfo {
+    int32_t hostPid;
+    uint32_t vfId;
+    uint32_t chipId;
+    int32_t mode;
+    rtDevDrvProcessType_t cpType;
+    uint32_t len;
+    char sign[RT_PROCESS_SIGN_LENGTH];
+} rtBindHostpidInfo;
+
+/**
+ * @ingroup dvrt_base
+ * @brief Bind Device custom-process to aicpu-process.
+ * @param [in] info The Information about the bound hostid.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtBindHostPid(rtBindHostpidInfo info);
+
+/**
+ * @ingroup dvrt_base
+ * @brief Unbind Device custom-process to aicpu-process.
+ * @param [in] info The Information about the bound hostid.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtUnbindHostPid(rtBindHostpidInfo info);
+
+/**
+ * @ingroup dvrt_base
+ * @brief Query the binding information of the devpid.
+ * @param [in] pid: dev pid
+ * @param [in] chipId chip id
+ * @param [in] vfId vf id
+ * @param [in] hostPid host pid
+ * @param [in] cpType type of custom-process
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtQueryProcessHostPid(int32_t pid, uint32_t *chipId, uint32_t *vfId, uint32_t *hostPid,
+    uint32_t *cpType);
 #if defined(__cplusplus)
 }
 #endif

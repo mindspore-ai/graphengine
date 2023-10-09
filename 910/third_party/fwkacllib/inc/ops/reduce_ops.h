@@ -88,7 +88,7 @@ REG_OP(BN3DTrainingReduce)
 * added to the variance of "x" . \n
 
 * @par Outputs:
-* y: A Tensor of type float16 or float32, for the offset
+* y: A Tensor of type float16, float32 or bfloat16, for the offset
 * of "x" . \n
 
 * @attention Constraints:

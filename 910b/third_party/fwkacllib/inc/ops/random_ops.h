@@ -922,7 +922,7 @@ REG_OP(Geometric)
 * @ Compatible with the Pytorch operator multinomial.
 */
 REG_OP(MultinomialWithReplacement)
-    .INPUT(x, TensorType({ DT_FLOAT16,DT_FLOAT,DT_DOUBLE }))
+    .INPUT(x, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16 }))
     .INPUT(seed, TensorType({ DT_INT64 }))
     .INPUT(offset, TensorType({ DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_INT64 }))

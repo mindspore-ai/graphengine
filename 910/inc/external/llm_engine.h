@@ -21,8 +21,8 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include "external/ge/ge_ir_build.h"
-#include "external/llm_engine_types.h"
+#include "ge/ge_ir_build.h"
+#include "llm_engine_types.h"
 
 namespace llm {
 class DecoderManager;
@@ -30,8 +30,8 @@ class PromptManager;
 class LLMEngine {
  public:
   explicit LLMEngine(uint64_t cluster_id) : cluster_id_(cluster_id) {}
-  ~LLMEngine() = default;
-  ge::Status LLMEngineInitialize(const std::map<ge::AscendString, ge::ModelBufferData> &name_to_models,
+  ~LLMEngine();
+  ge::Status LLMEngineInitialize(const std::vector<ge::ModelBufferData> &model_buffer_datas,
                                  const std::map<ge::AscendString, ge::AscendString> &options);
   static LLMEngineStatus fetchLLMEngineStatus();
   int64_t FetchLlmEngineQueueStatus();
@@ -58,6 +58,7 @@ class LLMEngine {
   uint64_t cluster_id_;
   std::string role_;
   std::atomic<bool> is_initialized_{false};
+  std::atomic<bool> is_finalized_{false};
 };
 }  // namespace llm
 

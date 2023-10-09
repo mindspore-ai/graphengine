@@ -2555,7 +2555,7 @@ REG_OP(ArgMaxD)
 * Tensor. Defaults to "false". \n
 
 *@par Outputs:
-*@li indice: A multi-dimensional Tensor of type int32, specifying the index.
+*@li indice: A multi-dimensional Tensor of type int32 or int64, specifying the index.
 * (If "keep_dims" is set to "false", the output dimensions are reduced by
 * "dimension" compared with that of "x". Otherwise, the output has one fewer
 * dimension than "x".)
@@ -2592,7 +2592,7 @@ REG_OP(ArgMaxWithValue)
 * Tensor. Defaults to "false". \n
 
 *@par Outputs:
-*@li indice: A multi-dimensional Tensor of type int32, specifying the index.
+*@li indice: A multi-dimensional Tensor of type int32 or int64, specifying the index.
 * (If "keep_dims" is set to "false", the output dimensions are reduced by
 * "dimension" compared with that of "x". Otherwise, the output has one fewer
 * dimension than "x".)

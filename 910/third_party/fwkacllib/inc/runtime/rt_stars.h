@@ -189,17 +189,6 @@ RTS_API rtError_t rtSetStreamTag(rtStream_t stm, uint32_t geOpTag);
  */
 RTS_API rtError_t rtMultipleTaskInfoLaunch(const void *taskInfo, rtStream_t stm);
 
-  /*
- * @ingroup rt_stars
- * @brief build multiple task
- * @param [in] taskInfo(rtMultipleTaskInfo_t)
- * @param [in] stm: stream handle
- * @param [in] flag
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtMultipleTaskInfoLaunchWithFlag(const void *taskInfo, rtStream_t stm, const uint32_t flag);
-
 // general ctrl type
 typedef enum tagGeneralCtrlType {
     RT_GNL_CTRL_TYPE_MEMCPY_ASYNC_CFG = 0,
@@ -218,7 +207,6 @@ typedef enum tagGeneralCtrlType {
     RT_GNL_CTRL_TYPE_MULTIPLE_TSK = 13,
     RT_GNL_CTRL_TYPE_NPU_GET_FLOAT_DEBUG_STATUS = 14,
     RT_GNL_CTRL_TYPE_NPU_CLEAR_FLOAT_DEBUG_STATUS = 15,
-    RT_GNL_CTRL_TYPE_MULTIPLE_TSK_FLAG = 16, // invoke rtMultipleTaskInfoLaunchWithFlag
     RT_GNL_CTRL_TYPE_MAX
 } rtGeneralCtrlType_t;
 

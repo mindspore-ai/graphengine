@@ -706,19 +706,19 @@ REG_OP(IsNan)
     .OP_END_FACTORY_REG(IsNan)
 
 /**
- *@brief Returns the real part of a complex number. If the input is already real, it will be returned unchanged.
+ * @brief Returns the real part of a complex number. If the input is already real, it will be returned unchanged.
 
- *@par Inputs:
- *input:A Tensor. Must have numeric type.
+ * @par Inputs:
+ * input:A Tensor. Must have numeric type.
 
- *@par Attributes:
- *Tout: Type of outputs. \n
+ * @par Attributes:
+ * Tout: Type of outputs. \n
 
- *@par Outputs:
- *output:A Tensor. Has the same shape as input.
+ * @par Outputs:
+ * output:A Tensor. Has the same shape as input.
 
- *@par Third-party framework compatibility.
- *Compatible with tensorflow Real operator.
+ * @par Third-party framework compatibility.
+ * Compatible with tensorflow Real operator.
  */
 REG_OP(Real)
     .INPUT(input, "TSrc")

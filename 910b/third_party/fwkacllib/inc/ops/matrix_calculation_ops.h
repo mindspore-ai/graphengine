@@ -1292,10 +1292,10 @@ REG_OP(ConfusionMatrix)
 * Compatible with the Mindspore operator Scatter.
 */
 REG_OP(Scatter)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BF16}))
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BF16}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BF16}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BF16}))
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BF16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BF16}))
     .REQUIRED_ATTR(reduce, String)
     .ATTR(axis, Int, 0)
     .OP_END_FACTORY_REG(Scatter)
@@ -1450,10 +1450,10 @@ REG_OP(ScatterMaxWithArgmax)
 * Compatible with the TensorFlow operator ScatterUpdate.
 */
 REG_OP(ScatterUpdate)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BFLOAT16}))
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BFLOAT16}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8,DT_BFLOAT16}))
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterUpdate)
 
@@ -1778,11 +1778,11 @@ REG_OP(FillDiagonal)
 * @brief: Returns the sum of the elements of the diagonal of the input 2-D matrix. \n
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types:
-*    float16, float. \n
+* x: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16,
+*                                                 int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x" . \n
+* y: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16, int64, uint64. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Trace.

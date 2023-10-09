@@ -25,7 +25,7 @@ class GE_FUNC_VISIBILITY FlowModelHelper {
   static Status LoadToFlowModel(const std::string &model_path, FlowModelPtr &flow_model);
   static Status UpdateSessionGraphId(const FlowModelPtr &flow_model, const std::string &session_graph_id);
   static Status SaveToOmModel(const FlowModelPtr &flow_model, const std::string &output_file);
-  static Status LoadFlowModelFromBuffData(const std::pair<ge::AscendString, ge::ModelBufferData> &name_and_model,
+  static Status LoadFlowModelFromBuffData(const ModelBufferData &model_buffer_data,
                                           ge::FlowModelPtr &flow_model);
   static Status LoadFlowModelFromOmFile(const char_t *const model_path, ge::FlowModelPtr &flow_model);
  private:

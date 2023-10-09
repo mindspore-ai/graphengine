@@ -291,6 +291,7 @@ class VISIBILITY_EXPORT ProfilerRegistry {
 
   void SaveRegistryType(const std::string &type, const bool launch_flag);
   bool IsProfLaunchType(const std::string &kernel_type, const bool launch_flag = true);
+  bool IsProfDavinciModelExecuteType(const std::string &kernel_type);
  private:
   ProfilerRegistry() noexcept = default;
   std::vector<std::string> register_prof_launch_type_{};

@@ -1970,22 +1970,6 @@ REG_OP(ForeachNonFiniteCheckAndUnscale)
     .INPUT(inv_scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
 
-REG_OP(ApplyCamePart2)
-    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .INPUT(sum_grad_r, TensorType({DT_FLOAT}))
-    .INPUT(sum_grad_c, TensorType({DT_FLOAT}))
-    .INPUT(sum_grad_rc, TensorType({DT_FLOAT}))
-    .INPUT(r, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .INPUT(c, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .INPUT(beta2, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(sum_r, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(global_shape, TensorType({DT_INT64}))
-    .OUTPUT(r, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .OUTPUT(c, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .OUTPUT(u, TensorType({DT_FLOAT}))
-    .OUTPUT(sum_square_u, TensorType({DT_FLOAT}))
-    .OP_END_FACTORY_REG(ApplyCamePart2)
-
 /**
 * @brief round off number foreach element in each tensor in tesnorlist, this is an in-place operation.
 * @par Inputs:
@@ -3317,11 +3301,11 @@ REG_OP(ForeachSigmoid)
 * @li pooled_w: A required int32, specifying the pooled W. Must be greater than 0.
 * @li spatial_scale: An required scaling factor for mapping the input coordinates
 *     to the ROI coordinates.
-* @li sampling_ratio: An required number of inputs samples to take for each output sample.
+* @li sampling_ratio: An required number of inputs samples to take for each output sample. 
 *     0 to take samples densely for current models.
 * @li aligned: A required bool, if False, use the legacy implementation.
 *     If True, align the results more perfectly. Default: True.
-* @li clockwise: A required bool, if True, the angle in each proposal follows a clockwise
+* @li clockwise: A required bool, if True, the angle in each proposal follows a clockwise 
 *     fashion in image space, Otherwise, the angle is counterclockwise. Default: False. \n
 
 * @par Outputs:

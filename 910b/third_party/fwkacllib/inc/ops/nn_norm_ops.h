@@ -957,25 +957,23 @@ REG_OP(LayerNormBetaGammaBackprop)
     .OP_END_FACTORY_REG(LayerNormBetaGammaBackprop)
 
 /**
-*@brief LayerNormBetaGammaBackpropV2 operator interface implementation
+* @brief LayerNormBetaGammaBackpropV2 operator interface implementation
 *  calculating: dy, x, variance, mean
 *  pd_gamma = np.sum((data_dy*res_for_gamma), param_axis, keepdims=True)
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
-*@par Inputs:
-*Three inputs, including:
+* @par Inputs:
+* Three inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li variance: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16 . \n
+* @li res_for_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 
-*@par Outputs:
-*Three outputs, including:
+* @par Outputs:
+* Three outputs, including:
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormBetaGammaBackpropV2)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))

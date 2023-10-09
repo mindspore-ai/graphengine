@@ -61,17 +61,25 @@ class LLMReq {
   }
 
  private:
-  uint64_t req_id_;
+  uint64_t req_id_{0UL};
   // 请求prompt的句子长度，做完padding的值， 用于申请prompt的KVCache
-  uint64_t prompt_length_;
-  uint64_t prompt_cluster_id_;  // in/out， runPrompt的输出， runecoder的输入
-  uint64_t decoder_cluster_id_;
+  uint64_t prompt_length_{0UL};
+  uint64_t prompt_cluster_id_{0UL};  // in/out， runPrompt的输出， runecoder的输入
+  uint64_t decoder_cluster_id_{0UL};
 };
 
-constexpr char LLM_OPTION_ROLE[] = "llm.Role";
 constexpr char LLM_OPTION_INPUTS_BATCH_DIM_INDEX[] = "llm.InputsBatchSizeDimIndex";
+constexpr char LLM_OPTION_WAIT_TIME[] = "llm.WaitTime";
 constexpr char kPrompt[] = "Prompt";
 constexpr char kDecoder[] = "Decoder";
+constexpr const char LLM_OPTION_OM_CACHE_PATH[] = "llm.OmCachePath";
+constexpr const char LLM_OPTION_CLUSTER_DEPLOYMENT_CONFIG[] = "llm.ClusterDeploymentConfig";
+constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
+constexpr const char LLM_OPTION_MODEL_INPUTS_SHAPES[] = "llm.InputShapes";
+constexpr const char LLM_OPTION_MODEL_INPUTS_DTYPES[] = "llm.InputDtypes";
+constexpr const char LLM_OPTION_MODEL_KV_CACHE_SHAPES[] = "llm.RefInputShapes";
+constexpr const char LLM_OPTION_MODEL_KV_CACHE_DTYPES[] = "llm.RefInputDtypes";
+constexpr const char LLM_OPTION_OUTPUT_NUM[] = "llm.OutputNums";
 }  // namespace llm
 
 #endif  // LLM_ENGINE_INC_EXTERNAL_LLM_ENGINE_TYPES_H

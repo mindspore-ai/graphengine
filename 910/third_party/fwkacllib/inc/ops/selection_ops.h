@@ -97,8 +97,9 @@ REG_OP(RangeD)
 * @par Inputs:
 * Two inputs, including:
 * @li x: A Tensor.
-* Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16,
-uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
+* Must be one of the following types: DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128,
+ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64,
+ DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32, DT_BF16, DT_BOOL
 * @li multiples: A 1D Tensor of type int32 or int64.
 *     The length must be the same as the number of dimensions in "input"
 
@@ -111,9 +112,13 @@ uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint
 * Compatible with the TensorFlow operator Tile.
 */
 REG_OP(Tile)
-    .INPUT(x, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128,
+                          DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64,
+                          DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32, DT_BF16, DT_BOOL}))
     .INPUT(multiples, TensorType::IndexNumberType())
-    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128,
+                           DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64,
+                           DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32, DT_BF16, DT_BOOL}))
     .OP_END_FACTORY_REG(Tile)
 
 /**
@@ -1327,8 +1332,8 @@ REG_OP(StridedSliceAssign)
 
 * @par Inputs:
 * Two inputs, including:
-* @li var: A mutable ND Tensor of the following types:int32, int16, float16, float32.
-* @li input_value: A mutable ND "Tensor" of the following types:int32, int16, float16, float32 . \n
+* @li var: A mutable ND Tensor of the following types:int32, int16, float16, float32, bfloat16.
+* @li input_value: A mutable ND "Tensor" of the following types:int32, int16, float16, float32, bfloat16. \n
 
 * @par Attributes:
 * @li begin: A required list of ints.
@@ -1355,9 +1360,9 @@ REG_OP(StridedSliceAssign)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use StridedSliceAssign instead.
 */
 REG_OP(StridedSliceAssignD)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
-    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16, DT_BF16}))
+    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16, DT_BF16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16, DT_BF16}))
     .REQUIRED_ATTR(begin, ListInt)
     .REQUIRED_ATTR(end, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -1467,7 +1472,7 @@ REG_OP(CumprodD)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float32, int32, uint8, int8, float16.
+* @li x: A Tensor. Must be one of the following types: float32, int32, uint8, int8, float16, bfloat16.
 * @li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)). Defaults to "0".
 *
 * @par Attributes:
@@ -2129,7 +2134,7 @@ REG_OP(Cummax)
 * @par Inputs:
 * One input:
 * input_x: A Tensor with any format. Must be one of the following types:
-* float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
+* bfloat16, float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
 
 * @par Attributes:
 * @li axis: An optional int32, specifying the axis to tile. Defaults to 1.
@@ -2137,7 +2142,7 @@ REG_OP(Cummax)
 
 * @par Outputs:
 * output_y: A Tensor of any format. Must be one of the following types:
-* float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
+* bfloat16, float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
 
 * @attention Constraints:
 * @li "axis" must be within the rank of the input tensor.
@@ -2146,9 +2151,9 @@ REG_OP(Cummax)
 * Compatible with the Caffe operator Tile.
 */
 REG_OP(TileWithAxis)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32,
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32,
     DT_INT16, DT_INT8, DT_UINT64, DT_UINT32, DT_UINT16, DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32,
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32,
     DT_INT16, DT_INT8, DT_UINT64, DT_UINT32, DT_UINT16, DT_UINT8}))
     .ATTR(axis, Int, 1)
     .REQUIRED_ATTR(tiles, Int)

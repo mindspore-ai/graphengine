@@ -31,20 +31,20 @@ class PreDavinciModel {
   virtual Status Init();
   virtual Status DoPartitionProcess();
   Status DoTaskSink(const EngineType engine_type);
-  Status InitNodes(const ComputeGraphPtr &compute_graph);
+  virtual Status InitNodes(const ComputeGraphPtr &compute_graph);
   void InitKernelOffset();
   void InitRuntimeParams();
   void DoReset() const;
 
  private:
-  // get Op
-  OpDescPtr GetOpByIndex(const uint32_t op_index) const;
   Status GetEngineName(const EngineType engine_type, const uint32_t task_type,
                        const uint32_t kernel_type, std::string &engine_name) const;
   std::string GetEngineNameByType(const uint32_t type,
                                   const std::map<uint32_t, std::string> type_to_engine_name) const;
 
  protected:
+  // get Op
+  OpDescPtr GetOpByIndex(const uint32_t op_index) const;
   GeModelPtr ge_model_;
   std::map<int64_t, OpDescPtr> op_list_;
   uint32_t model_id_{0U};
@@ -52,7 +52,6 @@ class PreDavinciModel {
   uint32_t task_num_{0U};
   PreRuntimeParam runtime_param_;
   std::unordered_map<std::string, uint32_t> names_to_bin_offset_;
-  std::unordered_map<int64_t, uint32_t> zero_copy_offset_to_ids_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PRELOAD_PRE_DAVINCI_MODEL_H_

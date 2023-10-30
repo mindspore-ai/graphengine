@@ -33,11 +33,16 @@ class GE_FUNC_VISIBILITY MemoryAssigner {
 
   MemoryAssigner &operator=(const MemoryAssigner &) = delete;
 
-  Status AssignMemory(std::map<uint64_t, size_t> &mem_offset, size_t &zero_copy_mem_size,
+  Status AssignMemory(std::map<uint64_t, size_t> &mem_offsets, size_t &zero_copy_mem_size,
                       const bool has_assigned_var_mem = false);
+
+  const std::vector<std::vector<int64_t>> &GetSubMemOffsets() const {
+    return sub_mem_offsets_;
+  }
 
  private:
   ge::ComputeGraphPtr compute_graph_;
+  std::vector<std::vector<int64_t>> sub_mem_offsets_;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_MEMORY_MEMORY_ASSIGNER_H_

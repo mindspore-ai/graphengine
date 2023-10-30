@@ -103,6 +103,7 @@ typedef struct {
  * module id
  * if a module needs to be added, add the module at the end and before INVLID_MOUDLE_ID
  */
+#define ALL_MODULE  (0x0000FFFFU)
 enum {
     SLOG,          /**< Slog */
     IDEDD,         /**< IDE daemon device */
@@ -173,6 +174,7 @@ enum {
     TSYNC,
     AUDIO,
     TPRT,
+    ASCENDCKERNEL,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 
@@ -184,7 +186,7 @@ DLL_EXPORT void dlog_init(void);
 
 /**
  * @ingroup slog
- * @brief dlog_getlevel: get module loglevel and enableEvent
+ * @brief dlog_getlevel: get module debug loglevel and enableEvent
  *
  * @param [in]moduleId: moudule id(see slog.h, eg: CCE), others: invalid
  * @param [out]enableEvent: 1: enable; 0: disable
@@ -202,6 +204,29 @@ DLL_EXPORT int dlog_getlevel(int moduleId, int *enableEvent);
  * @return: 0: SUCCEED, others: FAILED
  */
 DLL_EXPORT int dlog_setlevel(int moduleId, int level, int enableEvent);
+
+/**
+ * @ingroup slog
+ * @brief DlogGetLevel: get module loglevel and enableEvent
+ *
+ * @param [in]moduleId: moudule id(see slog.h, eg: CCE), ALL_MODULE: global, others: invalid
+                        support DEBUG_LOG_MASK and RUN_LOG_MASK, default DEBUG_LOG_MASK
+ * @param [out]enableEvent: 1: enable; 0: disable
+ * @return: module level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
+ */
+DLL_EXPORT int DlogGetLevel(int moduleId, int *enableEvent);
+
+/**
+ * @ingroup slog
+ * @brief DlogSetLevel: set module loglevel and enableEvent
+ *
+ * @param [in]moduleId: moudule id(see slog.h, eg: CCE), ALL_MODULE: all modules, others: invalid
+                        support DEBUG_LOG_MASK and RUN_LOG_MASK
+ * @param [in]level: log level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
+ * @param [in]enableEvent: 1: enable; 0: disable, others:invalid
+ * @return: 0: SUCCEED, others: FAILED
+ */
+DLL_EXPORT int DlogSetLevel(int moduleId, int level, int enableEvent);
 
 /**
  * @ingroup slog
@@ -383,7 +408,7 @@ extern "C" {
 #endif
 /**
  * @ingroup slog
- * @brief DlogGetlevelForC: get module loglevel and enableEvent
+ * @brief DlogGetlevelForC: get module debug loglevel and enableEvent
  *
  * @param [in]moduleId: moudule id(see slog.h, eg: CCE), others: invalid
  * @param [out]enableEvent: 1: enable; 0: disable

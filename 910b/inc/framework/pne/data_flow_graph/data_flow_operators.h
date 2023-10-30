@@ -25,15 +25,15 @@ constexpr const char_t *kAttrNameTagNames = "tag_names";
 
 class FlowSend : public FlowOperator {
  public:
-  FlowSend(const char *name, const char *tag_name);
-  FlowSend(const char *name, const std::vector<AscendString> &tag_names);
+  FlowSend(const char_t *name, const char_t *tag_name);
+  FlowSend(const char_t *name, const std::vector<AscendString> &tag_names);
   ~FlowSend() override;
 };
 
 class FlowRecv : public FlowOperator {
  public:
-  FlowRecv(const char *name, const char *tag_name);
-  FlowRecv(const char *name, const std::vector<AscendString> &tag_names);
+  FlowRecv(const char_t *name, const char_t *tag_name);
+  FlowRecv(const char_t *name, const std::vector<AscendString> &tag_names);
   ~FlowRecv() override;
 };
 }  // namespace dflow

@@ -353,7 +353,7 @@ REG_OP(PadV3Grad)
 * @par Inputs:
 * Two inputs, including:
 * @li x: A mutable Tensor. Must be one of the following types:
-*     float16, float32, int32 . \n
+*     bfloat16, float16, float32, int32 . \n
 
 * @li assist: A mutable Tensor with rank k is at most 1,
 *     Has the same type as "x" . \n
@@ -369,9 +369,9 @@ REG_OP(PadV3Grad)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Diag instead.
 */
 REG_OP(DiagD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(assist, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .INPUT(assist, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .OP_END_FACTORY_REG(DiagD)
 
 /**

@@ -104,6 +104,7 @@ const char * const PLUGIN_OPTION_IS_TF_OFFLINE               = "is_tfoffline";
 const char * const PLUGIN_OPTION_SESSION_ID                  = "session_id";
 const char * const FEATURE                                   = "feature";
 const char * const OUT_FILE_NAME                             = "out_file_name";
+const char * const OP_TUNE_JSON_FILE                         = "op_tune_json_file";
 
 // aoe API透传的GE参数
 const char * const GE_INPUT_SHAPE_RANGE                      = "ge.exec.dataInputsShapeRange";
@@ -136,6 +137,7 @@ constexpr char NO_DYNAMIC_PARAM[] = "no_dynamic_param";
 constexpr char const *QTEST_SOC_VERSION = "QTEST_SOC_VERSION";
 constexpr char OP_TUNE_MODE_STATIC_KERNEL[] = "static_kernel";
 constexpr char OP_TUNE_MODE_FAST[] = "fast";
+constexpr char OP_TUNE_MODE_BIN_BANK[] = "bin_bank";
 
 const AoeStatus AOE_ERROR_NO_AICORE_GRAPH                           = AOE_ERROR_NON_OPTIMIZE_GRAPH; // for sgat
 
@@ -256,6 +258,13 @@ struct PerformanceMetric {
     uint64_t totalProfilingCostTime = 0UL;
     std::map<std::string, uint64_t> opCostTime;
     std::map<std::string, uint64_t> aicoreCostTime;
+};
+
+struct AclnnRunConfig {
+    uint32_t loop;
+    std::string aclnnJson;
+    std::string strategyJson;
+    void *tilingContext;
 };
 }
 #endif

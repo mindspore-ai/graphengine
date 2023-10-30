@@ -156,8 +156,8 @@ class GE_FUNC_VISIBILITY Session {
      方案约束：只用于加载异构离线模型，即存储格式为flowmodel下包含一个或多个submodel和modelrelation的离线模型;
               不支持包含variable的离线模型，variable的值在device侧目前还没有保存到om中的方案
   */
-  Status LoadGraph(const uint32_t graph_id, const std::map<std::string, std::string> options,
-                   const std::string om_file_path);
+  Status LoadGraph(const uint32_t graph_id, const std::map<std::string, std::string> &options,
+                   const std::string &om_file_path) const;
 
   ///
   /// @ingroup ge_graph
@@ -332,7 +332,7 @@ class GE_FUNC_VISIBILITY Session {
   Status UnregisterExternalAllocator(const void *const stream) const;
 
  private:
-  uint64_t sessionId_;
+  uint64_t sessionId_{0};
 };
 }  // namespace ge
 

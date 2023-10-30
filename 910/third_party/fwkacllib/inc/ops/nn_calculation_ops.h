@@ -324,21 +324,21 @@ REG_OP(DepthwiseConv2D)
     .OP_END_FACTORY_REG(DepthwiseConv2D)
 
 /**
-*@brief Performs the the backward operation for "BiasAdd" on the "bias" tensor.
+* @brief Performs the the backward operation for "BiasAdd" on the "bias" tensor.
 *        It accumulates all the values from out_backprop into the feature
 *        dimension. For NHWC data format, the feature dimension is the last.
 *        For NCHW data format, the feature dimension is the third-to-last . \n
 
-*@par Inputs:
+* @par Inputs:
 * x: A Tensor of type NumberType . \n
 
-*@par Attributes:
+* @par Attributes:
 * data_format: Data format. Defaults to "NHWC" . \n
 
-*@par Outputs:
+* @par Outputs:
 * y: A Tensor.Has the same type as "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BiasAddGrad.
 */
 REG_OP(BiasAddGrad)
@@ -758,8 +758,8 @@ REG_OP(Conv2DBackpropFilterD)
 | :-------: | :-----: | :-----: | :-----: | :-----: |\n
 | Data Type | float16 | float16 | float16 | float16 |\n
 |           | float16 | float16 | float16 | float32 |\n
-|           | bfloat16| bfloat16| float16 | bfloat16|\n
-|           | bfloat16| bfloat16| float16 | float32 |\n
+|           | bfloat16| bfloat16| bfloat16 | bfloat16|\n
+|           | bfloat16| bfloat16| bfloat16 | float32 |\n
 |           | float32 | float32 | float32 | float32 |\n
 |           | int8    | int8    | int32   | int32   |\n
 | Format    | NCHW    | NCHW    | ND      | NCHW    |\n
@@ -1473,10 +1473,11 @@ REG_OP(Conv3DTransposeD)
  *\n
     | Tensor    | x       | filter  | bias    | y      |\n
     |-----------|---------|---------|---------|--------|\n
-    | Data Type | float16 | float16 | float16 | float16|\n
-    |           | float16 | float16 | float32 | float32|\n
-    | Format    | NCHW    | NCHW    | ND      | NCHW   |\n
-    |           | NHWC    | HWCN    |         | NHWC   |\n
+    | Data Type | float16 | float16 | float16 | float16 |\n
+    |           | bfloat16| bfloat16| float32 | bfloat16|\n  
+    |           | float16 | float16 | float32 | float32 |\n
+    | Format    | NCHW    | NCHW    | ND      | NCHW    |\n
+    |           | NHWC    | HWCN    |         | NHWC    |\n
  *\n
  * For int8, a dequant or requant operator must be followed.
  *\n
@@ -1547,11 +1548,11 @@ REG_OP(Conv3DTransposeD)
 */
 REG_OP(Conv2DTranspose)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})

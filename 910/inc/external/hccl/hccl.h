@@ -47,6 +47,16 @@ extern HcclResult HcclGetRootInfo(HcclRootInfo *rootInfo);
 extern HcclResult HcclCommInitRootInfo(uint32_t nRanks, const HcclRootInfo *rootInfo, uint32_t rank, HcclComm *comm);
 
 /**
+ * @brief Set deterministic calculate
+ *
+ * @param config A struct identifying the Config
+ * @param configValue An interger identifying the identify for the config.
+ */
+
+extern HcclResult HcclSetConfig(HcclConfig config, HcclConfigValue configValue);
+extern HcclResult HcclGetConfig(HcclConfig config, HcclConfigValue *configValue);
+
+/**
  * @brief AllReduce operator.
  *
  * @param sendBuf A pointer identifying the input data address of the operator.
@@ -248,6 +258,11 @@ extern HcclResult HcclCommInitAll(uint32_t ndev, int32_t* devices, HcclComm* com
 */
 extern HcclResult HcclGetCommAsyncError(HcclComm comm, HcclResult *asyncError);
 
+/**
+ * @brief  convert a hccl errorCode to a string.
+ * @param code enum HcclResult.
+*/
+extern const char *HcclGetErrorString(HcclResult code);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

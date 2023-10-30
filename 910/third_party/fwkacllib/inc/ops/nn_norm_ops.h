@@ -126,70 +126,70 @@ REG_OP(SoftmaxGrad)
 /**
 * @brief Computes the sigmoid cross entropy loss of "predict" and "target" .
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value .
-*@li dout:A multi-dimensional Tensor of float16 or float32,specifying the gradient transferred from the upper layer. \n
+* @li predict: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the predictive value.
+* @li target: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the target value .
+* @li dout:A multi-dimensional Tensor of float16 or float32 or bfloat16,specifying the gradient transferred from the upper layer. \n
 
-*@par Outputs:
-*gradient: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
+* @par Outputs:
+* gradient: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SigmoidCrossEntropyWithLogitsGrad.
 */
 REG_OP(SigmoidCrossEntropyWithLogitsGrad)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGrad)
 
 /**
 * @brief Performs the backpropagation of SigmoidCrossEntropyWithLogits for training scenarios .
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value. \n
+* @li predict: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the predictive value.
+* @li target: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the target value. \n
 
-*@par Outputs:
-*loss: Return loss. Has the same dimensions and type as "predict" . \n
+* @par Outputs:
+* loss: Return loss. Has the same dimensions and type as "predict" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SigmoidCrossEntropyWithLogits.
 */
 REG_OP(SigmoidCrossEntropyWithLogits)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogits)
 
 /**
-*@brief Computes the sigmoid cross entropy loss of "predict" and "target".
+* @brief Computes the sigmoid cross entropy loss of "predict" and "target".
 
-*@par Inputs:
+* @par Inputs:
 * four inputs, including:
-*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
-*@li weight: An multi-dimensional Tensor, specifying the weight value.
-*@li pos_weight: An multi-dimensional Tensor, specifying the pos weight value. \n
+* @li predict: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the predictive value.
+* @li target: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the target value.
+* @li weight: An multi-dimensional Tensor, specifying the weight value.
+* @li pos_weight: An multi-dimensional Tensor, specifying the pos weight value. \n
 
-*@par Attributes:
-*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean". \n
+* @par Attributes:
+* reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean". \n
 
-*@par Outputs:
-*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict". \n
+* @par Outputs:
+* loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict". \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with PyTorch operator BCEWithLogitsLoss.
 */
 REG_OP(SigmoidCrossEntropyWithLogitsV2)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsV2)
 
@@ -263,53 +263,55 @@ REG_OP(SoftmaxFocalLoss)
 /**
 * @brief Computes the regression box of the RPN. It is a FasterRCNN operator .
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li label: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
+* @li predict: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the predictive value.
+* @li label: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the target value . \n
 
-*@par Attributes:
+* @par Attributes:
 * sigma: Must be a floating point number. Defaults to "1.0" . \n
 
-*@par Outputs:
-*loss: Indicates the loss between the predictive value and target value. Has the same dimensions as "predict" . \n
+* @par Outputs:
+* loss: Indicates the loss between the predictive value and target value. Has the same dimensions as "predict" . \n
 
-*@attention Constraints:
-* This operator does not perform the "reduce" operation on the loss value. Call other reduce operators to perform "reduce" operation on the loss if required . \n
+* @attention Constraints:
+* This operator does not perform the "reduce" operation on the loss value.
+    Call other reduce operators to perform "reduce" operation on the loss if required . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SmoothL1Loss.
 */
 REG_OP(SmoothL1Loss)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(sigma, Float, 1.0)
     .OP_END_FACTORY_REG(SmoothL1Loss)
 
 /**
 * @brief Performs the backpropagation of SmoothL1Loss for training scenarios .
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li label: A multi-dimensional Tensor of float16 or float32, specifying the target value.
-*@li dout: A multi-dimensional Tensor of float16 or float32, specifying the gradient transferred from the upper layer . \n
+* @li predict: A multi-dimensional Tensor of type float16 or float32 or bfloat16, specifying the predictive value.
+* @li label: A multi-dimensional Tensor of float16 or float32 or bfloat16, specifying the target value.
+* @li dout: A multi-dimensional Tensor of float16 or float32 or bfloat16,
+    specifying the gradient transferred from the upper layer . \n
 
-*@par Attributes:
+* @par Attributes:
 * sigma: Must be a floating point number. Defaults to "1.0" . \n
 
-*@par Outputs:
-*gradient: Return gradient. Has the same dimensions and type as "predict" . \n
+* @par Outputs:
+* gradient: Return gradient. Has the same dimensions and type as "predict" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SmoothL1LossGrad.
 */
 REG_OP(SmoothL1LossGrad)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(sigma, Float, 1.0)
     .OP_END_FACTORY_REG(SmoothL1LossGrad)
 
@@ -344,34 +346,34 @@ REG_OP(BinaryCrossEntropy)
     .OP_END_FACTORY_REG(BinaryCrossEntropy)
 
 /**
-*@brief Performs the backpropagation of BinaryCrossEntropy for training scenarios . \n
+* @brief Performs the backpropagation of BinaryCrossEntropy for training scenarios . \n
 
-*@par Inputs:
+* @par Inputs:
 * Four inputs, including:
-*@li x: A 1D or 2D Tensor of type float16 or float32, specifying a predictive value.
-*@li y: A 1D or 2D Tensor of type float16 or float32, indicating a tag.
-*@li grad_output: A 1D or 2D Tensor of type float16 or float32, specifying the backpropagation gradient.
-*@li weight: An optional 1D or 2D Tensor, specifying the weight . \n
+* @li x: A 1D or 2D Tensor of type bfloat16, float16 or float32, specifying a predictive value.
+* @li y: A 1D or 2D Tensor of type bfloat16, float16 or float32, indicating a tag.
+* @li grad_output: A 1D or 2D Tensor of type bfloat16, float16 or float32, specifying the backpropagation gradient.
+* @li weight: An optional 1D or 2D Tensor, specifying the weight . \n
 
-*@par Attributes:
-*reduction: A character string from "none", "mean", and "sum", specifying the gradient output mode. Defaults to "mean" . \n
+* @par Attributes:
+* reduction: A character string from "none", "mean", and "sum", specifying the gradient output mode. Defaults to "mean" . \n
 
-*@par Outputs:
-*output: A 1D or 2D Tensor. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output . \n
+* @par Outputs:
+* output: A 1D or 2D Tensor. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output . \n
 
-*@attention Constraints:
-*@li The value of "x" must range from 0 to 1.
-*@li The value of "y" must be "0" or "1" . \n
+* @attention Constraints:
+* @li The value of "x" must range from 0 to 1.
+* @li The value of "y" must be "0" or "1" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with PyTorch operator BCELossGrad.
 */
 REG_OP(BinaryCrossEntropyGrad)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(grad_output, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(grad_output, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(BinaryCrossEntropyGrad)
 
@@ -1030,12 +1032,12 @@ REG_OP(LNDropoutGrad)
     .OP_END_FACTORY_REG(LNDropoutGrad)
 
 /**
-*@brief Return "output" according to the algorithm of dropout_do_mask:
+* @brief Return "output" according to the algorithm of dropout_do_mask:
 *  scale_x = x *(1 / keep_prob)
 *  output = select(mask == 1, scale_x, 0)
 
-*@par Inputs:
-*Three inputs, including:
+* @par Inputs:
+* Three inputs, including:
 * @li x: A mutable Tensor. Must be one of the following types:
 *     float16, float32, bfloat16
 * @li mask: A mutable Tensor. Must met all of the following rules:
@@ -1047,13 +1049,13 @@ REG_OP(LNDropoutGrad)
 *     shape of "keep_prob" should be (1,) or [1,].
 *     Has the same type as "x" . \n
 
-*@par Outputs:
-*y: A mutable Tensor. Has the same type as "x".
+* @par Outputs:
+* y: A mutable Tensor. Has the same type as "x".
 */
 REG_OP(DropOutDoMask)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .INPUT(mask, TensorType({DT_UINT8, DT_UINT1}))
-    .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(DropOutDoMask)
 
@@ -1119,41 +1121,49 @@ REG_OP(DropOutDoMaskV3D)
     .OP_END_FACTORY_REG(DropOutDoMaskV3D)
 
 /**
-*@brief Scales the input . \n
+* @brief Scales the input . \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li x: An ND tensor of type float16 or float32.
-*@li scale: An ND tensor of type float16 or float32.
-*@li bias: An optional ND tensor of type float16 or float32 . \n
+* @li x: An ND tensor of type float16 or float32 or bfloat16.
+* @li scale: An ND tensor of type float16 or float32 or bfloat16
+* @li bias: An optional ND tensor of type float16 or float32 or bfloat16. \n
 
-*@par Attributes:
-*@li axis: An optional int32 used to compute the shape of scale and bias input from the online bottoms. Defaults to "1".
-*@li num_axes: An optional int32 used to compute the shape of scale and bias input from a Caffe model trained offline. Defaults to "1".
-*@li scale_from_blob: An optional bool. If "true", scale and bias are input from a Caffe model trained offline. If "false", scale and bias are input from online bottoms. Defaults to "true" . \n
+* @par Attributes:
+* @li axis: An optional int32 used to compute the shape of scale and bias input from the online bottoms.
+        Defaults to "1".
+* @li num_axes: An optional int32 used to compute the shape of scale and bias input from a Caffe model trained offline.
+        Defaults to "1".
+* @li scale_from_blob: An optional bool. If "true", scale and bias are input from a Caffe model trained offline.
+        If "false", scale and bias are input from online bottoms. Defaults to "true" . \n
 
-*@par Outputs:
-*y: An ND tensor of type float16 or float32 . \n
+* @par Outputs:
+* y: An ND tensor of type float16 or float32 or bfloat16. \n
 
-*@attention Constraints:
+* @attention Constraints:
 * Assume that the shape length of "x" is "n" and that of "scale" is "m".
-*@li "axis" is within the range [-n, n-1]. num_axes >= -1.
-*@li If "scale_from_blob = true", "num_axes = -1", and "axis >= 0", the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < n-axis).
+* @li "axis" is within the range [-n, n-1]. num_axes >= -1.
+* @li If "scale_from_blob = true", "num_axes = -1", and "axis >= 0",
+        the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < n-axis).
 * If "axis < 0", the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < -axis).
-*@li If "scale_from_blob = true" and "num_axes = 0", "scale" is a scalar with shape length 1 and dimension size 1.
-*@li If "scale_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + num_axes" must be less than or equal to "n" and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
-* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
-*@li If "scale_from_blob = false", "scale" is not a scalar, and "axis >= 0","axis + m" must be less than or equal to "n" and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).
-* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
-*@li If "bias" is not None, the constraints for "bias" is the same as that for "scale".
-*@par Third-party framework compatibility
+* @li If "scale_from_blob = true" and "num_axes = 0", "scale" is a scalar with shape length 1 and dimension size 1.
+* @li If "scale_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + num_axes" must be less than or equal to "n"
+        and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
+* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and the ith axis of "scale"
+        and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
+* @li If "scale_from_blob = false", "scale" is not a scalar, and "axis >= 0","axis + m" must be less than or
+        equal to "n" and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).
+* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "scale" and
+        the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
+* @li If "bias" is not None, the constraints for "bias" is the same as that for "scale".
+* @par Third-party framework compatibility
 * Compatible with the Caffe operator Scale.
 */
 REG_OP(Scale)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
-    .INPUT(scale, TensorType({DT_FLOAT, DT_FLOAT16})) /* "Second operand." */
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16})) /* "Third operand." */
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))  /* "Result, has same element type as x" */
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16})) /* "First operand." */
+    .INPUT(scale, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16})) /* "Second operand." */
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16})) /* "Third operand." */
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))  /* "Result, has same element type as x" */
     .ATTR(axis, Int, 1)
     .ATTR(num_axes, Int, 1)
     .ATTR(scale_from_blob, Bool, true)

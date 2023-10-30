@@ -371,6 +371,19 @@ RTS_API rtError_t rtInvalidCache(void *base, size_t len);
 RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtMemcpyKind_t kind);
 
 /**
+ * @ingroup dvrt_mem for mbuff
+ * @brief synchronized memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] Max length of destination address memory
+ * @param [in] src   source address pointer
+ * @param [in] cnt   the number of byte to copy
+ * @param [in] kind   memcpy type
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtMemcpyEx(void *dst, uint64_t destMax, const void *src, uint64_t cnt, rtMemcpyKind_t kind);
+
+/**
  * @ingroup dvrt_mem
  * @brief host task memcpy
  * @param [in] dst   destination address pointer
@@ -456,6 +469,22 @@ typedef struct {
 
 RTS_API rtError_t rtMemcpyAsyncPtr(void *memcpyAddrInfo, uint64_t destMax, uint64_t count,
                                    rtMemcpyKind_t kind, rtStream_t stream, uint32_t qosCfg);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief asynchronized memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] dstMax length of destination address memory
+ * @param [in] dstOffset
+ * @param [in] src   source address pointer
+ * @param [in] cnt   the number of byte to copy
+ * @param [in] srcOffset
+ * @param [in] stm   asynchronized task stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtMemcpyD2DAddrAsync(void *dst, uint64_t dstMax, uint64_t dstOffset, const void *src,
+    uint64_t cnt, uint64_t srcOffset, rtStream_t stm);
 
 /**
  * @ingroup dvrt_mem

@@ -23,8 +23,14 @@
 #include "acldvpp_adjust_hue.h"
 #include "acldvpp_decode_jpeg.h"
 #include "acldvpp_adjust_saturation.h"
+#include "acldvpp_crop_and_resize.h"
+#include "acldvpp_gaussian_blur.h"
 #include "acldvpp_img_to_tensor.h"
 #include "acldvpp_normalize.h"
+#include "acldvpp_pad.h"
 #include "acldvpp_resize.h"
-
+#include "acldvpp_horizontal_flip.h"
+#include "acldvpp_vertical_flip.h"
+#include "acldvpp_warp_perspective.h"
+#include "acldvpp_warp_affine.h"
 #endif // ACLDVPP_OP_API_H_

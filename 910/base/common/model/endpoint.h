@@ -23,7 +23,7 @@
 
 namespace ge {
 using AttrValueMap = ::google::protobuf::Map<string, ge::flow_model::proto::ModelRelationDef::AttrValue>;
-enum class EndpointType : std::uint32_t { kQueue = 0, kEvent, kFlowSend, kFlowRecv, kMaxEndpointTypeNum };
+enum class EndpointType : std::uint32_t { kQueue = 0, kEvent, kFlowSend, kFlowRecv, kDummyQueue, kMaxEndpointTypeNum };
 
 class Endpoint {
  public:

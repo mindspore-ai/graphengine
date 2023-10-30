@@ -50,6 +50,7 @@ enum class GeProfInfoType {
   kModelLevelEnd,
   // node level
   // todo
+  kHostOpExec = MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE,
   kInferShape = MSPROF_REPORT_NODE_GE_API_BASE_TYPE + 1,
   kCompatibleInferShape,
   kTiling,
@@ -291,7 +292,7 @@ class VISIBILITY_EXPORT ProfilerRegistry {
 
   void SaveRegistryType(const std::string &type, const bool launch_flag);
   bool IsProfLaunchType(const std::string &kernel_type, const bool launch_flag = true);
-  bool IsProfDavinciModelExecuteType(const std::string &kernel_type);
+  bool IsProfDavinciModelExecuteType(const std::string &kernel_type) const;
  private:
   ProfilerRegistry() noexcept = default;
   std::vector<std::string> register_prof_launch_type_{};

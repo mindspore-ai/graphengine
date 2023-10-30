@@ -42,9 +42,10 @@ struct InitFlowGwInfo {
 };
 
 typedef enum {
-    TSD_CAPABILITY_PIDQOS = 0,
-    TSD_CAPABILITY_LEVEL  = 1,
-    TSD_CAPABILITY_BUT    = 0xFF
+    TSD_CAPABILITY_PIDQOS       = 0,
+    TSD_CAPABILITY_LEVEL        = 1,
+    TSD_CAPABILITY_OM_INNER_DEC = 2,
+    TSD_CAPABILITY_BUT          = 0xFF
 } TsdCapabilityType;
 
 typedef enum {
@@ -295,28 +296,6 @@ TDT_LIB_EXPORT uint32_t TsdCapabilityGet(const uint32_t logicDeviceId, const int
 * @retval OtherValues Failure
 */
 TDT_LIB_EXPORT uint32_t GetHdcConctStatus(const uint32_t logicDeviceId, int32_t *hdcSessStat);
-
-/**
-* @ingroup TsdBindHostPid
-* @brief Tsd supply bindhostpid function
-*
-* @par logicDeviceId
-* logic device id
-*
-* @par processType
-* device processtype
-
-* @par devicePid
-* device pid
-
-* @par hostPid
-* host pid
-
-* @retval TDT_OK Success
-* @retval OtherValues Failure
-*/
-TDT_LIB_EXPORT uint32_t TsdBindHostPid(const uint32_t logicDeviceId, const SubProcType processType,
-                                       const int32_t devicePid, const int32_t hostPid);
 
 /**
 * @ingroup TsdFileLoad

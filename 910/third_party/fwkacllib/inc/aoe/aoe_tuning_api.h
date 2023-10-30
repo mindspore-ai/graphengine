@@ -119,6 +119,7 @@ const std::set<ge::AscendString> TUNING_OPTION_SET = {
     ge::AscendString(OP_TUNE_MODE),
     ge::AscendString(OP_TUNE_KERNEL_PATH),
     ge::AscendString(OP_TUNE_KERNEL_NAME),
+    ge::AscendString(OP_TUNE_JSON_FILE),
     ge::AscendString(IMPL_MODE),
     ge::AscendString(DETERMINISTIC),
     ge::AscendString(OPTION_SCREEN_PRINT_MODE),

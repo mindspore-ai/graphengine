@@ -460,38 +460,38 @@ REG_OP(EndOfSequence)
     .OP_END_FACTORY_REG(EndOfSequence)
 
 /**
-*@brief: Computes the Gauss error function of `x` element-wise . \n
+* @brief: Computes the Gauss error function of `x` element-wise . \n
 
-*@par Inputs:
-*x: A Tensor of type float16, float32 or double. the format can be
+* @par Inputs:
+* x: A Tensor of type bfloat16, float16, float32 or double. the format can be
 *    [NCHW,NHWC,ND]
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Erf.
 */
 REG_OP(Erf)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(x, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(Erf)
 
 /**
-*@brief: Computes the Gauss complementary error function of "x" element-wise . \n
+* @brief: Computes the Gauss complementary error function of "x" element-wise . \n
 
-*@par Inputs:
-*x: A Tensor of type float16 ,float32, double . \n
+* @par Inputs:
+* x: A Tensor of type bfloat16, float16 ,float32, double . \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+* @par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Erfc.
 */
 REG_OP(Erfc)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(x, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(Erfc)
 
 /**
@@ -1151,13 +1151,13 @@ REG_OP(LpNormUpdateV2)
 * @brief get complex.
 
 * @par Inputs:
-* @li real: An ND tensor of type  float32 double, representing the real part of a complex number.
-* @li imag: An ND tensor of type  float32 double, representing the imaginary part of a complex number. \n
+* @li real: An ND tensor of type  float16,float32,double, representing the real part of a complex number.
+* @li imag: An ND tensor of type  float16,float32,double, representing the imaginary part of a complex number. \n
 *
 * @par Attributes:
 * Tout: representing the output of type.
 * @par Outputs:
-* out: An ND tensor of type complex64, complex128 \n
+* out: An ND tensor of type complex32, complex64, complex128 \n
 */
 REG_OP(Complex)
     .INPUT(real, "T")

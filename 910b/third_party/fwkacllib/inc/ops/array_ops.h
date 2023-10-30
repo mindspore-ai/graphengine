@@ -1325,14 +1325,15 @@ REG_OP(EditDistance)
 * @brief sort the input tensor without returning the value of index.
 
 * @par Inputs:
-* x: An ND tensor of type float16.
+* x:  A Tensor. Dtype support: float16, float, int16, int8,
+                          uint8, int32, int64, bfloat16.
 
 * @par Attributes:
 * @li axis: An optional int. The dimension to sort along. This value defaults to -1.
 * @li descending: An optional bool. Controls the sorting order (ascending or descending). This value defaults to False.
 
 * @par Outputs:
-* y: An ND tensor of type float16.
+* y:  A Tensor. Must have the same type as x.
 
 * @attention Constraints:
 * @li Axis should select the last dim.
@@ -1341,8 +1342,8 @@ REG_OP(EditDistance)
 * @li The upper limit of data on Ascend910 is 2000K.
 */
 REG_OP(SortV2)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .ATTR(axis, Int, -1)
     .ATTR(descending, Bool, false)
     .OP_END_FACTORY_REG(SortV2)

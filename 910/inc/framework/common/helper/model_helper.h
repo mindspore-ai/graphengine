@@ -129,7 +129,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   bool IsPartitionedGraph(const GeModelPtr &cur_model) const;
 
-  Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper);
+  Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper, const ModelData &model_data);
 
   Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                        const GeModelPtr &first_ge_model, const size_t mode_index) const;

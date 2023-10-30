@@ -457,7 +457,7 @@ specifying the stride of the sliding window for each dimension of
 the input tensor. No default value.
 * @li padding: A required string type of float16.
 * @li pads: A list type of int32. Default value {0,0,0,0,0,0}.
-* @li dilation: A list type of int32. Default value {1,1,1,1,1,1}.
+* @li dilation: A list type of int32. Default value {1,1,1,1,1}.
 * @li ceil_mode: A ceil mode number of int32 . Default value 0.
 * @li data_format: An optional string. Defaults to "NDHWC" . \n
 

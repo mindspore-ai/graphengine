@@ -405,7 +405,8 @@ REG_OP(UninitPartitionMap)
 * @li seed: A Int, Defaults to "0". \n
 * @li seed2: A Int, Defaults to "0". \n
 * @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter". \n
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode, Defaults to "".
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
 REG_OP(InitEmbeddingHashmap)
@@ -464,13 +465,15 @@ REG_OP(EmbeddingTableImport)
 * @li values: indicates the hashtable value. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int. indicates the hashtable value number. \n
+* @li embedding_dim: A Int. indicates the hashtable value number.
+* @li default_value: A Float, indicate the default value when can not find key. \n
 */
 REG_OP(EmbeddingTableFind)
     .INPUT(table_id, TensorType({DT_INT32}))
     .INPUT(keys, TensorType({DT_INT64}))
     .OUTPUT(values, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(default_value, Float, -1)
     .OP_END_FACTORY_REG(EmbeddingTableFind)
 
 /**
@@ -514,7 +517,8 @@ REG_OP(UninitEmbeddingHashmap)
 * @li default_key_or_value: A bool, indicates the default value get way.
 * @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
 * @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode, Defaults to "".
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
 REG_OP(EmbeddingTableFindAndInit)
@@ -1347,6 +1351,25 @@ REG_OP(ThreeInterpolate)
     .OP_END_FACTORY_REG(ThreeInterpolate)
 
 /**
+* @brief three interpolate backward.
+* @par Inputs:
+* three input:
+* grad_x: The set of features points with dtype of float32 and float16 with shape [b,c,n]
+* idx: The set of index with dtype of int32 and int64 with shape [b,n,3]
+* weight : The set of weight points with dtype of float32 and float16 with shape[b,n,3]
+* m: The dims m of output with dtype int
+* @par y:
+* grad_y: A Tensor, the interpolate backward output with dtype of float32 and float16 with shape[b,c,m]
+*/
+REG_OP(ThreeInterpolateBackward)
+    .INPUT(grad_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(idx, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(grad_y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(m, Int)
+    .OP_END_FACTORY_REG(ThreeInterpolateBackward)
+
+/**
  * @brief Calculate the voxels of cloud points \n
 
  * @par Inputs:
@@ -1794,13 +1817,18 @@ REG_OP(MultiHeadAttentionScoreGrad)
     .OP_END_FACTORY_REG(MultiHeadAttentionScoreGrad)
 
 REG_OP(IncreFlashAttention)
-    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8}))
+    .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8}))
+    .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8}))
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
-    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(quant_scale1, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(dequant_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8}))
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
     .ATTR(input_layout, String, "BSH")
@@ -1815,6 +1843,12 @@ REG_OP(PromptFlashAttention)
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(actual_seq_lengths_kv, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(quant_scale1, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT32}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
@@ -1822,6 +1856,7 @@ REG_OP(PromptFlashAttention)
     .ATTR(next_tokens, Int, 0)
     .ATTR(input_layout, String, "BSH")
     .ATTR(num_key_value_heads, Int, 1)
+    .ATTR(sparse_mode, Int, 0)
     .OP_END_FACTORY_REG(PromptFlashAttention)
 /**
 * @brief paste sub img.
@@ -1958,17 +1993,33 @@ REG_OP(Conv2DTransposeDCompress)
 * and do not operate on found_inf if it does not. Finally, multiply all values of scaled_grads by inv_scale
 * @par Inputs:
  * Three inputs:
- * @li scaled_grads: A tensor list containing multiple tensors, can be float16, float,
+ * @li scaled_grads: A tensor list containing multiple tensors, can be float16, float, bfloat16,
  * meanwhile, this value is also an output, store the value multiplied by inv_scale.
  * @li found_inf: A tensor with only one element, the shape must be (1,), must be float,
  * meanwhile, this value is also an output, indicating whether there is Inf or Nan present.
  * @li inv_scale: A tensor with only one element, the shape must be (1,), must be float.
 */
 REG_OP(ForeachNonFiniteCheckAndUnscale)
-    .DYNAMIC_INPUT(scaled_grads, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_INPUT(scaled_grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(found_inf, TensorType({DT_FLOAT}))
     .INPUT(inv_scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
+
+REG_OP(ApplyCamePart2)
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(sum_grad_r, TensorType({DT_FLOAT}))
+    .INPUT(sum_grad_c, TensorType({DT_FLOAT}))
+    .INPUT(sum_grad_rc, TensorType({DT_FLOAT}))
+    .INPUT(r, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(c, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(beta2, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(sum_r, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(global_shape, TensorType({DT_INT64}))
+    .OUTPUT(r, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(c, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(u, TensorType({DT_FLOAT}))
+    .OUTPUT(sum_square_u, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(ApplyCamePart2)
 
 /**
 * @brief round off number foreach element in each tensor in tesnorlist, this is an in-place operation.
@@ -2036,19 +2087,17 @@ REG_OP(ApplyCamePart1)
     .OUTPUT(sum_grad_rc, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ApplyCamePart1)
 
+
 /**
 * @brief Writes the input data of the corresponding subscript to the specified register.
 * @par Inputs:
-* One inputs:
-* @li x: A Tensor of type uint64.
-* The format is ND.
-* @par Attributes:
-* One attribute:
-* @li indices: Int, indication a specific subscript value.
+* Two inputs:
+* @li x1: A 1D tensor, dtype is int32, format is ND, shape is (1,).
+* @li x2: A 1D tensor, dtype is uint64, the format is ND.
 */
 REG_OP(SwitchByIndex)
-    .INPUT(x, TensorType({DT_UINT64}))
-    .REQUIRED_ATTR(indices, Int)
+    .INPUT(x1, TensorType({DT_INT32}))
+	.INPUT(x2, TensorType({DT_UINT64}))
     .OP_END_FACTORY_REG(SwitchByIndex)
 
 
@@ -2079,22 +2128,94 @@ REG_OP(QuantBatchMatmul)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(QuantBatchMatmul)
 
+REG_OP(WeightQuantBatchmatmul)
+    .INPUT(input_x, TensorType({DT_FLOAT16}))
+    .INPUT(input_y, TensorType({DT_INT8}))
+    .INPUT(diagonal_matrix, TensorType({DT_INT8}))
+    .INPUT(q_bias, TensorType({DT_INT32}))
+    .INPUT(deq_scale, TensorType({DT_UINT64}))
+    .INPUT(bias, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .ATTR(adj_x1, Bool, false)
+    .ATTR(adj_x2, Bool, false)
+    .OP_END_FACTORY_REG(WeightQuantBatchmatmul)
 
-REG_OP(MoeFFN)
+
+/**
+* @brief Fusion op for batchmatmul-fixpipe.
+* @par Inputs:
+* @li x1: A Tensor of type float16. The format is ND.
+* @li X2: A Tensor of type float16. Must have the same type as "x". The format is ND.
+* @li quant_pre: A tensor for quantized inference. The format is NHWC. Type is uint64.
+* @li bias: A Tensor of type float32 or float16. The format is ND.
+* @par Outputs:
+* @li y: A Tensor of type int8. The format is ND.
+* @par Attributes:
+* @li adj_x1: A bool, if true means x1 is transposed.
+* @li adj_x2: A bool, if true means x2 is transposed.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(BatchMatmulFixpipe)
+    .INPUT(x1, TensorType({DT_FLOAT16}))
+    .INPUT(x2, TensorType({DT_FLOAT16}))
+    .INPUT(quant_pre, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_INT8}))
+    .ATTR(adj_x1, Bool, false)
+    .ATTR(adj_x2, Bool, false)
+    .OP_END_FACTORY_REG(BatchMatmulFixpipe)
+
+
+/**
+* @brief Fusion op for FFN.
+* @par Inputs:
+* ten inputs, including:
+* @li x: A matrix Tensor. The type support int8, float16.
+* @li weight1: A matrix Tensor. The type support int8, float16.
+* @li weight2: A matrix Tensor. The type support int8, float16.
+* @li expert_tokens: A matrix Tensor. The type support int64.
+* @li bias1: A matrix Tensor. The type support int32, float16.
+* @li bias2: A matrix Tensor. The type support int32, float16.
+* @li scale: A matrix Tensor. The type support float32.
+* @li offset: A matrix Tensor. The type support float32.
+* @li deq_scale1: A matrix Tensor. The type support uint64.
+* @li deq_scale2: A matrix Tensor. The type support uint64.
+
+* @par Attributes:
+* @li activation: A string. The type of activation.
+* @li inner_precise: A int. 0, fp16 high precision. 1, high performance. Default value: 0
+*
+* @par Outputs:
+* y: A matrix Tensor. The type support float16.
+*/
+REG_OP(FFN)
     .INPUT(x, TensorType({DT_INT8, DT_FLOAT16}))
-    .INPUT(expert_tokens, TensorType({DT_INT64}))
     .INPUT(weight1, TensorType({DT_INT8, DT_FLOAT16}))
+    .INPUT(weight2, TensorType({DT_INT8, DT_FLOAT16}))
+    .OPTIONAL_INPUT(expert_tokens, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(bias1, TensorType({DT_INT32, DT_FLOAT16}))
-    .OPTIONAL_INPUT(weight2, TensorType({DT_INT8, DT_FLOAT16}))
     .OPTIONAL_INPUT(bias2, TensorType({DT_INT32, DT_FLOAT16}))
-    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
     .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_INT8, DT_FLOAT16}))
-    .ATTR(activation, String, "gelu")
-    .OP_END_FACTORY_REG(MoeFFN)
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(activation, String)
+    .ATTR(inner_precise, Int, 0)
+    .OP_END_FACTORY_REG(FFN)
 
+
+REG_OP(MoeFinalizeRouting)
+    .INPUT(expanded_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(scales, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(expanded_row_idx, TensorType({DT_INT32, DT_INT32, DT_INT32}))
+    .INPUT(expanded_expert_idx, TensorType({DT_INT32, DT_INT32, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OP_END_FACTORY_REG(MoeFinalizeRouting)
 
 /**
 * @brief Apply add operation for each tensor in tensor list with a scalar in manner of element-wise
@@ -3301,11 +3422,11 @@ REG_OP(ForeachSigmoid)
 * @li pooled_w: A required int32, specifying the pooled W. Must be greater than 0.
 * @li spatial_scale: An required scaling factor for mapping the input coordinates
 *     to the ROI coordinates.
-* @li sampling_ratio: An required number of inputs samples to take for each output sample. 
+* @li sampling_ratio: An required number of inputs samples to take for each output sample.
 *     0 to take samples densely for current models.
 * @li aligned: A required bool, if False, use the legacy implementation.
 *     If True, align the results more perfectly. Default: True.
-* @li clockwise: A required bool, if True, the angle in each proposal follows a clockwise 
+* @li clockwise: A required bool, if True, the angle in each proposal follows a clockwise
 *     fashion in image space, Otherwise, the angle is counterclockwise. Default: False. \n
 
 * @par Outputs:
@@ -3595,5 +3716,165 @@ REG_OP(ApplyCamePart3)
     .ATTR(use_first_moment, Bool, false)
     .OP_END_FACTORY_REG(ApplyCamePart3)
 
+/**
+* @brief The GELUV2 activation function is x*Φ(x),
+* where Φ(x) the standard Gaussian cumulative distribution function.
+
+* @par Inputs:
+* One input, including: \n
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
+
+* @par Outputs:
+* y: A Tensor. Has the same type as "x". \n
+
+* @par Attributes:
+* approximate: A optional string. The gelu approximation algorithm to use: 'none' or 'tanh', default is 'none'. \n
+
+* @par Third-party framework compatibility:
+* Compatible with the Pytorch operator Gelu.
+*/
+REG_OP(GeluV2)
+    .INPUT(x, "T")
+    .OUTPUT(y, "T")
+    .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(approximate, String, "none")
+    .OP_END_FACTORY_REG(GeluV2)
+
+/**
+* @brief Compute the GeGluV2,
+* where the activations function in GLU is Gelu.
+
+* @par Inputs:
+* One input, including: \n
+* @li x: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
+
+* @par Outputs:
+* two inputs, including:
+* @li y: A Tensor. Must be one of the following types: bfloat16, float16, float32.
+* @li gelu: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
+
+* @par Attributes:
+* two attributes, including:
+* @li dim: A optional int. The dimension to be split, default is -1.
+* @li approximate: A optional int. The gelu approximation algorithm to use: 'none'(0) or 'tanh'(1), default is 'tanh'(1). \n
+
+* @par Third-party framework compatibility:
+* New pperator GeGluV2.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GeGluV2)
+    .INPUT(x, "T")
+    .OUTPUT(y, "T")
+    .OUTPUT(gelu, "T")
+    .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(dim, Int, -1)
+    .ATTR(approximate, Int, 1)
+    .OP_END_FACTORY_REG(GeGluV2)
+
+/**
+* @brief Computes the gradient for the gelu of "x" .
+
+* @par Inputs:
+* Two inputs, including:
+* @li dy: A Tensor. Must be one of the following types:bfloat16, float16, float32.
+* @li x: A Tensor of the same type as "dy".
+
+* @par Outputs:
+* z: A Tensor. Has the same type as "dy".
+
+* @par Attributes:
+* approximate: A optional string. The gelu grad approximation algorithm to use: 'none' or 'tanh', default is 'none'. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator GeluGrad.
+*/
+REG_OP(GeluGradV2)
+    .INPUT(dy, "T")
+    .INPUT(x, "T")
+    .OUTPUT(z, "T")
+    .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(approximate, String, "none")
+    .OP_END_FACTORY_REG(GeluGradV2)
+
+/**
+* @brief Computes the gradient for the GeGluV2 of "x" .
+
+* @par Inputs:
+* Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types:bfloat16, float16, float32.
+* @li x: A Tensor of the same type as "dy".
+* @li gelu: A Tensor of the same type as "dy".
+
+* @par Outputs:
+* dx: A Tensor. Has the same type as "dy".
+
+* @par Attributes:
+* dim: A optional Int.  default is -1.
+* approximate: A optional Int. The gelu grad approximation algorithm to use: 0 or 1, default is 1('tanh'). \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator GeGluGradV2.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GeGluGradV2)
+    .INPUT(dy, "T")
+    .INPUT(x, "T")
+    .INPUT(gelu, "T")
+    .OUTPUT(dx, "T")
+    .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(dim, Int, -1)
+    .ATTR(approximate, Int, 1)
+    .OP_END_FACTORY_REG(GeGluGradV2)
+
+/**
+* @brief Multiplies matrix "a" by matrix "b", producing "a * b". \n
+* @par Inputs:
+* Five inputs, including:
+* @li x1: A matrix Tensor. 2D. Must be one of the following types: int8.
+* @li x2: A matrix Tensor. 2D. Must be one of the following types: int8.
+* @li compress_index: A compress index matrix of type int8.
+* @li bias: An optional Tensor. 1D. Must be one of the following types: int32.
+* @li offset_w: An optional matrix Tensor. 2D. Must be one of the following
+* types: int8. \n
+
+* @par Attributes:
+* @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
+* [M, K] before multiplication.
+* @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
+* [K, N] before multiplication.
+* @li offset_x: An optional integer for quantized MatMulV2CompressDequant.
+* @li tiling_k: An optional integer for binary quantized MatMulV2CompressDequant.
+* @li tiling_n: An optional integer for binary quantized MatMulV2CompressDequant.
+* The negative offset added to the input x1 for int8 type. Ensure offset_x
+* within the effective range of int8 [-128, 127]. Defaults to "0". \n
+
+* @par Outputs:
+* y: The result matrix Tensor. 2D. Must be one of the following types: int32,
+* float16. \n
+
+* @attention Constraints:
+* if performances better in format NZ, please close
+* "MatmulTransdataFusionPass" in fusion configuration.
+
+*/
+REG_OP(MatMulV2CompressDequant)
+    .INPUT(x1, TensorType({DT_INT8}))
+    .INPUT(x2, TensorType({DT_INT8}))
+    .INPUT(compress_index, TensorType({DT_INT8}))
+    .INPUT(deq_scale, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .ATTR(transpose_x1, Bool, false)
+    .ATTR(transpose_x2, Bool, false)
+    .ATTR(compress_info, ListInt, {1, 1, 1, 1, 1})
+    .ATTR(offset_x, Int, 0)
+    .ATTR(alg, String, "weight_unzip")
+    .OP_END_FACTORY_REG(MatMulV2CompressDequant)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_
+

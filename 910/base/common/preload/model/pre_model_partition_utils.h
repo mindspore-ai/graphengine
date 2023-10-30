@@ -45,11 +45,21 @@ class PreModelPartitionUtils {
   Status InitTaskBuildMem(const uint32_t task_num);
   Status PreparePartitionData(const EngineType type);
   Status CheckNanoPartitionType(const uint8_t type) const;
+  Status GenModelPartitionBuf(const uint8_t type, const uint32_t orgi_size);
+  Status SaveNanoModelPartitionData(const uint8_t type, const void *const src, const uint32_t len);
+  void GetNanoModelPartitionData(const uint8_t type, uint8_t **data, uint32_t &len);
   std::shared_ptr<TaskBuildBuf> &GetTaskBuildBuf() { return task_build_buf_; }
   std::shared_ptr<TaskBuildBuf> &GetNanoTaskBuildBuf(const uint8_t type) {
     return nano_partition_type_to_buf_[type];
   }
   void AddNanoHostFuncParamData(const std::shared_ptr<uint8_t> &nano_hostfunc_param_data);
+  const std::unordered_map<int64_t, uint32_t> GetZeroCopyTable() {
+    return zero_copy_offset_to_ids_;
+  }
+
+  void SetZeroCopyTable(const int64_t key, const uint32_t value) {
+    zero_copy_offset_to_ids_[key] = value;
+  }
 
  private:
   Status PrepareDefaultPartitionData(const PreTaskDescInfo &task_desc);
@@ -63,8 +73,10 @@ class PreModelPartitionUtils {
   uint64_t kernel_args_info_size_ = 0UL;
   std::shared_ptr<TaskBuildBuf> task_build_buf_ = nullptr;
   std::unordered_map<uint8_t, std::shared_ptr<TaskBuildBuf>> nano_partition_type_to_buf_;
+  std::unordered_map<uint8_t, std::shared_ptr<TaskBuildBuf>> nano_model_partition_type_to_buf_;
   uint32_t total_tlv_len_ = 0U;
   std::vector<std::shared_ptr<uint8_t>> nano_hostfunc_param_data_;
+  std::unordered_map<int64_t, uint32_t> zero_copy_offset_to_ids_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PRELOAD_PRE_MODEL_PARTITION_UTILS_H_

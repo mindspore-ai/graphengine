@@ -19,6 +19,7 @@
 
 #include <map>
 #include "ge/ge_api_error_codes.h"
+#include "graph/ascend_string.h"
 #include "flow_graph/process_point.h"
 
 namespace ge {

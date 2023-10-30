@@ -64,6 +64,7 @@ class DeployPlan {
     uint32_t instance_num;
     uint32_t instance_idx;
     bool is_local = false;
+    bool is_dummy = false;
   };
 
   struct InvokedModelQueueInfo {
@@ -290,9 +291,9 @@ class DeployPlannerBase {
   Status ResolveExternalFlowEndpoints();
   static bool IsExternalEndpoint(const DeployPlan::QueueInfo &endpoint_info);
   Status CreateAndBindGroup(const DeployPlan::QueueInfo &group_info,
-                            const std::vector<int32_t> &grouped_indices,
+                            const std::vector<int32_t> &group_entry_index,
                             const int32_t dst_endpoint_index,
-                            bool skip_if_dst_exists = true);
+                            const bool skip_if_dst_exists = true);
 
   ModelRelation model_relation_;
   std::unique_ptr<ModelRelationReader> relation_reader_;

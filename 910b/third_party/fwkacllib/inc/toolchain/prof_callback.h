@@ -110,6 +110,7 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_FINALIZE,                   // stop profiling
     MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
     MSPROF_CTRL_INIT_PURE_CPU,              // start profiling in pure cpu
+    MSPROF_CTRL_INIT_HOST_HELPER,           // start profiling in helper host
     MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 
@@ -121,6 +122,10 @@ enum MsprofCommandHandleType {
     PROF_COMMANDHANDLE_TYPE_MODEL_SUBSCRIBE,
     PROF_COMMANDHANDLE_TYPE_MODEL_UNSUBSCRIBE,
     PROF_COMMANDHANDLE_TYPE_MAX
+};
+
+enum MsprofConfigType {
+    MSPROF_CONFIG_HELPER_HOST = 0
 };
 
 /**
@@ -171,6 +176,13 @@ typedef int32_t (*ProfCommandHandle)(uint32_t type, void *data, uint32_t len);
  * @return 0:SUCCESS, >0:FAILED
  */
 MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
+
+/*
+ * @name  profSetConfig
+ * @brief Set profiling config
+ * @return 0:SUCCESS, !0:FAILED
+ */
+MSVP_PROF_API int32_t MsprofSetConfig(uint32_t configType, const char *config, size_t configLength);
 
 /**
  * @name  profRegisterCallback

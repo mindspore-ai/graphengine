@@ -71,7 +71,7 @@ class ModelRelationBuilder {
   virtual ~ModelRelationBuilder() = default;
 
  protected:
-  Status CreateQueueDef(const GeTensorDesc &tensor_desc, const std::string &queue_name);
+  Status CreateQueueDef(const GeTensorDesc &tensor_desc, const std::string &queue_name, bool is_dummy = false);
   static Status GetInputQueueNames(const NodePtr &node,
                                    const std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
                                    std::vector<std::string> &input_queue_names);

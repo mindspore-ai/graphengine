@@ -1366,18 +1366,18 @@ REG_OP(DataFormatDimMap)
 * On the importance of initialization and momentum in deep learning.
 
 * @par Inputs:
-* @li parameters: A mutable tensor of type float16 or float32.
+* @li parameters: A mutable tensor of type float16, float32 or bfloat16.
 * Specifies the iterable of parameters to optimize or dicts defining parameter
 * groups.
-* @li gradient: A tensor of type float16 or float32.
+* @li gradient: A tensor of type float16, float32 or bfloat16.
 * Specifies the gradient of training step.
-* @li learning_rate: A tensor of type float16 or float32.
+* @li learning_rate: A tensor of type float16, float32 or bfloat16.
 * Specifies the learing_rate of training step.
-* @li accum: A tensor of type float16 or float32.
+* @li accum: A tensor of type float16, float32 or bfloat16.
 * Specifies the velocity of training step.
-* @li momentum: A tensor of type float16 or float32.
+* @li momentum: A tensor of type float16, float32 or bfloat16.
 * Specifies the momentum factor.
-* @li stat: A tensor of type float16 or float32.
+* @li stat: A tensor of type float16, float32 or bfloat16.
 * Specifies the status representing the first step or not . \n
 
 * @par Attributes:
@@ -1397,13 +1397,13 @@ REG_OP(DataFormatDimMap)
 * @li Compatible with the PyTorch operator SGD.
 */
 REG_OP(SGD)
-    .INPUT(parameters, TensorType(DT_FLOAT, DT_FLOAT16))
-    .INPUT(gradient, TensorType(DT_FLOAT, DT_FLOAT16))
-    .INPUT(learning_rate, TensorType(DT_FLOAT, DT_FLOAT16))
-    .INPUT(accum, TensorType(DT_FLOAT, DT_FLOAT16))
-    .INPUT(momentum, TensorType(DT_FLOAT, DT_FLOAT16))
-    .INPUT(stat, TensorType(DT_FLOAT, DT_FLOAT16))
-    .OUTPUT(parameters, TensorType(DT_FLOAT, DT_FLOAT16))
+    .INPUT(parameters, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
+    .INPUT(gradient, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
+    .INPUT(learning_rate, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
+    .INPUT(accum, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
+    .INPUT(momentum, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
+    .INPUT(stat, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
+    .OUTPUT(parameters, TensorType(DT_FLOAT, DT_FLOAT16, DT_BF16))
     .ATTR(dampening, Float, 0.0)
     .ATTR(weight_decay, Float, 0.0)
     .ATTR(nesterov, Bool, false)

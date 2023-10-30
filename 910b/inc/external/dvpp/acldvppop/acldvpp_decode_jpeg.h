@@ -26,11 +26,11 @@ extern "C" {
 
 /**
 * @brief acldvppDecodeJpeg的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型支持DT_UINT8，
+* @param [in] self: npu device侧的aclTensor，数据类型支持UINT8，
 *                   仅支持连续的Tensor，数据格式仅支持ND。
 * @param [in] channels: 指定输出通道，1或者3。
-* @param [in] tryRecoverTruncated: ，预留参数，是否尝试解码损坏码流，暂未使用。当前默认配置为true，即尝试解码损坏码流。
-* @param [in] out: npu device侧的aclTensor，数据类型支持DT_UINT8，
+* @param [in] tryRecoverTruncated: 预留参数，是否尝试解码损坏码流，暂未使用。当前默认配置为true，即尝试解码损坏码流。
+* @param [in] out: npu device侧的aclTensor，数据类型支持UINT8，
 *                  仅支持连续的Tensor，数据格式支持NCHW、NHWC。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程。

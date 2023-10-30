@@ -34,18 +34,12 @@ extern "C" {
 #ifndef FAILED
 #define FAILED (-1)
 #endif
-
 // trace status of log
 enum TraceStatus { TRACE_INT = 0, TRACE_RUNNING, TRACE_WAITTING, TRACE_STOP };
 
 static inline uint64_t GetTid() {
   const uint64_t tid = (uint64_t)(syscall(__NR_gettid));
   return tid;
-}
-
-static inline bool IsLogEnable(const int32_t module_name, const int32_t log_level) {
-  const int32_t enable = CheckLogLevel(module_name, log_level);
-  return (enable == 1);
 }
 
 #ifdef RUN_TEST
@@ -75,41 +69,35 @@ static inline bool IsLogEnable(const int32_t module_name, const int32_t log_leve
     printf("[EVENT][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
   } while (false)
 #else
-#define GELOGD(fmt, ...)                                                       \
-  do {                                                                         \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                             \
-      dlog_debug(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
-    }                                                                          \
+#define GELOGD(fmt, ...)                                                                           \
+  do {                                                                                             \
+    DlogDebugInner(GE_MODULE_NAME, "[DEBUG][%s:%d]%ld " fmt "\n", __FILE__, __LINE__,              \
+                   (long int)GetTid(), ##__VA_ARGS__);                                             \
   } while (false)
 
-#define GELOGI(fmt, ...)                                                      \
-  do {                                                                        \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {                             \
-      dlog_info(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
-    }                                                                         \
+#define GELOGI(fmt, ...)                                                                           \
+  do {                                                                                             \
+    DlogInfoInner(GE_MODULE_NAME, "[INFO][%s:%d]%ld " fmt "\n", __FILE__, __LINE__,                \
+                  (long int)GetTid(), ##__VA_ARGS__);                                              \
   } while (false)
 
-#define GELOGW(fmt, ...)                                                      \
-  do {                                                                        \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_WARN)) {                             \
-      dlog_warn(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
-    }                                                                         \
+#define GELOGW(fmt, ...)                                                                           \
+  do {                                                                                             \
+    DlogWarnInner(GE_MODULE_NAME, "[WARNING][%s:%d]%ld " fmt "\n", __FILE__, __LINE__,             \
+                  (long int)GetTid(), ##__VA_ARGS__);                                              \
   } while (false)
 
-#define GELOGE(ERROR_CODE, fmt, ...)                                                                       \
-  do {                                                                                                     \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                         \
-      dlog_error(GE_MODULE_NAME, "%" PRIu64 ":ErrorNo:%" PRIuLEAST8 "(%s)%s " fmt, GetTid(), (ERROR_CODE), \
-                 GE_GET_ERRORNO_STR, GE_GET_ERROR_LOG_HEADER, ##__VA_ARGS__);                              \
-    }                                                                                                      \
+#define GEEVENT(fmt, ...)                                                                          \
+  do {                                                                                             \
+    DlogEventInner(GE_MODULE_NAME, "[Event][%s:%d]%ld " fmt "\n", __FILE__, __LINE__,              \
+                   (long int)GetTid(), ##__VA_ARGS__);                                             \
   } while (false)
 
-#define GEEVENT(fmt, ...)                                                                                           \
-  do {                                                                                                              \
-    dlog_event((uint32_t)(RUN_LOG_MASK) | (uint32_t)(GE_MODULE_NAME), "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__); \
-    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                                  \
-      dlog_info(GE_MODULE_NAME, "%" PRIu64 ":" fmt, GetTid(), ##__VA_ARGS__);                                       \
-    }                                                                                                               \
+#define GELOGE(ERROR_CODE, fmt, ...)                                                               \
+  do {                                                                                             \
+    DlogErrorInner(GE_MODULE_NAME, "[ERROR][%s:%d]%ld:ErrorNo:%u(%s)%s " fmt "\n",                 \
+                   __FILE__, __LINE__, (long int)GetTid(), (uint32_t)ERROR_CODE,                   \
+                   GE_GET_ERRORNO_STR, GE_GET_ERROR_LOG_HEADER, ##__VA_ARGS__);                    \
   } while (false)
 #endif
 

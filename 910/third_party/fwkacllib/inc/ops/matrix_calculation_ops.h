@@ -461,8 +461,8 @@ REG_OP(BatchMatMulV2)
 * Compatible with the TensorFlow operator L2Loss.
 */
 REG_OP(L2Loss)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(x, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(L2Loss)
 
 /**

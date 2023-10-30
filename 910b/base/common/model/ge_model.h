@@ -85,6 +85,14 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
 
   void SetModelInOutInfo(const std::shared_ptr<uint8_t> &buff) { model_in_out_info_ = buff; }
 
+  void SetOmName(const std::string &om_name) {
+    om_name_ = om_name;
+  }
+
+  const std::string &GetOmName() const {
+    return om_name_;
+  }
+
  protected:
   ConstProtoAttrMap &GetAttrMap() const override;
 
@@ -107,6 +115,7 @@ class GeModel : public std::enable_shared_from_this<GeModel>, public AttrHolder 
   uint32_t model_id_ = INVALID_MODEL_ID;
   std::map<uint32_t, uint64_t> model_id_to_session_id_map_;
   std::shared_ptr<uint8_t> model_in_out_info_;
+  std::string om_name_;
 };
 using GeModelPtr = std::shared_ptr<ge::GeModel>;
 }  // namespace ge

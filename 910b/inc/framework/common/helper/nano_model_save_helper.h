@@ -46,6 +46,8 @@ class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelHelper {
                        const GeModelPtr &ge_model, const size_t model_index = 0UL);
   Status SaveDynamicTaskDesc(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
                        const GeModelPtr &ge_model, const size_t model_index = 0UL);
+  Status SaveModelWeights(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                          const size_t model_index = 0UL) const;
   Status SaveTaskParam(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
                        const GeModelPtr &ge_model, const size_t model_index = 0UL);
   Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,

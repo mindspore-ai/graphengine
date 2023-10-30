@@ -33,7 +33,7 @@ class LLMEngine {
   ~LLMEngine();
   ge::Status LLMEngineInitialize(const std::vector<ge::ModelBufferData> &model_buffer_datas,
                                  const std::map<ge::AscendString, ge::AscendString> &options);
-  static LLMEngineStatus fetchLLMEngineStatus();
+  static LLMEngineStatus FetchLLMEngineStatus();
   int64_t FetchLlmEngineQueueStatus();
   // API2：execute prompt
   ge::Status RunPromptAsync(const LLMReq &req, const std::vector<ge::Tensor> &inputs, ge::RunAsyncCallback callback);

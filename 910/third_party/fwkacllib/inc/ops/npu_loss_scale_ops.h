@@ -129,13 +129,10 @@ REG_OP(NPUClearFloatStatusV2)
     .OP_END_FACTORY_REG(NPUClearFloatStatusV2)
 
 /**
-*@brief Set the value of global workspace to 0. \n
-
-*@par Inputs:
-*addr: A nested structure of Tensors of type float32 . \n
+*@brief Get the value of global workspace. \n
 
 *@par Outputs:
-*data: A Tensor of type float32.
+*data: A Tensor of type int32.
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
@@ -143,6 +140,22 @@ REG_OP(NPUClearFloatStatusV2)
 REG_OP(NPUGetFloatStatusV2)
     .OUTPUT(data, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(NPUGetFloatStatusV2)
+
+/**
+*@brief Get the value of global workspace. \n
+
+*@par Outputs:
+*data: A Tensor of type int32.
+*/
+REG_OP(NPUGetFloatDebugStatus)
+    .OUTPUT(data, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(NPUGetFloatDebugStatus)
+
+/**
+*@brief Set the value of global workspace to 0. \n
+*/
+REG_OP(NPUClearFloatDebugStatus)
+    .OP_END_FACTORY_REG(NPUClearFloatDebugStatus)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_

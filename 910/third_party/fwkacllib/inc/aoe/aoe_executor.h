@@ -43,6 +43,7 @@ enum class ExecutorType {
     EXE_REMOTE_RUN                  = 1 << 5,                              // use remote runner
     EXE_REMOTE_COMPILE_RUN          = 1 << 6,                              // remote support build and run together
     EXE_QTEST_RUN                   = 1 << 7,                              // support qtest runner
+    EXE_ACLNN_RUN                   = 1 << 8,                              // support aclnn runner
 };
 
 struct ExecuteInitConfig {
@@ -86,6 +87,7 @@ constexpr uint32_t EXE_REMOTE_EXECUTOR             = static_cast<uint32_t>(Execu
 constexpr uint32_t EXE_REMOTE_COMPILE_RUN_EXECUTOR = EXE_REMOTE_EXECUTOR |
                                                      static_cast<uint32_t>(ExecutorType::EXE_REMOTE_COMPILE_RUN);
 constexpr uint32_t EXE_QTEST_EXECUTOR              = static_cast<uint32_t>(ExecutorType::EXE_QTEST_RUN);
+constexpr uint32_t EXE_ACLNN_EXECUTOR              = static_cast<uint32_t>(ExecutorType::EXE_ACLNN_RUN);
 
 const std::map<CompileType, std::map<std::string, std::string>> BUILD_MAP = {
     {CompileType::COMPILE_TYPE_BASIC, {
@@ -340,5 +342,7 @@ extern "C" AoeStatus AoeExecutorQtestRun(const ge::Graph &graph, const std::stri
 extern "C" AoeStatus AoeExecutorOnlineSpiltGraph(const ge::Graph &graph, ge::Session *session,
     const std::string &subgraphPath, const std::map<std::string, std::string> &splitOptions,
     const std::vector<ge::Tensor> &inputs);
+
+extern "C" std::future<AoeStatus> AoeExecutorAclnnRun(const AclnnRunConfig &param, RunnerResult &result);
 }
 #endif

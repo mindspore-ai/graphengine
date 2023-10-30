@@ -314,8 +314,8 @@ REG_OP(Relu6)
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Relu6.
 *
-*@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED. Please use Relu6 instead.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Relu6 instead.
 */
 REG_OP(Relu6D)
     .INPUT(x, TensorType::RealNumberType())
@@ -440,7 +440,7 @@ REG_OP(BNLL)
 
 *@par Inputs:
 * One input:
-*x: A Tensor of type float16 or float32. Up to 8D . \n
+*x: A Tensor of type bfloat16, float16 or float32. Up to 8D . \n
 
 *@par Outputs:
 *y: The activations tensor. Has the same type and format as input "x"
@@ -449,8 +449,8 @@ REG_OP(BNLL)
 * Compatible with the TensorFlow operator Softplus.
 */
 REG_OP(Softplus)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(x, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(Softplus)
 
 /**
@@ -458,8 +458,8 @@ REG_OP(Softplus)
 
 *@par Inputs:
 *Two inputs:
-* @li gradients: A ND Tensor of type float16 or float32.
-* @li features: A ND Tensor of type float16 or float32.
+* @li gradients: A ND Tensor of type bfloat16, float16 or float32.
+* @li features: A ND Tensor of type bfloat16, float16 or float32.
 
 
 *@par Outputs:
@@ -469,9 +469,9 @@ REG_OP(Softplus)
 * Compatible with the TensorFlow operator SoftplusGrad.
 */
 REG_OP(SoftplusGrad)
-    .INPUT(gradients, TensorType::FloatingDataType())
-    .INPUT(features, TensorType::FloatingDataType())
-    .OUTPUT(backprops, TensorType::FloatingDataType())
+    .INPUT(gradients, TensorType({FloatingDataType, DT_BF16}))
+    .INPUT(features, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(backprops, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(SoftplusGrad)
 
 /**
@@ -479,7 +479,7 @@ REG_OP(SoftplusGrad)
 
 *@par Inputs:
 * One input:
-*x: A Tensor of type float16 or float32. Up to 8D . \n
+*x: A Tensor of type bfloat16, float16 or float32. Up to 8D . \n
 
 *@par Outputs:
 *y: The activations tensor. Has the same type and format as "x"
@@ -488,8 +488,8 @@ REG_OP(SoftplusGrad)
 * Compatible with the TensorFlow operator Softsign.
 */
 REG_OP(Softsign)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(x, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(Softsign)
 
 /**
@@ -497,7 +497,7 @@ REG_OP(Softsign)
  *
  * @par Inputs:
  * Two inputs, including:
- * @li gradients: A Tensor.Must be one of the following types:float16, float32,
+ * @li gradients: A Tensor.Must be one of the following types: bfloat16, float16, float32,
  * @li features: A Tensor of the same type and shape as "gradients".
 
  * @par Outputs:
@@ -506,32 +506,30 @@ REG_OP(Softsign)
  * Compatible with the TensorFlow operator SoftsignGrad.
  */
 REG_OP(SoftsignGrad)
-    .INPUT(gradients, TensorType::FloatingDataType())
-    .INPUT(features, TensorType::FloatingDataType())
-    .OUTPUT(output, TensorType::FloatingDataType())
+    .INPUT(gradients, TensorType({FloatingDataType, DT_BF16}))
+    .INPUT(features, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(output, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(SoftsignGrad)
 
 /**
-*@brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1) . \n
+* @brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1) . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-*x: A Tensor. Must be one of the following types: float16, float, double
- * int32, int8. format:ND. \n
+* x: A Tensor. Must be one of the following types: float16, float, double
+ * int32, int8, bfloat16. format:ND. \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "x". format:ND. \n
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x". format:ND. \n
 
-*@see Region()
+* @see Region()
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Selu.
 */
 REG_OP(Selu)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,
-                                 DT_INT8,DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,
-                                     DT_INT8,DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,DT_INT32, DT_BF16}))
     .OP_END_FACTORY_REG(Selu)
 
 /**
@@ -555,24 +553,24 @@ REG_OP(SeluGrad)
     .OP_END_FACTORY_REG(SeluGrad)
 
 /**
-*@brief Computes rectified linear gradients for a ReLU operation . \n
+* @brief Computes rectified linear gradients for a ReLU operation . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li gradients: A Tensor. Must be one of the following types: float32, double,
- * int32, int8, int16, int64, uint16, float16, uint32, uint64
-*@li features: A Tensor. Must be one of the following types: float32, double,
- * int32, int8, int16, int64, uint16, float16, uint32, uint64
+* @li gradients: A Tensor. Must be one of the following types: float32, double,
+ * int32, int8, int16, int64, uint16, float16, uint32, uint64, bfloat16
+* @li features: A Tensor. Must be one of the following types: float32, double,
+ * int32, int8, int16, int64, uint16, float16, uint32, uint64, bfloat16
 
-*@par Outputs:
-*backprops: A Tensor. Must have the same type as"gradients" . \n
+* @par Outputs:
+* backprops: A Tensor. Must have the same type as"gradients" . \n
 
-*@attention Constraints:
+* @attention Constraints:
 * The corresponding Relu operator needs to be called before using this operator on the network . \n
 
-*@see Relu
+* @see Relu
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with TensorFlow operator ReluGrad.
 */
 REG_OP(ReluGrad)
@@ -632,23 +630,24 @@ REG_OP(ReluV2)
     .OP_END_FACTORY_REG(ReluV2)
 
 /**
-*@brief Performs parametric ReLU . \n
+* @brief Performs parametric ReLU . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-*@li x: A multi-dimensional Tensor of type float16 or float32.
-*@li weight: A Scalar or 1D Tensor of type float16 or float32, specifying the weight, the initial value of "a". The number of dimensions must be the same as the number of channels . \n
+* @li x: A multi-dimensional Tensor of type bfloat16, float16 or float32.
+* @li weight: A Scalar or 1D Tensor of type bfloat16, float16 or float32, specifying the weight,
+* initial value of "a". The number of dimensions must be the same as the number of channels . \n
 
-*@par Outputs:
-*y: An activated Tensor. Has the same dimensions with "x" . \n
+* @par Outputs:
+* y: An activated Tensor. Has the same dimensions with "x" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with PyTorch and Caffe operator PReLU.
 */
 REG_OP(PRelu)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(PRelu)
 
 /**
@@ -676,35 +675,35 @@ REG_OP(PReluGrad)
     .OP_END_FACTORY_REG(PReluGrad)
 
 /**
-*@brief Activation function fused from sigmoid and ReLU, with soft saturation
+* @brief Activation function fused from sigmoid and ReLU, with soft saturation
 *    on the left and no saturation on the right . \n
 
-*@par Inputs:
-*x: A float16, float32 or double, for the input data type . \n
+* @par Inputs:
+* x: A bfloat16, float16, float32 or double, for the input data type . \n
 
-*@par Attributes:
-*alpha: An optional float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
-*scale: An optional float32. Input data scaling factor. Defaults to "1.0". \n
-*input_scale: An optional float32. Negative data scaling factor. Defaults to "1.0". \n
+* @par Attributes:
+* alpha: An optional float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+* scale: An optional float32. Input data scaling factor. Defaults to "1.0". \n
+* input_scale: An optional float32. Negative data scaling factor. Defaults to "1.0". \n
 
-*@par Outputs:
-*y: A float16, float32 or double, for the normalized result . \n
+* @par Outputs:
+* y: A bfloat16, float16, float32 or double, for the normalized result . \n
 
-*@attention Constraints:
-*@li The input is of type float16 or float32 . \n
+* @attention Constraints:
+* @li The input is of type float16 or float32 . \n
 
-*@par Multiple batches supported or not
-*Supported
-*@par Third-party framework compatibility
-*@li Compatible with Tensorflow's Elu operator
-*@li Compatible with Caffe's ELULayer operator
-*@li Compatible with Pytorch's elu Opeartor
+* @par Multiple batches supported or not
+* Supported
+* @par Third-party framework compatibility
+* @li Compatible with Tensorflow's Elu operator
+* @li Compatible with Caffe's ELULayer operator
+* @li Compatible with Pytorch's elu Opeartor
 *
-*@since V100R001C33
+* @since V100R001C33
 */
 REG_OP(Elu)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(x, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .ATTR(alpha, Float, 1.0)
     .ATTR(scale, Float, 1.0)
     .ATTR(input_scale, Float, 1.0)
@@ -771,78 +770,78 @@ REG_OP(CeluV2)
     .OP_END_FACTORY_REG(CeluV2)
 
 /**
-*@brief Computes gradients for the exponential linear (Elu) operation.
+* @brief Computes gradients for the exponential linear (Elu) operation.
 *
-*@par Inputs:
-*@li grads: A tensor. Must be one of the following types: float16, float32, float64.
+* @par Inputs:
+* @li grads: A tensor. Must be one of the following types: bfloat16, float16, float32, float64.
 *     The backpropagated gradients to the corresponding Elu operation.
-*@li activations: A tensor. Has the same type as "grads".
+* @li activations: A tensor. Has the same type as "grads".
 *     The outputs of the corresponding Elu operation.
 *
-*@par Outputs:
+* @par Outputs:
 * y: A tensor. Has the same type as "grads".
 *
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator EluGrad.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator EluGrad.
 *
 */
 REG_OP(EluGrad)
-    .INPUT(grads, TensorType::FloatingDataType())
-    .INPUT(activations, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
+    .INPUT(grads, TensorType({FloatingDataType, DT_BF16}))
+    .INPUT(activations, TensorType({FloatingDataType, DT_BF16}))
+    .OUTPUT(y, TensorType({FloatingDataType, DT_BF16}))
     .OP_END_FACTORY_REG(EluGrad)
 
 /**
-*@brief Computes the output as x if x > 0 and negative_slope * x if x <= 0 . \n
+* @brief Computes the output as x if x > 0 and negative_slope * x if x <= 0 . \n
 
-*@par Inputs:
+* @par Inputs:
 * One input:
-* x: A Tensor. Must be one of the following types: float32, float16.
+* x: A Tensor. Must be one of the following types: bfloat16, float32, float16.
 *
-*@par Attributes:
-*negative_slope: A float32. Defaults to "0.0".
+* @par Attributes:
+* negative_slope: A float32. Defaults to "0.0".
 *
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
-*@par Third-party framework compatibility
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+* @par Third-party framework compatibility
 * Compatible with the Caffe operator ReLU.
 */
 REG_OP(LeakyRelu)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_BF16}))
     .ATTR(negative_slope, Float, 0.0)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_BF16}))
     .OP_END_FACTORY_REG(LeakyRelu)
 
 /**
-*@brief Computes the output as gradients if features > 0 and negative_slope * gradients if features <= 0 . \n
+* @brief Computes the output as gradients if features > 0 and negative_slope * gradients if features <= 0 . \n
 
-*@par Inputs:
+* @par Inputs:
 * Two inputs, including:
-* @li gradients: A Tensor. Must be one of the following types: float16, float32, double.
+* @li gradients: A Tensor. Must be one of the following types: bfloat16, float16, float32, double.
 * @li features: A Tensor. Has the same type as "gradients" . \n
 
-*@par Attributes:
-*negative_slope: A float32. Defaults to "0.0" . \n
+* @par Attributes:
+* negative_slope: A float32. Defaults to "0.0" . \n
 
-*@par Outputs:
-*backprops: A Tensor. Has the same type as "gradients" . \n
+* @par Outputs:
+* backprops: A Tensor. Has the same type as "gradients" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator LeakyReluGrad.
 */
 REG_OP(LeakyReluGrad)
-    .INPUT(gradients, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(gradients, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .ATTR(negative_slope, Float, 0.0)
-    .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .OP_END_FACTORY_REG(LeakyReluGrad)
 
 /**
 * @brief Thresholds grad each element of the input Tensor .
 
 * @par Inputs:
-* @li gradients: A Tensor shape and dtype of input gradients. Support float16, int32.
-* @li features: A Tensor shape and dtype of input features. Support float16, int32 . \n
+* @li gradients: A Tensor shape and dtype of input gradients. Support float16, int32 or bfloat16.
+* @li features: A Tensor shape and dtype of input features. Support float16, int32 or bfloat16. \n
 
 * @par Attributes:
 * threshold: A float32 scale value to threshold at . \n
@@ -854,9 +853,9 @@ REG_OP(LeakyReluGrad)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ThresholdGradV2D)
-    .INPUT(gradients, TensorType({DT_INT32, DT_FLOAT16}))
-    .INPUT(features, TensorType({DT_INT32, DT_FLOAT16}))
-    .OUTPUT(backprops, TensorType({DT_INT32, DT_FLOAT16}))
+    .INPUT(gradients, TensorType({DT_INT32, DT_FLOAT16, DT_BF16}))
+    .INPUT(features, TensorType({DT_INT32, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(backprops, TensorType({DT_INT32, DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(threshold, Float)
     .OP_END_FACTORY_REG(ThresholdGradV2D)
 

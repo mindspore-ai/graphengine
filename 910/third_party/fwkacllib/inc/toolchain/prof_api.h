@@ -62,8 +62,10 @@ const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0A0000U;
 const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;         /* type info: graph_id_map */
 const uint32_t MSPROF_REPORT_MODEL_EXECUTE_TYPE         = 1;         /* type info: execute */
 const uint32_t MSPROF_REPORT_MODEL_LOAD_TYPE            = 2;         /* type info: load */
-const uint32_t MSPROF_REPORT_MODEL_EXEOM_TYPE           = 3;         /* type info: exeom */
+const uint32_t MSPROF_REPORT_MODEL_INPUT_COPY_TYPE      = 3;         /* type info: IntputCopy */
+const uint32_t MSPROF_REPORT_MODEL_OUTPUT_COPY_TYPE     = 4;         /* type info: OutputCopy */
 const uint32_t MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    = 7;         /* type info: logic_stream_info */
+const uint32_t MSPROF_REPORT_MODEL_EXEOM_TYPE           = 8;         /* type info: exeom */
 const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE        = 0x010000U;  /* type info: udf_info */
 const uint32_t MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      = 0x020000U;  /* type info: aicpu */
 
@@ -232,6 +234,14 @@ MSVP_PROF_API int32_t MsprofRegisterProfileCallback(int32_t callbackType, VOID_P
  * @return 0:SUCCESS, >0:FAILED
  */
 MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, VOID_PTR data, uint32_t dataLen);
+
+/*
+ * @ingroup libprofapi
+ * @name  MsprofSetConfig
+ * @brief Set profiling config
+ * @return 0:SUCCESS, !0:FAILED
+ */
+MSVP_PROF_API int32_t MsprofSetConfig(uint32_t configType, const char *config, size_t configLength);
 
 /*
  * @ingroup libprofapi

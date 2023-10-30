@@ -42,7 +42,6 @@ const char_t *const OPTION_EXEC_RANK_ID = "ge.exec.rankId";
 const char_t *const OPTION_EXEC_POD_NAME = "ge.exec.podName";
 const char_t *const OPTION_EXEC_DEPLOY_MODE = "ge.exec.deployMode";
 const char_t *const OPTION_EXEC_RANK_TABLE_FILE = "ge.exec.rankTableFile";
-const char_t *const GE_AICPU_FLAG = "ge.aicpuFlag";
 const char_t *const OPTION_EXEC_EXTERN_PLUGIN_PATH = "ge.soLoadPath";
 // Dump flag and para
 const char_t *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
@@ -89,6 +88,7 @@ const std::string MEMORY_OPTIMIZATION_POLICY = "ge.exec.memoryOptimizationPolicy
 const std::string STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
 const char_t *const OPTION_FEATURE_BASE_REFRESHABLE = "ge.featureBaseRefreshable";
 const char_t *const OPTION_CONST_LIFECYCLE = "ge.constLifecycle";
+const char_t *const OPTION_HOST_SCHEDULING_MAX_THRESHOLD = "ge.exec.hostSchedulingMaxThreshold";
 
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_CLUSTER_DEPLOY_MODE = "ge.exec.logicalDeviceClusterDeployMode";
 const char_t *const OPTION_EXEC_LOGICAL_DEVICE_ID = "ge.exec.logicalDeviceId";
@@ -122,6 +122,10 @@ const char_t *const OPTION_USE_COUNTER_FILTER = "ge.use_counter_filter";
 
 // Option key: Offload
 constexpr char_t const OPTION_EXEC_RANK_MAP[] = "ge.exec.rankMap";
+
+// Option key: enable engine parallel or not
+constexpr char_t const OPTION_EXEC_ENABLE_ENGINE_PARALLEL[] = "ge.exec.enableEngineParallel";
+constexpr char_t const OPTION_EXEC_ENGINE_PARALLEL_CONFIG_PATH[] = "ge.exec.engineParallelConfigPath";
 
 // Option key: host env os & cpu
 const char_t *const OPTION_HOST_ENV_OS = "ge.host_env_os";
@@ -165,9 +169,8 @@ const char_t *const TRAIN_FLAG = "ge.trainFlag";
 const char_t *const RUN_FLAG = "ge.runFlag";
 const char_t *const LOCAL_FMKOP_FLAG = "ge.enabledLocalFmkop";
 const char_t *const TBE_PLUGIN_PATH_FLAG = "ge.TBE_plugin_path";
-const char_t *const DDK_VERSION_FLAG = "ge.DDK_version";
-const char_t *const GE_FE_FLAG = "ge.feFlag";
 const char_t *const STREAM_MAX_PARALLEL_NUM = "ge.streamMaxParallelNum";
+const char_t *const AC_PARALLEL_ENABLE = "ac_parallel_enable";
 const char_t *const OUTPUT_DATATYPE = "ge.outputDatatype";
 const char_t *const OP_SELECT_IMPL_MODE = "ge.opSelectImplmode";
 const char_t *const OPTYPELIST_FOR_IMPLMODE = "ge.optypelistForImplmode";
@@ -279,21 +282,15 @@ const std::string LOCAL_FMKOP_FLAG = "ge.enabledLocalFmkop";
 // this option is to obtain the TBE op plugin path
 const std::string TBE_PLUGIN_PATH_FLAG = "ge.TBE_plugin_path";
 
-// Configure run flag by Session constructor options param,
-// its value should be a path
-// this option is to obtain the DDK Version info
-const std::string DDK_VERSION_FLAG = "ge.DDK_version";
-
-// Configure run flag by Session constructor options param,
-// its value should be a path
-// this option is to obtain fe flag
-const std::string GE_FE_FLAG = "ge.feFlag";
-
 // Configure stream max parallel num only by Session constructor options param,
 // its value should be stream:int, such as "DNN_V100:2,DNN_HCCL:3",
 // default value is "1", such as "DNN_V100:1,DNN_HCCL:1"
 // this option is to obtain stream max parallel num
 const std::string STREAM_MAX_PARALLEL_NUM = "ge.streamMaxParallelNum";
+
+// Configure engines such as Aicpu to compute parallelly with other engines in dynamic shape graphs.
+// its value should be "0" or "1", default value is "0"
+const std::string AC_PARALLEL_ENABLE = "ac_parallel_enable";
 
 // congigure outputDatatype to setting net output type
 const std::string OUTPUT_DATATYPE = "ge.outputDatatype";
@@ -526,6 +523,7 @@ static const char_t *const CORE_TYPE = ge::CORE_TYPE.c_str();
 static const char_t *const SOC_VERSION = ge::SOC_VERSION.c_str();
 static const char_t *const VIRTUAL_TYPE = ge::VIRTUAL_TYPE.c_str();
 static const char_t *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
+static const char_t *const AC_PARALLEL_ENABLE = ge::AC_PARALLEL_ENABLE.c_str();
 static const char_t *const AICORE_NUM = ge::AICORE_NUM.c_str();
 static const char_t *const FUSION_SWITCH_FILE = ge::FUSION_SWITCH_FILE.c_str();
 static const char_t *const ENABLE_SMALL_CHANNEL = ge::ENABLE_SMALL_CHANNEL.c_str();
@@ -604,6 +602,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              DISTRIBUTED_CLUSTER_BUILD,
                                                              MODEL_RELATION_CONFIG,
                                                              ENABLE_GRAPH_PARALLEL,
+                                                             AC_PARALLEL_ENABLE,
                                                              GRAPH_PARALLEL_OPTION_PATH};
 
 // for interface: aclgrphParse
@@ -626,6 +625,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               EXEC_DISABLE_REUSED_MEMORY,
                                               AUTO_TUNE_MODE,
                                               ENABLE_SINGLE_STREAM,
+                                              AC_PARALLEL_ENABLE,
                                               AICORE_NUM,
                                               FUSION_SWITCH_FILE,
                                               ENABLE_SMALL_CHANNEL,

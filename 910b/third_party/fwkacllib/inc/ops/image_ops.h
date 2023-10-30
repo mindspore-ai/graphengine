@@ -151,10 +151,10 @@ REG_OP(AdjustContrast)
 */
 
 REG_OP(ChamferDistance)
-    .INPUT(xyz1, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT32}))
-    .INPUT(xyz2, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT32}))
-    .OUTPUT(dist1, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT32}))
-    .OUTPUT(dist2, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT32}))
+    .INPUT(xyz1, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16}))
+    .INPUT(xyz2, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16}))
+    .OUTPUT(dist1, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16}))
+    .OUTPUT(dist2, TensorType({DT_FLOAT, DT_BF16, DT_FLOAT16}))
     .OUTPUT(idx1, TensorType({DT_INT32}))
     .OUTPUT(idx2, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(ChamferDistance)
@@ -2263,7 +2263,7 @@ REG_OP(GridSampler3DGrad)
 *@par Inputs:
 *One inputs, including:
 *x: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
-*     float16, float32, float64. \n
+*     float16, float32, float64, uint8. \n
 
 *@par Attributes:
 *@li output_size: An optional listInt. Defaults to none.
@@ -2282,8 +2282,8 @@ REG_OP(GridSampler3DGrad)
 */
 
 REG_OP(UpsampleNearest3d)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8}))
     .ATTR(output_size, ListInt, {})
     .ATTR(scales, ListFloat, {})
     .OP_END_FACTORY_REG(UpsampleNearest3d)
@@ -2330,7 +2330,7 @@ REG_OP(UpsampleTrilinear3d)
 *@par Inputs:
 *One inputs, including:
 *grad_output: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
-*     float16, float32, float64. \n
+*     float16, float32, float64, uint8. \n
 
 *@par Attributes:
 *@li input_size: An required listInt.
@@ -2356,8 +2356,8 @@ REG_OP(UpsampleTrilinear3d)
 */
 
 REG_OP(UpsampleNearest3dGrad)
-    .INPUT(grad_output, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(grad_output, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8}))
     .REQUIRED_ATTR(input_size, ListInt)
     .ATTR(output_size, ListInt, {})
     .ATTR(scales, ListFloat, {})

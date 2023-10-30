@@ -79,6 +79,8 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
   /// @return Status result of function
   ///
   Status GetOutputShapes(std::vector<ge::Shape> &shapes) const;
+
+  Status GetOutputDtypes(std::vector<ge::DataType> &dtypes) const;
  private:
   CompiledGraphSummary() = default;
   std::shared_ptr<SummaryData> data_{nullptr};

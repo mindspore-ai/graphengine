@@ -49,8 +49,8 @@ namespace ge {
 
 */
 REG_OP(NMSWithMask)
-    .INPUT(box_scores, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(selected_boxes, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(box_scores, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(selected_boxes, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OUTPUT(selected_idx, TensorType({DT_INT32}))
     .OUTPUT(selected_mask, TensorType({DT_UINT8}))
     .ATTR(iou_threshold, Float, 0.5)

@@ -52,7 +52,7 @@ class ModelCompressManager {
   static int64_t om_compress_version_;
   static vector<string> enum_attr_names_;
   static vector<string> enum_attr_values_;
-  static vector<bool> name_use_string_values_;
+  static vector_bit_t name_use_string_values_;
   static std::mutex mutex_;
 };
 }  // namespace ge

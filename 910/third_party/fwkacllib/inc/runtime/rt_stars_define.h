@@ -115,7 +115,7 @@ typedef struct tagFftsPlusSqe {
     uint16_t  totalContextNum;
     uint16_t  readyContextNum;
     uint16_t  preloadContextNum;
-    uint16_t  reserved5;
+    uint16_t  timeout;
     // 32-35 bytes
     uint16_t  reserved6;
     uint16_t  prefetchOstNum : 5;

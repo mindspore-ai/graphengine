@@ -48,8 +48,9 @@ typedef enum tagRtChipType {
     CHIP_NO_DEVICE = 6,
     CHIP_MINI_V3 = 7,
     CHIP_5612 = 8, /* 1910b tiny */
-    CHIP_END = 9,
+    CHIP_1636 = 9,
     CHIP_NANO = 10,
+    CHIP_END = 11,
 } rtChipType_t;
 
 typedef enum tagRtAicpuScheType {
@@ -106,7 +107,8 @@ typedef enum tagRtPlatformType {
     PLATFORM_MINI_V3_B2 = 20,
     PLATFORM_MINI_V3_B3 = 21,
     PLATFORM_MINI_V3_B4 = 22,
-    PLATFORM_END = 23,
+    PLATFORM_1636 = 23,
+    PLATFORM_END = 24,
 } rtPlatformType_t;
 
 typedef enum tagRtCubeFracMKNFp16 {

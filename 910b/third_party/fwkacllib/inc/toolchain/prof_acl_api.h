@@ -29,6 +29,7 @@ constexpr uint64_t PROF_FWK_SCHEDULE_L0      = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW            = 0x00000400ULL;
 constexpr uint64_t PROF_TASK_TIME            = 0x00000800ULL;
 constexpr uint64_t PROF_TASK_MEMORY          = 0x00001000ULL;
+constexpr uint64_t PROF_TASK_TIME_L2         = 0x00002000ULL;
 
 // system profilinig switch
 constexpr uint64_t PROF_CPU                  = 0x00010000ULL;
@@ -70,6 +71,7 @@ constexpr uint64_t PROF_FWK_SCHEDULE_L0_MASK      = 0x00000200ULL;
 constexpr uint64_t PROF_TASK_TSFW_MASK            = 0x00000400ULL;
 constexpr uint64_t PROF_TASK_TIME_MASK            = 0x00000800ULL;
 constexpr uint64_t PROF_TASK_MEMORY_MASK          = 0x00001000ULL;
+constexpr uint64_t PROF_TASK_TIME_L2_MASK         = 0x00002000ULL;
 
 // system profilinig mask
 constexpr uint64_t PROF_CPU_MASK                  = 0x00010000ULL;

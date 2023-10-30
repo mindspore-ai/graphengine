@@ -311,6 +311,7 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_KERNEL_HOST_ONLY (0x20U)
 #define RT_KERNEL_HOST_FIRST (0x40U)
 #define RT_KERNEL_BIUPERF_FLAG (0x80U)
+#define RT_KERNEL_CMDLIST_NOT_FREE                (0x40U) // cmdlist does not need to be released by the runtime.
 
 /**
  * @ingroup rt_kernel
@@ -475,6 +476,15 @@ RTS_API rtError_t rtKernelGetAddrAndPrefCnt(void *hdl, const uint64_t tilingKey,
 */
 RTS_API rtError_t rtKernelGetAddrAndPrefCntV2(void *hdl, const uint64_t tilingKey, const void * const stubFunc,
                                               const uint32_t flag, rtKernelDetailInfo_t *kernelInfo);
+
+/**
+* @ingroup rt_kernel
+* @brief set input argments size for exception
+* @param [in] sizeInfo argments size info
+* @return RT_ERROR_NONE for ok
+* @return RT_ERROR_INVALID_VALUE for error input
+*/
+RTS_API rtError_t rtSetExceptionExtInfo(const rtArgsSizeInfo_t * const sizeInfo);
 
 /**
  * @ingroup rt_kernel
@@ -1061,14 +1071,23 @@ RTS_API rtError_t rtCleanDeviceSatStatus(rtStream_t stm);
 
 /**
  * @ingroup rt_kernel
- * @brief Get ConditionKernel Bin
+ * @brief Get Kernel Bin
  * @param [in] binFileName  binFileName
  * @param [out] buffer   bin buffer
  * @param [out] length   buffer length
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetConditionKernelBin(const char_t * const binFileName, char_t **const buffer, uint32_t *length);
+RTS_API rtError_t rtGetKernelBin(const char_t * const binFileName, char_t **const buffer, uint32_t *length);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Free Kernel Bin
+ * @param [in] buffer  bin buffer
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtFreeKernelBin(char_t * const buffer);
 
 /**
  * @ingroup dvrt_mem

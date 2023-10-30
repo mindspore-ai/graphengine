@@ -133,6 +133,17 @@ typedef struct rtFftsPlusExDetailInfo {
     uint16_t threadId;
 } rtFftsPlusExDetailInfo_t;
 
+typedef struct rtArgsSizeInfo {
+    void *infoAddr; /* info : atomicIndex|input num input offset|size|size */
+    uint32_t atomicIndex;
+} rtArgsSizeInfo_t;
+
+typedef struct rtExceptionArgsInfo {
+    uint32_t argsize;
+    void *argAddr;
+    rtArgsSizeInfo_t sizeInfo;
+}rtExceptionArgsInfo_t;
+
 typedef struct rtExceptionExpandInfo {
     rtExceptionExpandType_t type;
     union {
@@ -147,6 +158,7 @@ typedef struct rtExceptionInfo {
     uint32_t deviceid;
     uint32_t retcode;
     rtExceptionExpandInfo_t expandInfo;
+    rtExceptionArgsInfo_t exceptionArgs;
 } rtExceptionInfo_t;
 
 typedef void (*rtErrorCallback)(rtExceptionType);

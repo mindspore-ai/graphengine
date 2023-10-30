@@ -26,11 +26,11 @@ extern "C" {
 
 /**
 * @brief acldvppAdjustContrast 的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型支持 DT_UINT8 和 DT_FLOAT
+* @param [in] self: npu device侧的aclTensor，数据类型支持 UINT8 和 FLOAT，
 *                   仅支持连续的Tensor，数据格式支持NCHW、NHWC，且数据格式需要与out一致。
 * @param [in] factor: 调节对比度，任意的非负值。
-* @param [in] out: npu device侧的aclTensor，数据类型仅支持 DT_FLOAT，
-*                  仅支持连续的Tensor，数据格式支持NCHW、NHWC，且数据格式、shape需要与self一致。
+* @param [out] out: npu device侧的aclTensor，数据类型支持 UINT8 和 FLOAT，
+*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC，且数据格式、shape需要与self一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程。
 * @return acldvppStatus: 返回状态码。

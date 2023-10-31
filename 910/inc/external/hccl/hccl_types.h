@@ -48,6 +48,7 @@ typedef enum {
     HCCL_E_CCE = 18,                /**< call cce api fail */
     HCCL_E_NETWORK = 19,            /**< call network api fail */
     HCCL_E_AGAIN = 20,              /**< try again */
+    HCCL_E_REMOTE = 21,
     HCCL_E_RESERVED                 /**< reserved */
 } HcclResult;
 
@@ -83,8 +84,18 @@ typedef enum {
     HCCL_DATA_TYPE_UINT32 = 9,   /**< uint32 */
     HCCL_DATA_TYPE_FP64 = 10, /**< fp64 */
     HCCL_DATA_TYPE_BFP16 = 11,    /**< bfp16 */
+    HCCL_DATA_TYPE_INT128 = 12,
     HCCL_DATA_TYPE_RESERVED     /**< reserved */
 } HcclDataType;
+
+typedef enum {
+    HCCL_DETERMINISTIC = 0,
+    HCCL_CONFIG_RESERVED
+} HcclConfig;
+
+union HcclConfigValue {
+    int32_t value;
+};
 
 const uint32_t HCCL_ROOT_INFO_BYTES =  4108; // 4108: root info length
 /**

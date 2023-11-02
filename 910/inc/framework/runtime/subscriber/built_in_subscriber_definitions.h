@@ -68,7 +68,8 @@ enum class DumpType {
   kExceptionDump = 1,
   kOverflowDump = 2,
   kHostDump = 3,
-  kNum = 4,
+  kLiteExceptionDump = 4,
+  kNum = 5,
   kAll = kNum
 };
 static_assert(static_cast<size_t>(DumpType::kNum) < sizeof(uint64_t) * static_cast<size_t>(8),

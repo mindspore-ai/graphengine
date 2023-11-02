@@ -34,10 +34,7 @@ class VISIBILITY_EXPORT GlobalDumper {
   GlobalDumper(GlobalDumper &&) = delete;
   GlobalDumper &operator=(const GlobalDumper &) = delete;
   GlobalDumper &operator==(GlobalDumper &&) = delete;
-  static GlobalDumper *GetInstance() {
-    static GlobalDumper global_dumper;
-    return &global_dumper;
-  }
+  static GlobalDumper *GetInstance();
 
   static void OnGlobalDumperSwitch(void *ins, uint64_t enable_flags);
 

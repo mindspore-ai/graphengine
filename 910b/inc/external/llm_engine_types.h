@@ -28,11 +28,11 @@ class LLMReq {
   LLMReq() = default;
   ~LLMReq() = default;
 
-  void SetReqId(const uint64_t req_id) {
+  void SetReqId(const int64_t req_id) {
     req_id_ = req_id;
   }
 
-  uint64_t GetReqId() const {
+  int64_t GetReqId() const {
     return req_id_;
   }
 
@@ -60,18 +60,28 @@ class LLMReq {
     return decoder_cluster_id_;
   }
 
+  void SetPrefixId(const int64_t prefix_id) {
+    prefix_id_ = prefix_id;
+  }
+
+  int64_t GetPrefixId() const {
+    return prefix_id_;
+  }
+
  private:
-  uint64_t req_id_{0UL};
+  int64_t req_id_{-1L};
   // 请求prompt的句子长度，做完padding的值， 用于申请prompt的KVCache
   uint64_t prompt_length_{0UL};
   uint64_t prompt_cluster_id_{0UL};  // in/out， runPrompt的输出， runecoder的输入
   uint64_t decoder_cluster_id_{0UL};
+  int64_t prefix_id_{-1L};
+  int8_t reserved_[128];
 };
 
-constexpr char LLM_OPTION_INPUTS_BATCH_DIM_INDEX[] = "llm.InputsBatchSizeDimIndex";
-constexpr char LLM_OPTION_WAIT_TIME[] = "llm.WaitTime";
-constexpr char kPrompt[] = "Prompt";
-constexpr char kDecoder[] = "Decoder";
+constexpr const char LLM_OPTION_INPUTS_BATCH_DIM_INDEX[] = "llm.InputsBatchSizeDimIndex";
+constexpr const char LLM_OPTION_INPUT_WAIT_TIME[] = "llm.InputWaitTime";
+constexpr const char kPrompt[] = "Prompt";
+constexpr const char kDecoder[] = "Decoder";
 constexpr const char LLM_OPTION_OM_CACHE_PATH[] = "llm.OmCachePath";
 constexpr const char LLM_OPTION_CLUSTER_DEPLOYMENT_CONFIG[] = "llm.ClusterDeploymentConfig";
 constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
@@ -80,6 +90,9 @@ constexpr const char LLM_OPTION_MODEL_INPUTS_DTYPES[] = "llm.InputDtypes";
 constexpr const char LLM_OPTION_MODEL_KV_CACHE_SHAPES[] = "llm.RefInputShapes";
 constexpr const char LLM_OPTION_MODEL_KV_CACHE_DTYPES[] = "llm.RefInputDtypes";
 constexpr const char LLM_OPTION_OUTPUT_NUM[] = "llm.OutputNums";
+constexpr const char LLM_OPTION_SYNC_KV_CACHE_WAIT_TIME[] = "llm.SyncKvCacheWaitTime";
+constexpr const char LLM_OPTION_NN_EXECUTE_WAIT_TIME[] = "llm.NnExecuteWaitTime";
+constexpr const char LLM_OPTION_PROCESS_REQUEST_WAIT_TIME[] = "llm.ProcessRequestWaitTime";
 }  // namespace llm
 
 #endif  // LLM_ENGINE_INC_EXTERNAL_LLM_ENGINE_TYPES_H

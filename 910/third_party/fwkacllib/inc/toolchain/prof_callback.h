@@ -110,7 +110,6 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_FINALIZE,                   // stop profiling
     MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
     MSPROF_CTRL_INIT_PURE_CPU,              // start profiling in pure cpu
-    MSPROF_CTRL_INIT_HOST_HELPER,           // start profiling in helper host
     MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 

@@ -52,6 +52,12 @@ class LLMEngine {
   ge::Status LLMReqComplete(const LLMReq &req);
   ge::Status LLMEngineFinalize();
 
+  // Preload prompt prefix model to generate kv cache
+  ge::Status PreloadPromptPrefix(const LLMReq &req, const std::vector<ge::Tensor> &inputs);
+
+  // Release kv cache of prompt prefix model
+  ge::Status ReleasePromptPrefix(const LLMReq &req);
+
  private:
   std::shared_ptr<PromptManager> prompt_manager_;
   std::shared_ptr<DecoderManager> decoder_manager_;

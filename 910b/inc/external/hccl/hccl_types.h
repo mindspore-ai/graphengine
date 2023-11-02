@@ -1,17 +1,8 @@
-/**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2022. All rights reserved.
+ * Description: HCCL data type definition
+ * Author: lilianlin
+ * Create: 2020-09-09
  */
 
 #ifndef HCCL_TYPES_H_
@@ -48,7 +39,7 @@ typedef enum {
     HCCL_E_CCE = 18,                /**< call cce api fail */
     HCCL_E_NETWORK = 19,            /**< call network api fail */
     HCCL_E_AGAIN = 20,              /**< try again */
-    HCCL_E_REMOTE = 21,
+    HCCL_E_REMOTE = 21,             /**< error cqe */
     HCCL_E_RESERVED                 /**< reserved */
 } HcclResult;
 
@@ -84,14 +75,15 @@ typedef enum {
     HCCL_DATA_TYPE_UINT32 = 9,   /**< uint32 */
     HCCL_DATA_TYPE_FP64 = 10, /**< fp64 */
     HCCL_DATA_TYPE_BFP16 = 11,    /**< bfp16 */
-    HCCL_DATA_TYPE_INT128 = 12,
+    HCCL_DATA_TYPE_INT128 = 12,   /**< int128 */
     HCCL_DATA_TYPE_RESERVED     /**< reserved */
 } HcclDataType;
 
 typedef enum {
-    HCCL_DETERMINISTIC = 0,
+    HCCL_DETERMINISTIC = 0,     /**< 0: non-deterministic, 1: deterministic */
     HCCL_CONFIG_RESERVED
 } HcclConfig;
+
 
 union HcclConfigValue {
     int32_t value;

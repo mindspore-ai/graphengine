@@ -88,6 +88,8 @@ void EnableOverflowDump();
 
 void EnableExceptionDump();
 
+void EnableLiteExceptionDump();
+
 void EnableHostDump();
 
 void EnableTrainingTrace();

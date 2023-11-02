@@ -77,6 +77,7 @@ const uint32_t MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  = 4;  /* type info: cont
 const uint32_t MSPROF_REPORT_NODE_LAUNCH_TYPE           = 5;  /* type info: launch */
 const uint32_t MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      = 6;  /* type info: task_memory_info */
 const uint32_t MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     = 8;  /* type info: op exec */
+const uint32_t MSPROF_REPORT_NODE_ATTR_INFO_TYPE        = 9;  /* type info: node_attr_info */
 
 /* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
 const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000U; /* type info: ge api */

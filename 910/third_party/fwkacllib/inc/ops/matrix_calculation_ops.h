@@ -1988,10 +1988,11 @@ REG_OP(SwinAttentionScore)
 * @brief
    swin_transformer model specific structure.Operator only supports swin_transformer. \n
 * @par Inputs:
-* Three inputs, including:
+* Four inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16.
 * @li weight: A Tensor. Must be one of the following types: float16.
-* @li bias: A Tensor. Must be one of the following types: float16. \n
+* @li bias: A Tensor. Must be one of the following types: float16.
+* @li x2: A Tensor. Must be one of the following types: float16. \n
 
 * @par Attributes:
 * @li shifts: A optional attribute, the type is list int. Defaults to (). \n
@@ -2007,6 +2008,7 @@ REG_OP(SwinAttentionFFN)
     .INPUT(x1, TensorType({DT_FLOAT16}))
     .INPUT(x2, TensorType({DT_FLOAT16}))
     .INPUT(bias, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(x3, TensorType({DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT16}))
     .ATTR(shifts, ListInt, {})
     .OP_END_FACTORY_REG(SwinAttentionFFN)

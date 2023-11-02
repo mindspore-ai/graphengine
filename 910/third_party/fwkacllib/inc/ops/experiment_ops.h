@@ -1231,6 +1231,49 @@ REG_OP(HcomCollRemoteLookupPaired)
     .OP_END_FACTORY_REG(HcomCollRemoteLookupPaired)
 
 /**
+ * @brief Workers all find and get the corresponding value from the corresponding ps according to the keys. Used with
+ * HcomCollRemoteLookupUniquedAndPaired.
+ * @par Inputs:
+ * @li table_id: A tensor. Must be int32 type.
+ * @li keys: A tensor. Must be int64 type.
+ * @li key_num_input: A tensor. Must be int64 type.
+ * @li unique_indices: A tensor. Must be int32 type.
+ * @li key_count: A tensor. Must be int32 type.
+ * @par Outputs:
+ * @li values: A Tensor. Must be float32 type.
+ * @li indices: A Tensor. Recovery matrix. Must be int64 type.
+ * @li num_uniqued: A Tensor. Number of Recovery matrix. Must be int64 type.
+ * @li ps_segments: A Tensor. Offset and size of buffer for pss. Must be int64 type.
+ * @li ps_segments_num: A Tensor. Number of ps_segments. Must be int64 type.
+ * @par Attributes:
+ * @li tag: A required integer identifying the hccl operator tag.
+ * @li insert_option: Indicates whether lookup supports new value. Defaults to "0".
+ * @li group: A string identifying the group name of ranks participating in
+  the op. Defaults to "hccl_world_group".
+ * @li max_num: A required integer identifying the keys max num.
+ * @li embedding_dim: A required integer identifying Apply memory usage for output or infer shape.
+ * @li flags: An integer identifying counter filter feature.
+ */
+REG_OP(HcomCollRemoteLookupUniquedAndPaired)
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .INPUT(key_num_input, TensorType({DT_INT64}))
+    .INPUT(unique_indices, TesnorType({DT_INT32}))
+    .OPTIONAL_INPUT(key_count, TensorType({DT_INT32}))
+    .OUTPUT(values, TensorType({DT_FP32}))
+    .OUTPUT(indices, TensorType({DT_INT64}))
+    .OUTPUT(num_uniqued, TensorType({DT_INT64}))
+    .OUTPUT(ps_segments, TesnorType({DT_INT64}))
+    .OUTPUT(ps_segments_num, TesnorType({DT_INT64}))
+    .REQUIRED_ATTR(tag, Int)
+    .ATTR(insert_option, Int, 0)
+    .ATTR(group, String, "hccl_world_group")
+    .REQUIRED_ATTR(max_num, Int)
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .REQUIRED_ATTR(flags, Int)
+    .OP_END_FACTORY_REG(HcomCollRemoteLookupUniquedAndPaired)
+
+/**
  * @brief Workers send the keys and values to ps according to keys. Used with HcomCollRemoteLookupPaired.
  * @par Inputs:
  * @li table_id: A tensor. Must be int32 type.
@@ -1837,11 +1880,11 @@ REG_OP(IncreFlashAttention)
 
 
 REG_OP(PromptFlashAttention)
-    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_INT8, DT_INT8}))
+    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_INT8, DT_INT8}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_INT8, DT_INT8}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_FLOAT16, DT_FLOAT16}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BOOL, DT_BOOL, DT_BOOL}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(actual_seq_lengths_kv, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
@@ -1849,7 +1892,7 @@ REG_OP(PromptFlashAttention)
     .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
     .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT32}))
     .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT32}))
-    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_FLOAT16, DT_INT8}))
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
     .ATTR(pre_tokens, Int, 214748647)
@@ -2005,6 +2048,131 @@ REG_OP(ForeachNonFiniteCheckAndUnscale)
     .INPUT(inv_scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
 
+/**
+* @brief Provide the universal template for foreach operators, which have one tensorlist input,
+* and one tensorlist output.
+* @par Inputs:
+* x: A tensor list containing multiple tensors, can be bfloat16, float16, float, int32.
+* @par Required Attributes:
+* op_code: Determine operator type.Each number represents an operator, Please refer to API related materials.
+* @par Outputs:
+* y:A tensor list containing multiple tensors. dtype and format of output are same as x1.
+*/
+REG_OP(ForeachUnaryOp)
+    .DYNAMIC_INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(op_code, Int)
+    .OP_END_FACTORY_REG(ForeachUnaryOp)
+
+/**
+* @brief Provide the universal template for foreach operators, which have one tensorlist input,
+* and a scalar input.
+* @par Inputs:
+* x1: A tensor list containing multiple tensors, can be bfloat16, float16, float, int32.
+* x2: A scalar, dtype and format of alpha are same as x1.
+* @par Required Attributes:
+* op_code: Determine operator type.
+* @par Outputs:
+* y:A tensor list containing multiple tensors. dtype and format of output are same as x1.
+*/
+REG_OP(ForeachUnaryWithScalarOp)
+    .DYNAMIC_INPUT(x1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(op_code, Int)
+    .OP_END_FACTORY_REG(ForeachUnaryWithScalarOp)
+
+/**
+* @brief Provide the universal template for foreach operators, which have two tensorlist inputs,
+* and one tensorlist output.
+* @par Inputs:
+* @li x1: A tensor list containing multiple tensors, can be bfloat16, float16, float, int32, int64,
+* int16, int8, uint8, double, complex128, complex64, complex32.
+* @li x2: A tensor list containing multiple tensors. dtype and format of input1 are same as x1.
+* @par Required Attributes:
+* op_code: Determine operator type.Each number represents an operator, Please refer to API related materials.
+* @par Outputs:
+* y:A tensor list containing multiple tensors. dtype and format of output are same as x1.
+*/
+REG_OP(ForeachBinaryOp)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .REQUIRED_ATTR(op_code, Int)
+    .OP_END_FACTORY_REG(ForeachBinaryOp)
+
+/**
+* @brief Provide the universal template for foreach operators, which have two tensorlist inputs,
+* a scalar input, and one tensorlist output.
+* @par Inputs:
+* @li x1: A tensor list containing multiple tensors, can be bfloat16, float16, float, int32, int64,
+* int16, int8, uint8, double, complex128, complex64, complex32.
+* @li x2: A tensor list containing multiple tensors. dtype and format of input1 are same as x1.
+* @li x3: A scalar, dtype and format of alpha are same as x1.
+* @par Required Attributes:
+* op_code: Determine operator type.Each number represents an operator, Please refer to API related materials.
+* @par Outputs:
+* y:A tensor list containing multiple tensors. dtype and format of output are same as x1.
+*/
+REG_OP(ForeachBinaryWithScalarOp)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .INPUT(x3, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16, DT_INT16,
+                           DT_INT8, DT_UINT8, DT_DOUBLE, DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}))
+    .REQUIRED_ATTR(op_code, Int)
+    .OP_END_FACTORY_REG(ForeachBinaryWithScalarOp)
+
+/**
+* @brief Provide the universal template for foreach operators, which have three tensorlist inputs,
+* and one tensorlist output.
+* @par Inputs:
+* @li x1: A tensor list containing multiple tensors, can be bfloat16, float16, float, int32,
+* int16, complex64, complex32.
+* @li x2: A tensor list containing multiple tensors. dtype and format of input1 are same as x1.
+* @li x3: A tensor list containing multiple tensors. dtype and format of input2 are same as x1.
+* @par Required Attributes:
+* op_code: Determine operator type.Each number represents an operator, Please refer to API related materials.
+* @par Outputs:
+* y:A tensor list containing multiple tensors. dtype and format of output are same as x1.
+*/
+REG_OP(ForeachTernaryOp)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .DYNAMIC_INPUT(x3, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(op_code, Int)
+    .OP_END_FACTORY_REG(ForeachTernaryOp)
+
+/**
+* @brief Provide the universal template for foreach operators, which have three tensorlist inputs,
+* one scalar input, and one output.
+* @par Inputs:
+* @li x1: A tensor list containing multiple tensors, can be bfloat16, float16, float, int32,
+* int16, complex64, complex32.
+* @li x2: A tensor list containing multiple tensors. dtype and format of input1 are same as x1.
+* @li x3: A tensor list containing multiple tensors. dtype and format of input2 are same as x1.
+* @li x4: A scalar, dtype and format of alpha are same as x1.
+* @par Required Attributes:
+* op_code: Determine operator type.Each number represents an operator, Please refer to API related materials.
+* @par Outputs:
+* y:A tensor list containing multiple tensors. dtype and format of output are same as x1.
+*/
+REG_OP(ForeachTernaryWithScalarOp)
+    .DYNAMIC_INPUT(x1, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .DYNAMIC_INPUT(x2, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .DYNAMIC_INPUT(x3, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .INPUT(x4, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+    .REQUIRED_ATTR(op_code, Int)
+    .OP_END_FACTORY_REG(ForeachTernaryWithScalarOp)
+
 REG_OP(ApplyCamePart2)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(sum_grad_r, TensorType({DT_FLOAT}))
@@ -2147,12 +2315,12 @@ REG_OP(WeightQuantBatchmatmul)
 * @li x1: A Tensor of type float16. The format is ND.
 * @li X2: A Tensor of type float16. Must have the same type as "x". The format is ND.
 * @li quant_pre: A tensor for quantized inference. The format is NHWC. Type is uint64.
-* @li bias: A Tensor of type float32 or float16. The format is ND.
+* @li bias: A Tensor of type float16. The format is ND.
 * @par Outputs:
 * @li y: A Tensor of type int8. The format is ND.
 * @par Attributes:
-* @li adj_x1: A bool, if true means x1 is transposed.
-* @li adj_x2: A bool, if true means x2 is transposed.
+* @li adj_x1: A bool, true means x1 is transposed.
+* @li adj_x2: A bool, true means x2 is transposed.
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
@@ -2205,6 +2373,15 @@ REG_OP(FFN)
     .ATTR(inner_precise, Int, 0)
     .OP_END_FACTORY_REG(FFN)
 
+REG_OP(MoeInitRouting)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(row_idx, TensorType({DT_INT32}))
+    .INPUT(expert_idx, TensorType({DT_INT32}))
+    .OUTPUT(expanded_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(expanded_row_idx, TensorType({DT_INT32}))
+    .OUTPUT(expanded_expert_idx, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(active_num, Int)
+    .OP_END_FACTORY_REG(MoeInitRouting)
 
 REG_OP(MoeFinalizeRouting)
     .INPUT(expanded_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
@@ -2216,6 +2393,16 @@ REG_OP(MoeFinalizeRouting)
     .INPUT(expanded_expert_idx, TensorType({DT_INT32, DT_INT32, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(MoeFinalizeRouting)
+
+REG_OP(MoeGatingTopKSoftmax)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(finished, TensorType({DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(expert_idx, TensorType({DT_INT32}))
+    .OUTPUT(row_idx, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(k, Int)
+    .OP_END_FACTORY_REG(MoeGatingTopKSoftmax)
+
 
 /**
 * @brief Apply add operation for each tensor in tensor list with a scalar in manner of element-wise

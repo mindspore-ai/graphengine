@@ -207,29 +207,6 @@ DLL_EXPORT int dlog_setlevel(int moduleId, int level, int enableEvent);
 
 /**
  * @ingroup slog
- * @brief DlogGetLevel: get module loglevel and enableEvent
- *
- * @param [in]moduleId: moudule id(see slog.h, eg: CCE), ALL_MODULE: global, others: invalid
-                        support DEBUG_LOG_MASK and RUN_LOG_MASK, default DEBUG_LOG_MASK
- * @param [out]enableEvent: 1: enable; 0: disable
- * @return: module level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
- */
-DLL_EXPORT int DlogGetLevel(int moduleId, int *enableEvent);
-
-/**
- * @ingroup slog
- * @brief DlogSetLevel: set module loglevel and enableEvent
- *
- * @param [in]moduleId: moudule id(see slog.h, eg: CCE), ALL_MODULE: all modules, others: invalid
-                        support DEBUG_LOG_MASK and RUN_LOG_MASK
- * @param [in]level: log level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
- * @param [in]enableEvent: 1: enable; 0: disable, others:invalid
- * @return: 0: SUCCEED, others: FAILED
- */
-DLL_EXPORT int DlogSetLevel(int moduleId, int level, int enableEvent);
-
-/**
- * @ingroup slog
  * @brief CheckLogLevel: check module level enable or not
  * users no need to call it because all dlog interface(include inner interface) has already called
  *

@@ -414,6 +414,21 @@ RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, ui
 
 /**
  * @ingroup dvrt_mem
+ * @brief asynchronized memcpy
+ * @param [in] dst   destination address pointer
+ * @param [in] Max length of destination address memory
+ * @param [in] src   source address pointer
+ * @param [in] cnt   the number of byte to copy
+ * @param [in] kind   memcpy type, not check
+ * @param [in] stm   asynchronized task stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtMemcpyAsyncWithoutCheckKind(void *dst, uint64_t destMax, const void *src, uint64_t cnt,
+                                                rtMemcpyKind_t kind, rtStream_t stm);
+
+/**
+ * @ingroup dvrt_mem
  * @brief dsa update memcpy
  * @param [in] streamId dsa streamId
  * @param [in] taskId dsa

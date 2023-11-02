@@ -22,5 +22,93 @@
 #ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_
 #define OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_
 
+#include "graph/operator_reg.h"
+namespace ge {
+/**
+* @brief Performs group normalization . \n
 
+* @par Inputs:
+* Three inputs
+* @li x: A ND Tensor of type float16 or float32, with format NCHW for 4D.
+* @li gamma: A Tensor of type float16 or float32. Must be 1D. Specifies the scaling factor.
+* @li beta: A Tensor of type float16 or float32. Must be 1D. Specifies the offset. \n
+
+* @par Attributes:
+* @li num_groups: An required int32, specifying the number of group.
+* @li eps: An optional float32, specifying the small value added to
+variance to avoid dividing by zero. Defaults to "0.0001".
+* @li data_format: An optional string, specifying the format of "x".
+Defaults to "NHWC".
+* @li is_training: An optional bool, specifying if the operation is used for
+training or inference. Defaults to "True" . \n
+
+* @par Outputs:
+* Three outputs
+* @li y: A ND Tensor of type float16 or float32 for the normalized "x",
+with format NCHW for 4D.
+* @li mean: A Tensor of type float16 or float32. Must be 1D. Specifies the mean of "x".
+* @li variance: A Tensor of type float16 or float32. Must be 1D. Specifies the variance of "x". \n
+
+* @attention Constraints:
+* @li For Ascend 310, only support NCHW which can be trans to 5HD. \n
+
+* @par Third-party framework compatibility
+* @li Compatible with the PyTorch operator GroupNorm.
+
+*/
+REG_OP(GroupNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(beta, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(variance, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(num_groups, Int)
+    .ATTR(data_format, String, "NHWC")
+    .ATTR(eps, Float, 0.0001)
+    .ATTR(is_training, Bool, true)
+    .OP_END_FACTORY_REG(GroupNorm)
+
+/**
+* @brief Performs group normalization . \n
+
+* @par Inputs:
+* Three inputs
+* @li x: A ND Tensor of type float16 or float32, with format NCHW for 4D.
+* @li gamma: A Tensor of type float16 or float32. Must be 1D. Specifies the scaling factor.
+* @li beta: A Tensor of type float16 or float32. Must be 1D. Specifies the offset. \n
+
+* @par Attributes:
+* @li num_groups: An required int32, specifying the number of group.
+* @li eps: An optional float32, specifying the small value added to
+variance to avoid dividing by zero. Defaults to "0.0001".
+* @li data_format: An optional string, specifying the format of "x".
+Defaults to "NHWC".
+* @li is_training: An optional bool, specifying if the operation is used for
+training or inference. Defaults to "True" . \n
+
+* @par Outputs:
+* Three outputs
+* @li y: A ND Tensor of type float16 or float32 for the normalized "x",
+with format NCHW for 4D.
+* @li mean: A Tensor of type float16 or float32. Must be 1D. Specifies the mean of "x".
+* @li rstd: A Tensor of type float16 or float32. Must be 1D. Specifies the rstd of "x". \n
+
+* @par Third-party framework compatibility
+* @li Compatible with the PyTorch operator GroupNorm.
+
+*/
+REG_OP(GroupNormV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(beta, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(rstd, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(num_groups, Int)
+    .ATTR(data_format, String, "NHWC")
+    .ATTR(eps, Float, 0.0001)
+    .ATTR(is_training, Bool, true)
+    .OP_END_FACTORY_REG(GroupNormV2)
+}  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_

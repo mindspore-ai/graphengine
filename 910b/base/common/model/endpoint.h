@@ -100,18 +100,25 @@ class P2pNode {
   Endpoint &endpoint_;
 };
 
+constexpr int64_t kQueueActionDefault = 0;
+constexpr int64_t kQueueActionControl = 1;
+constexpr int64_t kQueueActionStatus = 2;
+constexpr int64_t kQueueActionSched = 3;
+
 class QueueNodeUtils {
  public:
   explicit QueueNodeUtils(Endpoint &endpoint) : endpoint_(endpoint){};
   QueueNodeUtils &SetDepth(const int64_t depth);
   QueueNodeUtils &SetEnqueuePolicy(const std::string &enqueue_policy);
-  QueueNodeUtils &SetIsControl(const bool is_control = true);
+  QueueNodeUtils &SetNodeAction(const int64_t action = kQueueActionDefault);
   static int64_t GetDepth(const Endpoint &endpoint);
   int64_t GetDepth() const;
   static std::string GetEnqueuePolicy(const Endpoint &endpoint);
   std::string GetEnqueuePolicy() const;
   static bool GetIsControl(const Endpoint &endpoint);
   bool GetIsControl() const;
+  static bool GetIsStatus(const Endpoint &endpoint);
+  static bool GetIsSched(const Endpoint &endpoint);
 
  private:
   Endpoint &endpoint_;

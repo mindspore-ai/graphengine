@@ -40,12 +40,18 @@ struct ModelRelation {
     std::vector<std::string> external_input_queue_names;
     std::vector<std::string> p2p_input_node_names;
     std::vector<std::string> p2p_output_node_names;
+    std::vector<std::string> status_input_queue_names;
+    std::vector<std::string> status_output_queue_names;
+    std::vector<std::string> sched_input_queue_names;
+    std::vector<std::string> sched_output_queue_names;
     std::vector<std::string> invoke_model_keys;
     bool IsEmpty() const {
       return input_endpoint_names.empty() && output_endpoint_names.empty() &&
              external_output_queue_names.empty() && external_input_queue_names.empty() &&
              p2p_input_node_names.empty() && p2p_output_node_names.empty() &&
-             invoke_model_keys.empty();
+             invoke_model_keys.empty() && status_input_queue_names.empty() &&
+             status_output_queue_names.empty() && sched_input_queue_names.empty() &&
+             sched_output_queue_names.empty();
     }
   };
 

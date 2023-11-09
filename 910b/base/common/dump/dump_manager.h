@@ -35,9 +35,10 @@ class DumpManager {
   static bool GetCfgFromOption(const std::map<std::string, std::string> &options_all, DumpConfig &dump_cfg);
 
  private:
+  bool CheckHasNpuCollectPath() const;
   bool NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump_properties);
   void SetDumpDebugConf(const DumpConfig &dump_config, DumpProperties &dump_properties) const;
-  void SetL0ExceptionDump(const DumpConfig &dump_config) const;
+  bool SetL0ExceptionDump(const DumpConfig &dump_config) const;
   Status SetDumpPath(const DumpConfig &dump_config, DumpProperties &dump_properties) const;
   Status SetNormalDumpConf(const DumpConfig &dump_config, DumpProperties &dump_properties);
   void SetDumpList(const DumpConfig &dump_config, DumpProperties &dump_properties) const;

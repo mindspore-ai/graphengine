@@ -123,14 +123,16 @@ typedef void *rtStream_t;
 typedef void *rtModel_t;
 
 struct HcomRemoteOperation {
-    void *opdesc;
-    void *keyAddr;
-    int *tableId;
-    void *value;
-    void *indices{nullptr};
-    void *numUniqued{nullptr};
-    void *psSeg{nullptr};
-    void *psSegNum{nullptr};
+    void *opdesc{};
+    void *keyAddr{};
+    int *tableId{};
+    s64 *keyNumInput{};
+    s32 *uniqueIndices{};
+    void *value{};
+    void *indices{};
+    void *numUniqued{};
+    void *psSeg{};
+    void *psSegNum{};
 };
 
 struct HcomOperation {
@@ -168,12 +170,15 @@ struct HcomRemoteOperationParams {
     void *numUniqued{};
     void *psSeg{};
     void *psSegNum{};
+    s64 *keyNumInput{};
+    s32 *uniqueIndices{};
     std::string hcclType;
     s32 flags{};
 
     s32 intZerocpyFlag{};
     s32 outZerocpyFlag{};
     bool disableUnique{};
+    bool uniqued{};
 };
 
 struct HcomAllToAllVParams {

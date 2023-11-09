@@ -99,6 +99,11 @@ ACL_FUNC_VISIBILITY aclnnStatus aclGetBoolArraySize(const aclBoolArray *array, u
 ACL_FUNC_VISIBILITY aclnnStatus aclGetTensorListSize(const aclTensorList *tensorList, uint64_t *size);
 ACL_FUNC_VISIBILITY aclnnStatus aclGetScalarListSize(const aclScalarList *scalarList, uint64_t *size);
 
+ACL_FUNC_VISIBILITY aclnnStatus aclInitTensor(aclTensor *tensor, const int64_t *viewDims, uint64_t viewDimsNum,
+                                              aclDataType dataType, const int64_t *stride, int64_t offset,
+                                              aclFormat format, const int64_t *storageDims, uint64_t storageDimsNum,
+                                              void *tensorDataAddr);
+
 #ifdef __cplusplus
 }
 #endif

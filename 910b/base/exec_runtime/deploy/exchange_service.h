@@ -27,6 +27,20 @@ namespace ge {
 constexpr uint8_t kNullDataFlagBit = 1U;
 constexpr size_t kMaxUserDataSize = 64U;
 
+struct DeployQueueAttr {
+  uint32_t queue_id;
+  int32_t device_id;
+  int32_t device_type;
+  std::string DebugString() const {
+    return "queue_id = " + std::to_string(queue_id) +
+           ", device_id = " + std::to_string(device_id) +
+           ", device_type = " + std::to_string(device_type);
+  }
+  bool operator < (const DeployQueueAttr &other) const {
+    return DebugString() < other.DebugString();
+  }
+};
+
 struct MemQueueAttr {
   uint32_t depth;
   uint32_t work_mode;

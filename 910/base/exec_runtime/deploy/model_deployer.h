@@ -23,20 +23,28 @@
 #include "common/plugin/ge_util.h"
 #include "common/model/model_relation.h"
 #include "external/ge/ge_api_error_codes.h"
+#include "exec_runtime/deploy/deploy_planner.h"
+#include "exec_runtime/deploy/exchange_service.h"
 
 namespace ge {
 struct DeployResult {
   uint32_t model_id;
-  std::vector<uint32_t> input_queue_ids;
-  std::vector<uint32_t> output_queue_ids;
-  std::vector<uint32_t> control_input_queue_ids;
-  std::vector<uint32_t> control_output_queue_ids;
+  std::vector<DeployQueueAttr> input_queue_attrs;
+  std::vector<DeployQueueAttr> output_queue_attrs;
+  std::vector<DeployQueueAttr> control_input_queue_attrs;
+  std::vector<DeployQueueAttr> control_output_queue_attrs;
   std::vector<Endpoint> event_relations;
   std::function<Status(void)> dev_stat_callback;
   size_t replica_num = 1U;
   std::string input_model_name;
   bool deploy_with_flow = true;
-  int32_t device_id = 0;
+  std::vector<uint32_t> status_output_queue_ids;
+  std::vector<uint32_t> sched_input_queue_ids;
+  std::vector<uint32_t> sched_output_queue_ids;
+  std::vector<int32_t> sched_logic_output_indices;
+  DynamicSchedIndex model_index_info;
+  std::map<int32_t, int32_t> datagw_request_bindings;
+  bool is_dynamic_sched = false;
 };
 
 class ModelDeployer {

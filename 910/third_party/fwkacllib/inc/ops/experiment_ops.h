@@ -1274,6 +1274,68 @@ REG_OP(HcomCollRemoteLookupUniquedAndPaired)
     .OP_END_FACTORY_REG(HcomCollRemoteLookupUniquedAndPaired)
 
 /**
+* @brief fake remote lookup host unique. \n
+
+* @par Inputs:
+* @li table_id: A Tensor, dtype is DT_INT32. 0-D. indicates the id of hashtable.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li actual_keys_num: dtype is DT_INT64. 1-D. indicates the actual hashtable key to host.
+* @li unique_indices: A Tensor, dtype is DT_INT32. indicates the unique indices. \n
+
+* @par Outputs:
+* @li values: indicates the hashtable value. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding var value in hashtable.
+* @li value_total_len: A Int, indicates the dim of embedding var+m+v or var+accum values in hashtable
+* @li initializer_mode: A String of "random_uniform", "truncated_normal" or "constant".
+* indicates the algo of init method, Defaults to "random_uniform".
+* @li constant_value: A Float, used when initializer_mode is "constant", Defaults to "0".
+* @li min: A Float, used when initializer_mode is "truncated_normal", the minimum value of the random number.
+* Defaults to "-2".
+* @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
+* Defaults to "2".
+* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
+* Defaults to "0".
+* @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
+* Defaults to "1".
+* @li seed: An Int, Used to create a random seed, Defaults to "0".
+* @li seed2: An Int, Used to create a random seed, Defaults to "0".
+* @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
+* @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
+* @li default_key_or_value: A bool, indicates the default value get way.
+* @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
+* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* Defaults to "".
+* @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
+*/
+REG_OP(FakeRemoteLookupUniqued)
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .INPUT(actual_keys_num, TensorType({DT_INT64}))
+    .INPUT(unique_indices, TensorType({DT_INT32}))
+    .OUTPUT(values, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .REQUIRED_ATTR(value_total_len, Int)
+    .ATTR(initializer_mode, String, "random_uniform")
+    .ATTR(constant_value, Float, 0)
+    .ATTR(min, Float, -2)
+    .ATTR(max, Float, 2)
+    .ATTR(mu, Float, 0)
+    .ATTR(sigma, Float, 1)
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .ATTR(filter_mode, String, "no_filter")
+    .ATTR(filter_freq, Int, 0)
+    .ATTR(default_key_or_value, Bool, false)
+    .ATTR(default_key, Int, 0)
+    .ATTR(default_value, Float, 0)
+    .ATTR(optimizer_mode, String, "")
+    .ATTR(optimizer_params, ListFloat, {})
+    .OP_END_FACTORY_REG(FakeRemoteLookupUniqued)
+
+/**
  * @brief Workers send the keys and values to ps according to keys. Used with HcomCollRemoteLookupPaired.
  * @par Inputs:
  * @li table_id: A tensor. Must be int32 type.
@@ -1674,6 +1736,7 @@ REG_OP(FlashAttentionScore)
     .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT1, DT_UINT8}))
     .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
     .OUTPUT(softmax_max, TensorType({DT_FLOAT32}))
     .OUTPUT(softmax_sum, TensorType({DT_FLOAT32}))
     .OUTPUT(softmax_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
@@ -1685,6 +1748,7 @@ REG_OP(FlashAttentionScore)
     .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(input_layout, String)
     .ATTR(inner_precise, Int, 1)
+    .ATTR(sparse_mode, Int, 0)
     .OP_END_FACTORY_REG(FlashAttentionScore)
 
 /**
@@ -1785,6 +1849,7 @@ REG_OP(FlashAttentionScoreGrad)
     .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT32}))
     .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
     .OUTPUT(dq, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OUTPUT(dk, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .OUTPUT(dv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
@@ -1796,6 +1861,7 @@ REG_OP(FlashAttentionScoreGrad)
     .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(input_layout, String)
     .ATTR(inner_precise, Int, 1)
+    .ATTR(sparse_mode, Int, 0)
     .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
 
 /**
@@ -1927,6 +1993,28 @@ REG_OP(PasteSubImg)
 
 /**
 * @brief ApplyCamePart4.
+
+* @par Inputs:
+* including:
+* @li param: A multi-dimensional Tensor of type bfloat16, float16 or float32.
+* @li m: A multi-dimensional Tensor of type bfloat16, float16 or float32.
+* @li r: A 1-dimensional Tensor of type float32.
+* @li c: A 1-dimensional Tensor of type float32.
+* @li weight_decay: A 1-dimensional Tensor of type float32.
+* @li lr: A 1-dimensional Tensor of type float32.
+* @li beta3: A 1-dimensional Tensor of type float32.
+* @li sum_r: A 1-dimensional Tensor of type float32.
+* @li sum_u_r: A 1-dimensional Tensor of type float32.
+* @li sum_u_c: A 1-dimensional Tensor of type float32.
+* @li sum_u_rc: A 1-dimensional Tensor of type float32.
+* @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
+
+* @par Outputs:
+* @li param: A mutable tensor.
+* @li r: A mutable tensor. Must have the same type as input "r".
+* @li c: A mutable tensor. Must have the same type as input "c".
+
+* @par Third-party framework compatibility
 *
 * @par Restrictions:
 * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -2173,6 +2261,29 @@ REG_OP(ForeachTernaryWithScalarOp)
     .REQUIRED_ATTR(op_code, Int)
     .OP_END_FACTORY_REG(ForeachTernaryWithScalarOp)
 
+/**
+* @brief Computes the ApplyCamePart2.
+
+* @par Inputs:
+* including:
+* @li grad: A multi-dimensional Tensor of type bfloat16, float16 or float32.
+* @li sum_grad_r: A 1-dimensional Tensor of type float32.
+* @li sum_grad_c: A 1-dimensional Tensor of type float32.
+* @li sum_grad_rc: A 1-dimensional Tensor of type float32.
+* @li r: A 1-dimensional Tensor of type bfloat16, float16 or float32.
+* @li c: A 1-dimensional Tensor of type bfloat16, float16 or float32.
+* @li beta2: A 1-dimensional Tensor of type float32.
+* @li sum_r: A 1-dimensional Tensor of type float32.
+* @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
+
+* @par Outputs:
+* @li r: A mutable tensor. Must have the same type as input "r".
+* @li c: A mutable tensor. Must have the same type as input "c".
+* @li u: A mutable tensor.
+* @li sum_square_u: A mutable tensor. \n
+
+* @par Third-party framework compatibility
+*/
 REG_OP(ApplyCamePart2)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(sum_grad_r, TensorType({DT_FLOAT}))

@@ -679,6 +679,33 @@ REG_OP(LayerNormV3)
     .OP_END_FACTORY_REG(LayerNormV3)
 
 /**
+* @brief RmsNorm operator interface implementation
+*  calculating: x, gamma
+*  rstd = np.rsqrt(np.mean(np.power(x,2), reduce_axis, keepdims=True) + epsilon))
+*  y = gamma * (x * rstd)
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+* @par Attributes:
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-6 . \n
+
+* @par Outputs:
+* Two outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float32.
+*/
+REG_OP(RmsNorm)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(rstd, TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .ATTR(epsilon, Float, 1e-6)
+    .OP_END_FACTORY_REG(RmsNorm)
+
+/**
 *@brief Returns a tensor where each sub-tensor of input along dimension
 *       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
 
@@ -2061,5 +2088,31 @@ REG_OP(SoftmaxFocalLossGrad)
     .ATTR(gamma, Float, 2.0)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SoftmaxFocalLossGrad)
+
+/**
+* @brief RmsNormGrad operator interface implementation  . \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li dy: A tensor of type bfloat16,float32,float16, describing the grad of previous op
+* @li x: A tensor of type bfloat16,float32,float16, describing the input of rmsnorm
+* @li rstd: A tensor of type float32, describing the second output of rmsnorm
+* @li gamma: A tensor of type bfloat16,float32,float16, describing the input of rmsnorm
+*     shape of dy,x should be (B, D), B means batch size, D means the norm size.
+*     shape of rstd should be (B, ).
+*     shape of gamma should be (D, ) \n
+
+* @par Outputs:
+* dx: A tensor of type bfloat16,float32,float16. Has the same type and shape as "dy". 
+* dgamma: A tensor of type float32. Has the same shape as "gamma". \n
+*/
+REG_OP(RmsNormGrad)
+    .INPUT(dy, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .INPUT(rstd, TensorType({DT_FLOAT,DT_FLOAT,DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .OUTPUT(dgamma, TensorType({DT_FLOAT,DT_FLOAT,DT_FLOAT}))
+    .OP_END_FACTORY_REG(RmsNormGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

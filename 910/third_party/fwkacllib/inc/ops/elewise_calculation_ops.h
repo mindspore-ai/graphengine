@@ -198,22 +198,23 @@ REG_OP(Less)
 * @par Inputs:
 * Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, uint16,
-          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128.
+          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128, DT_BOOL.
 * @li x2: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, uint16,
-          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128. \n
+          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128, DT_BOOL. \n
 
 * @par Outputs:
-* y: A Tensor. Has the same type and format as input "x1". \n
+* y: A Tensor. Has the same type and format as input "x1" if the type of "x1" is not bool. 
+     If the type of "x1" is bool, y is float type. \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator RealDiv.
 */
 REG_OP(RealDiv)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BOOL,
                            DT_COMPLEX64, DT_COMPLEX128}))
     .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BOOL,
                            DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_DOUBLE, DT_UINT8, DT_INT8,
                            DT_UINT16, DT_INT16, DT_INT32, DT_INT64,

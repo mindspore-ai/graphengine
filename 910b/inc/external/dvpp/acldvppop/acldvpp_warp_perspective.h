@@ -27,7 +27,7 @@ extern "C" {
 * @brief acldvppWarpPerspective 的第一阶段接口，根据具体的计算流程，计算workspace大小。
 * @param [in] self: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
 *                   仅支持连续的Tensor，数据格式支持NCHW、NHWC。
-* @param [in] matrix: aclFloatArray类型，3x4的透射变换矩阵。
+* @param [in] matrix: aclFloatArray类型，3x3的透射变换矩阵。
 * @param [in] interpolationMode: uint32_t，缩放插值算法，
                                  取值与对应缩放插值算法对应关系为：0: BILINEAR，1: NEAREST。
 * @param [in] paddingMode：uint32_t 类型，该变量值与对应填充模式对应关系为 0：CONSTANT, 1：EDGE。

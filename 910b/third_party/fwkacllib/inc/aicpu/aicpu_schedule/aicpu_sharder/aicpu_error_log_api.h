@@ -15,7 +15,8 @@ namespace aicpu {
     void RestoreErrorLog(const char_t * const funcName, const char_t * const filePath, const int32_t lineNumber,
                          const uint64_t tid, const char_t * const format, ...);
 
-    __attribute__((weak)) std::queue<std::string> *GetErrorLog();
+    __attribute__((weak)) void PrintErrorLog();
+    __attribute__((weak)) bool HasErrorLog();
 }
 
 #endif

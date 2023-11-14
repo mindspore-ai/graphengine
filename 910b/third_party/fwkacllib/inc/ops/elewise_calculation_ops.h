@@ -3686,7 +3686,7 @@ REG_OP(Addcmul)
 * @par Inputs:
 * @li x1: An ND tensor of type float16, bfloat16, float32, int32.
 * @li x2: An ND tensor of type float16, bfloat16, float32, int32.
-* @li alpha: A scalar tensor of type float16, bfloat16, float32. \n
+* @li alpha: A scalar tensor of type float16, bfloat16, float32, int32. \n
 
 * @par Outputs:
 * y: An ND tensor tensor with the same shape and type as "x1". \n
@@ -3702,7 +3702,7 @@ REG_OP(AxpyV2)
     .DATATYPE(T1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .DATATYPE(T2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .DATATYPE(T3, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
-    .DATATYPE(T4, Promote({"T1", "T2"}))
+    .DATATYPE(T4, Promote({"T1", "T2", "T3"}))
     .OP_END_FACTORY_REG(AxpyV2)
 
 /**

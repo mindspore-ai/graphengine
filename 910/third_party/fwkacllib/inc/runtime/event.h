@@ -47,7 +47,19 @@ typedef struct tagIpcIntNoticeInfo {
 #define RT_EVENT_DDSYNC_NS    0x01U
 #define RT_EVENT_STREAM_MARK  0x02U
 #define RT_EVENT_DDSYNC       0x04U
+#define RT_EVENT_MC2          0x05U
 #define RT_EVENT_TIME_LINE    0x08U
+
+#define RT_NOTIFY_FLAG_DEFAULT (0x00U)
+#define RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV (0x01U)
+
+/**
+ * @ingroup notify_flags
+ * @brief notify op bit flags
+ */
+#define RT_NOTIFY_DEFAULT   0x00U
+#define RT_NOTIFY_MC2       0x01U
+
 
 /**
  * @ingroup dvrt_event
@@ -194,6 +206,18 @@ RTS_API rtError_t rtNameEvent(rtEvent_t evt, const char_t *name);
  */
 RTS_API rtError_t rtNotifyCreate(int32_t deviceId, rtNotify_t *notify);
 
+
+/**
+ * @ingroup dvrt_event
+ * @brief Create a notify
+ * @param [in] device_id  device id
+ * @param [in|out] notify_   notify to be created
+ * @param [in] flag  flag notify flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNotifyCreateWithFlag(int32_t deviceId, rtNotify_t *notify, uint32_t flag);
+
 /**
  * @ingroup dvrt_event
  * @brief Destroy a notify
@@ -260,6 +284,17 @@ RTS_API rtError_t rtGetNotifyID(rtNotify_t notify, uint32_t *notifyId);
 
 /**
  * @ingroup dvrt_event
+ * @brief Get notify phy info
+ * @param [in] notify the created/opened notify
+ * @param [out] phyDevId phy device id
+ * @param [out] tsId ts id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNotifyGetPhyInfo(rtNotify_t notify, uint32_t *phyDevId, uint32_t *tsId);
+
+/**
+ * @ingroup dvrt_event
  * @brief Set a notify to IPC notify
  * @param [in] notify_ notify to be set to IPC notify
  * @param [in] name   identification name
@@ -277,6 +312,16 @@ RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char_t *name, uint32_t l
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtIpcOpenNotify(rtNotify_t *notify, const char_t *name);
+
+/**
+ * @ingroup dvrt_event
+ * @brief Open IPC notify
+ * @param [out] notify the opened notify
+ * @param [in] name   identification name
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtIpcOpenNotifyWithFlag(rtNotify_t *notify, const char_t *name, uint32_t flag);
 
 /**
  * @ingroup dvrt_event

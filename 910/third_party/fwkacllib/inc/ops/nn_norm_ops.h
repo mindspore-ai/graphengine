@@ -2052,6 +2052,39 @@ REG_OP(SigmoidFocalLossGrad)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidFocalLossGrad)
 
+/*
+* @brief Fused Operator of Add and LayerNorm . \n
+
+* @par Inputs:
+* @li x1: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li x2: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li gamma: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li beta: A tensor of type float16/bfloat16/float, describing the feature_map.
+
+* @par Attributes:
+* @li epsilon: A optional float.
+* @li additional_output: A optional bool.
+
+* @par Outputs:
+* @li y: A tensor of type float16/bfloat16/float, describing the result. \n
+* @li mean: A tensor of type float32, describing the result. \n
+* @li rstd: A tensor of type float32, describing the result. \n
+* @li x: A tensor of type float16/bfloat16/float, describing the result. \n
+
+*/
+REG_OP(AddLayerNorm)
+    .INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(beta, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(y, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(x, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .ATTR(epsilon, Float, 1e-5)
+    .ATTR(additional_output, Bool, false)
+    .OP_END_FACTORY_REG(AddLayerNorm)
+
 /**
 * @brief MMCV Function: softmax_focal_loss_grad  . \n
 
@@ -2103,7 +2136,7 @@ REG_OP(SoftmaxFocalLossGrad)
 *     shape of gamma should be (D, ) \n
 
 * @par Outputs:
-* dx: A tensor of type bfloat16,float32,float16. Has the same type and shape as "dy". 
+* dx: A tensor of type bfloat16,float32,float16. Has the same type and shape as "dy".
 * dgamma: A tensor of type float32. Has the same shape as "gamma". \n
 */
 REG_OP(RmsNormGrad)

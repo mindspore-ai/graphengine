@@ -101,5 +101,6 @@
 #include "ocr.h"
 #include "hpc.h"
 #include "nn_string.h"
+#include "fusion_ops.h"
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_

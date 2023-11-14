@@ -343,6 +343,6 @@ extern "C" AoeStatus AoeExecutorOnlineSpiltGraph(const ge::Graph &graph, ge::Ses
     const std::string &subgraphPath, const std::map<std::string, std::string> &splitOptions,
     const std::vector<ge::Tensor> &inputs);
 
-extern "C" std::future<AoeStatus> AoeExecutorAclnnRun(const AclnnRunConfig &param, RunnerResult &result);
+extern "C" std::future<AoeStatus> AoeExecutorAclnnRun(const AclnnRunConfig &config, RunnerResult &result);
 }
 #endif

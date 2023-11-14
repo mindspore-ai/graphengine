@@ -180,7 +180,7 @@ class VISIBILITY_EXPORT ExecutorSubscribersScheduler {
 
   bool IsEnable() const {
     return enabled_ || static_cast<bool>(GlobalProfilingWrapper::GetInstance()->GetEnableFlags()) ||
-           static_cast<bool>(GlobalDumper::GetInstance()->GetEnableFlags()) ||
+           (GlobalDumper::GetInstance()->IsEnableSubscribeDump()) ||
            static_cast<bool>(GlobalTracer::GetInstance()->GetEnableFlags());
   }
   void SetEnable(bool enable_flag) {

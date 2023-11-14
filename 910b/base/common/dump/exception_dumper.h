@@ -27,6 +27,8 @@
 #include "exe_graph/runtime/dfx_info_filler.h"
 #include "common/dump/kernel_tracing_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "runtime/mem.h"
+#include "common/ge_common/util.h"
 
 namespace ge {
 struct ExtraOpInfo {
@@ -61,6 +63,29 @@ struct ExtraOpInfo {
       ss << "Workspace size: " << ele.second;
     }
     GELOGD("%s", ss.str().c_str());
+  }
+
+  void RecordArgsBefore() {
+    if ((args != 0U) && (args_size != 0UL)) {
+      uint8_t *host_addr = nullptr;
+      rtError_t rt_ret =
+          rtMallocHost(PtrToPtr<uint8_t *, void *>(&host_addr), static_cast<uint64_t>(args_size), GE_MODULE_NAME_U16);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGW("[Call][RtMallocHost] failed, size:%zu, ret:0x%X", args_size, rt_ret);
+        return;
+      }
+      GE_MAKE_GUARD_RTMEM(host_addr);
+      rt_ret = rtMemcpy(host_addr, static_cast<uint64_t>(args_size), reinterpret_cast<void *>(args),
+                        static_cast<uint64_t>(args_size), RT_MEMCPY_DEVICE_TO_HOST);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGW("[Call][RtMemcpy] failed, size:%zu, ret:0x%X", args_size, rt_ret);
+        return;
+      }
+      std::stringstream ss;
+      ss << "args before execute: ";
+      gert::PrintHex(reinterpret_cast<void **>(host_addr), args_size / sizeof(void *), ss);
+      args_before_execute = ss.str();
+    }
   }
 };
 

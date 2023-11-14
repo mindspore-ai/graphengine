@@ -90,6 +90,7 @@ union HcclConfigValue {
 };
 
 const uint32_t HCCL_ROOT_INFO_BYTES =  4108; // 4108: root info length
+const uint32_t MAX_GROUP_NAME = 128; // group name max length
 /**
  * @brief HCCL root info
  */

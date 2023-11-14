@@ -180,10 +180,6 @@ typedef enum aclrtDeviceStatus {
     ACL_RT_DEVICE_STATUS_END = 0xFFFF,
 } aclrtDeviceStatus;
 
-typedef struct tagRtDevBinary aclrtBinary;
-typedef void* aclrtBinHandle;
-typedef void* aclrtFuncHandle;
-
 /**
  * @ingroup AscendCL
  * @brief Set a callback function to handle exception information
@@ -1569,83 +1565,6 @@ ACL_FUNC_VISIBILITY aclError aclrtUnSubscribeHostFunc(uint64_t hostFuncThreadId,
  */
 ACL_FUNC_VISIBILITY aclError aclrtQueryDeviceStatus(int32_t deviceId, aclrtDeviceStatus *deviceStatus);
 
-/**
- * @ingroup AscendCL
- * @brief Create data of type aclrtBinary
- *
- * @param [in] magic   magic number of the binary
- * @param [in] vesion   version of the binary
- * @param [in] data   binary data
- * @param [in] dataLen   binary length
- *
- * @retval the aclrtBinary pointer
- */
-ACL_FUNC_VISIBILITY aclrtBinary *aclrtCreateBinary(uint32_t magic, uint32_t version, const void *data, size_t dataLen);
-
-/**
- * @ingroup AscendCL
- * @brief Destroy data of type aclrtBinary
- *
- * @param modelDesc [IN]   Pointer to aclrtBinary to be destroyed
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
-ACL_FUNC_VISIBILITY aclError aclrtDestroyBinary(aclrtBinary *binary);
-
-
-/**
- * @ingroup AscendCL
- * @brief Registers and parses the bin file and loads it to the device.
- *
- * @param [in] binary   device binary description
- * @param [out] binHandle   device binary handle
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
-ACL_FUNC_VISIBILITY aclError aclrtBinaryLoad(const aclrtBinary *binary, aclrtBinHandle *binHandle);
-
-
-/**
- * @ingroup AscendCL
- * @brief UnLoad binary
- *
- * @param [in] binHandle  binary handle
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
-ACL_FUNC_VISIBILITY aclError aclrtBinaryUnLoad(aclrtBinHandle binHandle);
-
-/**
- * @ingroup AscendCL
- * @brief Find funcHandle based on binHandle and kernel name
- *
- * @param [in] binHandle  binHandle
- * @param [in] kernelName   kernel name
- * @param [out] funcHandle   funcHandle
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
-ACL_FUNC_VISIBILITY aclError aclrtBinaryGetFunction(const aclrtBinHandle binHandle, const char *kernelName,
-                                                    aclrtFuncHandle *funcHandle);
-
-/**
- * @ingroup AscendCL
- * @brief Kernel Launch to device
- * @param [in] funcHandle  function handle
- * @param [in] blockDim  block dimentions
- * @param [in] argsData  args data
- * @param [in] argsSize  args size
- * @param [in] stream   stream handle
- *
- * @retval ACL_SUCCESS The function is successfully executed.
- * @retval OtherValues Failure
- */
-ACL_FUNC_VISIBILITY aclError aclrtLaunchKernel(aclrtFuncHandle funcHandle, uint32_t blockDim,
-                                               const void *argsData, size_t argsSize, aclrtStream stream);
 #ifdef __cplusplus
 }
 #endif

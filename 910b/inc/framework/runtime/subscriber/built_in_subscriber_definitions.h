@@ -68,6 +68,11 @@ enum class DumpType {
   kExceptionDump = 1,
   kOverflowDump = 2,
   kHostDump = 3,
+  // kNeedSubscribe为分界线，枚举值小于kNeedSubscribe的
+  // 枚举量表示此Dump需要通过rt2.0中的OnEvent来做dump动作
+  // 大于kNeedSubscribe的枚举量表示不需要通过OnEvent来做dump
+  // 动作的dump
+  kNeedSubscribe = 4,
   kLiteExceptionDump = 4,
   kNum = 5,
   kAll = kNum

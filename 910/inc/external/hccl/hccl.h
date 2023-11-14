@@ -47,6 +47,7 @@ extern HcclResult HcclGetRootInfo(HcclRootInfo *rootInfo);
 extern HcclResult HcclCommInitRootInfo(uint32_t nRanks, const HcclRootInfo *rootInfo, uint32_t rank, HcclComm *comm);
 
 /**
+
  * @brief Set deterministic calculate
  *
  * @param config A struct identifying the Config
@@ -55,6 +56,18 @@ extern HcclResult HcclCommInitRootInfo(uint32_t nRanks, const HcclRootInfo *root
 
 extern HcclResult HcclSetConfig(HcclConfig config, HcclConfigValue configValue);
 extern HcclResult HcclGetConfig(HcclConfig config, HcclConfigValue *configValue);
+
+/**
+
+ * @brief get commName.
+ *
+ * @param commhandle A pointer identifying the initialized communication resource.
+ * @param commName The name of commhandle.
+ * @return HcclResult
+ * @see HcclCommDestroy()
+ */
+extern HcclResult HcclGetCommName(HcclComm comm, char* commName);
+
 
 /**
  * @brief AllReduce operator.

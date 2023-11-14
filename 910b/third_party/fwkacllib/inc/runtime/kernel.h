@@ -236,6 +236,7 @@ typedef enum rtKernelType {
     KERNEL_TYPE_FWK = 1,
     KERNEL_TYPE_AICPU = 2,
     KERNEL_TYPE_AICPU_CUSTOM = 4,
+    KERNEL_TYPE_AICPU_KFC = 5,
     KERNEL_TYPE_HWTS = 10,
     KERNEL_TYPE_RESERVED = 99,
 } rtKernelType_t;

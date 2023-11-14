@@ -45,9 +45,10 @@ class VISIBILITY_EXPORT GlobalDumper {
   void SetEnableFlags(const uint64_t enable_flags) {
     enable_flags_ = enable_flags;
   }
-
-  uint64_t GetEnableFlags() const {
-      return enable_flags_;
+  // 判断是否有需要通过OnEvent接口做dump的Dump工具被打开
+  bool IsEnableSubscribeDump() const {
+    return static_cast<bool>(enable_flags_ &
+        (BuiltInSubscriberUtil::EnableBit<DumpType>(DumpType::kNeedSubscribe) - 1UL));
   };
 
   bool IsEnable(DumpType dump_type) const {

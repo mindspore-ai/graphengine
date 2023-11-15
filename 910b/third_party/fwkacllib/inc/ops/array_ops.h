@@ -1580,8 +1580,8 @@ REG_OP(EnsureShape)
 */
 
 REG_OP(UniqueConsecutive)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({BasicType(), DT_BOOL}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL}))
     .OUTPUT(idx, TensorType::IndexNumberType())
     .OUTPUT(count, TensorType::IndexNumberType())
     .ATTR(return_idx, Bool, false)

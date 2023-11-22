@@ -51,7 +51,7 @@ class DumpOp {
   void SetDumpInfo(const DumpProperties &dump_properties, const OpDescPtr &op_desc,
                    const std::vector<uintptr_t> &input_addrs, const std::vector<uintptr_t> &output_addrs,
                    rtStream_t const stream);
-  Status LaunchDumpOp(const bool is_single_op_dump);
+  Status LaunchDumpOp(const bool is_single_op_dump, bool need_device_args = false);
   void SetLoopAddr(const uintptr_t global_step, const uintptr_t loop_per_iter, const uintptr_t loop_cond);
   void SetDynamicModelInfo(const std::string &dynamic_model_name, const std::string &dynamic_om_name,
                            const uint32_t dynamic_model_id);
@@ -70,7 +70,7 @@ class DumpOp {
   Status UpdateAddrs(const std::vector<uintptr_t> &input_addrs,
                      const std::vector<uintptr_t> &output_addrs);
  private:
-  Status ExecutorDumpOp();
+  Status ExecutorDumpOp(bool need_device_args);
   void DumpWorkspace(toolkit::aicpu::dump::Task &task);
   Status DumpOutput(toolkit::aicpu::dump::Task &task, const OpDescPtr &op_desc,
                     const std::vector<uintptr_t> &addrs, bool ffts_flag = false) const;
@@ -104,6 +104,7 @@ class DumpOp {
   std::string dynamic_model_name_;
   std::string dynamic_om_name_;
   std::uint32_t dynamic_model_id_;
+  void *launch_kernel_args_dev_mem_ = nullptr;
 };
 }  // namespace ge
 

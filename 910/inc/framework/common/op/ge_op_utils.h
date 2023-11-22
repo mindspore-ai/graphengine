@@ -97,6 +97,13 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// \param node
   /// \return
   static bool IsHcomNodeNotSupportAddrRefresh(const OpDescPtr &op_desc);
+  ///
+  /// @brief get memory size for constant and const with DT_STRING data type
+  /// @param [in] op_desc
+  /// @param [out] mem_size
+  /// @return SUCCESS
+  ///
+  static Status GetConstantStrMemSize(const OpDescPtr &op_desc, int64_t &mem_size);
 };
 /*lint +e148*/
 }  // namespace ge

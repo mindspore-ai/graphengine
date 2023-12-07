@@ -25,12 +25,12 @@ extern "C" {
 #endif
 /**
 * @brief acldvppResize 的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
-*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC。
+* @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
+*                   数据格式支持NCHW、NHWC，C轴支持1和3。
 * @param [in] interpolationMode: uint32_t，缩放插值算法
                                  取值与对应缩放插值算法对应关系为：0: LINEAR/BILINEAR，1: NEAREST，2: BICUBIC。
-* @param [in] out: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
-*                  仅支持连续的Tensor，数据格式支持NCHW、NHWC，且 数据格式 和 数据类型 需要与out一致。
+* @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
+*                  数据格式支持NCHW、NHWC，且数据格式、数据类型、通道数需要与self一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程
 * @return acldvppStatus: 返回状态码。

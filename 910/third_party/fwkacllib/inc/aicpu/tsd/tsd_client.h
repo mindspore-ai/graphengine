@@ -45,6 +45,7 @@ typedef enum {
     TSD_CAPABILITY_PIDQOS       = 0,
     TSD_CAPABILITY_LEVEL        = 1,
     TSD_CAPABILITY_OM_INNER_DEC = 2,
+    TSD_CAPABILITY_BUILTIN_UDF  = 3,
     TSD_CAPABILITY_BUT          = 0xFF
 } TsdCapabilityType;
 
@@ -63,6 +64,7 @@ typedef enum {
     TSD_SUB_PROC_UDF            = 4,           // udf process
     TSD_SUB_PROC_NPU            = 5,           // npu process
     TSD_SUB_PROC_PROXY          = 6,           // proxy process
+    TSD_SUB_PROC_BUILTIN_UDF    = 7,           // build in udf
     TSD_SUB_PROC_MAX            = 0xFF
 } SubProcType;
 

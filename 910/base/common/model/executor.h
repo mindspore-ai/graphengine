@@ -105,6 +105,19 @@ class Executor {
     (void)size;
     return SUCCESS;
   }
+
+  /**
+ * @ingroup ge
+ * @brief Run graph for distributed model.
+ * @param [in] graph_node: node of graph.
+ * @param [in] graph_id: graph identifier.
+ * @param [in] inputs: input data for the graph running.
+ * @param [out] outputs: output data of the graph running
+ * @return Status result of function
+ */
+  virtual Status RunGraphDistribute(const GraphNodePtr &graph_node, const GraphId graph_id,
+                                    const std::map<int32_t, std::vector<Tensor>> &device_to_inputs,
+                                    std::map<int32_t, std::vector<Tensor>> &device_to_outputs) = 0;
 };
 }  // namespace ge
 #endif // GE_COMMON_EXECUTOR_H

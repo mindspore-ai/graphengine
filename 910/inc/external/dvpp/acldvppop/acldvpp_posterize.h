@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ACLDVPP_HORIZONTAL_FLIP_H_
-#define ACLDVPP_HORIZONTAL_FLIP_H_
+#ifndef ACLDVPP_POSTERIZE_H_
+#define ACLDVPP_POSTERIZE_H_
 
 #include "acldvpp_base.h"
 #include "aclnn/acl_meta.h"
@@ -25,31 +25,32 @@ extern "C" {
 #endif
 
 /**
-* @brief acldvppHorizontalFlip 的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
-*                   数据格式支持NCHW、NHWC，C轴支持1和3。
-* @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
-*                  数据格式支持NCHW、NHWC，且数据格式、数据类型、shape需要与self一致。
+* @brief acldvppPosterizeGetWorkspaceSize 的第一段接口，根据具体的计算流程，计算workspace大小。
+* @param [in] self: npu device侧的aclTensor，数据类型只支持UINT8，
+*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC，且数据格式需要与out一致。
+* @param [in] bits: 每个通道保留的位数，取值范围[0, 8]。
+* @param [out] out: npu device侧的aclTensor，数据类型只支持UINT8，
+*                   且数据类型需要与self构成互相推导关系，shape需要与self满足broadcast关系，
+*                   支持非连续的Tensor，数据格式支持NCHW、NHWC，且数据格式和shape需要与self一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程。
 * @return acldvppStatus: 返回状态码。
 */
-acldvppStatus acldvppHorizontalFlipGetWorkspaceSize(const aclTensor *self, aclTensor *out,
+acldvppStatus acldvppPosterizeGetWorkspaceSize(const aclTensor *self, int32_t bits, aclTensor *out,
     uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
-* @brief acldvppHorizontalFlip 的第二段接口，用于执行计算。
+* @brief acldvppPosterize 的第二段接口，用于执行计算。
 * @param [in] workspace: 在npu device侧申请的workspace内存起址。
-* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口acldvppHorizontalFlipGetWorkspaceSize获取。
+* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口acldvppPosterizeGetWorkspaceSize获取。
 * @param [in] executor: op执行器，包含了算子计算流程。
 * @param [in] stream: acl stream流。
 * @return acldvppStatus: 返回状态码。
 */
-acldvppStatus acldvppHorizontalFlip(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
-    aclrtStream stream);
+acldvppStatus acldvppPosterize(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ACLDVPP_HORIZONTAL_FLIP_H_
+#endif // ACLDVPP_POSTERIZE_H_

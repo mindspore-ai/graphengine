@@ -20,11 +20,14 @@
 #include <map>
 #include <string>
 #include "external/ge/ge_api_error_codes.h"
+#include "graph/ascend_string.h"
 
 namespace ge {
 // Initialize parser
 GE_FUNC_VISIBILITY Status ParserInitialize(const std::map<std::string, std::string>& options);
 // Finalize parser, release all resources
 GE_FUNC_VISIBILITY Status ParserFinalize();
+// Initialize parser
+GE_FUNC_VISIBILITY Status ParserInitialize(const std::map<ge::AscendString, ge::AscendString>& options);
 }  // namespace ge
 #endif // INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_

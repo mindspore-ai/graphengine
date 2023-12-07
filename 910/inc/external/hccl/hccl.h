@@ -117,6 +117,21 @@ extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvC
     HcclReduceOp op, HcclComm comm, aclrtStream stream);
 
 /**
+ * @brief Scatter operator.
+ *
+ * @param sendBuf A pointer identifying the input data address of the operator.
+ * @param recvBuf A pointer identifying the output data address of the operator.
+ * @param recvCount An integer(u64) identifying the number of the data.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param root An integer(u32) identifying the the root rank in the operator.
+ * @param comm A pointer identifying the communication resource based on
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult 
+ */
+extern HcclResult HcclScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType, uint32_t root,
+    HcclComm comm, aclrtStream stream);
+
+/**
  * @brief AllGather operator.
  *
  * @param sendBuf A pointer identifying the input data address of the operator.

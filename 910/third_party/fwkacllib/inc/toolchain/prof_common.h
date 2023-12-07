@@ -17,7 +17,7 @@
 extern "C" {
 #endif // __cplusplus
 
-#define MSPROF_DATA_HEAD_MAGIC_NUM  0x5A5A
+#define MSPROF_DATA_HEAD_MAGIC_NUM  0x5A5AU
 
 enum MsprofDataTag {
     MSPROF_ACL_DATA_TAG = 0,            // acl data tag, range: 0~19
@@ -93,8 +93,13 @@ enum MsprofAclApiType {
     MSPROF_ACL_API_TYPE_OTHERS,
 };
 struct MsprofAclProfData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_ACL_DATA_TAG;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t apiType;       // enum MsprofAclApiType
     uint64_t beginTime;
     uint64_t endTime;
@@ -109,10 +114,15 @@ struct MsprofAclProfData {
  */
 #define MSPROF_GE_MODELLOAD_DATA_RESERVE_BYTES 104
 struct MsprofGeProfModelLoadData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_MODEL_LOAD;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t modelId;
-    MsprofMixData modelName;
+    struct MsprofMixData modelName;
     uint64_t startTime;
     uint64_t endTime;
     uint8_t  reserve[MSPROF_GE_MODELLOAD_DATA_RESERVE_BYTES];
@@ -121,10 +131,15 @@ struct MsprofGeProfModelLoadData {
 #define MSPROF_GE_FUSION_DATA_RESERVE_BYTES 8
 #define MSPROF_GE_FUSION_OP_NUM 8
 struct MsprofGeProfFusionData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_FUSION;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t modelId;
-    MsprofMixData fusionName;
+    struct MsprofMixData fusionName;
     uint64_t inputMemSize;
     uint64_t outputMemSize;
     uint64_t weightMemSize;
@@ -137,10 +152,15 @@ struct MsprofGeProfFusionData {
 
 #define MSPROF_GE_INFER_DATA_RESERVE_BYTES 64
 struct MsprofGeProfInferData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_INFER;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t modelId;
-    MsprofMixData modelName;
+    struct MsprofMixData modelName;
     uint32_t requestId;
     uint32_t threadId;
     uint64_t inputDataStartTime;
@@ -152,7 +172,7 @@ struct MsprofGeProfInferData {
     uint8_t  reserve[MSPROF_GE_INFER_DATA_RESERVE_BYTES];
 };
 
-const int32_t MSPROF_GE_TASK_DATA_RESERVE_BYTES = 12;
+#define MSPROF_GE_TASK_DATA_RESERVE_BYTES 12
 #define MSPROF_GE_OP_TYPE_LEN 56
 enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_AI_CORE = 0,
@@ -181,11 +201,16 @@ struct MsprofGeOpType {
     } data;
 };
 struct MsprofGeProfTaskData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_TASK;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t taskType;      // MsprofGeTaskType
-    MsprofMixData opName;
-    MsprofGeOpType opType;
+    struct MsprofMixData opName;
+    struct MsprofGeOpType opType;
     uint64_t curIterNum;
     uint64_t timeStamp;
     uint32_t shapeType;     // MsprofGeShapeType
@@ -213,14 +238,19 @@ struct MsprofGeTensorData {
 };
 
 struct MsprofGeProfTensorData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_TENSOR;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t modelId;
     uint64_t curIterNum;
     uint32_t streamId;
     uint32_t taskId;
     uint32_t tensorNum;
-    MsprofGeTensorData tensorData[MSPROF_GE_TENSOR_DATA_NUM];
+    struct MsprofGeTensorData tensorData[MSPROF_GE_TENSOR_DATA_NUM];
     uint8_t  reserve[MSPROF_GE_TENSOR_DATA_RESERVE_BYTES];
 };
 
@@ -230,8 +260,13 @@ enum MsprofGeStepTag {
     MSPROF_GE_STEP_TAG_END,
 };
 struct MsprofGeProfStepData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_STEP;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t modelId;
     uint32_t streamId;
     uint32_t taskId;
@@ -244,8 +279,13 @@ struct MsprofGeProfStepData {
 
 #define MSPROF_GE_ID_MAP_DATA_RESERVE_BYTES 6
 struct MsprofGeProfIdMapData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_ID_MAP;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t graphId;
     uint32_t modelId;
     uint32_t sessionId;
@@ -256,8 +296,13 @@ struct MsprofGeProfIdMapData {
 
 #define MSPROF_GE_HOST_SCH_DATA_RESERVE_BYTES 24
 struct MsprofGeProfHostSchData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_GE_DATA_TAG_HOST_SCH;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t threadId;      // record in start event
     uint64_t element;
     uint64_t event;
@@ -271,8 +316,13 @@ struct MsprofGeProfHostSchData {
  */
 #define MSPROF_AICPU_DATA_RESERVE_BYTES 9
 struct MsprofAicpuProfData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_AICPU_DATA_TAG;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint16_t streamId;
     uint16_t taskId;
     uint64_t runStartTime;
@@ -297,8 +347,13 @@ struct MsprofAicpuProfData {
 };
 
 struct MsprofAicpuModelProfData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_AICPU_MODEL_TAG;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t rsv;   // Ensure 8-byte alignment
     uint64_t timeStamp;
     uint64_t indexId;
@@ -318,8 +373,13 @@ struct MsprofAicpuModelProfData {
 #define MSPROF_CTX_ID_MAX_NUM 55
 
 struct MsprofDpProfData {
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
     uint16_t dataTag = MSPROF_DP_DATA_TAG;
+#else
+    uint16_t magicNumber;
+    uint16_t dataTag;
+#endif
     uint32_t rsv;   // Ensure 8-byte alignment
     uint64_t timeStamp;
     char action[MSPROF_DP_DATA_ACTION_LEN];
@@ -396,7 +456,7 @@ struct MsprofHcclProfFlag {
     uint32_t workFlowMode;
 };
 
-#define MSPROF_HCCL_INVALID_UINT 0xFFFFFFFF
+#define MSPROF_HCCL_INVALID_UINT 0xFFFFFFFFU
 struct MsprofHcclInfo {
     uint64_t itemId;
     uint64_t cclTag;
@@ -420,14 +480,16 @@ struct MsprofHcclInfo {
     uint32_t transportType; // transport type {0: SDMA, 1: RDMA, 2:LOCAL}
     uint32_t rdmaType; // RDMA type {0: RDMASendNotify, 1:RDMASendPayload}
     uint32_t reserve2;
+#ifdef __cplusplus
     MsprofHcclInfo() : role(MSPROF_HCCL_INVALID_UINT), opType(MSPROF_HCCL_INVALID_UINT),
         dataType(MSPROF_HCCL_INVALID_UINT), linkType(MSPROF_HCCL_INVALID_UINT),
         transportType(MSPROF_HCCL_INVALID_UINT), rdmaType(MSPROF_HCCL_INVALID_UINT)
     {
     }
+#endif
 };
 
-const uint16_t MSPROF_MULTI_THREAD_MAX_NUM = 25;
+#define MSPROF_MULTI_THREAD_MAX_NUM 25
 struct MsprofMultiThread {
     uint32_t threadNum;
     uint32_t threadId[MSPROF_MULTI_THREAD_MAX_NUM];
@@ -444,6 +506,10 @@ struct MsprofNodeBasicInfo {
     uint32_t opFlag;
 };
 
+struct MsprofAttrInfo {
+    uint64_t hashId;
+};
+
 struct MsrofTensorData {
     uint32_t tensorType;
     uint32_t format;
@@ -454,7 +520,7 @@ struct MsrofTensorData {
 struct MsprofTensorInfo {
     uint64_t opName;
     uint32_t tensorNum;
-    MsrofTensorData tensorData[MSPROF_GE_TENSOR_DATA_NUM];
+    struct MsrofTensorData tensorData[MSPROF_GE_TENSOR_DATA_NUM];
 };
 
 struct ProfFusionOpInfo {
@@ -495,6 +561,12 @@ struct MsprofLogicStreamInfo {
     uint32_t logicStreamId;
     uint32_t physicStreamNum;
     uint32_t physicStreamId[MSPROF_PHYSIC_STREAM_ID_MAX_NUM];
+};
+
+struct MsprofExeomLoadInfo {
+    uint32_t modelId;
+    uint32_t reserve;
+    uint64_t modelName; /* name hash */
 };
 #pragma pack()
 

@@ -25,13 +25,13 @@ extern "C" {
 #endif
 /**
 * @brief acldvppPad 的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
-*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC。
+* @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
+*                   数据格式支持NCHW、NHWC，C轴支持1和3。
 * @param [in] padding: aclIntArray类型，每个边框上的填充，表示在左、上、右、下四个方向上填充长度，padding值小于2048。
 * @param [in] paddingMode: uint32_t，该变量值与对应填充模式对应关系为 0：constant, 1：edge, 2: reflect, 3: symmetric。
 * @param [in] fill: aclFloatArray类型，表示在每个通道上填充的值。
-* @param [in] out: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
-*                  仅支持连续的Tensor，数据格式支持NCHW、NHWC，且 数据格式 和 数据类型 需要与out一致。
+* @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，数据格式支持NCHW、NHWC，
+*                  且数据格式、数据类型、通道数需要与self一致，宽高需与self宽高加上四周填充长度后保持一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程
 * @return acldvppStatus: 返回状态码。
@@ -42,7 +42,7 @@ acldvppStatus acldvppPadGetWorkspaceSize(const aclTensor *self, const aclIntArra
 /**
 * @brief acldvppPad 的第二段接口，用于执行计算。
 * @param [in] workspace: 在npu device侧申请的workspace内存起址。
-* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口 acldvppResizeGetWorkspaceSize 获取。
+* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口 acldvppPadGetWorkspaceSize 获取。
 * @param [in] executor: op执行器，包含了算子计算流程。
 * @param [in] stream: acl stream流。
 * @return acldvppStatus: 返回状态码。

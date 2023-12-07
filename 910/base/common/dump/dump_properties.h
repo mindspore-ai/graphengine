@@ -65,6 +65,10 @@ class DumpProperties {
 
   const std::string &GetDumpStep() const;
 
+  void SetDumpWorkerId(const std::string &step);
+
+  const std::string &GetDumpWorkerId() const;
+
   void SetDumpMode(const std::string &mode);
 
   const std::string &GetDumpMode() const;
@@ -138,6 +142,7 @@ class DumpProperties {
   std::string dump_status_;
   std::string dump_data_;
   std::string dump_op_switch_;
+  std::string dump_worker_id_;
   std::map<std::string, std::set<std::string>> model_dump_properties_map_;
 
   bool is_train_op_debug_ = false;

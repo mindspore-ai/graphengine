@@ -26,21 +26,24 @@
 namespace ge {
 constexpr uint8_t kNullDataFlagBit = 1U;
 constexpr size_t kMaxUserDataSize = 64U;
-
 struct DeployQueueAttr {
   uint32_t queue_id;
   int32_t device_id;
   int32_t device_type;
+  uint32_t global_logic_id;
   std::string DebugString() const {
     return "queue_id = " + std::to_string(queue_id) +
            ", device_id = " + std::to_string(device_id) +
            ", device_type = " + std::to_string(device_type);
   }
+  std::string GetKey() const {
+    return std::to_string(queue_id) + "_" + std::to_string(device_id) + "_" +
+           std::to_string(device_type);
+  }
   bool operator < (const DeployQueueAttr &other) const {
     return DebugString() < other.DebugString();
   }
 };
-
 struct MemQueueAttr {
   uint32_t depth;
   uint32_t work_mode;
@@ -60,7 +63,9 @@ class ExchangeService {
     uint64_t end_time;
     uint32_t flags;
     uint8_t data_flag;  // 0 bit is null data flag, 1 is null data, 0 is not null data
-    char rsv[27];
+    char rsv0[3];
+    int32_t worker_id;
+    char rsv[20];
   };
   struct ControlInfo {
     bool end_of_sequence_flag = false;
@@ -70,6 +75,7 @@ class ExchangeService {
     bool is_shared_input = false;
     int8_t user_data[kMaxUserDataSize] = {};
     bool is_proxy_q = false;
+    bool print_error_flag = true;  // true: print error when queue is full
   };
   struct BuffInfo {
     void *addr;
@@ -113,6 +119,7 @@ class ExchangeService {
                                    ControlInfo &control_info) = 0;
   virtual Status DequeueTensor(const int32_t device_id, const uint32_t queue_id, GeTensor &tensor,
                                ControlInfo &control_info) = 0;
+  virtual Status DequeueMbuf(int32_t device_id, uint32_t queue_id, rtMbufPtr_t *m_buf, int32_t timeout) = 0;
 };
 }
 #endif  // BASE_EXEC_RUNTIME_DEPLOY_EXCHANGE_SERVICE_H_

@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include "graph/node.h"
+#include "common/table_driven.h"
 
 namespace ge {
 class TransOpUtil {
@@ -33,7 +34,10 @@ class TransOpUtil {
 
   static int32_t GetTransOpDataIndex(const std::string &type);
 
-  static bool CheckPrecisionLoss(const NodePtr &src_node);
+  /*
+   * return True if node input_data_type cast to output_data_type can cause precision loss
+   */
+  static bool IsPrecisionLoss(const NodePtr &cast_node);
 
   static std::string TransopMapToString();
 
@@ -45,6 +49,9 @@ class TransOpUtil {
   static TransOpUtil &Instance();
 
   std::map<std::string, int32_t> transop_index_map_;
+  gert::TableDriven2<static_cast<size_t>(ge::DataType::DT_MAX), static_cast<size_t>(ge::DataType::DT_MAX), bool>
+      precision_loss_table_ = gert::TableDriven2<static_cast<size_t>(ge::DataType::DT_MAX),
+                                                 static_cast<size_t>(ge::DataType::DT_MAX), bool>(false);
 };
 }  // namespace ge
 

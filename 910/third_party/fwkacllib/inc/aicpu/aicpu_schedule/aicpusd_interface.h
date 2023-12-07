@@ -175,5 +175,20 @@ __attribute__((weak)) __attribute__((visibility("default"))) void RegLastwordCal
  * @return AICPU_SCHEDULE_OK: sucess  other: error code
  */
 __attribute__((visibility("default"))) int32_t AicpuLoadModel(void *ptr);
+
+/**
+ * @brief it is used to stop model.
+ * @param [in] ptr : the address of config
+ * @return AICPU_SCHEDULE_OK: sucess  other: error code
+ */
+__attribute__((visibility("default"))) int32_t AICPUModelStop(const ReDeployConfig * const ptr);
+
+/**
+ * @brief it is used to recover model.
+ * @param [in] ptr : the address of the config
+ * @return AICPU_SCHEDULE_OK: sucess  other: error code
+ */
+__attribute__((visibility("default"))) int32_t AICPUModelClearInputAndRestart(const ReDeployConfig * const ptr);
+
 }
 #endif  // INC_AICPUSD_AICPUSD_INTERFACE_H_

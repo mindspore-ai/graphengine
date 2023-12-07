@@ -1904,6 +1904,72 @@ REG_OP(GroupNormRelu)
     .OP_END_FACTORY_REG(GroupNormRelu)
 
 /**
+ *@brief DeepNorm operator
+ *  calculating: x, gx, gamma, beta, alpha
+ *  new_x = x * alpha + gx
+ *  y = gamma*(new_x - mean) / np.sqrt(variance + 1e-6) + beta
+
+ * @par Inputs:
+ * Four inputs, including:
+ * @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+ * @li gx: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+ * @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+ * @li beta: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+ * @par Attributes:
+ * @li alpha: An optional attribute, the type is float32.Defaults to 0.3.
+ * @li eps: An optional attribute, the type is float32. Defaults to 0.00001. \n
+
+ * @par Outputs:
+ * Three outputs, including:
+ * @li mean: A Tensor. Must be float32.
+ * @li rstd: A Tensor. Must be float32.
+ * @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+ */
+REG_OP(DeepNorm)
+  .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+  .INPUT(gx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+  .INPUT(beta, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+  .INPUT(gamma, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+  .OUTPUT(mean, TensorType({DT_FLOAT,DT_FLOAT,DT_FLOAT}))
+  .OUTPUT(rstd, TensorType({DT_FLOAT,DT_FLOAT,DT_FLOAT}))
+  .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+  .ATTR(alpha, Float, 0.3)
+  .ATTR(epsilon, Float, 1e-06)
+  .OP_END_FACTORY_REG(DeepNorm);
+
+/**
+ * @brief DeepNormGrad Operator. \n
+ *
+ * @param Inputs:
+ * @li dy: A ND Tensor of type float16 or float32 or bf16, with format ND. \n
+ * @li x: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li gx: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li gamma: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li mean: A Tensor of type float32. with format ND. \n
+ * @li rstd: A Tensor of type float32. with format ND. \n
+
+ * @param Outputs:
+ * @li dx: A ND Tensor of type float16 or float32 or bf16, with format ND.
+ * @li dgx: A ND Tensor of type float16 or float32 or bf16, with format ND.
+ * @li dbeta: A Tensor of type float32. Must be 1D. \n
+ * @li dgamma: A Tensor of type float32. Must be 1D. \n
+ */
+REG_OP(DeepNormGrad)
+.INPUT(dy, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+.INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+.INPUT(gx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+.INPUT(gamma, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+.INPUT(mean, TensorType::({DT_FLOAT}))
+.INPUT(rstd, TensorType::({DT_FLOAT}))
+.OUTPUT(dx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+.OUTPUT(dgx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+.OUTPUT(dbeta, TensorType({DT_FLOAT}))
+.OUTPUT(dgamma, TensorType({DT_FLOAT}))
+.ATTR(alpha, Float, 0.3)
+.OP_END_FACTORY_REG(DeepNormGrad);
+
+/**
 * @brief Function dropout with softmaxgrad and muls
 
 * @par Inputs:
@@ -2084,6 +2150,33 @@ REG_OP(AddLayerNorm)
     .ATTR(epsilon, Float, 1e-5)
     .ATTR(additional_output, Bool, false)
     .OP_END_FACTORY_REG(AddLayerNorm)
+
+/**
+ * @brief Fused Operator of Add Layer normalization grad. \n
+ * @param Inputs:
+ * @li dy: A ND Tensor of type float16 or float32 or bf16, with format ND. \n
+ * @li x_1: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li x_2: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li rstd: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li mean: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li gamma: A Tensor of type float16 or float32 or bf16. with format ND. \n
+
+ * @param Outputs:
+ * @li d_x: A ND Tensor of type float16 or float32 or bf16, with format ND.
+ * @li d_gamma: A Tensor of type float32. Must be 1D. \n
+ * @li d_beta: A Tensor of type float32. Must be 1D. \n
+*/
+REG_OP(AddLayerNormGrad)
+.INPUT(dy, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+.INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+.INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+.INPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+.INPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+.INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+.OUTPUT(dx, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+.OUTPUT(dgamma, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+.OUTPUT(dbeta, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+.OP_END_FACTORY_REG(AddLayerNormGrad);
 
 /**
 * @brief MMCV Function: softmax_focal_loss_grad  . \n

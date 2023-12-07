@@ -59,6 +59,7 @@ typedef enum tagRtDeviceFeatureType {
     FEATURE_TYPE_SCHE,
     FEATURE_TYPE_BLOCKING_OPERATOR,
     FEATURE_TYPE_FFTS_MODE,
+    FEATURE_TYPE_MEMQ_EVENT_CROSS_DEV,
     FEATURE_TYPE_END,
 } rtDeviceFeatureType_t;
 

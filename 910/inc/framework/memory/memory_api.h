@@ -63,6 +63,14 @@ GE_FUNC_VISIBILITY Status MallocSharedMemory(const TensorInfo &tensor_info, uint
 /// \return Status result of function
 GE_FUNC_VISIBILITY Status GetVarBaseAddrAndSize(const std::string &var_name, uint64_t &base_addr, uint64_t &var_size);
 
+/// \param var_name [in] var_name name of host variable.
+/// \param base_addr [out] base_addr vase addr of host variable.
+/// \param var_size [out] var_size memory_size of host variable.
+/// \return Status result of function
+GE_FUNC_VISIBILITY Status GetVarBaseAddrAndSize(const char_t *var_name,
+                                                uint64_t &base_addr,
+                                                uint64_t &var_size);
+
 /*
  * @brief
  * @param [in]  graph

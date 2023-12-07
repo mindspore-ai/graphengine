@@ -22,6 +22,7 @@
 #define OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_
 
 #include "graph/operator_reg.h"
+#include "graph/operator.h"
 
 namespace ge {
 /**
@@ -1305,6 +1306,41 @@ REG_OP(Scatter)
 
 * @par Inputs:
 * Three inputs, including:
+* @li var: An ND Tensor List.
+* Must be one of the following types: float16, float, int16, int32, int64, int8, uint16, uint32, uint64, uint8, bfloat16
+* @li indices: An ND Tensor.
+* Must be one of the following types: int32 or int64
+* @li updates: An ND Tensor .
+* Must be one of the following types: float16, float, int16, int32, int64, int8, uint16, uint32, uint64, uint8, bfloat16
+* @li mask: An ND Tensor .
+* Must be one of the following types: uint8
+* @par Attributes:
+* @li reduction: An optional attribute. Defaults to string "update"
+* @li axis: An optional attribute. Defaults to -2.
+
+* @par Outputs:
+* var: An ND Tensor List. Has the same type and format as input "var" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the Mindspore operator Scatter.
+*/
+REG_OP(ScatterList)
+    .DYNAMIC_INPUT(var, "T")
+    .INPUT(indice, TensorType::IndexNumberType())
+    .INPUT(updates, "T")
+    .OPTIONAL_INPUT(mask, TensorType({DT_UINT8}))
+    .DYNAMIC_OUTPUT(var, "T")
+    .ATTR(reduce, String, "update")
+    .ATTR(axis, Int, -2)
+    .DATATYPE(T, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
+                             DT_UINT16, DT_UINT32, DT_UINT64}))
+    .OP_END_FACTORY_REG(ScatterList)
+
+/**
+* @brief Multiplies sparse updates into a variable reference . \n
+
+* @par Inputs:
+* Three inputs, including:
 * @li var: An ND Tensor.
 * Must be one of the following types: float16, float, int32, int8, uint8
 * @li indices: An ND Tensor.
@@ -1431,13 +1467,13 @@ REG_OP(ScatterMaxWithArgmax)
 * Three inputs, including:
 * @li var: An ND Tensor .
 
-* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16
+* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16, int64
 * @li indices: An ND Tensor . \n
 
 * Must be one of the following types: int32 or int64
 * @li updates: An ND Tensor .
 
-* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16
+* Must be one of the following types: float16, float, int32, int8, uint8, bfloat16, int64
 
 * @par Attributes:
 * use_locking: An optional bool. Defaults to "False". If "True",
@@ -1450,10 +1486,10 @@ REG_OP(ScatterMaxWithArgmax)
 * Compatible with the TensorFlow operator ScatterUpdate.
 */
 REG_OP(ScatterUpdate)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16}))
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16, DT_INT64}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16}))
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16, DT_INT64}))
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BFLOAT16, DT_INT64}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterUpdate)
 
@@ -1789,7 +1825,7 @@ REG_OP(FillDiagonal)
 */
 
 REG_OP(Trace)
-    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16,
+    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_BOOL,
                           DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
     .OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT64, DT_UINT64}))
     .OP_END_FACTORY_REG(Trace)
@@ -2012,6 +2048,36 @@ REG_OP(SwinAttentionFFN)
     .OUTPUT(y, TensorType({DT_FLOAT16}))
     .ATTR(shifts, ListInt, {})
     .OP_END_FACTORY_REG(SwinAttentionFFN)
+
+
+/**
+* @brief
+   swin_transformer model specific structure.Operator only supports swin_transformer. \n
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li atten_mask: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li relative_pos_bias: A Tensor. Must be one of the following types: float16, float, bfloat16.
+
+* @par Attributes:
+* @li scale_value: A optional attribute, the type is float. Defaults to 1.0. \n
+* @li inner_precision_mode: A optional attribute, the type is float. Defaults to 0. \n
+
+* @par Outputs:
+* One output, including:
+* @li y: A Tensor. Must be one of the following types: float16, float, bfloat16.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+REG_OP(MaskedSoftmaxWithRelPosBias)
+    .INPUT(x, TensorType({DT_BFLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_BFLOAT16, DT_FLOAT}))
+    .INPUT(relative_pos_bias, TensorType({DT_BFLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_BFLOAT16, DT_FLOAT}))
+    .ATTR(scale_value, Float, 1.0)
+    .ATTR(inner_precision_mode, Int, 0)
+    .OP_END_FACTORY_REG(MaskedSoftmaxWithRelPosBias)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

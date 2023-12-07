@@ -16,11 +16,16 @@
 #ifndef AIR_RUNTIME_SESSION_H
 #define AIR_RUNTIME_SESSION_H
 #include "rt_var_manager.h"
+#include "stream_allocator.h"
+#include "event_allocator.h"
+
 namespace gert {
 class RtSession {
  public:
-  RtSession() = default;
-  explicit RtSession(uint64_t session_id) : session_id_(session_id) {}
+  explicit RtSession(uint64_t session_id = 0UL) : session_id_(session_id) {
+    stream_allocator_ = std::unique_ptr<StreamAllocator>(new (std::nothrow) StreamAllocator());
+    event_allocator_ = std::unique_ptr<EventAllocator>(new (std::nothrow) EventAllocator());
+  }
   uint64_t GetSessionId() const {
     return session_id_;
   }
@@ -34,9 +39,19 @@ class RtSession {
     var_manager_ = var_manager;
   }
 
+  StreamAllocator *GetStreamAllocator() const {
+    return stream_allocator_.get();
+  }
+
+  EventAllocator *GetEventAllocator() const {
+    return event_allocator_.get();
+  }
+
  private:
-  uint64_t session_id_{0};
+  uint64_t session_id_;
   RtVarManager *var_manager_{nullptr};
+  std::unique_ptr<StreamAllocator> stream_allocator_;
+  std::unique_ptr<EventAllocator> event_allocator_;
 };
 }
 #endif  // AIR_RUNTIME_SESSION_H

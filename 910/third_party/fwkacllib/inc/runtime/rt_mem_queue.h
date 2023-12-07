@@ -603,8 +603,13 @@ typedef struct {
     uint32_t rsv : 28;
 } rtMemGrpShareAttr_t;
 
-#define RT_MEM_GRP_QUERY_GROUPS_OF_PROCESS 1 // query process all grp
-#define RT_MEM_GRP_QUERY_GROUP_ID 2 // query group id from name
+typedef enum tagGroupQueryCmdType {
+    RT_MEM_GRP_QUERY_GROUP,                  /* query grp info include proc and permission */
+    RT_MEM_GRP_QUERY_GROUPS_OF_PROCESS,      /* query process all grp */
+    RT_MEM_GRP_QUERY_GROUP_ID,               /* query grp ID by grp name */
+    RT_MEM_GRP_QUERY_GROUP_ADDR_INFO,        /* query group addr info */
+    RT_MEM_GRP_QUERY_CMD_MAX
+} rtGroupQueryCmdType;
 
 typedef struct {
     int32_t pid;
@@ -615,10 +620,16 @@ typedef struct {
 } rtMemGrpQueryGroupId_t; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
 
 typedef struct {
+    char grpName[RT_MEM_GRP_NAME_LEN];
+    uint32_t devId;
+} rtMemGrpQueryGroupAddrPara_t; /* cmd: RT_MEM_GRP_QUERY_GROUP_ADDR_PARA */
+
+typedef struct {
     int32_t cmd;
     union {
         rtMemGrpQueryByProc_t grpQueryByProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
         rtMemGrpQueryGroupId_t grpQueryGroupId; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+        rtMemGrpQueryGroupAddrPara_t grpQueryGroupAddrPara; // cmd: RT_MEM_GRP_QUERY_GROUP_ADDR_PARA
     };
 } rtMemGrpQueryInput_t;
 
@@ -632,11 +643,17 @@ typedef struct {
 } rtMemGrpQueryGroupIdInfo_t; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
 
 typedef struct {
+    uint64_t addr; /* cache memory addr */
+    uint64_t size; /* cache memory size */
+} rtMemGrpQueryGroupAddrInfo_t; /* cmd: RT_MEM_GRP_QUERY_GROUP_ADDR_PARA */
+
+typedef struct {
     size_t maxNum; // max number of result
     size_t resultNum; // if the number of results exceeds 'maxNum', only 'maxNum' results are filled in buffer
     union {
         rtMemGrpOfProc_t *groupsOfProc; // cmd: GRP_QUERY_GROUPS_OF_PROCESS
         rtMemGrpQueryGroupIdInfo_t *groupIdInfo; // cmd: RT_MEM_GRP_QUERY_GROUP_ID
+        rtMemGrpQueryGroupAddrInfo_t *groupAddrInfo; // cmd: RT_MEM_GRP_QUERY_GROUP_ADDR_PARA
     };
 } rtMemGrpQueryOutput_t;
 

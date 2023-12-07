@@ -79,6 +79,12 @@ typedef enum {
     STARS_QP_CMD_TYPE_CQ_DB_NTF,
 } STARS_QP_CMD_TYPE;
 
+/* 标识RDMA参数的真实PARM类型 */
+typedef enum {
+    STARS_RDMA_PARM_REAL_RDMA,
+    STARS_RDMA_PARM_REAL_UB
+} STARS_PARM_REAL_TYPE;
+
 typedef struct rdma_trans_parm {
     unsigned int            task_count;     /* number of wr */
     unsigned int            qp_num;         /* qp->qp_num */
@@ -89,6 +95,7 @@ typedef struct rdma_trans_parm {
     unsigned char           hac_functionId;
     unsigned char           sl;             /* service level */
     unsigned long           rdma_addr;
+    STARS_PARM_REAL_TYPE    real_sqe_type;  /* identify the real type of the sqe. rdma or ub */
 } rdma_trans_parm_t;
 
 typedef struct rdma_output_status {

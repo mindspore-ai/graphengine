@@ -373,6 +373,9 @@ const std::string SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
 // Save original model file name
 const std::string ORIGINAL_MODEL_FILE = "ge.originalModelFile";
 
+// Output max size
+const std::string OUTPUT_MAX_SIZE = "ge.outputMaxSize";
+
 const char_t *const OPTION_GE_MAX_DUMP_FILE_NUM = "ge.maxDumpFileNum";
 const char_t *const OPTION_GE_MAX_DUMP_FILE_SIZE = "ge.maxDumpFileSize";
 const char_t *const OPTION_GE_MAX_DUMP_OP_NUM = "ge.maxDumpOpNum";

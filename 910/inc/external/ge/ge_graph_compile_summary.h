@@ -81,6 +81,10 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
   Status GetOutputShapes(std::vector<ge::Shape> &shapes) const;
 
   Status GetOutputDtypes(std::vector<ge::DataType> &dtypes) const;
+
+  Status GetInputShardMethod(std::map<std::string, std::map<int32_t, std::vector<std::pair<int64_t, int64_t>>>>
+                             &device_id_to_tensor_deployment) const;
+
  private:
   CompiledGraphSummary() = default;
   std::shared_ptr<SummaryData> data_{nullptr};

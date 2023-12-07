@@ -251,6 +251,7 @@ using LookupReqStatus = struct tagLookupReqStatus {
     int tag;            // 与算子IR中的tag相同
     int actualCount;    // 如果是接收接口的status, 还返回实际接收到的keyCount
     int rsvd0;
+    int workerId;
 };
 
 using UpdateReqStatus = struct tagUpdateReqStatus {
@@ -329,7 +330,40 @@ typedef struct {
     uint32_t rsv2;
 } HcomStatus;
 
+
+/**
+ * @ingroup Hccl Address type
+ * @brief communication address type of HCCL
+ */
+enum HcclAddrType {
+    HCCL_ADDR_TYPE_ROCE = 0, // Hccl的通信地址类型, RoCE对应{Ipv4, port}
+
+    HCCL_ADDR_TYPE_NUM
+};
+
+/**
+ * @ingroup HcclAddr
+ * @brief Hccl communication address
+ */
+typedef struct {
+    HcclAddrType type;
+
+    union {
+        struct {
+            uint32_t ipv4Addr;
+            uint16_t port;
+        } tcp;
+
+        uint8_t bytes[28];
+    } info;
+} HcclAddr;
+
 typedef void* HcomRequest;
+
+/**
+ * @brief handle to HCCL Connection
+ */
+typedef void* HcclConn;
 
 #define HCCL_REQUEST_NULL   nullptr
 

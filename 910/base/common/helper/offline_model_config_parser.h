@@ -100,7 +100,7 @@ public:
   bool IsWithHcomInfo() const { return with_hcom_info_; }
   Status GetCfgGroupNameTable(std::string &hcom_group_to_ranks) const;
 private:
-  Status TransferToLogicDeviceId(const std::vector<int32_t> &logic_dev_ids, std::string &logic_device_id) const;
+  void TransferToLogicDeviceId(const std::vector<int32_t> &logic_dev_ids, std::string &logic_device_id) const;
   // data split is without model relation
   bool with_model_relation_ = false;
   bool with_hcom_info_ = false;

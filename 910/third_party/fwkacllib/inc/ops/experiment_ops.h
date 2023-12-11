@@ -405,7 +405,7 @@ REG_OP(UninitPartitionMap)
 * @li seed: A Int, Defaults to "0". \n
 * @li seed2: A Int, Defaults to "0". \n
 * @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter". \n
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop". indicates the type of the optimizer_mode,
 * Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
@@ -517,7 +517,7 @@ REG_OP(UninitEmbeddingHashmap)
 * @li default_key_or_value: A bool, indicates the default value get way.
 * @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
 * @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop". indicates the type of the optimizer_mode,
 * Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
@@ -563,10 +563,11 @@ REG_OP(EmbeddingTableFindAndInit)
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable. \n
+* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0(default:False). \n
 */
 REG_OP(EmbeddingApplyAdam)
-    .INPUT(var_handle, TensorType({DT_RESOURCE}))
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .INPUT(beta1_power, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(beta2_power, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -576,8 +577,9 @@ REG_OP(EmbeddingApplyAdam)
     .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(keys, TensorType({DT_INT64}))
     .INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(mask_zero, Bool, false)
     .OP_END_FACTORY_REG(EmbeddingApplyAdam)
 
 /**
@@ -604,10 +606,11 @@ REG_OP(EmbeddingApplyAdam)
 * @li amsgrad: An optional bool, indicates whether to use the AMSGrad variant of htis algorithm from
 *     the paper On the Convergence of Adam and Beyond(default:False).
 *     If "True", max_grad_norm input and output must be entered.
-* @li maximize: An optional bool, maximize the params based on the objective(default:False). \n
+* @li maximize: An optional bool, maximize the params based on the objective(default:False).
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0(default:False). \n
 */
 REG_OP(EmbeddingApplyAdamW)
-    .INPUT(var_handle, TensorType({DT_RESOURCE}))
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .INPUT(beta1_power, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(beta2_power, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -618,11 +621,123 @@ REG_OP(EmbeddingApplyAdamW)
     .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(keys, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(max_grad_norm, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(amsgrad, Bool, false)
     .ATTR(maximize, Bool, false)
+    .ATTR(mask_zero, Bool, false)
     .OP_END_FACTORY_REG(EmbeddingApplyAdamW)
+
+/**
+* @brief embedding hashtable resource applyadagrad. \n
+
+* @par Inputs:
+* @li var_handle: The handle of embedding hashtable.
+* @li lr: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
+* @li grad: A Tensor, dtype is DT_FLOAT/DT_FLOAT16. 1-D. indicates the grad.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
+
+* @par Outputs:
+* @li var_handle: The handle of embedding hashtable. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0(default:False). \n
+*/
+REG_OP(EmbeddingApplyAdaGrad)
+    .INPUT(var_handle, TensorType({DT_RESOURCE}))
+    .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(mask_zero, Bool, false)
+    .OP_END_FACTORY_REG(EmbeddingApplyAdaGrad)
+
+/**
+* @brief embedding hashtable resource apply sgd. \n
+
+* @par Inputs:
+* @li var_handle: The handle of embedding hashtable.
+* @li lr: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
+* @li grad: A Tensor, dtype is DT_FLOAT/DT_FLOAT16. 1-D. indicates the grad.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+
+* @par Outputs:
+* @li var_handle: The handle of embedding hashtable. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0(default:false). \n
+*/
+REG_OP(EmbeddingApplySgd)
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(mask_zero, Bool, false)
+    .OP_END_FACTORY_REG(EmbeddingApplySgd)
+
+/**
+* @brief embedding hashtable resource apply rmsprop. \n
+
+* @par Inputs:
+* @li var_handle: The handle of embedding hashtable.
+* @li lr: A Scalar, dtype is NumberType. indicates the learning rate.
+* @li rho: A Scalar, dtype is NumberType. indicates the decay rate.
+* @li momentum: A Scalar, dtype is NumberType. indicates the momentum.
+* @li epsilon: A Scalar, dtype is NumberType. indicates the small value param.
+* @li grad: A Tensor, dtype is NumberType. indicates the grad.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+
+* @par Outputs:
+* @li var_handle: The handle of embedding hashtable. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0(default:false). \n
+*/
+REG_OP(EmbeddingApplyRmsprop)
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .INPUT(lr, TensorType::NumberType())
+    .INPUT(rho, TensorType::NumberType())
+    .INPUT(momentum, TensorType::NumberType())
+    .INPUT(epsilon, TensorType::NumberType())
+    .INPUT(grad, TensorType::NumberType())
+    .INPUT(keys, TensorType({DT_INT64}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(mask_zero, Bool, false)
+    .OP_END_FACTORY_REG(EmbeddingApplyRmsprop)
+
+/**
+* @brief Exponential decay algorithm. \n
+
+* @par Inputs:
+* @li initial_learning_rate: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
+* @li decay_rate: A Scalar, dtype is  the same as lr. 0-D. indicates the decay rate.
+* @li decay_steps: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the decay steps. \n
+
+* @par Outputs:
+* @li decayed_lr: Indicates the learning rate after updating. \n
+
+* @par Attributes:
+* @li staircase: A Scalar, dtype is DT_BOOL. 0-D. indicates the stratergy for updating lr.
+* True indicates updating lr according to the decay_steps. False indicates updating lr each step. \n
+*/
+REG_OP(ExponentialDecayLR)
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .INPUT(initial_learning_rate, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(decay_rate, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(decay_steps, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(decayed_lr, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(staircase, Bool, false)
+    .OP_END_FACTORY_REG(ExponentialDecayLR)
+
 /**
 * @brief embedding hashtable export. \n
 
@@ -680,32 +795,6 @@ REG_OP(EmbeddingFeatureMapping)
     .INPUT(feature_id, TensorType({DT_INT64}))
     .OUTPUT(offset_id, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(EmbeddingFeatureMapping)
-
-/**
-* @brief embedding hashtable resource applyadagrad. \n
-
-* @par Inputs:
-* @li var_handle: The handle of embedding hashtable.
-* @li lr: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
-* @li grad: A Tensor, dtype is DT_FLOAT/DT_FLOAT16. 1-D. indicates the grad.
-* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
-* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
-
-* @par Outputs:
-* @li var_handle: The handle of embedding hashtable. \n
-
-* @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable. \n
-*/
-REG_OP(EmbeddingApplyAdaGrad)
-    .INPUT(var_handle, TensorType({DT_RESOURCE}))
-    .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(keys, TensorType({DT_INT64}))
-    .INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(var_handle, TensorType({DT_RESOURCE}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .OP_END_FACTORY_REG(EmbeddingApplyAdaGrad)
 
 /**
 * @brief embedding compute var export. \n
@@ -1696,6 +1785,32 @@ REG_OP(RGB2YUV422)
     .OUTPUT(yuv, TensorType({DT_UINT8}))
     .OP_END_FACTORY_REG(RGB2YUV422)
 
+REG_OP(AscendAttentionGrad)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(qkv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(pse, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(attenMask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(dropMask, TensorType({DT_UINT8}))
+    .OPTIONAL_INPUT(softmaxMax, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmaxSum, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(attentionIn, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dw, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dpse, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .OUTPUT(dQkv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
+    .ATTR(scaleQK, Float, 1.0)
+    .ATTR(scaleQ, Float, 1.0)
+    .ATTR(scaleK, Float, 1.0)
+    .ATTR(keepProb, Float, 1.0)
+    .ATTR(preToken, Int, 65536)
+    .ATTR(nextToken, Int, 65536)
+    .ATTR(sparseMode, Int, 0)
+    .REQUIRED_ATTR(headNum, Int)
+    .OP_END_FACTORY_REG(AscendAttentionGrad)
+
 /**
 * @brief Function MultiHeadAttentionScore. \n
 
@@ -1835,14 +1950,14 @@ REG_OP(PasteSubImg)
 * including:
 * @li param: A multi-dimensional Tensor of type bfloat16, float16 or float32.
 * @li m: A multi-dimensional Tensor of type bfloat16, float16 or float32.
-* @li r: A 1-dimensional Tensor of type float32.
-* @li c: A 1-dimensional Tensor of type float32.
+* @li r: A 1-dimensional Tensor of type bfloat16, float16 or float32.
+* @li c: A 1-dimensional Tensor of type bfloat16, float16 or float32.
 * @li weight_decay: A 1-dimensional Tensor of type float32.
 * @li lr: A 1-dimensional Tensor of type float32.
 * @li beta3: A 1-dimensional Tensor of type float32.
 * @li sum_r: A 1-dimensional Tensor of type float32.
-* @li sum_u_r: A 1-dimensional Tensor of type float32.
-* @li sum_u_c: A 1-dimensional Tensor of type float32.
+* @li sum_u_r: A 1-dimensional Tensor of type bfloat16, float16 or float32.
+* @li sum_u_c: A 1-dimensional Tensor of type bfloat16, float16 or float32.
 * @li sum_u_rc: A 1-dimensional Tensor of type float32.
 * @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
 
@@ -1873,6 +1988,33 @@ REG_OP(ApplyCamePart4)
     .OUTPUT(r, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(c, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(ApplyCamePart4)
+
+/**
+* @brief RotatedFeatureAlign:Calculate the output features according to
+* the input features. \n
+
+* @par Inputs:
+* @li x: A tensor of type float32. The input features.
+* @li bboxes: A tensor of type float32. The position information of bboxes. \n
+
+* @par Outputs:
+* @li y: A tensor of type float32. The output features. \n
+
+* @par Attributes:
+* @li spatial_scale: A required float32. The scale of feature map to initial image.
+* @li points: An optional int. Defaults to "1". The number of sample points. \n
+
+* @par Third-party framework compatibility
+* Compatible with MMCV RotatedFeatureAlign operator.
+*/
+
+REG_OP(RotatedFeatureAlign)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(bboxes, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(spatial_scale, Float)
+    .ATTR(points, Int, 1)
+    .OP_END_FACTORY_REG(RotatedFeatureAlign)
 
 /**
 * @brief RotatedFeatureAlignGrad:Calculate the gradient of input features according to
@@ -2223,7 +2365,10 @@ REG_OP(SwitchByIndex)
 * Four inputs:
 * @li x1: A Tensor of type int8. The format is ND.
 * @li X2: A Tensor of type int8. Must have the same type as "x". The format is ND.
+* @li mul_scale: A Tensor of type fp16.
+* @li add_offset: A Tensor of type fp16.
 * @li bias: A Tensor of type int32. The format is ND.
+* @li q_bias: A tensor for quantized inference. The format is NHWC. Type is uint32.
 * @li deq_scale: A tensor for quantized inference. The format is NHWC. Type is uint64.
 * @par Required Attributes:
 * y: A Tensor of type fp16. The format is ND.
@@ -2231,14 +2376,16 @@ REG_OP(SwitchByIndex)
 * Two attributes:
 * @li adj_x1: A bool, if true means x1 is transposed.
 * @li adj_x2: A bool, if true means x2 is transposed.
+* @li scale: A float, means antiquant param.
+* @li offset: A float, means antiquant param.
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(QuantBatchMatmul)
     .INPUT(x1, TensorType({DT_INT8}))
     .INPUT(x2, TensorType({DT_INT8}))
-    .INPUT(bias, TensorType({DT_INT32}))
     .INPUT(deq_scale, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16}))
     .ATTR(adj_x1, Bool, false)
     .ATTR(adj_x2, Bool, false)
@@ -2250,12 +2397,27 @@ REG_OP(WeightQuantBatchmatmul)
     .INPUT(diagonal_matrix, TensorType({DT_INT8}))
     .INPUT(q_bias, TensorType({DT_INT32}))
     .INPUT(deq_scale, TensorType({DT_UINT64}))
-    .INPUT(bias, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16}))
     .ATTR(adj_x1, Bool, false)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(WeightQuantBatchmatmul)
 
+REG_OP(WeightQuantBatchmatmulV3)
+    .INPUT(input_x, TensorType({DT_FLOAT16}))
+    .INPUT(input_y, TensorType({DT_INT8}))
+    .INPUT(diagonal_matrix, TensorType({DT_INT8}))
+    .INPUT(q_bias, TensorType({DT_INT32}))
+    .INPUT(deq_scale, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(mul_scale, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(add_offset, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .ATTR(adj_x1, Bool, false)
+    .ATTR(adj_x2, Bool, false)
+    .ATTR(scale, Float, 1)
+    .ATTR(offset, Float, 0)
+    .OP_END_FACTORY_REG(WeightQuantBatchmatmulV3)
 
 /**
 * @brief Fusion op for batchmatmul-fixpipe.
@@ -2284,12 +2446,14 @@ REG_OP(BatchMatmulFixpipe)
 
 
 REG_OP(MoeInitRouting)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
-    .INPUT(row_idx, TensorType({DT_INT32}))
-    .INPUT(expert_idx, TensorType({DT_INT32}))
-    .OUTPUT(expanded_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
-    .OUTPUT(expanded_row_idx, TensorType({DT_INT32}))
-    .OUTPUT(expanded_expert_idx, TensorType({DT_INT32}))
+    .INPUT(x, "T1")
+    .INPUT(row_idx, "T2")
+    .INPUT(expert_idx, "T2")
+    .OUTPUT(expanded_x, "T1")
+    .OUTPUT(expanded_row_idx, "T2")
+    .OUTPUT(expanded_expert_idx, "T2")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_INT32}))
     .REQUIRED_ATTR(active_num, Int)
     .OP_END_FACTORY_REG(MoeInitRouting)
 
@@ -2313,6 +2477,21 @@ REG_OP(MoeGatingTopKSoftmax)
     .REQUIRED_ATTR(k, Int)
     .OP_END_FACTORY_REG(MoeGatingTopKSoftmax)
 
+
+/**
+* @brief Binary finds the position of the last row processed by each expert in the sorted_experts array.
+* @par Inputs:
+* @li sorted_experts: A Tensor. Type is:Int32.
+* @par Outputs:
+* @li total_rows_before_expert: A Tensor. Type is:Int32.
+* @par Attributes:
+* @li num_experts: Required parameter. Type is:Int32. The value must be more than 0 and less than 16777216.
+*/
+REG_OP(MoeComputeExpertTokens)
+    .INPUT(sorted_experts, TensorType({DT_INT32}))
+    .OUTPUT(total_rows_before_expert, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(num_experts, Int)
+    .OP_END_FACTORY_REG(MoeComputeExpertTokens)
 
 /**
 * @brief Apply add operation for each tensor in tensor list with a scalar in manner of element-wise
@@ -3974,4 +4153,3 @@ REG_OP(MatMulV2CompressDequant)
     .OP_END_FACTORY_REG(MatMulV2CompressDequant)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_
-

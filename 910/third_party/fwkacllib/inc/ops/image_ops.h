@@ -160,6 +160,34 @@ REG_OP(ChamferDistance)
     .OP_END_FACTORY_REG(ChamferDistance)
 
 /**
+* @brief Applies set operation along last dimension of 6 Tensor inputs. \n
+
+* @par Inputs:
+* @li xyz1: A Tensor. Must be one of the following types: float16, float32. Point set with shape (B, N, 2).
+* @li xyz2: A Tensor. Must have the same type and shape as x1. 
+* @li idx1: A Tensor. Must be one of the following types: int32. min indices with set one with shape (B, N).
+* @li idx2: A Tensor. Must be one of the following types: int32. min indices with set two with shape (B, N).
+* @li grad_dist1: A Tensor. Must have the same type as x1. Grad of dist1 with shape (B, N).
+* @li grad_dist2: A Tensor. Must have the same type as x1. Grad of dist2 with shape (B, N).
+\n
+
+* @par Outputs:
+* @li grad_xyz1: A Tensor. Must be one of the following types: float16, bfloat16, float32. grad of xyz1 with shape (B, N, 2).
+* @li grad_xyz2: A Tensor. Must be one of the following types: float16, bfloat16, float32. grad of xyz2 with shape (B, N, 2).
+*/
+
+REG_OP(ChamferDistanceGrad)
+    .INPUT(xyz1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(xyz2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(idx1, TensorType({DT_INT32}))
+    .INPUT(idx2, TensorType({DT_INT32}))
+    .INPUT(grad_dist1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(grad_dist2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(grad_xyz1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(grad_xyz2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ChamferDistanceGrad)
+
+/**
 * @brief Extracts crops from the input image tensor and resizes them. Extracts
 crops from the input image tensor and resizes them using bilinear sampling or
 nearest neighbor sampling to a common output size specified by crop_size . \n

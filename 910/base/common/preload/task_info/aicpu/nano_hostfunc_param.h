@@ -48,6 +48,12 @@ struct ParamHostFuncDesc {
 };
 #pragma pack()
 
+enum class HOSTFUNC_TENSOR_MEM_BASE_TYPE : uint8_t {
+  HOSTFUNC_TENSOR_MEM_BASE_TYPE_DATA,
+  HOSTFUNC_TENSOR_MEM_BASE_TYPE_WORKSPACE,
+  HOSTFUNC_TENSOR_MEM_BASE_TYPE_WEIGHT
+};
+
 class NanoHostfuncParam {
  public:
   NanoHostfuncParam(const domi::TaskDef &task_def, const OpDescPtr &op_desc, const PreTaskInput &pre_task_input);
@@ -62,8 +68,8 @@ class NanoHostfuncParam {
   void GenAllAttrsLen();
   void GenTensorLen(const vector<HostFuncTensorDescInfo> &tensor_vec);
   void GenInOutPutCommonDesc(const GeTensorDescPtr &tensor_desc, HostFuncTensorDescInfo &desc_info) const;
-  uint64_t ConvertOffset(const uint64_t offset, const std::unordered_map<int64_t, uint32_t> &offset_to_ids,
-                         const KernelArgsParam &args_param) const;
+  void ConvertOffset(const uint64_t offset, const KernelArgsParam &args_param,
+                     HostFuncTensorDescInfo &input_desc) const;
   Status GenInputDesc();
   Status GenOutputDesc();
 

@@ -268,9 +268,9 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 
 *@par Inputs:
 *Two required inputs and two optional inputs, including: \n
-* @li x: A 4D tensor of type float16 or int8 or int4, with shape [N, C, H, W] or [N, H, W, C]
-* @li filter: A 4D tensor of type float16 or int8 or int4, with shape [H, W, C, K]
-* @li bias: An optional tensor of type float16 or int32
+* @li x: A 4D tensor of type float16 or int8 or int4 or float32, with shape [N, C, H, W] or [N, H, W, C]
+* @li filter: A 4D tensor of type float16 or int8 or int4 or float32, with shape [H, W, C, K]
+* @li bias: An optional tensor of type float16 or int32 or float32
 * @li offset_w: An optional float16 or int8 or int4, used for quantized inference
 
 * @par Attributes:
@@ -291,7 +291,7 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * Defaults to 0 . \n
 
 * @par Outputs:
-* y: 4D tensor of type float16 or int32, with shape [N, C, H, W] or [N, H, W, C]
+* y: 4D tensor of type float16 or int32 or float32, with shape [N, C, H, W] or [N, H, W, C]
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but

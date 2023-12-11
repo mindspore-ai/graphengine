@@ -107,11 +107,24 @@ class VISIBILITY_EXPORT ModelDesc {
   ge::graphStatus GetUserDesignateShapeOrder(std::vector<std::string> &user_designate_shape_order) const;
   ge::graphStatus GetModelAttrs(std::vector<std::string> &attrs) const;
 
+  /*
+   * Get stream num of root model, except persistant stream of static sub model
+   */
+  size_t GetReusableStreamNum() const;
+  /*
+   * Set stream num of root model, except persistant stream of static sub model
+   */
+  void SetReusableStreamNum(size_t stream_num);
+  size_t GetReusableEventNum() const;
+  void SetReusableEventNum(size_t event_num);
+
  private:
   gert::OpImplSpaceRegistry *space_registry_;
   const ge::char_t *file_constant_weight_dir_;
   size_t input_num_;
   size_t output_num_;
+  size_t reusable_stream_num_;
+  size_t reusable_event_num_;
   ContinuousVector model_io_descs_;
   // do not add any variable here
 };

@@ -14,31 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef ACLDVPP_BASE_H_
-#define ACLDVPP_BASE_H_
+#ifndef ACLDVPP_INIT_H_
+#define ACLDVPP_INIT_H_
 
-#include <cstdint>
+#include "acldvpp_base.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef int32_t acldvppStatus;
+/**
+* @brief DVPP初始化函数，同步接口。
+* @param [in] configPath: 预留参数，配置文件所在路径的指针，包含文件名，当前需要配置为null
+* @return acldvppStatus: 返回状态码。
+*/
+acldvppStatus acldvppInit(const char *configPath);
 
-#define ACLDVPP_SUCCESS 0
-#define ACLDVPP_ERR_PARAM_NULLPTR 106001
-#define ACLDVPP_ERR_PARAM_INVALID 106002
-#define ACLDVPP_ERR_UNINITIALIZE 106101
-#define ACLDVPP_ERR_REPEAT_INITIALIZE 106102
-#define ACLDVPP_ERR_API_NOT_SUPPORT 206001
-#define ACLDVPP_ERR_RUNTIME_ERROR 306001
-
-#define ACLDVPP_ERR_INNER 506000
-#define ACLDVPP_ERR_INNER_CREATE_EXECUTOR 506101
-#define ACLDVPP_ERR_INNER_NOT_TRANS_EXECUTOR 506102
-#define ACLDVPP_ERR_INNER_NULLPTR 506103
+/**
+* @brief DVPP去初始化函数，同步接口。
+* @return acldvppStatus: 返回状态码。
+*/
+acldvppStatus acldvppFinalize();
 
 #ifdef __cplusplus
 }
 #endif
-#endif // ACLDVPP_BASE_H_
+
+#endif // ACLDVPP_INIT_H_

@@ -22,5 +22,30 @@
 #ifndef OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_H_
 #define OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_H_
 
+#include "graph/operator_reg.h"
+
+namespace ge {
+/**
+*@brief HDRNet and ISP direct data conversion
+returned tensor's dimension will correspond to input dimension [0, 3, 4, 2, 1],
+convert tensor dtype float16 to int16 . \n
+
+*@par Inputs:
+*one inputs, including:
+*@li x: A Tensor. Must be one of the following types: float16.
+
+*@par Outputs:
+*y: A Tensor. Must be one of the following types: int16. \n
+
+*@par Third-party framework compatibility
+*only for use by corresponding operators in HDRnet networks
+*/
+REG_OP(TransArgb)
+    .INPUT(x, "T1")
+    .OUTPUT(y, "T2")
+    .DATATYPE(T1, TensorType({DT_FLOAT16}))
+    .DATATYPE(T2, TensorType({DT_INT16}))
+    .OP_END_FACTORY_REG(TransArgb)
+}  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_H_

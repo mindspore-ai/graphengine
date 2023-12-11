@@ -124,6 +124,7 @@ const std::set<std::string> EXECUTOR_INIT_OPTION_SET = {
     ENABLE_SINGLE_STREAM,
     SOC_VER,
     AICORE_NUM,
+    GROUP_ID,
     FUSION_SWITCH_FILE,
     ENABLE_SMALL_CHANNEL,
     OP_SELECT_IMPL_MODE,
@@ -343,6 +344,6 @@ extern "C" AoeStatus AoeExecutorOnlineSpiltGraph(const ge::Graph &graph, ge::Ses
     const std::string &subgraphPath, const std::map<std::string, std::string> &splitOptions,
     const std::vector<ge::Tensor> &inputs);
 
-extern "C" std::future<AoeStatus> AoeExecutorAclnnRun(const AclnnRunConfig &config, RunnerResult &result);
+extern "C" std::future<AoeStatus> AoeExecutorAclnnRun(const AclnnRunConfig &param, RunnerResult &result);
 }
 #endif

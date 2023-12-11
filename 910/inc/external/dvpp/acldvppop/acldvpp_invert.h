@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ACLDVPP_HORIZONTAL_FLIP_H_
-#define ACLDVPP_HORIZONTAL_FLIP_H_
+#ifndef ACLDVPP_INVERT_H_
+#define ACLDVPP_INVERT_H_
 
 #include "acldvpp_base.h"
 #include "aclnn/acl_meta.h"
@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**
-* @brief acldvppHorizontalFlip 的第一段接口，根据具体的计算流程，计算workspace大小。
+* @brief acldvppInvert 的第一段接口，根据具体的计算流程，计算workspace大小。
 * @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
 *                   数据格式支持NCHW、NHWC，C轴支持1和3。
 * @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
@@ -34,22 +34,21 @@ extern "C" {
 * @param [out] executor: 返回op执行器，包含了算子计算流程。
 * @return acldvppStatus: 返回状态码。
 */
-acldvppStatus acldvppHorizontalFlipGetWorkspaceSize(const aclTensor *self, aclTensor *out,
-    uint64_t *workspaceSize, aclOpExecutor **executor);
+acldvppStatus acldvppInvertGetWorkspaceSize(const aclTensor *self, aclTensor *out, uint64_t *workspaceSize,
+    aclOpExecutor **executor);
 
 /**
-* @brief acldvppHorizontalFlip 的第二段接口，用于执行计算。
+* @brief acldvppInvert 的第二段接口，用于执行计算。
 * @param [in] workspace: 在npu device侧申请的workspace内存起址。
-* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口acldvppHorizontalFlipGetWorkspaceSize获取。
+* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口 acldvppInvertGetWorkspaceSize 获取。
 * @param [in] executor: op执行器，包含了算子计算流程。
 * @param [in] stream: acl stream流。
 * @return acldvppStatus: 返回状态码。
 */
-acldvppStatus acldvppHorizontalFlip(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
-    aclrtStream stream);
+acldvppStatus acldvppInvert(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ACLDVPP_HORIZONTAL_FLIP_H_
+#endif // ACLDVPP_INVERT_H_

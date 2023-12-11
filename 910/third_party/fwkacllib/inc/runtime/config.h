@@ -48,9 +48,11 @@ typedef enum tagRtChipType {
     CHIP_NO_DEVICE = 6,
     CHIP_MINI_V3 = 7,
     CHIP_5612 = 8, /* 1910b tiny */
-    CHIP_1636 = 9,
-    CHIP_NANO = 10,
-    CHIP_END = 11,
+    CHIP_NANO = 9,
+    CHIP_1636 = 10,
+    CHIP_AS31XM1 = 11,
+    CHIP_610LITE = 12,
+    CHIP_END
 } rtChipType_t;
 
 typedef enum tagRtAicpuScheType {

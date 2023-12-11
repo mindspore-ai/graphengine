@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /*!
  * \file random.h
  * \brief
  */
-
 #ifndef OPS_BUILT_IN_OP_PROTO_INC_RANDOM_H_
 #define OPS_BUILT_IN_OP_PROTO_INC_RANDOM_H_
 

@@ -28,7 +28,7 @@ class DumpManager {
   static DumpManager &GetInstance();
 
   Status SetDumpConf(const DumpConfig &dump_config);
-  const DumpProperties &GetDumpProperties(const uint64_t session_id);
+  DumpProperties &GetDumpProperties(const uint64_t session_id);
   const std::map<uint64_t, DumpProperties> &GetDumpPropertiesMap() const { return dump_properties_map_; }
   void AddDumpProperties(const uint64_t session_id, const DumpProperties &dump_properties);
   void RemoveDumpProperties(const uint64_t session_id);

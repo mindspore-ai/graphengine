@@ -216,5 +216,11 @@ struct __attribute__((visibility("default"))) ModelInfo {
     int32_t abnormalEnable = 1;
     char rsv[98];
 } __attribute__((packed));
+
+struct __attribute__((visibility("default"))) ReDeployConfig {
+    uint64_t modelIdsAddr;   // ptr which point to modelIds(uint32_t)
+    uint32_t modelIdNum;  // modelIdNum
+    char rsv[4];
+} __attribute__((packed));
 }
 #endif  // AICPUSD_AICPUSD_INFO_H

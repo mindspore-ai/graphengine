@@ -24,18 +24,18 @@
 extern "C" {
 #endif
 /**
-* @brief acldvppCropAndResizeGetWorkspaceSize 的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8,
-*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC，Channels: [1，3]。
+* @brief acldvppCropAndResize 的第一段接口，根据具体的计算流程，计算workspace大小。
+* @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，
+*                   数据格式支持NCHW、NHWC，C轴支持1和3。
 * @param [in] top: uint32_t，抠图的上边界位置。
 * @param [in] left: uint32_t，抠图的左边界位置。
 * @param [in] height: uint32_t，抠图的高度。
 * @param [in] width: uint32_t，抠图的宽度。
-* @param [in] size: aclIntArray，表示缩放之后的宽、高。resize宽高必须与输出宽高一致。
+* @param [in] size: aclIntArray，表示缩放之后的高、宽。
 * @param [in] interpolationMode: uint32_t，缩放插值算法
                                  取值与对应缩放插值算法对应关系为：0: LINEAR/BILINEAR，1: NEAREST，2: BICUBIC
-* @param [in] out: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8,
-*                  仅支持连续的Tensor，数据格式支持NCHW、NHWC，Channels: [1，3]。且数据格式、数据类型和通道数需要与out一致。
+* @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持 UINT8 和 FLOAT，数据格式支持NCHW、NHWC。
+*                  且数据格式、数据类型和通道数需要与self保持一致。宽高需与缩放后宽高保持一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程
 * @return acldvppStatus: 返回状态码。

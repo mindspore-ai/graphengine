@@ -27,13 +27,14 @@ extern "C" {
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
 
-const uint32_t MSPROF_REPORT_DATA_MAGIC_NUM = 0x5a5a;
+const uint32_t MSPROF_REPORT_DATA_MAGIC_NUM = 0x5A5AU;
+const uint64_t MSPROF_TASK_TIME_L0 = 0x00000800ULL; // mean PROF_TASK_TIME
 const uint64_t MSPROF_EVENT_FLAG = 0xFFFFFFFFFFFFFFFFULL;
-using VOID_PTR = void *;
-using ProfCommandHandle = int32_t (*)(uint32_t type, VOID_PTR data, uint32_t len);
-using MsprofReportHandle = int32_t (*)(uint32_t moduleId, uint32_t type, VOID_PTR data, uint32_t len);
-using MsprofCtrlHandle = int32_t (*)(uint32_t type, VOID_PTR data, uint32_t len);
-using MsprofSetDeviceHandle = int32_t (*)(VOID_PTR data, uint32_t len);
+typedef void* VOID_PTR;
+typedef int32_t (*ProfCommandHandle)(uint32_t type, VOID_PTR data, uint32_t len);
+typedef int32_t (*MsprofReportHandle)(uint32_t moduleId, uint32_t type, VOID_PTR data, uint32_t len);
+typedef int32_t (*MsprofCtrlHandle)(uint32_t type, VOID_PTR data, uint32_t len);
+typedef int32_t (*MsprofSetDeviceHandle)(VOID_PTR data, uint32_t len);
 
 /* Msprof report level */
 const uint16_t MSPROF_REPORT_PYTORCH_LEVEL = 30000;
@@ -102,7 +103,11 @@ enum ProfileCallbackType {
 };
 
 struct MsprofApi { // for MsprofReportApi
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
     uint16_t level;
     uint32_t type;
     uint32_t threadId;
@@ -113,13 +118,21 @@ struct MsprofApi { // for MsprofReportApi
 };
 
 struct MsprofEvent {  // for MsprofReportEvent
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
     uint16_t level;
     uint32_t type;
     uint32_t threadId;
     uint32_t requestId; // 0xFFFF means single event
     uint64_t timeStamp;
+#ifdef __cplusplus
     uint64_t eventFlag = MSPROF_EVENT_FLAG;
+#else
+    uint64_t eventFlag;
+#endif
     uint64_t itemId;
 };
 
@@ -130,9 +143,13 @@ struct MsprofRuntimeTrack {  // for MsprofReportCompactInfo buffer data
     uint64_t taskType;       // task message hash id
 };
 
-const uint16_t MSPROF_COMPACT_INFO_DATA_LENGTH = 40;
+#define MSPROF_COMPACT_INFO_DATA_LENGTH (40)
 struct MsprofCompactInfo {  // for MsprofReportCompactInfo buffer data
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
     uint16_t level;
     uint32_t type;
     uint32_t threadId;
@@ -140,14 +157,18 @@ struct MsprofCompactInfo {  // for MsprofReportCompactInfo buffer data
     uint64_t timeStamp;
     union {
         uint8_t info[MSPROF_COMPACT_INFO_DATA_LENGTH];
-        MsprofRuntimeTrack runtimeTrack;
-        MsprofNodeBasicInfo nodeBasicInfo;
+        struct MsprofRuntimeTrack runtimeTrack;
+        struct MsprofNodeBasicInfo nodeBasicInfo;
     } data;
 };
 
-const uint16_t MSPROF_ADDTIONAL_INFO_DATA_LENGTH = 232;
+#define MSPROF_ADDTIONAL_INFO_DATA_LENGTH (232)
 struct MsprofAdditionalInfo {  // for MsprofReportAdditionalInfo buffer data
+#ifdef __cplusplus
     uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
     uint16_t level;
     uint32_t type;
     uint32_t threadId;
@@ -274,7 +295,7 @@ MSVP_PROF_API int32_t MsprofReportData(uint32_t moduleId, uint32_t type, VOID_PT
  * @param [in] api: api of timestamp data
  * @return 0:SUCCESS, !0:FAILED
  */
-MSVP_PROF_API int32_t MsprofReportApi(uint32_t agingFlag, const MsprofApi *api);
+MSVP_PROF_API int32_t MsprofReportApi(uint32_t agingFlag, const struct MsprofApi *api);
 
 /*
  * @ingroup libprofapi
@@ -284,7 +305,7 @@ MSVP_PROF_API int32_t MsprofReportApi(uint32_t agingFlag, const MsprofApi *api);
  * @param [in] event: event of timestamp data
  * @return 0:SUCCESS, !0:FAILED
  */
-MSVP_PROF_API int32_t MsprofReportEvent(uint32_t agingFlag, const MsprofEvent *event);
+MSVP_PROF_API int32_t MsprofReportEvent(uint32_t agingFlag, const struct MsprofEvent *event);
 
 /*
  * @ingroup libprofapi

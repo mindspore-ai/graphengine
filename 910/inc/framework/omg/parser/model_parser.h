@@ -30,6 +30,7 @@
 #include "graph/utils/graph_utils_ex.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/ascend_string.h"
 
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
@@ -37,9 +38,7 @@ using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message
 
 using GetGraphCallbackV2 = std::function<std::string(const std::string &subgraph_name)>;
 
-using GetGraphCallbackV3 = std::function<bool(const std::string &subgraph_name,
-                                         std::vector<std::string> &partitioned_serialized,
-                                         std::map<std::string, std::string> &const_value_map)>;
+using GetGraphCallbackV3 = std::function<ge::AscendString(const ge::AscendString &subgraph_name)>;
 
 class GE_FUNC_VISIBILITY ModelParser {
  public:
@@ -150,7 +149,7 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return Others failed
    */
   virtual Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
-                                              ge::ComputeGraphPtr &graph) {
+                                        ge::ComputeGraphPtr &graph) {
     (void)serialized_proto;
     (void)callback;
     (void)graph;
@@ -206,12 +205,29 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ParseProtoWithSubgraph(const std::vector<std::string> &partitioned_serialized,
-                                        const std::map<std::string, std::string> &const_value_map,
+  virtual Status ParseProtoWithSubgraph(const std::vector<ge::AscendString> &partitioned_serialized,
+                                        const std::map<ge::AscendString, ge::AscendString> &const_value_map,
                                         GetGraphCallbackV3 callback,
                                         ge::ComputeGraphPtr &graph) {
     (void)partitioned_serialized;
     (void)const_value_map;
+    (void)callback;
+    (void)graph;
+    return UNSUPPORTED;
+  }
+
+  /**
+   * @ingroup domi_omg
+   * @brief Analyze callback model data in subgraph
+   * @param [in] proto serialized network model
+   * @param [in] callback callback of subgraph
+   * @param [in|out] graph Save the network information after analysis
+   * @return SUCCESS
+   * @return Others failed
+   */
+  virtual Status ParseProtoWithSubgraph(const ge::AscendString &serialized_proto, GetGraphCallbackV3 callback,
+                                        ge::ComputeGraphPtr &graph) {
+    (void)serialized_proto;
     (void)callback;
     (void)graph;
     return UNSUPPORTED;

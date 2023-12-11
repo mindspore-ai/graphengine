@@ -34,20 +34,11 @@ class NanoDavinciModel : public PreDavinciModel {
   Status GetTaskKernelOffset(const std::string &kernel_name, uint32_t &offset) const;
   Status NanoSetWeightData(OpDescPtr &op_desc) const;
   Status NanoAddSwitchConstNode(const std::vector<uint64_t> &cond_task_id_list, const ge::NodePtr &sw_node,
-                                size_t &weight_offset, ComputeGraphPtr &graph);
+                                size_t &weight_offset, ComputeGraphPtr &graph) const;
   Status NanoSwitchWeightDataInit(ComputeGraphPtr &compute_graph, const ComputeGraph::Vistor<NodePtr> &all_nodes);
   Status InitSwitchWeightData(ComputeGraphPtr &compute_graph);
   Status InitSwitchNodes(const ComputeGraphPtr &compute_graph);
   std::map<uint32_t, int32_t> task_list_;
-  // Stub for rts api
-  RTS_API rtError_t rtGetConditionKernelBin(const char_t *const binFileName, void **const buffer, uint32_t *length) {
-    (void)binFileName;
-    constexpr size_t buf_size = 64U;
-    std::vector<uint8_t> buff(buf_size, 'A');
-    *buffer = (char_t *)buff.data();
-    *length = buff.size();
-    return 0;
-  }
 };
 }  // namespace ge
 #endif  // GE_COMMON_PRELOAD_NANO_DAVINCI_MODEL_H_

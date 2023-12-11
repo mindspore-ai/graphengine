@@ -70,10 +70,10 @@ extern "C" {
  *
  * log mask
  */
-#define DEBUG_LOG_MASK      (0x00010000)    // print log to directory debug
-#define SECURITY_LOG_MASK   (0x00100000)    // print log to directory security
-#define RUN_LOG_MASK        (0x01000000)    // print log to directory run
-#define STDOUT_LOG_MASK     (0x10000000)    // print log to stdout
+#define DEBUG_LOG_MASK      (0x00010000U)    // print log to directory debug
+#define SECURITY_LOG_MASK   (0x00100000U)    // print log to directory security
+#define RUN_LOG_MASK        (0x01000000U)    // print log to directory run
+#define STDOUT_LOG_MASK     (0x10000000U)    // print log to stdout
 
 #define LOG_SAVE_MODE_DEF   (0x0U)          // default
 #define LOG_SAVE_MODE_UNI   (0xFE756E69U)   // unify save mode
@@ -175,6 +175,8 @@ enum {
     AUDIO,
     TPRT,
     ASCENDCKERNEL,
+    ASYS,
+    ATRACE,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 

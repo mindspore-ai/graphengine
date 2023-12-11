@@ -27,12 +27,20 @@
 namespace llm {
 class DecoderManager;
 class PromptManager;
+class PriorityScheduleManager;
+enum class RunMode : uint32_t {
+  kSeparateSchedule = 0,
+  kPrioritySchedule
+};
 class LLMEngine {
  public:
   explicit LLMEngine(uint64_t cluster_id) : cluster_id_(cluster_id) {}
   ~LLMEngine();
   ge::Status LLMEngineInitialize(const std::vector<ge::ModelBufferData> &model_buffer_datas,
                                  const std::map<ge::AscendString, ge::AscendString> &options);
+  ge::Status LLMEngineInitializeV2(
+      const std::map<ge::AscendString, std::vector<ge::ModelBufferData>> &model_type_to_buffer_datas,
+      const std::map<ge::AscendString, ge::AscendString> &options);
   static LLMEngineStatus FetchLLMEngineStatus();
   int64_t FetchLlmEngineQueueStatus();
   // API2：execute prompt
@@ -58,13 +66,52 @@ class LLMEngine {
   // Release kv cache of prompt prefix model
   ge::Status ReleasePromptPrefix(const LLMReq &req);
 
+  // @brief 从Prompt cluster拉取该request对应的KV到本Decoder cluster的暂存区中，每次调用成功后都会覆盖暂存区之前的kv
+  // @param [in] req instance of LLMReq
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         LLM_PARAM_INVALID: 参数错误, 如cluster id校验错误, 当前非manual batching模式等
+  //         LLM_KV_CACHE_NOT_EXIST: prompt中不存在该request对应的KV
+  //         FAILED: 拉取KV失败
+  ge::Status PullKv(const LLMReq &req);
+
+  // @brief 将KV从本暂存区中merge到batch中, 该接口会释放暂存区中的kv
+  // @param [in] req_id
+  // @param [in] batch_index
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         LLM_PARAM_INVALID: 参数错误, 如cluster id校验错, 当前非manual batching模式, batch_index越界等
+  //         LLM_KV_CACHE_NOT_EXIST: KV不在暂存区
+  //         FAILED: 合并KV失败
+  ge::Status MergeKv(const uint64_t req_id, const int32_t batch_index);
+
+  // @brief 执行Decoder推理
+  // @param [in] req_ids 每个batch对应的request_id, 如果一个batch无效，其对应的req_id需要设置为UINT64_MAX
+  // @param [in] inputs 输入tensor
+  // @param [out] outputs 输出tensor
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式, request_id与batch不对应等
+  //         FAILED: 执行推理失败
+  ge::Status RunDecoder(const std::vector<uint64_t> &req_ids,
+                        const std::vector<ge::Tensor> &inputs,
+                        std::vector<ge::Tensor> &outputs);
+
+  ge::Status LinkClusters(const std::vector<ClusterInfo> &clusters, std::vector<ge::Status> &rets,
+                          const int32_t timeout = -1);
+
+  ge::Status UnlinkClusters(const std::vector<ClusterInfo> &clusters, std::vector<ge::Status> &rets,
+                            const int32_t timeout = -1);
+
  private:
   std::shared_ptr<PromptManager> prompt_manager_;
   std::shared_ptr<DecoderManager> decoder_manager_;
+  std::shared_ptr<PriorityScheduleManager> priority_schedule_manager_;
   uint64_t cluster_id_;
   std::string role_;
   std::atomic<bool> is_initialized_{false};
   std::atomic<bool> is_finalized_{false};
+  RunMode run_mode_{RunMode::kSeparateSchedule};
 };
 }  // namespace llm
 

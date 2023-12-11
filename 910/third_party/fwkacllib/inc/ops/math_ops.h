@@ -1232,6 +1232,23 @@ REG_OP(Angle)
     .OP_END_FACTORY_REG(Angle)
 
 /**
+* @brief  Computes the element_wise angle(in radians) of the given input tensor.
+
+* @par Inputs:
+* @li x: An ND tensor of type float16, float, complex64. \n
+*
+* @par Outputs:
+* y: An ND tensor of type float16, float32. \n
+*
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Angle. \n
+*/
+REG_OP(AngleV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_COMPLEX64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(AngleV2)
+
+/**
 *@brief Computes the gradient of SoftMarginLossGrad. \n
 
 *@par Inputs:

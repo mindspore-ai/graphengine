@@ -57,6 +57,7 @@ const char * const PRECISION_MODE                            = "precision_mode";
 const char * const DISABLE_REUSE_MEMORY                      = "disable_reuse_memory";
 const char * const ENABLE_SINGLE_STREAM                      = "enable_single_stream";
 const char * const AICORE_NUM                                = "aicore_num";
+const char * const GROUP_ID                                  = "group_id";
 const char * const FUSION_SWITCH_FILE                        = "fusion_switch_file";
 const char * const ENABLE_SMALL_CHANNEL                      = "enable_small_channel";
 const char * const OP_SELECT_IMPL_MODE                       = "op_select_implmode";
@@ -105,6 +106,7 @@ const char * const PLUGIN_OPTION_SESSION_ID                  = "session_id";
 const char * const FEATURE                                   = "feature";
 const char * const OUT_FILE_NAME                             = "out_file_name";
 const char * const OP_TUNE_JSON_FILE                         = "op_tune_json_file";
+const char * const OP_LIST                                   = "op_list";
 
 // aoe API透传的GE参数
 const char * const GE_INPUT_SHAPE_RANGE                      = "ge.exec.dataInputsShapeRange";
@@ -198,6 +200,8 @@ struct AoeBufferData {
 struct RunnerInitConfig {
     // ncs only
     std::vector<uint32_t> devList;
+    uint32_t groupId = 0;
+    uint32_t aicoreNum = 8;
 };
 
 struct RunnerConfig {

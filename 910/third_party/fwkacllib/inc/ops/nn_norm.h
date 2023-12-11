@@ -110,5 +110,83 @@ REG_OP(GroupNormV2)
     .ATTR(eps, Float, 0.0001)
     .ATTR(is_training, Bool, true)
     .OP_END_FACTORY_REG(GroupNormV2)
+
+/**
+ * @brief backward operator for group normalization. \n
+ * @par Inputs:
+ * Five input, including:
+ * @li dy: A Tensor. Group grad. Must be one of the following types:
+ *     float32, float16
+ * @li mean: A Tensor. Mean of each group. Support float32, float16
+ * @li rstd: A Tensor. Reciprocal standard deviation of each group. Support float32, float16
+ * @li x: A Tensor. Specifies the offset. Support float32, float16
+ * @li gamma: A Tensor. Specifies the scaling factor. Support float32, float16
+
+ * @par Attributes:
+ * @li num_groups: Int.Number specifying the number of group.
+ * @li data_format: An optional String, Defaults to NCHW.
+ * @li gamma_is_defined: An optional bool, controls whether to return dgamma and dbeta. Defaults to false.
+
+ * @par Outputs:
+ * Three output, including:
+ * @li dx: A Tensor. Datatype and format is same as input_data. Data sorted.
+ * @li dgamma: A Tensor. scale factor grad.
+ * @li dbeta: A Tensor. offset factor grad.
+ * @par Third-party framework compatibility
+ * @li Compatible with the PyTorch operator GroupNorm.
+ */
+
+REG_OP(GroupNormGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(rstd, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dx, TensorType({DT_FLOAT}))
+    .OUTPUT(dgamma, TensorType({DT_FLOAT}))
+    .OUTPUT(dbeta, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(num_groups, Int)
+    .ATTR(data_format, String, "NCHW")
+    .ATTR(dx_is_require, Bool, true)
+    .ATTR(dgamma_is_require, Bool, true)
+    .ATTR(dbeta_is_require, Bool, true)
+    .OP_END_FACTORY_REG(GroupNormGrad)
+
+/**
+* @brief Performs group normalization and silu. \n
+
+* @par Inputs:
+* Three inputs
+* @li x: A ND Tensor of type bfloat16/float16/float32, with format NCHW for 4D.
+* @li gamma: A Tensor of type bfloat16/float16/float32. Must be 1D. Specifies the scaling factor.
+* @li beta: A Tensor of type bfloat16/float16/float32. Must be 1D. Specifies the offset. \n
+
+* @par Attributes:
+* @li num_groups: An required int32/int64, specifying the number of group.
+* @li eps: An optional float32, specifying the small value added to
+variance to avoid dividing by zero. Defaults to "0.0001".
+
+* @par Outputs:
+* Three outputs
+* @li y: A ND Tensor of type bfloat16/float16/float32 for the normalized "x",
+with format NCHW for 4D.
+* @li mean: A Tensor of type bfloat16/float16/float32. Must be 1D. Specifies the mean of "x".
+* @li rstd: A Tensor of type bfloat16/float16/float32. Must be 1D. Specifies the rstd of "x". \n
+
+* @par Third-party framework compatibility
+* @li Compatible with the PyTorch operator GroupNorm and Silu.
+
+*/
+REG_OP(GroupNormSilu)
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(gamma, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(beta, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(mean, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(rstd, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(num_groups, Int)
+    .ATTR(eps, Float, 0.00001)
+    .OP_END_FACTORY_REG(GroupNormSilu)
+
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_

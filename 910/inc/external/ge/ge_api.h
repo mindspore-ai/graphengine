@@ -48,7 +48,11 @@ GE_FUNC_VISIBILITY Status GEFinalize();
 
 GE_FUNC_VISIBILITY std::string GEGetErrorMsg();
 
+GE_FUNC_VISIBILITY ge::AscendString GEGetErrorMsgV2();
+
 GE_FUNC_VISIBILITY std::string GEGetWarningMsg();
+
+GE_FUNC_VISIBILITY ge::AscendString GEGetWarningMsgV2();
 
 GE_FUNC_VISIBILITY Status GetModelDistributeDesc(const void *data, const uint64_t length,
                                                  ModelDistibuteDesc &model_dist_desc);
@@ -137,6 +141,17 @@ class GE_FUNC_VISIBILITY Session {
   /// @return Status result of function
   ///
   Status RunGraph(uint32_t graph_id, const ContinuousTensorList &inputs, std::vector<Tensor> &outputs);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief run a distributed graph of the session with specific session id
+  /// @param [in] graphId graph id
+  /// @param [in] device id respond to inputs input data
+  /// @param [out] device id respond to outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraphDistribute(uint32_t graph_id, const std::map<int32_t, std::vector<Tensor>> &device_to_inputs,
+                            std::map<int32_t, std::vector<Tensor>> &device_to_outputs);
 
   ///
   /// @ingroup ge_graph

@@ -24,16 +24,16 @@
 extern "C" {
 #endif
 /**
-* @brief acldvppWarpAffine 的第一阶段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
-*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC。
+* @brief acldvppWarpAffine的第一阶段接口，根据具体的计算流程，计算workspace大小。
+* @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持UINT8和FLOAT，
+*                   数据格式支持NCHW、NHWC，C轴支持1和3。
 * @param [in] matrix: aclFloatArray类型，2x3的仿射变换矩阵。
 * @param [in] interpolationMode: uint32_t，缩放插值算法，
                                  取值与对应缩放插值算法对应关系为：0: BILINEAR，1: NEAREST。
 * @param [in] paddingMode：uint32_t 类型，该变量值与对应填充模式对应关系为 0：CONSTANT, 1：EDGE。
 * @param [in] fill: aclFloatArray类型，表示在每个通道上填充的值。
-* @param [in] out: npu device侧的aclTensor，数据类型支持 FLOAT 和 UINT8，
-*                  仅支持连续的Tensor，数据格式支持NCHW、NHWC，且 数据格式 和 数据类型 需要与out一致。
+* @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型支持UINT8和FLOAT，
+*                  数据格式支持NCHW、NHWC，且数据格式、数据类型、shape需要与self一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程。
 * @return acldvppStatus: 返回状态码。
@@ -44,7 +44,7 @@ acldvppStatus acldvppWarpAffineGetWorkspaceSize(
 /**
 * @brief acldvppWarpAffine 的第二阶段接口，用于执行计算。
 * @param [in] workspace: 在npu device侧申请的workspace内存起址。
-* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口 acldvppWarpAffineGetWorkspaceSize 获取。
+* @param [in] workspaceSize: 在npu device侧申请的workspace大小，由第一段接口acldvppWarpAffineGetWorkspaceSize 获取。
 * @param [in] executor: op执行器，包含了算子计算流程。
 * @param [in] stream: acl stream流。
 * @return acldvppStatus: 返回状态码。

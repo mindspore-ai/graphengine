@@ -47,6 +47,7 @@ enum class ccKernelType : uint32_t {
   CUST_AI_CPU = 7, /* custom aicpu */
   HOST_CPU = 8,    /* host cpu */
   DVPP = 9,        /* dvpp */
+  AI_CPU_KFC = 10,  // aicpu kfc
   INVALID = 10000  /* unknown kernel type */
 };
 

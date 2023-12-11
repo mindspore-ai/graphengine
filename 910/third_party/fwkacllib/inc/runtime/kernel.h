@@ -1132,6 +1132,42 @@ RTS_API rtError_t rtProcessHostFunc(int32_t timeout);
  */
 RTS_API rtError_t rtUnSubscribeHostFunc(uint64_t threadId, rtStream_t stream);
 
+/**
+ * @ingroup rt_kernel
+ * @brief Find funcHandle based on binHandle and kernelName.
+ * @param [in] binHandle  funcHandle
+ * @param [in] kernelName   kernelName
+ * @param [out] funcHandle   funcHandle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtBinaryGetFunctionByName(const rtBinHandle binHandle, const char *kernelName, rtFuncHandle *funcHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Registers and parses the bin file and loads it to the device.
+ * @param [in] data   device binary data description
+ * @param [in] length   device binary data length
+ * @param [out] binHandle   device binary handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtBinaryLoadWithoutTilingKey(const void *data, const uint64_t length, rtBinHandle *binHandle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Kernel Launch to device
+ * @param [in] funcHandle  function Handle
+ * @param [in] blockDim  block dimentions
+ * @param [in] argsInfo  args info
+ * @param [in] stm  associated stream
+ * @param [in] cfgInfo task config info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtLaunchKernelByFuncHandleV3(rtFuncHandle funcHandle, uint32_t blockDim, const rtArgsEx_t * const argsInfo,
+                                       rtStream_t stm, const rtTaskCfgInfo_t * const cfgInfo);
+
 #if defined(__cplusplus)
 }
 #endif

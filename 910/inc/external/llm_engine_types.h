@@ -86,8 +86,13 @@ constexpr const char LLM_OPTION_INPUTS_BATCH_DIM_INDEX[] = "llm.InputsBatchSizeD
 constexpr const char LLM_OPTION_INPUT_WAIT_TIME[] = "llm.InputWaitTime";
 constexpr const char kPrompt[] = "Prompt";
 constexpr const char kDecoder[] = "Decoder";
+constexpr const char LLM_BATCH_MODE_MANUAL[] = "manual";
+constexpr const char LLM_BATCH_MODE_AUTO[] = "auto";
+constexpr const char LLM_MODEL_TYPE_INFERENCE[] = "inference";
+constexpr const char LLM_MODEL_TYPE_POSTPROCESS[] = "postprocess";
 constexpr const char LLM_OPTION_OM_CACHE_PATH[] = "llm.OmCachePath";
 constexpr const char LLM_OPTION_CLUSTER_DEPLOYMENT_CONFIG[] = "llm.ClusterDeploymentConfig";
+constexpr const char LLM_OPTION_CLUSTER_INFO[] = "llm.ClusterInfo";
 constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
 constexpr const char LLM_OPTION_MODEL_INPUTS_SHAPES[] = "llm.InputShapes";
 constexpr const char LLM_OPTION_MODEL_INPUTS_DTYPES[] = "llm.InputDtypes";
@@ -97,6 +102,33 @@ constexpr const char LLM_OPTION_OUTPUT_NUM[] = "llm.OutputNums";
 constexpr const char LLM_OPTION_SYNC_KV_CACHE_WAIT_TIME[] = "llm.SyncKvCacheWaitTime";
 constexpr const char LLM_OPTION_NN_EXECUTE_WAIT_TIME[] = "llm.NnExecuteWaitTime";
 constexpr const char LLM_OPTION_PROCESS_REQUEST_WAIT_TIME[] = "llm.ProcessRequestWaitTime";
+
+constexpr const char LLM_OPTION_RUN_MODE[] = "llm.RunMode";
+constexpr const char LLM_OPTION_PROMPT_AND_DOCODER_INTERLEAVED_STEP[] = "llm.PromptAndDecoderInterleavedStep";
+constexpr const char LLM_OPTION_INPUTS_BATCH_PADDING[] = "llm.InputsBatchPadding";
+constexpr const char LLM_OPTION_OUTPUT_MAX_SIZE[] = "llm.OutputMaxSize";
+constexpr const char LLM_OPTION_GRAPH_COMPILER_CACHE_DIR[] = "llm.graph_compiler_cache_dir";
+constexpr const char LLM_OPTION_GRAPH_KEYS[] = "llm.graph_keys";
+constexpr const char LLM_OPTION_BATCH_MODE[] = "llm.batch_mode";
+
+constexpr const char LLM_OPTION_POSTPROCESS_MODEL_INPUTS_SHAPES[] = "llm.PostProcessInputShapes";
+constexpr const char LLM_OPTION_POSTPROCESS_MODEL_INPUTS_DTYPES[] = "llm.PostProcessInputDtypes";
+constexpr const char LLM_OPTION_POSTPROCESS_MODEL_OM_CACHE_PATH[] = "llm.PostProcessOmCachePath";
+constexpr const char LLM_OPTION_POSTPROCESS_OUTPUT_NUM[] = "llm.PostProcessOutputNums";
+// optional, "postprocess:1;postprocess:2"
+constexpr const char LLM_OPTION_OUTPUT_MAPPING[] = "llm.OutputMapping";
+
+struct IpInfo {
+  uint32_t ip = 0U;
+  uint16_t port = 0U;
+};
+
+struct ClusterInfo {
+  uint64_t remote_cluster_id = 0U;
+  int32_t remote_role_type = 0;
+  std::vector<IpInfo> local_ip_infos;
+  std::vector<IpInfo> remote_ip_infos;
+};
 }  // namespace llm
 
 #endif  // LLM_ENGINE_INC_EXTERNAL_LLM_ENGINE_TYPES_H

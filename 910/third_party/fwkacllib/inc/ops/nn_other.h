@@ -47,7 +47,9 @@ REG_OP(RotaryMul)
  * x: A tensor. Must be one of the following types: float16, float, bfloat16.
  * r1: A tensor. Must be one of the following types: float16, float, bfloat16.
  * r2: A tensor. Must be one of the following types: float16, float, bfloat16.
- * dy: A tensor. Data of grad increment.
+ * dy: A tensor. Data of grad increment.* 
+ * @par Attributes:
+ * @li need_backward: Optional. Control whether dr1 and dr2 need to be calculated. Defaults to "true".
  * @par Outputs:
  * dx: A Tensor. Has the same shape as "x".
  * dr1: A Tensor. Has the same shape as "r1".
@@ -58,6 +60,7 @@ REG_OP(RotaryMulGrad)
     .INPUT(r1, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BFLOAT16}))
     .INPUT(r2, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BFLOAT16}))
     .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BFLOAT16}))
+    .ATTR(need_backward, Bool, true)
     .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BFLOAT16}))
     .OUTPUT(dr1, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BFLOAT16}))
     .OUTPUT(dr2, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BFLOAT16}))

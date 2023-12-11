@@ -351,8 +351,9 @@ Defaults to "int32". \n
 
 *@par Outputs:
 *@li y: "x" in the unique output "y".
-*@li idx: A tensor the same size as "x". The index of each value of "x".
-*@li count: A tensor the same size as "x". The index of each value of "x". \n
+*@li idx: Contains the index of the 'y' element that first appears in 'x'.
+*@li count: Contains the count of each element of the "y" in the input "x".
+* @li inverse_idx: For an element of 'x', contain its corresponding index in 'y'.\n
 
 *@attention Constraints:
 *UniqueWithCountsExt2 runs on the Ascend AI CPU, which delivers poor performance. \n
@@ -362,14 +363,19 @@ Defaults to "int32". \n
 */
 
 REG_OP(UniqueWithCountsExt2)
-    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
-    .INPUT(axis, TensorType({ DT_INT32, DT_INT64 }))
-    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
-    .OUTPUT(idx, TensorType({ DT_INT32, DT_INT64 }))
-    .OUTPUT(count, TensorType({ DT_INT32, DT_INT64 }))
-    .REQUIRED_ATTR(out_idx, Type)
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_UINT8, DT_INT16, DT_INT8,
+    DT_COMPLEX64, DT_INT64, DT_QINT8, DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16,
+    DT_UINT16, DT_COMPLEX128, DT_FLOAT16, DT_UINT32, DT_UINT64}))
+    .INPUT(axis, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_UINT8, DT_INT16, DT_INT8,
+    DT_COMPLEX64, DT_INT64, DT_QINT8, DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16,
+    DT_UINT16, DT_COMPLEX128, DT_FLOAT16, DT_UINT32, DT_UINT64}))
+    .OUTPUT(idx, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(count, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(inverse_idx, TensorType({DT_INT32, DT_INT64}))
+    .ATTR(out_idx, Type, DT_INT64)
+    .ATTR(sorted, Bool, false)
+    .ATTR(return_inverse, Bool, false)
     .OP_END_FACTORY_REG(UniqueWithCountsExt2)
 
 /**
@@ -1325,8 +1331,7 @@ REG_OP(EditDistance)
 * @brief sort the input tensor without returning the value of index.
 
 * @par Inputs:
-* x:  A Tensor. Dtype support: float16, float, int16, int8,
-                          uint8, int32, int64, bfloat16.
+* x:  A Tensor. Dtype support: float16, float, double, bfloat16.
 
 * @par Attributes:
 * @li axis: An optional int. The dimension to sort along. This value defaults to -1.

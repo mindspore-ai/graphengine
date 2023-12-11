@@ -38,10 +38,9 @@ struct DeployResult {
   size_t replica_num = 1U;
   std::string input_model_name;
   bool deploy_with_flow = true;
-  std::vector<uint32_t> status_output_queue_ids;
-  std::vector<uint32_t> sched_input_queue_ids;
-  std::vector<uint32_t> sched_output_queue_ids;
-  std::vector<int32_t> sched_logic_output_indices;
+  std::vector<DeployQueueAttr> status_output_queue_attrs;
+  std::vector<DeployQueueAttr> sched_input_queue_attrs;
+  std::vector<DeployQueueAttr> sched_output_queue_attrs;
   DynamicSchedIndex model_index_info;
   std::map<int32_t, int32_t> datagw_request_bindings;
   bool is_dynamic_sched = false;

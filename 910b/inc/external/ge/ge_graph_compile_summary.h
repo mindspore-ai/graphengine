@@ -82,6 +82,8 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
 
   Status GetOutputDtypes(std::vector<ge::DataType> &dtypes) const;
 
+  Status GetIOIndexesWithSameAddr(std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const;
+
   Status GetInputShardMethod(std::map<std::string, std::map<int32_t, std::vector<std::pair<int64_t, int64_t>>>>
                              &device_id_to_tensor_deployment) const;
 

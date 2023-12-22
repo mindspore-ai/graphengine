@@ -327,9 +327,14 @@ struct aicpu_system_config {
     unsigned int mata_num; /* reserved for PG of mata number */
 
     unsigned long long stl_va;
+    unsigned long long stl_bin_pa; // RO
+    unsigned int stl_bin_space_size;
+    unsigned long long stl_buffer_pa; // RW
+    unsigned int stl_buffer_space_size;
     unsigned int stl_ssid;
     unsigned int aos_flag;
     unsigned int stl_test_period;
+    unsigned int stl_enable_flag;
 };
 
 #define SYSTEM_CONFIG_PHY ((struct aicpu_system_config *)SYSTEM_CONFIG_BASE)

@@ -64,7 +64,7 @@ class MemoryDumper {
    *  @author
    */
   static int32_t OpenFile(const std::string &filename);
-
+  static void PrintErrorMsg(const std::string &error_msg);
   int32_t fd_ = kInvalidFd;
 };
 }  // namespace ge

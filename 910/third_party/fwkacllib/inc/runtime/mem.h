@@ -794,6 +794,16 @@ typedef struct DrvMemProp {
     uint64_t reserve;
 } rtDrvMemProp_t;
 
+typedef enum DrvMemHandleType {
+    RT_MEM_HANDLE_TYPE_NONE = 0x0,
+} rtDrvMemHandleType;
+
+typedef enum DrvMemGranularityOptions {
+    RT_MEM_ALLOC_GRANULARITY_MINIMUM = 0x0,
+    RT_MEM_ALLOC_GRANULARITY_RECOMMENDED,
+    RT_MEM_ALLOC_GRANULARITY_INVALID,
+} rtDrvMemGranularityOptions;
+
 /**
  * @ingroup dvrt_mem
  * @brief This command is used to reserve a virtual address range
@@ -870,6 +880,57 @@ RTS_API rtError_t rtMapMem(void* devPtr, size_t size, size_t offset, rtDrvMemHan
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtUnmapMem(void* devPtr);
+
+/**
+* @ingroup dvrt_mem
+* @brief This command is used to export an allocation to a shareable handle.
+* @attention Only support ONLINE scene. Not support compute group.
+* @param [in] handle Handle for the memory allocation.
+* @param [in] handleType Currently unused, must be MEM_HANDLE_TYPE_NONE.
+* @param [in] flags Currently unused, must be zero.
+* @param [out] shareableHandle Export a shareable handle.
+* @return DRV_ERROR_NONE : success
+* @return DV_ERROR_XXX : fail
+*/
+RTS_API rtError_t rtMemExportToShareableHandle(rtDrvMemHandle_t* handle, rtDrvMemHandleType handleType,
+    uint64_t flags, uint64_t *shareableHandle);
+
+/**
+* @ingroup dvrt_mem
+* @brief This command is used to import an allocation from a shareable handle.
+* @attention Only support ONLINE scene. Not support compute group.
+* @param [in] shareableHandle Import a shareable handle.
+* @param [in] devId Device id.
+* @param [out] handle Value of handle returned, all operations on this allocation are to be performed using this handle.
+* @return DRV_ERROR_NONE : success
+* @return DV_ERROR_XXX : fail
+*/
+RTS_API rtError_t rtMemImportFromShareableHandle(uint64_t shareableHandle, int32_t devId, rtDrvMemHandle_t** handle);
+
+/**
+* @ingroup dvrt_mem
+* @brief This command is used to configure the process whitelist which can use shareable handle.
+* @attention Only support ONLINE scene. Not support compute group.
+* @param [in] shareableHandle A shareable handle.
+* @param [in] pid Host pid whitelist array.
+* @param [in] pid_num Number of pid arrays.
+* @return DRV_ERROR_NONE : success
+* @return DV_ERROR_XXX : fail
+*/
+RTS_API rtError_t rtMemSetPidToShareableHandle(uint64_t shareableHandle, int pid[], uint32_t pidNum);
+
+/**
+* @ingroup dvrt_mem
+* @brief This command is used to calculate either the minimal or recommended granularity.
+* @attention Only support ONLINE scene.
+* @param [in] prop Properties of the allocation.
+* @param [in] option Determines which granularity to return.
+* @param [out] granularity Returned granularity.
+* @return DRV_ERROR_NONE : success
+* @return DV_ERROR_XXX : fail
+*/
+RTS_API rtError_t rtMemGetAllocationGranularity(rtDrvMemProp_t *prop, rtDrvMemGranularityOptions option,
+    size_t *granularity);
 
 #if defined(__cplusplus)
 }

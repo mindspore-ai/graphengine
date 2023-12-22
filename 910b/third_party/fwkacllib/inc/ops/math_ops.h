@@ -52,6 +52,42 @@ REG_OP(Power)
     .OP_END_FACTORY_REG(Power);
 
 /**
+*@brief Computes the log of the absolute value of Gamma(x) element-wise. \n
+
+*@par Inputs:
+*@li x:A Tensor. Must be one of the following types: float, double, float16.
+
+*@par Outputs:
+*y:A Tensor. Has the same type as x. \n
+
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Lgamma operator.
+*/
+
+REG_OP(Lgamma)
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(Lgamma)
+
+/**
+*@brief Computes the logarithmic derivative of the gamma function on input. \n
+
+*@par Inputs:
+*@li x:A Tensor. Must be one of the following types: float, double, float16.
+
+*@par Outputs:
+*y:A Tensor. Has the same type as x. \n
+
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Digamma operator.
+*/
+
+REG_OP(Digamma)
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(Digamma)
+
+/**
 *@brief Compute the lower regularized incomplete Gamma function P(a, x) . \n
 
 *@par Inputs:

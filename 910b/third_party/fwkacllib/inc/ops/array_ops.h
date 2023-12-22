@@ -480,7 +480,7 @@ Operator Const has the same definition as operator Constant. \n
 *Compatible with the TensorFlow operator Const.
 */
 REG_OP(Const)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT4, DT_INT8, DT_INT16, DT_UINT16, \
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .ATTR(value, Tensor, Tensor())
     .OP_END_FACTORY_REG(Const)
@@ -498,7 +498,7 @@ REG_OP(Const)
 *Compatible with the TensorFlow operator Const.
 */
 REG_OP(Constant)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT4, DT_INT8, DT_INT16, DT_UINT16, \
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .ATTR(value, Tensor, Tensor())
     .OP_END_FACTORY_REG(Constant)
@@ -516,7 +516,7 @@ REG_OP(Constant)
 *y: The FileConstant tensor. \n
 */
 REG_OP(FileConstant)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16, DT_INT4, DT_INT8, DT_INT16, DT_UINT16, \
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .ATTR(file_path, String, "")
     .ATTR(file_id, String, "")

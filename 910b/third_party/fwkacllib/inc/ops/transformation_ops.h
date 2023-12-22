@@ -612,7 +612,6 @@ REG_OP(SpaceToBatchD)
 * y: Dynamic output. The list of Tensor objects unpacked from "x", of type BasicType . \n
 
 * @attention Constraints:
-* @li If "num" is not specified, it is inferred from the shape of "x".
 * @li For the ND format, "axis" is in the range [-R, R). \n
 
 * @par Third-party framework compatibility

@@ -175,6 +175,32 @@ REG_OP(AscendAntiQuant)
     .OP_END_FACTORY_REG(AscendAntiQuant)
 
 /**
+* @brief Anti quantizes the input . \n
+
+* @par Inputs:
+* x: An tensor of type int8/int4, specifying the input . \n
+* scale: A required float32 scale.
+* offset: A required float32 offset.
+
+* @par Attributes:
+* @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
+* Defaults to "False" . \n
+
+* @par Outputs:
+* y: The dequantized output tensor of type float16 or bfloat16. \n
+
+*/
+REG_OP(AscendAntiQuantV2)
+    .INPUT(x, TensorType({DT_INT8, DT_INT4}))
+    .INPUT(scale, TensorType({DT_FLOAT}))
+    .INPUT(offset, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BFLOAT16}))
+    .ATTR(dst_type, Int, DT_FLOAT16)
+    .ATTR(sqrt_mode, Bool, false)
+    .OP_END_FACTORY_REG(AscendAntiQuantV2)
+
+/**
 * @brief Dequantizes the input of int16 . \n
 
 * @par Inputs:

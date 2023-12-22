@@ -26,12 +26,11 @@ extern "C" {
 
 /**
 * @brief acldvppPosterizeGetWorkspaceSize 的第一段接口，根据具体的计算流程，计算workspace大小。
-* @param [in] self: npu device侧的aclTensor，数据类型只支持UINT8，
-*                   仅支持连续的Tensor，数据格式支持NCHW、NHWC，且数据格式需要与out一致。
+* @param [in] self: npu device侧的aclTensor，仅支持连续的Tensor，数据类型只支持UINT8，
+*                   数据格式支持NCHW、NHWC，C轴支持1和3。
 * @param [in] bits: 每个通道保留的位数，取值范围[0, 8]。
-* @param [out] out: npu device侧的aclTensor，数据类型只支持UINT8，
-*                   且数据类型需要与self构成互相推导关系，shape需要与self满足broadcast关系，
-*                   支持非连续的Tensor，数据格式支持NCHW、NHWC，且数据格式和shape需要与self一致。
+* @param [in] out: npu device侧的aclTensor，仅支持连续的Tensor，数据类型只支持UINT8，
+*                  数据格式支持NCHW、NHWC，且数据格式、数据类型、shape需要与self一致。
 * @param [out] workspaceSize: 返回用户需要在npu device侧申请的workspace大小。
 * @param [out] executor: 返回op执行器，包含了算子计算流程。
 * @return acldvppStatus: 返回状态码。

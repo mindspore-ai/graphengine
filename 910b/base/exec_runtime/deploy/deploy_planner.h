@@ -56,13 +56,17 @@ class DeployPlan {
                const int32_t proxy_device_id) noexcept;
     static const DeviceInfo &ExternalDevice();
     static bool IsExternal(const DeviceInfo &device_info);
-    bool IsProxy() const;
+    bool WithProxy() const;
     int32_t GetType() const;
     int32_t GetNodeId() const;
     int32_t GetDeviceId() const;
     int32_t GetProxyDeviceId() const;
     const std::string &GetKey() const;
     const std::string &GetDesc() const;
+    int32_t GetHcomDeviceId() const;
+    void SetHcomDeviceId(int32_t hcom_device_id);
+    int32_t GetOsId() const;
+    void SetOsId(int32_t os_id);
 
    private:
     std::string key_ = "1_0_0";
@@ -71,6 +75,8 @@ class DeployPlan {
     int32_t node_id_ = 0;
     int32_t device_id_ = 0;
     int32_t proxy_device_id_ = -1;
+    int32_t hcom_device_id_ = 0;
+    int32_t os_id_ = 0;
   };
 
   enum class QueueAction {
@@ -155,6 +161,7 @@ class DeployPlan {
     std::vector<int32_t> status_output_queue_indices;
     std::vector<int32_t> sched_input_queue_indices;
     std::vector<int32_t> sched_output_queue_indices;
+    bool is_head = false;
   };
 
   class DynamicSchedPlan {
@@ -342,6 +349,9 @@ class DeployPlannerBase {
   Status GetOrCreateMappingTagPairEntry(const int32_t endpoint_idx,
                                         const DeployPlan::QueueInfo &mapping_queue_info,
                                         std::pair<int32_t, int32_t> &tag_pair);
+  void GenTagEntityPair(int32_t endpoint_idx,
+                        const DeployPlan::QueueInfo &mapping_queue_info,
+                        std::pair<DeployPlan::QueueInfo, DeployPlan::QueueInfo> &entity_pair);
   Status GetOrCreateMappingEntry(const int32_t endpoint_idx,
                                  const DeployPlan::QueueInfo &mapping_queue_info,
                                  int32_t &mapping_idx);
@@ -394,6 +404,7 @@ class DeployPlannerBase {
                                      int32_t &group_index);
   void UpdateDynamicSchedDeployPlan();
   Status BuildDynamicSchedInfo();
+  Status SetHeadNodeInfo();
 
   ModelRelation model_relation_;
   std::unique_ptr<ModelRelationReader> relation_reader_;

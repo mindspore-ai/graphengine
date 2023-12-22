@@ -17,31 +17,30 @@
 #ifndef AIR_CXX_RUNTIME_STREAM_ALLOCATOR_H_
 #define AIR_CXX_RUNTIME_STREAM_ALLOCATOR_H_
 
+#include <memory>
+#include <cstdlib>
 #include "runtime/stream.h"
-
-#include <list>
-#include <vector>
-
+#include "common/checker.h"
 #include "common/ge_visibility.h"
 #include "framework/common/ge_inner_error_codes.h"
-
+#include "exe_graph/runtime/continuous_vector.h"
 namespace gert {
 class VISIBILITY_EXPORT StreamAllocator {
  public:
-  explicit StreamAllocator(int32_t priority = RT_STREAM_PRIORITY_DEFAULT, uint32_t flags = RT_STREAM_DEFAULT)
-      : default_priority_(priority), default_flags_(flags) {}
+  static constexpr size_t kMaxStreamNum = 2024U;
+  explicit StreamAllocator(int32_t priority = RT_STREAM_PRIORITY_DEFAULT, uint32_t flags = RT_STREAM_DEFAULT);
   StreamAllocator(const StreamAllocator &) = delete;
   StreamAllocator &operator=(const StreamAllocator &) = delete;
+
   ~StreamAllocator();
 
-  ge::Status AcquireStreams(size_t stream_num, std::vector<rtStream_t> &rt_streams);
-  ge::Status ReleaseStreams(const std::vector<rtStream_t> &rt_streams);
-  ge::Status Finalize();
-  ge::Status GetAvailStreamsNum(size_t &stream_num) const;
+  TypedContinuousVector<rtStream_t> *AcquireStreams(size_t stream_num);
 
  private:
-  std::list<rtStream_t> stream_pool_;
-  size_t streams_created_total_ = 0U;
+  TypedContinuousVector<rtStream_t> *Streams();
+
+ private:
+  std::unique_ptr<uint8_t[]> streams_holder_;
   int32_t default_priority_;
   uint32_t default_flags_;
 };

@@ -168,6 +168,12 @@ typedef struct aclrtPhysicalMemProp {
     uint64_t reserve;
 } aclrtPhysicalMemProp;
 
+typedef enum aclrtMemGranularityOptions {
+    ACL_RT_MEM_ALLOC_GRANULARITY_MINIMUM = 0,
+    ACL_RT_MEM_ALLOC_GRANULARITY_RECOMMENDED,
+    ACL_RT_MEM_ALLOC_GRANULARITY_UNDEF = 0xFFFF,
+} aclrtMemGranularityOptions;
+
 typedef void* aclrtDrvMemHandle;
 
 typedef void (*aclrtCallback)(void *userData);
@@ -1644,6 +1650,72 @@ ACL_FUNC_VISIBILITY aclError aclrtBinaryGetFunction(const aclrtBinHandle binHand
  */
 ACL_FUNC_VISIBILITY aclError aclrtLaunchKernel(aclrtFuncHandle funcHandle, uint32_t blockDim,
                                                const void *argsData, size_t argsSize, aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief share the handle that created by the process itself to other process
+ * @param [in] handle   mem handle created by aclrtMallocPhysical
+ * @param [in] handleType  reserved param, must be MEM_HANDLE_TYPE_NONE
+ * @param [in] flags  reserved param, must be 0
+ * @param [out] shareableHandle  shareable Handle
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMemExportToShareableHandle(aclrtDrvMemHandle handle,
+                                                             aclrtMemHandleType handleType, uint64_t flags,
+                                                             uint64_t *shareableHandle);
+
+/**
+ * @ingroup AscendCL
+ * @brief import an mem allocation from a shareable Handle
+ * @param [in] shareableHandle  shareable Handle
+ * @param [in] deviceId  used to generate the handle in the specified Device Id
+ * @param [out] handle handle in the process
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMemImportFromShareableHandle(uint64_t shareableHandle,
+                                                               int32_t deviceId, aclrtDrvMemHandle *handle);
+
+/**
+ * @ingroup AscendCL
+ * @brief set the process whitelist, only the process configured in the whitelist can use this shareableHandle
+ * @param [in] shareableHandle  shareable Handle
+ * @param [in] deviceId  used to generate the handle in the specified Device Id
+ * @param [out] handle handle in the process
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMemSetPidToShareableHandle(uint64_t shareableHandle,
+                                                             int32_t *pid, size_t pidNum);
+
+/**`
+ * @ingroup AscendCL
+ * @brief get the mem allocation granularity by the option
+ * @param [in] prop  aclrtPhysicalMemProp
+ * @param [in] option  mem granularity option
+ * @param [out] granularity granularity
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMemGetAllocationGranularity(aclrtPhysicalMemProp *prop,
+                                                              aclrtMemGranularityOptions option,
+                                                              size_t *granularity);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get the pid for the current process on the physical device
+ * @param [out] pid value of pid
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtDeviceGetBareTgid(int32_t *pid);
+
 #ifdef __cplusplus
 }
 #endif

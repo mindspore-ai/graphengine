@@ -345,6 +345,8 @@ class GE_FUNC_VISIBILITY GeExecutor {
  static Status ReleaseResource(const uint32_t device_id);
 
  static Status ReleaseResource();
+
+ static Status GetRuntimeModelId(const uint32_t model_id, uint32_t &model_runtime_id);
  private:
   static std::atomic_bool is_inited_;
 };

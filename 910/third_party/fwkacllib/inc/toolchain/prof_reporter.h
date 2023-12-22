@@ -68,9 +68,9 @@ public:
     * @since c60
     * @see ProfMgrStop
     */
-    virtual int Flush() = 0;
+    virtual int32_t Flush() = 0;
 
-    virtual uint32_t GetReportDataMaxLen() = 0;
+    virtual uint32_t GetReportDataMaxLen() const = 0;
 };
 
 }  // namespace Engine

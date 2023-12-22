@@ -306,13 +306,14 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_KERNEL_CUSTOM_AICPU (0x08U)
 #define RT_KERNEL_FFTSPLUS_DYNAMIC_SHAPE_DUMPFLAG (0x10U)
 #define RT_KERNEL_FFTSPLUS_STATIC_SHAPE_DUMPFLAG  (0x20U)
+// cmdlist does not need to be released by the runtime.
+#define RT_KERNEL_CMDLIST_NOT_FREE                (0x40U)
 
 // STARS topic scheduler sqe : topic_type
 #define RT_KERNEL_DEVICE_FIRST (0x10U)
 #define RT_KERNEL_HOST_ONLY (0x20U)
 #define RT_KERNEL_HOST_FIRST (0x40U)
 #define RT_KERNEL_BIUPERF_FLAG (0x80U)
-#define RT_KERNEL_CMDLIST_NOT_FREE                (0x40U) // cmdlist does not need to be released by the runtime.
 
 /**
  * @ingroup rt_kernel

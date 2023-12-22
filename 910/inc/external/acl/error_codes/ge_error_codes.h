@@ -70,6 +70,7 @@ static const uint32_t ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA = 545006U;
 static const uint32_t ACL_ERROR_GE_COMMAND_HANDLE = 545007U;
 static const uint32_t ACL_ERROR_GE_GET_TENSOR_INFO = 545008U;
 static const uint32_t ACL_ERROR_GE_UNLOAD_MODEL = 545009U;
+static const uint32_t ACL_ERROR_GE_MODEL_EXECUTE_TIMEOUT = 545601U;
 
 #ifdef __cplusplus
 }  // namespace ge

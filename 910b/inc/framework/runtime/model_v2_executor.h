@@ -17,6 +17,7 @@
 #ifndef AIR_CXX_RUNTIME_V2_CORE_MODEL_V_2_EXECUTOR_H_
 #define AIR_CXX_RUNTIME_V2_CORE_MODEL_V_2_EXECUTOR_H_
 #include <memory>
+#include <cstdlib>
 #include "graph/compute_graph.h"
 #include "graph/ge_error_codes.h"
 #include "model_desc.h"
@@ -32,25 +33,25 @@
 #include "register/op_impl_space_registry.h"
 #include "framework/common/ge_types.h"
 #include "framework/runtime/executor_option/executor_option.h"
-
+#include "framework/runtime/stream_allocator.h"
+#include "framework/runtime/event_allocator.h"
 namespace gert {
-enum class ExecutorState {
-  kInit,
-  kLoaded
-};
+enum class ExecutorState { kInit, kLoaded };
 inline const ge::char_t *GetSubExeGraphTypeStr(const SubExeGraphType type) {
   constexpr const ge::char_t *kSubExeGraphTypeStrs[kSubExeGraphTypeEnd] = {"Init", "Main", "DeInit"};
   return kSubExeGraphTypeStrs[type];
 }
 
 enum class ExecuteArgIndex {
-  kExternalAllocator = -2,
+  kNum = 3,
+  kRtEvents = -1 * kNum,
+  kExternalAllocator,
   kStream,
-  kEnd
+  kEnd,
 };
 
 struct OuterWeightMem {
-  const void *weight_ptr; // this mem must be avalable and used for the same model
+  const void *weight_ptr;  // this mem must be avalable and used for the same model
   size_t weight_size;
 };
 
@@ -59,6 +60,7 @@ struct ModelExecuteArg {
    * 如果外部传入的stream不为空，那么本模型将执行在外部传入的流上。
    */
   rtStream_t stream;
+
   /**
    * 是否使用外部的allocator来申请流上内存。如果本成员指针为空，那么执行器会自行创建一个默认allocator使用。
    * 由于Host与Device之间下发任务后，Device总是在流上异步执行这个任务，因此allocator需要满足如下几个要求：
@@ -67,9 +69,20 @@ struct ModelExecuteArg {
    * 3. 在对应的流同步之前，allocator不可以被析构（原理同2）
    */
   Allocators *external_allocator;
-  ModelExecuteArg() : stream(nullptr), external_allocator(nullptr) {}
+
+  /**
+   * 所有的流，streams[0]代表主流，streams[1:]为辅流。
+   * 如果外部不希望管理辅流，可以传入空指针，此时模型会自行分配辅流，辅流为模型独占资源，在模型卸载时释放
+   */
+  TypedContinuousVector<rtStream_t> *streams;
+
+  TypedContinuousVector<rtEvent_t> *events;
+
+  uint64_t reserved[8];
+
+  ModelExecuteArg() : ModelExecuteArg(nullptr, nullptr) {}
   ModelExecuteArg(const rtStream_t stream_, Allocators *const external_allocator_ = nullptr)
-      : stream(stream_), external_allocator(external_allocator_) {}
+      : stream(stream_), external_allocator(external_allocator_), streams{nullptr}, events(nullptr), reserved{0U} {}
 };
 static_assert(std::is_standard_layout<ModelExecuteArg>::value, "The class ModelExecuteArg must be a POD");
 
@@ -93,7 +106,8 @@ class VISIBILITY_EXPORT ModelV2Executor {
   ge::graphStatus Load();
   /**
    * 加载模型，本接口需要在模型执行前被调用。加载流程会完成模型的初始化、将重要数据拷贝到NPU等整个模型生命周期内仅需要执行一次的行为。
-   * @param arg 模型的执行参数，需要注意的是，此处传入的执行参数应该与Execute接口传入的执行参数具有相同的stream和allocator，
+   * @param arg
+   * 模型的执行参数，需要注意的是，此处传入的执行参数应该与Execute接口传入的执行参数具有相同的stream和allocator，
    *            否则在load完成后，外部需要调用流同步以保证不出现时序问题
    * @return 成功时返回`ge::GRAPH_SUCCESS`
    */
@@ -101,7 +115,8 @@ class VISIBILITY_EXPORT ModelV2Executor {
 
   /**
    * 加载模型，本接口需要在模型执行前被调用。加载流程会完成模型的初始化、将重要数据拷贝到NPU等整个模型生命周期内仅需要执行一次的行为。
-   * @param execute_arg 模型的执行参数，需要注意的是，此处传入的执行参数应该与Execute接口传入的执行参数具有相同的stream和allocator，
+   * @param execute_arg
+   * 模型的执行参数，需要注意的是，此处传入的执行参数应该与Execute接口传入的执行参数具有相同的stream和allocator，
    *            否则在load完成后，外部需要调用流同步以保证不出现时序问题
    * @param load_arg 模型的加载参数，加载时由外部传入, 执行时不会改变的参数,如RtSession.
    * @return 成功时返回`ge::GRAPH_SUCCESS`
@@ -123,9 +138,11 @@ class VISIBILITY_EXPORT ModelV2Executor {
    * 注意：
    *
    * 1. 本接口不支持并发调用
-   * 2. 如果外部指定了Allocator，那么建议Allocator应该与stream绑定，如果出现同一个allocator，匹配不同的stream多次调用Execute接口时，
+   * 2.
+   * 如果外部指定了Allocator，那么建议Allocator应该与stream绑定，如果出现同一个allocator，匹配不同的stream多次调用Execute接口时，
    *    需要满足两个条件：不可以并发调用，在切换stream执行中间，需要对上一条stream做流同步
-   * 3. 若外部指定了Allocator，在模型执行完成前，不可以将Allocator中的内存归还给操作系统（即使这块内存已经由执行器归还给Allocator）
+   * 3.
+   * 若外部指定了Allocator，在模型执行完成前，不可以将Allocator中的内存归还给操作系统（即使这块内存已经由执行器归还给Allocator）
    *
    * @param arg 执行参数
    * @param inputs 网络的输入tensor，从调用本接口开始，到流同步等待本模型执行结束之前，用户需要保证传入的Tensor有效
@@ -187,6 +204,7 @@ class VISIBILITY_EXPORT ModelV2Executor {
   friend class ModelV2ExecutorBuilder;
   friend class ModelV2ExecutorTestHelper;
   ModelV2Executor();
+  ge::graphStatus SpecifyArgsInputs(const ModelExecuteArg &arg, size_t input_num, ExeGraphExecutor &graph_executor);
 
  private:
   TopologicalResourceGuard resource_guard_;
@@ -200,6 +218,9 @@ class VISIBILITY_EXPORT ModelV2Executor {
   // for aipp
   std::map<uint32_t, ge::AippConfigInfo> aipp_info_list_;
   std::map<uint32_t, std::pair<ge::InputAippType, size_t>> aipp_type_list_;
+
+  StreamAllocator builtin_stream_allocator_;
+  EventAllocator builtin_event_allocator_;
 };
 }  // namespace gert
 

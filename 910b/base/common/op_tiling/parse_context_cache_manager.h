@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GE_COMMON_OP_TILING_PARSE_CONTEXT_MANAGER_H_
-#define GE_COMMON_OP_TILING_PARSE_CONTEXT_MANAGER_H_
+#ifndef GE_COMMON_OP_TILING_PARSE_CONTEXT_CACHE_MANAGER_H_
+#define GE_COMMON_OP_TILING_PARSE_CONTEXT_CACHE_MANAGER_H_
 
 #include <string>
 #include <mutex>
@@ -41,4 +41,4 @@ class ParseContextCacheManager {
   std::unordered_map<std::string, ParseContextHolderPtr> compile_keys_to_parse_contexts_;
 };
 }  // namespace optiling
-#endif  // GE_COMMON_OP_TILING_PARSE_CONTEXT_MANAGER_H_
+#endif  // GE_COMMON_OP_TILING_PARSE_CONTEXT_CACHE_MANAGER_H_

@@ -17,31 +17,30 @@
 #ifndef AIR_CXX_RUNTIME_EVENT_ALLOCATOR_H_
 #define AIR_CXX_RUNTIME_EVENT_ALLOCATOR_H_
 
-#include "runtime/stream.h"
-
-#include <list>
-#include <vector>
-
+#include <cstdlib>
+#include "runtime/event.h"
+#include "common/checker.h"
 #include "common/ge_visibility.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "exe_graph/runtime/continuous_vector.h"
 
 namespace gert {
 class VISIBILITY_EXPORT EventAllocator {
  public:
+  static constexpr size_t kMaxEventNum = 4096U;
   explicit EventAllocator(uint32_t flag = RT_EVENT_DDSYNC_NS)
-      : default_flag_(flag) {}
+      : events_holder_(ContinuousVector::Create<rtEvent_t>(kMaxEventNum)), default_flag_(flag) {}
   EventAllocator(const EventAllocator &) = delete;
   EventAllocator &operator=(const EventAllocator &) = delete;
   ~EventAllocator();
 
-  ge::Status AcquireEvents(size_t event_num, std::vector<rtEvent_t> &rt_events);
-  ge::Status ReleaseEvents(const std::vector<rtEvent_t> &rt_events);
-  ge::Status Finalize();
-  ge::Status GetAvailEventsNum(size_t &event_num) const;
+  TypedContinuousVector<rtEvent_t> *AcquireEvents(size_t event_num);
 
  private:
-  std::list<rtEvent_t> event_pool_;
-  size_t events_created_total_ = 0U;
+  TypedContinuousVector<rtEvent_t> *Events();
+
+ private:
+  std::unique_ptr<uint8_t[]> events_holder_;
   uint32_t default_flag_;
 };
 }  // namespace gert

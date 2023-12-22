@@ -97,9 +97,23 @@ class LLMEngine {
                         const std::vector<ge::Tensor> &inputs,
                         std::vector<ge::Tensor> &outputs);
 
+  // @brief 进行device间建链
+  // @param [in] clusters 需要建链的cluster信息
+  // @param [in] timeout 超时时间，单位ms
+  // @param [out] rets 每个cluster建链结果
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         其他做错误码: 执行推理失败
   ge::Status LinkClusters(const std::vector<ClusterInfo> &clusters, std::vector<ge::Status> &rets,
                           const int32_t timeout = -1);
 
+  // @brief 进行device间断链
+  // @param [in] clusters 需要建链的cluster信息
+  // @param [in] timeout 超时时间，单位ms
+  // @param [out] rets 每个cluster断链结果
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         其他做错误码: 执行推理失败
   ge::Status UnlinkClusters(const std::vector<ClusterInfo> &clusters, std::vector<ge::Status> &rets,
                             const int32_t timeout = -1);
 

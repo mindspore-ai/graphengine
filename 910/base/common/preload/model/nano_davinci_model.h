@@ -28,7 +28,6 @@ class NanoDavinciModel : public PreDavinciModel {
 
  private:
   Status InitTaskId();
-  Status GetTaskIndexByOpIndex(const uint32_t op_index, int32_t &task_index) const;
   Status MatchIndexToTaskIndex(const uint32_t label_idx, uint32_t &task_index) const;
   Status NanoAddSwitchKernel(const OpDescPtr &op_desc);
   Status GetTaskKernelOffset(const std::string &kernel_name, uint32_t &offset) const;

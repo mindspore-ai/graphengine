@@ -633,8 +633,8 @@ REG_OP(EmbeddingApplyAdamW)
 
 * @par Inputs:
 * @li var_handle: The handle of embedding hashtable.
-* @li lr: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
-* @li grad: A Tensor, dtype is DT_FLOAT/DT_FLOAT16. 1-D. indicates the grad.
+* @li lr: A Scalar, dtype is the same as "grad". 0-D. indicates the learning rate.
+* @li grad: A Tensor, dtype is the same as "grad". 1-D. indicates the grad.
 * @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
 * @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
@@ -661,7 +661,7 @@ REG_OP(EmbeddingApplyAdaGrad)
 
 * @par Inputs:
 * @li var_handle: The handle of embedding hashtable.
-* @li lr: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
+* @li lr: A Scalar, dtype is the same as "grad". 0-D. indicates the learning rate.
 * @li grad: A Tensor, dtype is DT_FLOAT/DT_FLOAT16. 1-D. indicates the grad.
 * @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
 
@@ -687,10 +687,10 @@ REG_OP(EmbeddingApplySgd)
 
 * @par Inputs:
 * @li var_handle: The handle of embedding hashtable.
-* @li lr: A Scalar, dtype is NumberType. indicates the learning rate.
-* @li rho: A Scalar, dtype is NumberType. indicates the decay rate.
-* @li momentum: A Scalar, dtype is NumberType. indicates the momentum.
-* @li epsilon: A Scalar, dtype is NumberType. indicates the small value param.
+* @li lr: A Scalar, dtype is the same as "grad". indicates the learning rate.
+* @li rho: A Scalar, dtype is the same as "grad". indicates the decay rate.
+* @li momentum: A Scalar, dtype is the same as "grad". indicates the momentum.
+* @li epsilon: A Scalar, dtype is the same as "grad". indicates the small value param.
 * @li grad: A Tensor, dtype is NumberType. indicates the grad.
 * @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
 
@@ -1369,7 +1369,8 @@ REG_OP(HcomCollRemoteLookupUniquedAndPaired)
 * @li table_id: A Tensor, dtype is DT_INT32. 0-D. indicates the id of hashtable.
 * @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
 * @li actual_keys_num: dtype is DT_INT64. 1-D. indicates the actual hashtable key to host.
-* @li unique_indices: A Tensor, dtype is DT_INT32. indicates the unique indices. \n
+* @li unique_indices: A Tensor, dtype is DT_INT32. indicates the unique indices.
+* @li key_count: An optional input Tensor, dtype is DT_INT64.  1-D. indicates the count of each key. \n
 
 * @par Outputs:
 * @li values: indicates the hashtable value. \n
@@ -1404,6 +1405,7 @@ REG_OP(FakeRemoteLookupUniqued)
     .INPUT(keys, TensorType({DT_INT64}))
     .INPUT(actual_keys_num, TensorType({DT_INT64}))
     .INPUT(unique_indices, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(key_count, TensorType({DT_INT64}))
     .OUTPUT(values, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .REQUIRED_ATTR(value_total_len, Int)
@@ -2444,7 +2446,19 @@ REG_OP(BatchMatmulFixpipe)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(BatchMatmulFixpipe)
 
-
+/**
+* @brief compute init routing for moe input.
+* @par Inputs:
+* @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li row_idx: A Tensor. Type is:Int32.
+* @li expert_idx: A Tensor. Type is:Int32.
+* @par Outputs:
+* @li expanded_x: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li expanded_row_idx: A Tensor. Type is:Int32.
+* @li expanded_expert_idx: A Tensor. Type is:Int32.
+* @par Attributes:
+* @li active_num: Required parameter. Type is:Int32.
+*/
 REG_OP(MoeInitRouting)
     .INPUT(x, "T1")
     .INPUT(row_idx, "T2")
@@ -2457,6 +2471,19 @@ REG_OP(MoeInitRouting)
     .REQUIRED_ATTR(active_num, Int)
     .OP_END_FACTORY_REG(MoeInitRouting)
 
+/**
+* @brief In MoE computation, the final step involves processing and merging the output results of the MoE FNN.
+* @par Inputs:
+* @li expanded_x: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li x1: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li x2: An optional Tensor. Type is:BFloat16, Float16 or Float32.
+* @li bias: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li scales: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li expanded_row_idx: A Tensor. Type is:Int32.
+* @li expanded_expert_idx: A Tensor. Type is:Int32.
+* @par Outputs:
+* @li y: A Tensor. Type is:BFloat16, Float16 or Float32.
+*/
 REG_OP(MoeFinalizeRouting)
     .INPUT(expanded_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
@@ -2468,6 +2495,18 @@ REG_OP(MoeFinalizeRouting)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(MoeFinalizeRouting)
 
+/**
+* @brief compute softmax and topk for moe input.
+* @par Inputs:
+* @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li finished: A Tensor. Type is:Bool.
+* @par Outputs:
+* @li y: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li expert_idx: A Tensor. Type is:Int32.
+* @li row_idx: A Tensor. Type is:Int32.
+* @par Attributes:
+* @li k: Required parameter. Type is:Int32.
+*/
 REG_OP(MoeGatingTopKSoftmax)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(finished, TensorType({DT_BOOL}))
@@ -2485,7 +2524,7 @@ REG_OP(MoeGatingTopKSoftmax)
 * @par Outputs:
 * @li total_rows_before_expert: A Tensor. Type is:Int32.
 * @par Attributes:
-* @li num_experts: Required parameter. Type is:Int32. The value must be more than 0 and less than 16777216.
+* @li num_experts: Required parameter. Type is:Int. The value must be more than 0 and less than 2147483647.
 */
 REG_OP(MoeComputeExpertTokens)
     .INPUT(sorted_experts, TensorType({DT_INT32}))
@@ -4033,6 +4072,8 @@ REG_OP(GeluV2)
 * two attributes, including:
 * @li dim: A optional int. The dimension to be split, default is -1.
 * @li approximate: A optional int. The gelu approximation algorithm to use: 'none'(0) or 'tanh'(1), default is 'tanh'(1). \n
+* @li activate_left: A optional bool. The gelu activate_left algorithm to use: 'false'(activate right) or 'true'
+(activate left), defalut is 'false'(activate right). \n
 
 * @par Third-party framework compatibility:
 * New pperator GeGluV2.
@@ -4047,6 +4088,7 @@ REG_OP(GeGluV2)
     .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
     .ATTR(dim, Int, -1)
     .ATTR(approximate, Int, 1)
+    .ATTR(activate_left, Bool, false)
     .OP_END_FACTORY_REG(GeGluV2)
 
 /**
@@ -4151,5 +4193,37 @@ REG_OP(MatMulV2CompressDequant)
     .ATTR(offset_x, Int, 0)
     .ATTR(alg, String, "weight_unzip")
     .OP_END_FACTORY_REG(MatMulV2CompressDequant)
+
+/**
+* @brief Multiplies matrix "x1" by matrix "x2", producing "x1 * x2". \n
+* @par Inputs:
+* Four inputs, including:
+* @li x1: A matrix Tensor. 2D. Must be one of the following types: float32,
+* float16. Has format [ND].
+* @li x2: A matrix Tensor. 2D. Must be one of the following types: float32,
+* float16. Has format [ND].
+* @li bias: A 1D Tensor. Must be one of the following types: float32,
+* float16. Has format [ND]. \n
+
+* @par Attributes:
+* @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
+* [M, K] before multiplication.
+* @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
+* [K, N] before multiplication. \n
+
+* @par Outputs:
+* y: The result matrix Tensor. 2D. Must be one of the following types: float32,
+* float16. Has format [ND, NHWC]. \n
+*/
+REG_OP(MatmulV3)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
+    .ATTR(transpose_x1, Bool, false)
+    .ATTR(transpose_x2, Bool, false)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(MatmulV3)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_EXPERIMENT_OPS_H_

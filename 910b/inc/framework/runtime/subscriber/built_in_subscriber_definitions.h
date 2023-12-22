@@ -84,6 +84,7 @@ struct TraceAttr{
   bool is_fp = false;
   bool is_bp = false;
   int64_t start_log_id = -1;
+  int64_t logic_stream_id = 0;
 };
 // todo : 需要整改，root_model等需要删除
 struct SubscriberExtendInfo {

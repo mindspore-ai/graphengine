@@ -32,9 +32,9 @@ struct DeployQueueAttr {
   int32_t device_type;
   uint32_t global_logic_id;
   std::string DebugString() const {
-    return "queue_id = " + std::to_string(queue_id) +
-           ", device_id = " + std::to_string(device_id) +
-           ", device_type = " + std::to_string(device_type);
+    return "queue:" + std::to_string(queue_id) +
+           ", device_id:" + std::to_string(device_id) +
+           ", device_type:" + std::to_string(device_type);
   }
   std::string GetKey() const {
     return std::to_string(queue_id) + "_" + std::to_string(device_id) + "_" +

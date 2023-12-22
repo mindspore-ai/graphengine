@@ -58,6 +58,7 @@ class DumpOp {
   void SaveFftsSubOpInfo(const OpDescPtr &op_desc, const std::vector<Context> &context);
   Status GenerateFftsDump(const DumpProperties &dump_properties, void *&load_dump_info, uint32_t &load_dump_len,
                           void *&unload_dump_info, uint32_t &unload_dump_len);
+  bool IsFftsDumpInfoEmpty() const { return ffts_sub_op_list_.empty(); }
   void SetTaskId(const uint32_t task_id) {
     task_id_ = task_id;
   }

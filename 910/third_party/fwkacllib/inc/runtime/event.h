@@ -59,7 +59,37 @@ typedef struct tagIpcIntNoticeInfo {
  */
 #define RT_NOTIFY_DEFAULT   0x00U
 #define RT_NOTIFY_MC2       0x01U
+#define RT_DMS_MAX_EVENT_NAME_LENGTH 256
+#define RT_DMS_MAX_EVENT_DATA_LENGTH 32
+#define RT_DMS_MAX_EVENT_RESV_LENGTH 32
+#define RT_DSM_EVENT_FILTER_FLAG_PID (1UL << 3)
 
+typedef struct tagDmsEventFilter {
+    uint64_t filterFlag;
+    uint32_t eventId;
+    unsigned char severity;
+    unsigned char nodeType;
+    unsigned char resv[RT_DMS_MAX_EVENT_RESV_LENGTH]; /**< reserve 32byte */
+} rtDmsEventFilter;
+
+typedef struct tagDmsFaultEvent {
+    uint64_t alarmRaisedTime;
+    uint32_t eventId;
+    int32_t tgid;
+    int32_t eventSerialNum;
+    int32_t notifySerialNum;
+    uint16_t deviceId;
+    uint16_t nodeType;
+    uint16_t subNodeType;
+    unsigned char nodeId;
+    unsigned char subNodeId;
+    unsigned char severity;
+    unsigned char assertion;
+    char eventName[RT_DMS_MAX_EVENT_NAME_LENGTH];
+    char additionalInfo[RT_DMS_MAX_EVENT_DATA_LENGTH];
+    unsigned char osId;
+    unsigned char resv[RT_DMS_MAX_EVENT_RESV_LENGTH]; /* reserve 32byte */
+} rtDmsFaultEvent;
 
 /**
  * @ingroup dvrt_event
@@ -195,6 +225,20 @@ RTS_API rtError_t rtEventGetTimeStamp(uint64_t *timeStamp, rtEvent_t evt);
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtNameEvent(rtEvent_t evt, const char_t *name);
+
+/**
+ * @ingroup
+ * @brief get fault event .
+ * @param [in] deviceId device id
+ * @param [in] filter filter condition:PID
+ * @param [in] len output length
+ * @param [out] dmsEvent return dms event struct array
+ * @param [out] eventCount return event count
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetFaultEvent(const int32_t deviceId, rtDmsEventFilter *filter, rtDmsFaultEvent *dmsEvent,
+    uint32_t len, uint32_t *eventCount);
 
 /**
  * @ingroup dvrt_event

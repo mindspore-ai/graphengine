@@ -109,7 +109,7 @@ REG_OP(SplitD)
   quint8, qint16, quint16, qint32, string, bfloat16. \n
 * @li size_splits: Must be one of the types:int32, int64. Specifies a list
   containing the sizes of each output tensor along the split dimension.
-* @li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
+* @li split_dim: Must be the following type:int32, int64. Specifies the dimension along which to split . \n
 
 * @par Attributes:
 * @li num_split: A required int32. Specifies the number of output tensors. No default value . \n

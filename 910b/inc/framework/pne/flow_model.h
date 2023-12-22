@@ -31,7 +31,7 @@ struct HcomClusterDesc {
 
 class FlowModel : public PneModel {
  public:
-  FlowModel() = default;
+  using PneModel::PneModel;
   explicit FlowModel(const ComputeGraphPtr &root_graph);
   ~FlowModel() override = default;
 

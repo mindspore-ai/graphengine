@@ -128,6 +128,7 @@ struct HcomRemoteOperation {
     int *tableId{};
     s64 *keyNumInput{};
     s32 *uniqueIndices{};
+    s32 *keyCount{};
     void *value{};
     void *indices{};
     void *numUniqued{};
@@ -172,6 +173,7 @@ struct HcomRemoteOperationParams {
     void *psSegNum{};
     s64 *keyNumInput{};
     s32 *uniqueIndices{};
+    s32 *keyCount{};
     std::string hcclType;
     s32 flags{};
 

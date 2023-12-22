@@ -91,7 +91,6 @@ constexpr const char LLM_BATCH_MODE_AUTO[] = "auto";
 constexpr const char LLM_MODEL_TYPE_INFERENCE[] = "inference";
 constexpr const char LLM_MODEL_TYPE_POSTPROCESS[] = "postprocess";
 constexpr const char LLM_OPTION_OM_CACHE_PATH[] = "llm.OmCachePath";
-constexpr const char LLM_OPTION_CLUSTER_DEPLOYMENT_CONFIG[] = "llm.ClusterDeploymentConfig";
 constexpr const char LLM_OPTION_CLUSTER_INFO[] = "llm.ClusterInfo";
 constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
 constexpr const char LLM_OPTION_MODEL_INPUTS_SHAPES[] = "llm.InputShapes";
@@ -110,6 +109,8 @@ constexpr const char LLM_OPTION_OUTPUT_MAX_SIZE[] = "llm.OutputMaxSize";
 constexpr const char LLM_OPTION_GRAPH_COMPILER_CACHE_DIR[] = "llm.graph_compiler_cache_dir";
 constexpr const char LLM_OPTION_GRAPH_KEYS[] = "llm.graph_keys";
 constexpr const char LLM_OPTION_BATCH_MODE[] = "llm.batch_mode";
+constexpr const char LLM_OPTION_GRAPH_PATH[] = "llm.GraphPath";
+constexpr const char LLM_OPTION_INPUT_NODE_DEPLOYMENT[] = "llm.InputNodeDeployment";
 
 constexpr const char LLM_OPTION_POSTPROCESS_MODEL_INPUTS_SHAPES[] = "llm.PostProcessInputShapes";
 constexpr const char LLM_OPTION_POSTPROCESS_MODEL_INPUTS_DTYPES[] = "llm.PostProcessInputDtypes";

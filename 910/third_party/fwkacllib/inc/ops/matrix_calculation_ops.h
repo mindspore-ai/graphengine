@@ -2055,9 +2055,9 @@ REG_OP(SwinAttentionFFN)
    swin_transformer model specific structure.Operator only supports swin_transformer. \n
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float, bfloat16.
-* @li atten_mask: A Tensor. Must be one of the following types: float16, float, bfloat16.
-* @li relative_pos_bias: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float, bfloat16.
+* @li atten_mask: A Tensor. Must be one of the following types: float, bfloat16.
+* @li relative_pos_bias: A Tensor. Must be one of the following types: float, bfloat16.
 
 * @par Attributes:
 * @li scale_value: A optional attribute, the type is float. Defaults to 1.0. \n
@@ -2065,7 +2065,7 @@ REG_OP(SwinAttentionFFN)
 
 * @par Outputs:
 * One output, including:
-* @li y: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li y: A Tensor. Must be one of the following types: float, bfloat16.
 
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n

@@ -679,6 +679,46 @@ REG_OP(LayerNormV3)
     .OP_END_FACTORY_REG(LayerNormV3)
 
 /**
+* @brief LayernormV4 operator interface implementation
+*  calculating: x, gamma, beta
+*  mean  = np.mean(x, reduce_axis, keepdims=True)
+*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
+*  y = gamma*((x - mean) * rstd) + beta
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li normalized_shape: A Tensor. Must be one of the following types: int32
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li beta: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+*@par Attributes:
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-5 . \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+*/
+REG_OP(LayerNormV4)
+    .INPUT(x, "T1")
+    .INPUT(normalized_shape, "T2")
+    .OPTIONAL_INPUT(gamma, "T3")
+    .OPTIONAL_INPUT(beta, "T4")
+    .OUTPUT(y, "T5")
+    .OUTPUT(mean, "T6")
+    .OUTPUT(rstd, "T6")
+    .ATTR(epsilon, Float, 0.00001)
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_INT32}))
+    .DATATYPE(T3, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T4, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T5, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T6, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OP_END_FACTORY_REG(LayerNormV4)
+
+/**
 * @brief RmsNorm operator interface implementation
 *  calculating: x, gamma
 *  rstd = np.rsqrt(np.mean(np.power(x,2), reduce_axis, keepdims=True) + epsilon))
@@ -2126,6 +2166,7 @@ REG_OP(SigmoidFocalLossGrad)
 * @li x2: A tensor of type float16/bfloat16/float, describing the feature_map.
 * @li gamma: A tensor of type float16/bfloat16/float, describing the feature_map.
 * @li beta: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li bias: A tensor of type float16/bfloat16/float, describing the feature_map.
 
 * @par Attributes:
 * @li epsilon: A optional float.
@@ -2143,6 +2184,7 @@ REG_OP(AddLayerNorm)
     .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
     .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
     .INPUT(beta, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
     .OUTPUT(y, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
     .OUTPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
     .OUTPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))

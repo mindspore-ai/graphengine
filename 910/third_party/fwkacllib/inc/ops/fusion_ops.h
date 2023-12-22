@@ -120,8 +120,8 @@ REG_OP(IncreFlashAttention)
     .OPTIONAL_INPUT(dequant_scale2, TensorType({DT_UINT64}))
     .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(block_table, TensorType({DT_INT32}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
     .REQUIRED_ATTR(num_heads, Int)
@@ -188,6 +188,69 @@ REG_OP(PromptFlashAttention)
 
 
 /**
+* @brief Function FusedInferAttentionScore.
+
+* @par Inputs:
+* @li query: A matrix Tensor. The type support int8, float16, bf16.
+* @li key: A matrix Tensor. The type support int8, float16, bf16.
+* @li value: A matrix Tensor. The type support int8, float16, bf16.
+* @li pse_shift: A matrix Tensor. The type support float16, bf16.
+* @li atten_mask: A matrix Tensor. The type support float16, bool, uint8, int8.
+* @li actual_seq_lengths: A Tensor. The type support INT64.
+* @li actual_seq_lengths_kv: A Tensor. The type support INT64.
+* @li dequant_scale1: A Tensor. The type support UINT64.
+* @li quant_scale1: A Tensor. The type support float32.
+* @li dequant_scale2: A Tensor. The type support UINT64.
+* @li quant_scale2: A Tensor. The type support float32.
+* @li quant_offset2: A Tensor. The type support float32.
+* @li antiquant_scale: A Tensor. The type support float16, bf16.
+* @li antiquant_offset: A Tensor. The type support float16, bf16.
+* @li block_table: An int.
+
+* @par Attributes:
+* @li num_heads: An int. The number of the heads.
+* @li scale: A float. The scale value. Default: 1.0.
+* @li pre_tokens: An int. Previous tokens. Default: 2147483647.
+* @li next_tokens: An int. Next tokens. Default: 0.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
+* @li num_key_value_heads: key value num heads. Default: 0.
+* @li sparse_mode: sparse mode. Default: 0.
+* @li inner_precise: An int. 0, float16 high precision. 1, high performance. Default: 1.
+* @li block_size: An int. Default: 0.
+
+* @par Outputs:
+* attention_out: A matrix Tensor. The type support float16, float32, int8, bf16. \n
+*/
+REG_OP(FusedInferAttentionScore)
+    .INPUT(query, TensorType({DT_INT8, DT_FLOAT16,DT_BF16}))
+    .DYNAMIC_INPUT(key, TensorType({DT_INT8, DT_FLOAT16,DT_BF16}))
+    .DYNAMIC_INPUT(value, TensorType({DT_INT8, DT_FLOAT16,DT_BF16}))
+    .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_UINT8, DT_INT8}))
+    .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(actual_seq_lengths_kv, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(quant_scale1, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(dequant_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(block_table, TensorType({DT_INT32}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_BF16}))
+    .REQUIRED_ATTR(num_heads, Int)
+    .ATTR(scale, Float, 1.0)
+    .ATTR(pre_tokens, Int, 2147483647)
+    .ATTR(next_tokens, Int, 0)
+    .ATTR(input_layout, String, "BSH")
+    .ATTR(num_key_value_heads, Int, 0)
+    .ATTR(sparse_mode, Int, 0)
+    .ATTR(inner_precise, Int, 1)
+    .ATTR(block_size, Int, 0)
+    .OP_END_FACTORY_REG(FusedInferAttentionScore)
+
+
+/**
 * @brief Backwards calculation of FlashAttentionScore.
 
 * @par Inputs:
@@ -237,6 +300,8 @@ REG_OP(FlashAttentionScoreGrad)
     .OPTIONAL_INPUT(softmax_in, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(actual_seq_qlen, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(actual_seq_kvlen, TensorType({DT_INT64}))
     .OUTPUT(dq, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(dk, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(dv, TensorType({DT_FLOAT16, DT_BF16}))
@@ -266,6 +331,10 @@ REG_OP(FlashAttentionScoreGrad)
 * @li offset: A matrix Tensor. The type support float32.
 * @li deq_scale1: A matrix Tensor. The type support uint64.
 * @li deq_scale2: A matrix Tensor. The type support uint64.
+* @li antiquant_scale1: A matrix Tensor. The type support float16.
+* @li antiquant_scale2: A matrix Tensor. The type support float16.
+* @li antiquant_offset1: A matrix Tensor. The type support float16.
+* @li antiquant_offset2: A matrix Tensor. The type support float16.
 
 * @par Attributes:
 * @li activation: A string. The type of activation.
@@ -285,6 +354,10 @@ REG_OP(FFN)
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
     .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(antiquant_scale1, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(antiquant_scale2, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(antiquant_offset1, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(antiquant_offset2, TensorType({DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT16}))
     .REQUIRED_ATTR(activation, String)
     .ATTR(inner_precise, Int, 0)
@@ -396,5 +469,39 @@ REG_OP(MatmulAllReduce)
     .ATTR(is_trans_b, Bool, false)
     .ATTR(comm_turn, Int, 0)
     .OP_END_FACTORY_REG(MatmulAllReduce)
+
+
+/**
+* @brief Function WeightQuantBatchMatmulV2. \n
+
+* @par Inputs:
+* @li x: A matrix Tensor.
+* @li weight: A matrix Tensor of quantized weight.
+* @li antiquant_scale: A Tensor for antiquant scale.
+* @li antiquant_offset: A Tensor for antiquant offset.
+* @li quant_scale: A Tensor for quantization parameters.
+* @li quant_offset: A Tensor for quantization parameters.
+* @li bias: A Tensor. \n
+
+
+* @par Attributes:
+* @li transpose_x: A bool. x is transposed if true.
+* @li transpose_weight: A bool. weight is transposed if true. \n
+
+* @par Outputs:
+* y: A matrix Tensor.
+*/
+REG_OP(WeightQuantBatchMatmulV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(weight, TensorType({DT_INT8, DT_INT4}))
+    .INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(quant_scale, TensorType({DT_FLOAT, DT_UINT64}))
+    .OPTIONAL_INPUT(quant_offset, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .ATTR(transpose_x, Bool, false)
+    .ATTR(transpose_weight, Bool, false)
+    .OP_END_FACTORY_REG(WeightQuantBatchMatmulV2)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUSION_OPS_H_

@@ -177,6 +177,7 @@ enum {
     ASCENDCKERNEL,
     ASYS,
     ATRACE,
+    RTC,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 

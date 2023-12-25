@@ -65,7 +65,7 @@ class DumpProperties {
 
   const std::string &GetDumpStep() const;
 
-  void SetDumpWorkerId(const std::string &step);
+  void SetDumpWorkerId(const std::string &worker_id);
 
   const std::string &GetDumpWorkerId() const;
 

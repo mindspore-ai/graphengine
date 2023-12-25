@@ -2055,9 +2055,9 @@ REG_OP(SwinAttentionFFN)
    swin_transformer model specific structure.Operator only supports swin_transformer. \n
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float, bfloat16.
-* @li atten_mask: A Tensor. Must be one of the following types: float, bfloat16.
-* @li relative_pos_bias: A Tensor. Must be one of the following types: float, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li atten_mask: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li relative_pos_bias: A Tensor. Must be one of the following types: float16, float, bfloat16.
 
 * @par Attributes:
 * @li scale_value: A optional attribute, the type is float. Defaults to 1.0. \n
@@ -2071,10 +2071,10 @@ REG_OP(SwinAttentionFFN)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
 */
 REG_OP(MaskedSoftmaxWithRelPosBias)
-    .INPUT(x, TensorType({DT_BFLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_BFLOAT16, DT_FLOAT}))
-    .INPUT(relative_pos_bias, TensorType({DT_BFLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_BFLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BFLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BFLOAT16, DT_FLOAT}))
+    .INPUT(relative_pos_bias, TensorType({DT_FLOAT16, DT_BFLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BFLOAT16, DT_FLOAT}))
     .ATTR(scale_value, Float, 1.0)
     .ATTR(inner_precision_mode, Int, 0)
     .OP_END_FACTORY_REG(MaskedSoftmaxWithRelPosBias)

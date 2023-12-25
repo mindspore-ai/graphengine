@@ -45,6 +45,7 @@ class HeterogeneousVarManager {
   ~HeterogeneousVarManager() = default;
 
   void SetInitGraphNode(const GraphNodePtr &graph_node);
+  void RemoveInitGraphNode(const GraphId graph_id);
   std::vector<GraphNodePtr> GetInitGraphNodes() const;
   bool IsSuspended(const uint32_t graph_id) const;
 

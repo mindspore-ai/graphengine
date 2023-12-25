@@ -346,6 +346,16 @@ class GE_FUNC_VISIBILITY Session {
   /// @return Status result of function
   Status UnregisterExternalAllocator(const void *const stream) const;
 
+  /// @ingroup ge_graph
+  /// @brief shard graphs in the session according the add graph sequence
+  /// @return Status result of function
+  Status ShardGraphs();
+
+  /// @ingroup ge_graph
+  /// @brief save graphs in the session with specific file path
+  /// @return Status result of function
+  Status SaveGraphsToPb(const char_t *file_path);
+
  private:
   uint64_t sessionId_{0};
 };

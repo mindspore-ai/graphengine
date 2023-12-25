@@ -33,6 +33,8 @@ class DumpManager {
   void AddDumpProperties(const uint64_t session_id, const DumpProperties &dump_properties);
   void RemoveDumpProperties(const uint64_t session_id);
   static bool GetCfgFromOption(const std::map<std::string, std::string> &options_all, DumpConfig &dump_cfg);
+  void SetDumpWorkerId(const uint64_t session_id, std::string &worker_id);
+  bool CheckDumpFlag() const {return dump_flag_;}
 
  private:
   bool CheckHasNpuCollectPath() const;
@@ -43,6 +45,7 @@ class DumpManager {
   Status SetNormalDumpConf(const DumpConfig &dump_config, DumpProperties &dump_properties);
   void SetDumpList(const DumpConfig &dump_config, DumpProperties &dump_properties) const;
   std::mutex mutex_;
+  bool dump_flag_ = false;
   std::map<uint64_t, DumpProperties> dump_properties_map_;
   // enable dump from acl with session_id 0
   std::map<uint64_t, DumpProperties> infer_dump_properties_map_;

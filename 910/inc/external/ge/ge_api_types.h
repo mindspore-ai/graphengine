@@ -126,6 +126,7 @@ constexpr char_t const OPTION_EXEC_RANK_MAP[] = "ge.exec.rankMap";
 // Option key: enable engine parallel or not
 constexpr char_t const OPTION_EXEC_ENABLE_ENGINE_PARALLEL[] = "ge.exec.enableEngineParallel";
 constexpr char_t const OPTION_EXEC_ENGINE_PARALLEL_CONFIG_PATH[] = "ge.exec.engineParallelConfigPath";
+constexpr char_t const OPTION_EXEC_IS_IN_SHARD_GRAPH[] = "ge.exec.isInShardGraph";
 
 // Option key: host env os & cpu
 const char_t *const OPTION_HOST_ENV_OS = "ge.host_env_os";

@@ -64,7 +64,9 @@ class Endpoint {
   static Status SetBoolAnyValue(const ge::flow_model::proto::ModelRelationDef::AttrValue &attr, AnyValue &value);
 
   Status Serialize(ge::flow_model::proto::ModelRelationDef_Endpoint *proto_endpoint) const;
+  std::string SerializeToString() const;
   Status Deserialize(const ge::flow_model::proto::ModelRelationDef_Endpoint &proto_endpoint);
+  bool ParseFromString(const std::string &data);
 
  private:
   std::string name_;

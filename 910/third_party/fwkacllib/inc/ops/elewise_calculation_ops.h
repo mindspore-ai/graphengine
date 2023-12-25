@@ -344,7 +344,7 @@ REG_OP(Gcd)
     .INPUT(x1, "T")
     .INPUT(x2, "T")
     .OUTPUT(y, "T")
-    .DATATYPE(T, TensorType({DT_INT16, DT_INT32}))
+    .DATATYPE(T, TensorType({DT_INT16, DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(Gcd)
 
 /**
@@ -3704,6 +3704,37 @@ REG_OP(AxpyV2)
     .DATATYPE(T3, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .DATATYPE(T4, Promote({"T1", "T2", "T3"}))
     .OP_END_FACTORY_REG(AxpyV2)
+
+/**
+* @brief Computes the result of x1 - x2 * alpha.
+
+* @par Inputs:
+* @li x1: An ND tensor of type float16, bfloat16, float32, int32.
+* @li x2: An ND tensor of type float16, bfloat16, float32, int32.
+* @li alpha: A scalar tensor of type float16, bfloat16, float32, int32. \n
+
+* @par Outputs:
+* y: An ND tensor tensor with the same shape and type as "x1". \n
+
+* @par Third-party framework compatibility
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(Sxpy)
+    .INPUT(x1, "T1")
+    .INPUT(x2, "T2")
+    .OPTIONAL_INPUT(alpha, "T3")
+    .OUTPUT(y, "T4")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
+                              DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                              DT_COMPLEX64, DT_COMPLEX128, DT_BF16, DT_COMPLEX32}))
+    .DATATYPE(T2, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
+                              DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                              DT_COMPLEX64, DT_COMPLEX128, DT_BF16, DT_COMPLEX32}))
+    .DATATYPE(T3, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
+                              DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                              DT_COMPLEX64, DT_COMPLEX128, DT_BF16, DT_COMPLEX32}))
+    .DATATYPE(T4, Promote({"T1", "T2", "T3"}))
+    .OP_END_FACTORY_REG(Sxpy)
 
 /**
 * @brief Add the partial values of two tensors.

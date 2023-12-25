@@ -631,6 +631,24 @@ RTS_API rtError_t rtDebugUnRegister(rtModel_t mdl);
  */
 RTS_API rtError_t rtModelSetSchGroupId(rtModel_t mdl, const int16_t schGrpId);
 
+/**
+ * @ingroup rt_model
+ * @brief add stream sq lock task
+ * @param [in]  stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetStreamSqLock(rtStream_t stm);
+
+/**
+ * @ingroup rt_model
+ * @brief add stream sq unlock task
+ * @param [in]  stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetStreamSqUnlock(rtStream_t stm);
+
 #if defined(__cplusplus)
 }
 #endif

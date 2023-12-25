@@ -1209,6 +1209,30 @@ REG_OP(StackBallQuery)
     .OP_END_FACTORY_REG(StackBallQuery)
 
 /**
+* @brief Group the points in the point cloud according to the group they belong to. \n
+
+* @par Inputs:
+* Four inputs, including:
+* @li features:  Tensor of features to group, input shape is (N1 + N2 ..., C).
+* @li features_batch_cnt:  Input features nums in each batch, just like (N1, N2, ...). Defaults to None.
+* @li indices: The indices of features to group with, input shape is (M1 + M2 ..., nsample).
+* @li indices_batch_cnt: Input indices nums in each batch, just like (M1, M2, ...). Defaults to None. \n
+
+* @par Outputs:
+* One outputs: Grouped features, the shape is (M1 + M2 ..., C, nsample).
+
+* @par Third-party framework compatibility
+* Compatible with the MMCV operator GroupPoints(StackGroupPoints branch).
+*/
+REG_OP(StackGroupPoints)
+    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(features_batch_cnt, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(indices_batch_cnt, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(StackGroupPoints)
+
+/**
  * @brief Find and get the corresponding value from the corresponding ps according to the keys
  * @par Inputs:
  * @li keys: A tensor. Must be int64 type.
@@ -1787,30 +1811,128 @@ REG_OP(RGB2YUV422)
     .OUTPUT(yuv, TensorType({DT_UINT8}))
     .OP_END_FACTORY_REG(RGB2YUV422)
 
+/**
+* @brief Function AscendAttention. \n
+
+* @par Inputs:
+* six inputs, including:
+* @li x: A matrix Tensor. The type support float16, bf16.
+* @li w: A matrix Tensor. The type support float16, bf16.
+* @li bias: A matrix Tensor. The type support float16, bf16.
+* @li pse: A matrix Tensor. The type support float16, bf16.
+* @li drop_mask: A matrix Tensor. The type support uint8.
+* @li prefix: A list Tensor. The type support INT64.
+* @li atten_mask: A matrix Tensor. The type support bool, uint8.
+
+* @par Attributes:
+* @li scale_qk: A float. The scale value. Default: 1.0.
+* @li scale_q: A float. The scale value. Default: 1.0.
+* @li scale_k: A float. The scale value. Default: 1.0.
+* @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
+* @li pre_token: A int. Previous tokens.
+* @li next_token: A int. Next tokens.
+* @li sparse_mode: sparse mask scense, int.
+* @li head_num: A int. The number of the heads.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
+* @li pse_type: pse type, int.
+* @li head_size: D size, int.
+*
+* @par Outputs:
+* @li softmax_max: A matrix Tensor. The type support float32.
+* @li softmax_sum: A matrix Tensor. The type support float32.
+* @li qkv: A matrix Tensor. The type support float16, bf16.
+* @li attention_out: A matrix Tensor. The type support float16, bf16. \n
+*/
+REG_OP(AscendAttention)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(pse, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT8}))
+    .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_BOOL, DT_UINT8}))
+    .OUTPUT(softmax_max, TensorType({DT_FLOAT32}))
+    .OUTPUT(softmax_sum, TensorType({DT_FLOAT32}))
+    .OUTPUT(qkv, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_BF16}))
+    .ATTR(scale_qk, Float, 1.0)
+    .ATTR(scale_q, Float, 1.0)
+    .ATTR(scale_k, Float, 1.0)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(pre_token, Int, 2147483647)
+    .ATTR(next_token, Int, 2147483647)
+    .ATTR(sparse_mode, Int, 0)
+    .REQUIRED_ATTR(head_num, Int)
+    .REQUIRED_ATTR(input_layout, String)
+    .ATTR(pse_type, Int, 0)
+    .REQUIRED_ATTR(head_size, Int)
+    .OP_END_FACTORY_REG(AscendAttention)
+
+/**
+* @brief Function AscendAttentionGrad. \n
+
+* @par Inputs:
+* twelve inputs, including:
+* @li x: A matrix Tensor. The type support float16, bf16.
+* @li w: A matrix Tensor. The type support float16, bf16.
+* @li qkv: A matrix Tensor. The type support float16, bf16.
+* @li dy: A matrix Tensor. The type support float16, bf16.
+* @li pse: A matrix Tensor. The type support float16, bf16.
+* @li atten_mask: A matrix Tensor. The type support uint8, bool.
+* @li prefix: A list Tensor. The type support UINT64.
+* @li drop_mask: A matrix Tensor. The type support uint8.
+* @li softmax_max: A matrix Tensor. The type support float32.
+* @li softmax_sum: A matrix Tensor. The type support float32.
+* @li attention_in: A matrix Tensor. The type support float16, bf16.
+* @li bias: A matrix Tensor. The type support float16, bf16.
+
+* @par Attributes:
+* @li scale_qk: A float. The scale value. Default: 1.0.
+* @li scale_q: A float. The scale value. Default: 1.0.
+* @li scale_k: A float. The scale value. Default: 1.0.
+* @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
+* @li pre_token: A int. Previous tokens.
+* @li next_token: A int. Next tokens.
+* @li sparse_mode: sparse mask scense, int.
+* @li head_num: A int. The number of the heads.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
+* @li pse_type: pse type, int.
+* @li head_size: D size, int.
+
+* @par Outputs:
+* @li dx: A matrix Tensor. The type support float16, bf16.
+* @li dw: A matrix Tensor. The type support float16, bf16.
+* @li dpse: A matrix Tensor. The type support float16, bf16.
+* @li dbias: A matrix Tensor. The type support float16, bf16.\n
+*/
 REG_OP(AscendAttentionGrad)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .INPUT(qkv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(pse, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(attenMask, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(dropMask, TensorType({DT_UINT8}))
-    .OPTIONAL_INPUT(softmaxMax, TensorType({DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmaxSum, TensorType({DT_FLOAT32}))
-    .OPTIONAL_INPUT(attentionIn, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OUTPUT(dw, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OUTPUT(dpse, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .OUTPUT(dQkv, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
-    .ATTR(scaleQK, Float, 1.0)
-    .ATTR(scaleQ, Float, 1.0)
-    .ATTR(scaleK, Float, 1.0)
-    .ATTR(keepProb, Float, 1.0)
-    .ATTR(preToken, Int, 65536)
-    .ATTR(nextToken, Int, 65536)
-    .ATTR(sparseMode, Int, 0)
-    .REQUIRED_ATTR(headNum, Int)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(qkv, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(pse, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_BOOL, DT_UINT8}))
+    .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT8}))
+    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(dw, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(dpse, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(dbias, TensorType({DT_FLOAT16, DT_BF16}))
+    .ATTR(scale_qk, Float, 1.0)
+    .ATTR(scale_q, Float, 1.0)
+    .ATTR(scale_k, Float, 1.0)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(pre_token, Int, 2147483647)
+    .ATTR(next_token, Int, 2147483647)
+    .ATTR(sparse_mode, Int, 0)
+    .REQUIRED_ATTR(head_num, Int)
+    .REQUIRED_ATTR(input_layout, String)
+    .ATTR(pse_type, Int, 0)
+    .REQUIRED_ATTR(head_size, Int)
     .OP_END_FACTORY_REG(AscendAttentionGrad)
 
 /**
@@ -4118,23 +4240,25 @@ REG_OP(GeluGradV2)
 
 /**
 * @brief Computes the gradient for the GeGluV2 of "x" .
-
+*
 * @par Inputs:
 * Three inputs, including:
-* @li dy: A Tensor. Must be one of the following types:bfloat16, float16, float32.
+* @li dy: A Tensor. Must be one of the following types: float16, bfloat16, float32.
 * @li x: A Tensor of the same type as "dy".
 * @li gelu: A Tensor of the same type as "dy".
-
+*
 * @par Outputs:
-* dx: A Tensor. Has the same type as "dy".
-
+* @li dx: A Tensor. Has the same type as "dy".
+*
 * @par Attributes:
-* dim: A optional Int.  default is -1.
-* approximate: A optional Int. The gelu grad approximation algorithm to use: 0 or 1, default is 1('tanh'). \n
-
+* @li dim: A optional Int.  default is -1.
+* @li approximate: A optional Int. The gelu grad approximation algorithm to use: 0 or 1, default is 1('tanh'). \n
+* @li activate_left: A optional Bool. Whether the left side of x is used as an input parameter to the activation function, \n
+*     default is false, use the right side.
+*
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator GeGluGradV2.
-
+*
 * @par Restrictions:
 * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
@@ -4143,9 +4267,10 @@ REG_OP(GeGluGradV2)
     .INPUT(x, "T")
     .INPUT(gelu, "T")
     .OUTPUT(dx, "T")
-    .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .DATATYPE(T, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
     .ATTR(dim, Int, -1)
     .ATTR(approximate, Int, 1)
+    .ATTR(activate_left, Bool, false)
     .OP_END_FACTORY_REG(GeGluGradV2)
 
 /**

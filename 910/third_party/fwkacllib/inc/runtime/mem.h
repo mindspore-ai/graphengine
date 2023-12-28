@@ -101,6 +101,14 @@ typedef enum tagRtMemcpyKind {
     RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
 
+typedef enum tagRtCmoType {
+    RT_CMO_PREFETCH = 6, // Preload
+    RT_CMO_WRITEBACK, // Prewriteback
+    RT_CMO_INVALID, // invalid
+    RT_CMO_FLUSH, // flush
+    RT_CMO_RESERVED,
+} rtCmoOpCode_t;
+
 typedef enum tagRtMemInfoType {
     RT_MEMORYINFO_DDR,
     RT_MEMORYINFO_HBM,
@@ -484,6 +492,30 @@ typedef struct {
 
 RTS_API rtError_t rtMemcpyAsyncPtr(void *memcpyAddrInfo, uint64_t destMax, uint64_t count,
                                    rtMemcpyKind_t kind, rtStream_t stream, uint32_t qosCfg);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief launch common cmo task on the stream.
+ * @param [in] cmoAddrInfo      cmo task info
+ * @param [in] destMax          destMax
+ * @param [in] cmoOpCode        opcode
+ * @param [in] stm              launch task on the stream
+ * @param [in] flag             flag
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+typedef struct {
+    uint32_t resv0;
+    uint32_t resv1;
+    uint16_t num_outer;
+    uint16_t num_inner;
+    uint32_t len_inner;
+    uint64_t src;
+    uint32_t stride_outer;
+    uint32_t stride_inner;
+} rtCmoAddrInfo;
+
+RTS_API rtError_t rtCmoAddrTaskLaunch(void *cmoAddrInfo, uint64_t destMax, rtCmoOpCode_t cmoOpCode,
+    rtStream_t stm, uint32_t flag);
 
 /**
  * @ingroup dvrt_mem

@@ -2078,6 +2078,38 @@ REG_OP(MaskedSoftmaxWithRelPosBias)
     .ATTR(scale_value, Float, 1.0)
     .ATTR(inner_precision_mode, Int, 0)
     .OP_END_FACTORY_REG(MaskedSoftmaxWithRelPosBias)
+
+/**
+* @brief Function QuantBatchMatmulV3.
+
+* @par Inputs:
+* twelve inputs, including:
+* @li x1: A matrix Tensor. The type support int8.
+* @li x2: A matrix Tensor. The type support int8.
+* @li scale: A matrix Tensor. The type support uint64, float32. 
+* @li offset: A matrix Tensor. The type support float32.
+* @li bias: A matrix Tensor. The type support int32. \n
+
+
+* @par Attributes:
+* @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
+* [M, K] before multiplication. Default: false.
+* @li transpose_x1: A bool. If True, changes the shape of "x2" from [N, K] to
+* [K, N] before multiplication. Default: false. \n
+
+* @par Outputs:
+* y: A matrix Tensor. The type support float16, int8.
+*/
+REG_OP(QuantBatchMatmulV3)
+    .INPUT(x1, TensorType({DT_INT8}))
+    .INPUT(x2, TensorType({DT_INT8}))
+    .INPUT(scale, TensorType({DT_UINT64, DT_FLOAT}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT8}))
+    .ATTR(transpose_x1, Bool, false)
+    .ATTR(transpose_x2, Bool, false)
+    .OP_END_FACTORY_REG(QuantBatchMatmulV3)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

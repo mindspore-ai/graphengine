@@ -169,7 +169,7 @@ typedef struct aclrtPhysicalMemProp {
 } aclrtPhysicalMemProp;
 
 typedef enum aclrtMemGranularityOptions {
-    ACL_RT_MEM_ALLOC_GRANULARITY_MINIMUM = 0,
+    ACL_RT_MEM_ALLOC_GRANULARITY_MINIMUM,
     ACL_RT_MEM_ALLOC_GRANULARITY_RECOMMENDED,
     ACL_RT_MEM_ALLOC_GRANULARITY_UNDEF = 0xFFFF,
 } aclrtMemGranularityOptions;
@@ -1668,7 +1668,7 @@ ACL_FUNC_VISIBILITY aclError aclrtMemExportToShareableHandle(aclrtDrvMemHandle h
 
 /**
  * @ingroup AscendCL
- * @brief import an mem allocation from a shareable Handle
+ * @brief import a mem allocation from a shareable Handle
  * @param [in] shareableHandle  shareable Handle
  * @param [in] deviceId  used to generate the handle in the specified Device Id
  * @param [out] handle handle in the process

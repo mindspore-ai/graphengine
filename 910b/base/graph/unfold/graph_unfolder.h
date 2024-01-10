@@ -28,6 +28,8 @@ class GraphUnfolder {
   static bool IsGraphNeedUnfold(const ge::ComputeGraphPtr &root_graph);
   static bool IsGraphDynamicCompiled(const ge::ComputeGraphPtr &graph);
 
+  static bool IsDirectInputNode(const ge::NodePtr &node, const ge::ComputeGraphPtr &graph);
+
  private:
     static ge::Status DoUnlinkDataAnchors(const ge::OutDataAnchorPtr &out_data_anchor,
                                           const ge::InDataAnchorPtr &in_data_anchor);

@@ -120,6 +120,7 @@ class ExchangeService {
   virtual Status DequeueTensor(const int32_t device_id, const uint32_t queue_id, GeTensor &tensor,
                                ControlInfo &control_info) = 0;
   virtual Status DequeueMbuf(int32_t device_id, uint32_t queue_id, rtMbufPtr_t *m_buf, int32_t timeout) = 0;
+  virtual void ResetQueueInfo(const int32_t device_id, const uint32_t queue_id) = 0;
 };
 }
 #endif  // BASE_EXEC_RUNTIME_DEPLOY_EXCHANGE_SERVICE_H_

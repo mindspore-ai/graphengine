@@ -39,10 +39,6 @@ struct ModelQueueIndex {
   }
 };
 
-// model id, src endpoint index, group id, groups(entry index, dst endpoint index)
-using DynamicSchedIndex = std::map<int32_t, std::map<int32_t, std::map<int32_t,
-  std::vector<std::pair<int32_t, int32_t>>>>>;
-
 /**
  * Deploy plan for GeRootModel
  */
@@ -68,6 +64,16 @@ class DeployPlan {
     int32_t GetOsId() const;
     void SetOsId(int32_t os_id);
 
+    bool operator<(const DeviceInfo& other) const {
+      if (node_id_ != other.node_id_) {
+        return node_id_ < other.node_id_;
+      }
+      if (device_id_ != other.device_id_) {
+        return device_id_ < other.device_id_;
+      }
+      return type_ < other.type_;
+    }
+
    private:
     std::string key_ = "1_0_0";
     std::string desc_ = "1_0_0(-1)";
@@ -77,6 +83,20 @@ class DeployPlan {
     int32_t proxy_device_id_ = -1;
     int32_t hcom_device_id_ = 0;
     int32_t os_id_ = 0;
+  };
+  // model id, src endpoint index (device info, is_normal_state)
+  // group id, dst mul_submodel_id, (entry index,
+  // dst endpoint index, device info, is_normal_state)
+  using DynamicSchedIndex = std::map<int32_t, std::map<int32_t, std::pair<std::pair<DeviceInfo, bool>,
+      std::map<int32_t, std::pair<uint32_t, std::vector<std::pair<int32_t,
+      std::pair<int32_t, std::pair<DeviceInfo, bool>>>>>>>>>;
+  // node_id、device_id、device_type、is_normal_state
+  using DeviceStateList = std::map<DeviceInfo, bool>;
+
+  struct AbnormalStatusCallbackInfo {
+    std::mutex mu;
+    // key: root_model_id
+    std::map<uint32_t, std::function<Status(uint32_t, DeviceStateList)>> callback_list;
   };
 
   enum class QueueAction {
@@ -216,6 +236,7 @@ class DeployPlan {
   const DynamicSchedPlan &GetDynamicSchedPlan() const;
   void SetIsDynamicSched(const bool is_dynamic_sched);
   const bool &GetIsDynamicSched() const;
+  std::map<std::string, std::vector<DeployPlan::DeviceInfo>> &GetModelName2DeviceInfo();
 
  private:
   friend class DeployPlannerBase;
@@ -237,6 +258,7 @@ class DeployPlan {
   std::map<std::string, DeployPlan::DeviceInfo> flow_recv_tag_name_to_local_device_info_;
   DynamicSchedPlan dynamic_sched_plan_;
   bool is_dynamic_sched_ = false;
+  std::map<std::string, std::vector<DeployPlan::DeviceInfo>> model_name_to_device_infos_;
 };
 
 class DeployPlannerBase {
@@ -346,6 +368,8 @@ class DeployPlannerBase {
                         const std::string &dst_model_instance_name) const;
   static bool CanConnectWithQ(const DeployPlan::DeviceInfo &src_device_info,
                               const DeployPlan::DeviceInfo &dst_device_info);
+  static bool CanConnectWithLocalQ(const DeployPlan::DeviceInfo &src_device_info,
+                                   const DeployPlan::DeviceInfo &dst_device_info);
   Status GetOrCreateMappingTagPairEntry(const int32_t endpoint_idx,
                                         const DeployPlan::QueueInfo &mapping_queue_info,
                                         std::pair<int32_t, int32_t> &tag_pair);
@@ -442,6 +466,7 @@ class DeployPlannerBase {
   std::map<std::pair<int32_t, std::string>, std::pair<int32_t, int32_t>> endpoint_device_tags_mapping_;
   std::set<std::string> relations_;  // key: src_endpoint_index_to_dst_endpoint_index
   std::set<std::string> no_group_endpoint_names_;
+  std::map<std::string, int32_t> model_name_to_id_;
 };
 
 class ModelRelationFlattener {

@@ -138,31 +138,31 @@ REG_OP(IncreFlashAttention)
 * @brief Function PromptFlashAttention.
 
 * @par Inputs:
-* @li query: A matrix Tensor. The type support float16, bf16, float32 .
-* @li key: A matrix Tensor. The type support float16, bf16, float32.
-* @li value: A matrix Tensor. The type support float16, bf16, float32.
-* @li padding_mask: A matrix Tensor. The type support float16, bf16, float32.
-* @li atten_mask: A matrix Tensor. The type support float16, bf16, float32.
-* @li actual_seq_lengths: A Tensor. The type support INT64.
-* @li actual_seq_lengths_kv: A Tensor. The type support INT64.
-* @li deq_scale1: A Tensor. The type support INT64.
+* @li query: A matrix Tensor. The type support float16, float32, bf16, int8.
+* @li key: A matrix Tensor. The type support float16, float32, bf16, int8.
+* @li value: A matrix Tensor. The type support float16, float32, bf16, int8.
+* @li pse_shift: A matrix Tensor. The type support float16, float32, bf16.
+* @li atten_mask: A matrix Tensor. The type support float16, bool, int8, uint8.
+* @li actual_seq_lengths: A Tensor. The type support int64.
+* @li actual_seq_lengths_kv: A Tensor. The type support int64.
+* @li deq_scale1: A Tensor. The type support uint64.
 * @li quant_scale1: A Tensor. The type support float32.
-* @li deq_scale2: A Tensor. The type support INT64.
+* @li deq_scale2: A Tensor. The type support uint64.
 * @li quant_scale2: A Tensor. The type support float32.
 * @li quant_offset2: A Tensor. The type support float32.
 
 * @par Attributes:
 * @li num_heads: A int. The number of the heads.
 * @li scale_value: A float. The scale value. Default: 1.0.
-* @li pre_tokens: A int. Previous tokens. Default: 214748647
-* @li next_tokens: A int. Next tokens. Default: 0
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
-* @li num_key_value_heads: key value num heads. Default: 1
-* @li sparse_mode: sparse mode. Default: 0
+* @li pre_tokens: A int. Previous tokens. Default: 214748647.
+* @li next_tokens: A int. Next tokens. Default: 0.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD"]. Default: "BSH".
+* @li num_key_value_heads: key value num heads. Default: 1.
+* @li sparse_mode: sparse mode. Default: 0.
 * @li inner_precise: A int. 0, float16 high precision. 1, high performance.
 
 * @par Outputs:
-* attention_out: A matrix Tensor. The type support float16, float32, int8. \n
+* attention_out: A matrix Tensor. The type support float16, float32, bf16, int8. \n
 */
 REG_OP(PromptFlashAttention)
     .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_INT8}))

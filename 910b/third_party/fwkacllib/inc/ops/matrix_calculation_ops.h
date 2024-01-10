@@ -1814,7 +1814,7 @@ REG_OP(FillDiagonal)
 * @brief: Returns the sum of the elements of the diagonal of the input 2-D matrix. \n
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16,
+* x: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16, bool,
 *                                                 int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
 
 * @par Outputs:

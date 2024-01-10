@@ -27,6 +27,12 @@
 #include "exec_runtime/deploy/exchange_service.h"
 
 namespace ge {
+constexpr uint32_t kRedeploying = 1U;
+constexpr uint32_t kRedeployDone = 2U;
+constexpr uint32_t kDeploying = 3U;
+constexpr uint32_t kDeployDone = 4U;
+constexpr uint32_t kStartRedeploy = 1U;
+constexpr uint32_t kDynamicSched = 2U;
 struct DeployResult {
   uint32_t model_id;
   std::vector<DeployQueueAttr> input_queue_attrs;
@@ -41,9 +47,10 @@ struct DeployResult {
   std::vector<DeployQueueAttr> status_output_queue_attrs;
   std::vector<DeployQueueAttr> sched_input_queue_attrs;
   std::vector<DeployQueueAttr> sched_output_queue_attrs;
-  DynamicSchedIndex model_index_info;
+  DeployPlan::DynamicSchedIndex model_index_info;
   std::map<int32_t, int32_t> datagw_request_bindings;
   bool is_dynamic_sched = false;
+  DeployPlan::AbnormalStatusCallbackInfo *abnormal_status_callback_info = nullptr;
 };
 
 class ModelDeployer {

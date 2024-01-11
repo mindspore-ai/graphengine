@@ -349,12 +349,12 @@ class GE_FUNC_VISIBILITY Session {
   /// @ingroup ge_graph
   /// @brief shard graphs in the session according the add graph sequence
   /// @return Status result of function
-  Status ShardGraphs();
+  Status ShardGraphs() const;
 
   /// @ingroup ge_graph
   /// @brief save graphs in the session with specific file path
   /// @return Status result of function
-  Status SaveGraphsToPb(const char_t *file_path);
+  Status SaveGraphsToPb(const char_t *file_path) const;
 
  private:
   uint64_t sessionId_{0};

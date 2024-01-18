@@ -215,6 +215,17 @@ typedef struct tagrtMemcpyAsyncTaskInfo {
     uint32_t reserved;
 } rtMemcpyAsyncTaskInfo_t;
 
+typedef struct tagrtCmoAddrTaskInfo {
+    const void *src;
+    uint32_t len_inner;
+    uint16_t num_outer;
+    uint16_t num_inner;
+    uint32_t stride_outer;
+    uint32_t stride_inner;
+    uint8_t cmoOpCode;
+    uint8_t reserved[8];
+} rtCmoAddrTaskInfo_t;
+
 typedef struct tagrtNotifyTaskInfo {
     uint32_t notifyID;
     uint32_t reserved[9];
@@ -320,6 +331,7 @@ typedef struct tagTaskInfo {
         rtNpuClearFloatStatusTask_t npuClearFloatStatusTask;
         rtNpuGetFloatDebugStatusTask_t npuGetFloatDebugStatusTask;
         rtNpuClearFloatDebugStatusTask_t npuClearFloatDebugStatusTask;
+        rtCmoAddrTaskInfo_t cmoAddrTask;
         uint32_t reserved[10];
     } u;
 } rtTaskInfo_t;

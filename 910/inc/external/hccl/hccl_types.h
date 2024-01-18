@@ -98,6 +98,20 @@ typedef struct HcclRootInfoDef {
     char internal[HCCL_ROOT_INFO_BYTES];
 } HcclRootInfo;
 
+typedef enum {
+    HCCL_SEND = 0,
+    HCCL_RECV = 1,
+    HCCL_SEND_RECV_RESERVED
+} HcclSendRecvType;
+
+typedef struct HcclSendRecvItemDef {
+    HcclSendRecvType sendRecvType;
+    void *buf;
+    uint64_t count;
+    HcclDataType dataType;
+    uint32_t remoteRank;
+} HcclSendRecvItem;
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

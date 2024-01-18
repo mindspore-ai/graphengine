@@ -272,7 +272,7 @@ REG_OP(EmbeddingTableFindAndInit)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0(default:False). \n
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
 */
 REG_OP(EmbeddingApplyAdam)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -312,10 +312,10 @@ REG_OP(EmbeddingApplyAdam)
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
 * @li amsgrad: An optional bool, indicates whether to use the AMSGrad variant of htis algorithm from
-*     the paper On the Convergence of Adam and Beyond(default:False).
+*     the paper On the Convergence of Adam and Beyond.
 *     If "True", max_grad_norm input and output must be entered.
-* @li maximize: An optional bool, maximize the params based on the objective(default:False).
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0(default:False). \n
+* @li maximize: An optional bool, maximize the params based on the objective.
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
 */
 REG_OP(EmbeddingApplyAdamW)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -351,7 +351,7 @@ REG_OP(EmbeddingApplyAdamW)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0(default:False). \n
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
 */
 REG_OP(EmbeddingApplyAdaGrad)
     .INPUT(var_handle, TensorType({DT_RESOURCE}))
@@ -378,7 +378,7 @@ REG_OP(EmbeddingApplyAdaGrad)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0(default:false). \n
+* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0. \n
 */
 REG_OP(EmbeddingApplySgd)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -407,7 +407,7 @@ REG_OP(EmbeddingApplySgd)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0(default:false). \n
+* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0. \n
 */
 REG_OP(EmbeddingApplyRmsprop)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))

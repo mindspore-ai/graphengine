@@ -203,7 +203,7 @@ REG_OP(Less)
           int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128, DT_BOOL. \n
 
 * @par Outputs:
-* y: A Tensor. Has the same type and format as input "x1" if the type of "x1" is not bool. 
+* y: A Tensor. Has the same type and format as input "x1" if the type of "x1" is not bool.
      If the type of "x1" is bool, y is float type. \n
 
 * @par Third-party framework compatibility
@@ -1311,7 +1311,7 @@ REG_OP(FusedMulAddAdd)
     .INPUT(x4, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .OP_END_FACTORY_REG(FusedMulAddAdd)
-	
+
 /**
 *@brief Returns x1 + x2 element-wise. \n
 
@@ -1805,17 +1805,17 @@ REG_OP(Atan2)
 
 /**
 * @brief Computes fresnel_cos of x element-wise.
-* 
+*
 * @par Inputs:
 * x: A tensor. Must be one of the following types: bfloat16, float16, float32,
 * double. \n
-* 
+*
 * @par Outputs:
 * y: A tensor. Has the same type as "x". \n
-* 
+*
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator FresnelCos.
-* 
+*
 */
 REG_OP(FresnelCos)
     .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -1824,18 +1824,18 @@ REG_OP(FresnelCos)
 
 /**
 * @brief Computes fresnel_sin of x element-wise.
- 
-* 
+
+*
 * @par Inputs:
 * x: A tensor. Must be one of the following types: bfloat16, float16, float32,
 * double. \n
-* 
+*
 * @par Outputs:
 * y: A tensor. Has the same type as "x". \n
-* 
+*
 * @par Third-party framework compatibility:
 * Compatible with the TensorFlow operator FresnelSin.
-* 
+*
 */
 REG_OP(FresnelSin)
     .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -3588,8 +3588,8 @@ REG_OP(KLDivV2)
 
 *@par Inputs:
 *One inputs, including:
-*@li x: A Tensor. Must be one of the following types: 
-        float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, bool, bfloat16 \n
+*@li x: A Tensor. Must be one of the following types:
+        double, float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, bool, bfloat16 \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -3600,9 +3600,9 @@ REG_OP(KLDivV2)
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(TensorMove)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
+    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
                           DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL, DT_BF16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
+    .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
                            DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL, DT_BF16}))
     .OP_END_FACTORY_REG(TensorMove)
 
@@ -3741,7 +3741,7 @@ REG_OP(Sxpy)
 
 * @par Inputs:
 * @li x1: A Tensor in 5HD, and must be one of the following types: float16,
-* float32. \n
+* float32, bfloat16. \n
 * @li x2: A Tensor of the same type as "x1", and the same shape as "x1",
 * except for the C1 value. \n
 
@@ -3756,9 +3756,9 @@ REG_OP(Sxpy)
 * except for the C1 value. Record the result after adding. \n
 */
 REG_OP(StrideAdd)
-    .INPUT(x1, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .INPUT(x2, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .OUTPUT(y, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(x1, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16 }))
+    .INPUT(x2, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16 }))
+    .OUTPUT(y, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16 }))
     .REQUIRED_ATTR(x1_c1_offset, Int)
     .REQUIRED_ATTR(x2_c1_offset, Int)
     .REQUIRED_ATTR(c1_len, Int)

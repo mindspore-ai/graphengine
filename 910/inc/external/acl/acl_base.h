@@ -154,6 +154,7 @@ typedef enum {
     ACL_COMPLEX64 = 16,
     ACL_COMPLEX128 = 17,
     ACL_BF16 = 27,
+    ACL_INT4 = 29,
     ACL_UINT1 = 30,
     ACL_COMPLEX32 = 33,
 } aclDataType;

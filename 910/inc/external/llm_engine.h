@@ -41,7 +41,7 @@ class LLMEngine {
   ge::Status LLMEngineInitializeV2(
       const std::map<ge::AscendString, std::vector<ge::ModelBufferData>> &model_type_to_buffer_datas,
       const std::map<ge::AscendString, ge::AscendString> &options);
-  static LLMEngineStatus FetchLLMEngineStatus();
+  LLMEngineStatus FetchLLMEngineStatus();
   int64_t FetchLlmEngineQueueStatus();
   // API2：execute prompt
   ge::Status RunPromptAsync(const LLMReq &req, const std::vector<ge::Tensor> &inputs, ge::RunAsyncCallback callback);
@@ -76,14 +76,15 @@ class LLMEngine {
   ge::Status PullKv(const LLMReq &req);
 
   // @brief 将KV从本暂存区中merge到batch中, 该接口会释放暂存区中的kv
-  // @param [in] req_id
-  // @param [in] batch_index
+  // @param [in] req_id 请求id, 需要与PullKv的匹配
+  // @param [in] batch_index 目标batch的index
+  // @param [in] batch_id 目标batch的id, 使能交错式调度时可以设置，默认为0
   // @return Status result of function
   //         SUCCESS: 成功
   //         LLM_PARAM_INVALID: 参数错误, 如cluster id校验错, 当前非manual batching模式, batch_index越界等
   //         LLM_KV_CACHE_NOT_EXIST: KV不在暂存区
   //         FAILED: 合并KV失败
-  ge::Status MergeKv(const uint64_t req_id, const int32_t batch_index);
+  ge::Status MergeKv(const uint64_t req_id, const int32_t batch_index, const int32_t batch_id = 0);
 
   // @brief 执行Decoder推理
   // @param [in] req_ids 每个batch对应的request_id, 如果一个batch无效，其对应的req_id需要设置为UINT64_MAX

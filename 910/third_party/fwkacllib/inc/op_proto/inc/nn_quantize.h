@@ -19,6 +19,27 @@
  */
 #ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_QUANTIZE_H_
 #define OPS_BUILT_IN_OP_PROTO_INC_NN_QUANTIZE_H_
+#include "graph/operator_reg.h"
+
+namespace ge {
+/**
+* @brief trans quant param form float32 to uint64 . \n
+
+* @par Inputs:
+* @li scale: A tensor of type float32.
+* @li offset: A tensor of type float32.
 
 
+* @par Outputs:
+* @li y: output tensor of type uint64.
+
+* @par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe, Onnx, Tensorflow or Pythorch.
+*/
+REG_OP(TransQuantParamV2)
+    .INPUT(scale, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_UINT64}))
+    .OP_END_FACTORY_REG(TransQuantParamV2)
+}  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_QUANTIZE_H_

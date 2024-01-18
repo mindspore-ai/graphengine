@@ -1290,11 +1290,11 @@ REG_OP(AngleV2)
 *@par Inputs:
 *Three inputs, including:
 * @li predict: A tensor. Must be one of the following types:
-*     float16, float32. \n
+*     float16, float32, bfloat16. \n
 * @li label: A tensor with same shape of predict. Must be one of the following types:
-*     float16, float32. \n
+*     float16, float32, bfloat16. \n
 * @li dout: A tensor with same shpae of predcit. Must be one of the following types:
-*     float16, float32. \n
+*     float16, float32, bfloat16. \n
 
 *@par Attributes:
 * reduction: Specifies the reduction to apply to the output:
@@ -1307,10 +1307,10 @@ REG_OP(AngleV2)
 *Compatible with the Pytorch operator SoftMarginLoss Backward. \n
 */
 REG_OP(SoftMarginLossGrad)
-    .INPUT(predict, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(label, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(dout, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(gradient, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SoftMarginLossGrad)
 

@@ -2065,7 +2065,7 @@ REG_OP(SwinAttentionFFN)
 
 * @par Outputs:
 * One output, including:
-* @li y: A Tensor. Must be one of the following types: float, bfloat16.
+* @li y: A Tensor. Must be one of the following types: float16, float, bfloat16.
 
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
@@ -2103,7 +2103,7 @@ REG_OP(MaskedSoftmaxWithRelPosBias)
 REG_OP(QuantBatchMatmulV3)
     .INPUT(x1, TensorType({DT_INT8}))
     .INPUT(x2, TensorType({DT_INT8}))
-    .INPUT(scale, TensorType({DT_UINT64, DT_FLOAT}))
+    .INPUT(scale, TensorType({DT_UINT64, DT_FLOAT, DT_INT64}))
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT8}))

@@ -26,69 +26,69 @@ extern "C" {
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
-
-const uint32_t MSPROF_REPORT_DATA_MAGIC_NUM = 0x5A5AU;
-const uint64_t MSPROF_TASK_TIME_L0 = 0x00000800ULL; // mean PROF_TASK_TIME
-const uint64_t MSPROF_EVENT_FLAG = 0xFFFFFFFFFFFFFFFFULL;
+#define MSPROF_REPORT_DATA_MAGIC_NUM 0x5A5AU
+#define MSPROF_TASK_TIME_L0 0x00000800ULL  // mean PROF_TASK_TIME
+#define MSPROF_EVENT_FLAG 0xFFFFFFFFFFFFFFFFULL
 typedef void* VOID_PTR;
 typedef int32_t (*ProfCommandHandle)(uint32_t type, VOID_PTR data, uint32_t len);
 typedef int32_t (*MsprofReportHandle)(uint32_t moduleId, uint32_t type, VOID_PTR data, uint32_t len);
 typedef int32_t (*MsprofCtrlHandle)(uint32_t type, VOID_PTR data, uint32_t len);
 typedef int32_t (*MsprofSetDeviceHandle)(VOID_PTR data, uint32_t len);
+typedef int32_t (*AicpuStartFunc)();
 
 /* Msprof report level */
-const uint16_t MSPROF_REPORT_PYTORCH_LEVEL = 30000;
-const uint16_t MSPROF_REPORT_PTA_LEVEL = 25000;
-const uint16_t MSPROF_REPORT_ACL_LEVEL = 20000;
-const uint16_t MSPROF_REPORT_MODEL_LEVEL = 15000;
-const uint16_t MSPROF_REPORT_NODE_LEVEL = 10000;
-const uint16_t MSPROF_REPORT_HCCL_NODE_LEVEL = 5500;
-const uint16_t MSPROF_REPORT_RUNTIME_LEVEL = 5000;
+#define MSPROF_REPORT_PYTORCH_LEVEL 30000U
+#define MSPROF_REPORT_PTA_LEVEL 25000U
+#define MSPROF_REPORT_ACL_LEVEL 20000U
+#define MSPROF_REPORT_MODEL_LEVEL 15000U
+#define MSPROF_REPORT_NODE_LEVEL 10000U
+#define MSPROF_REPORT_HCCL_NODE_LEVEL 5500U
+#define MSPROF_REPORT_RUNTIME_LEVEL 5000U
 
 /* Msprof report type of acl(20000) level(acl), offset: 0x000000 */
-const uint32_t MSPROF_REPORT_ACL_OP_BASE_TYPE            = 0x010000U;
-const uint32_t MSPROF_REPORT_ACL_MODEL_BASE_TYPE         = 0x020000U;
-const uint32_t MSPROF_REPORT_ACL_RUNTIME_BASE_TYPE       = 0x030000U;
-const uint32_t MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        = 0x040000U;
+#define MSPROF_REPORT_ACL_OP_BASE_TYPE            0x010000U
+#define MSPROF_REPORT_ACL_MODEL_BASE_TYPE         0x020000U
+#define MSPROF_REPORT_ACL_RUNTIME_BASE_TYPE       0x030000U
+#define MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        0x040000U
 
 
 /* Msprof report type of acl(20000) level(host api), offset: 0x050000 */
-const uint32_t MSPROF_REPORT_ACL_NN_BASE_TYPE            = 0x050000U;
-const uint32_t MSPROF_REPORT_ACL_ASCENDC_TYPE            = 0x060000U;
-const uint32_t MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     = 0x070000U;
-const uint32_t MSPROF_REPORT_ACL_DVPP_BASE_TYPE          = 0x090000U;
-const uint32_t MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         = 0x0A0000U;
+#define MSPROF_REPORT_ACL_NN_BASE_TYPE            0x050000U
+#define MSPROF_REPORT_ACL_ASCENDC_TYPE            0x060000U
+#define MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     0x070000U
+#define MSPROF_REPORT_ACL_DVPP_BASE_TYPE          0x090000U
+#define MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         0x0A0000U
 
 /* Msprof report type of model(15000) level, offset: 0x000000 */
-const uint32_t MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    = 0;         /* type info: graph_id_map */
-const uint32_t MSPROF_REPORT_MODEL_EXECUTE_TYPE         = 1;         /* type info: execute */
-const uint32_t MSPROF_REPORT_MODEL_LOAD_TYPE            = 2;         /* type info: load */
-const uint32_t MSPROF_REPORT_MODEL_INPUT_COPY_TYPE      = 3;         /* type info: IntputCopy */
-const uint32_t MSPROF_REPORT_MODEL_OUTPUT_COPY_TYPE     = 4;         /* type info: OutputCopy */
-const uint32_t MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    = 7;         /* type info: logic_stream_info */
-const uint32_t MSPROF_REPORT_MODEL_EXEOM_TYPE           = 8;         /* type info: exeom */
-const uint32_t MSPROF_REPORT_MODEL_UDF_BASE_TYPE        = 0x010000U;  /* type info: udf_info */
-const uint32_t MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      = 0x020000U;  /* type info: aicpu */
+#define MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    0U         /* type info: graph_id_map */
+#define MSPROF_REPORT_MODEL_EXECUTE_TYPE         1U         /* type info: execute */
+#define MSPROF_REPORT_MODEL_LOAD_TYPE            2U         /* type info: load */
+#define MSPROF_REPORT_MODEL_INPUT_COPY_TYPE      3U         /* type info: IntputCopy */
+#define MSPROF_REPORT_MODEL_OUTPUT_COPY_TYPE     4U         /* type info: OutputCopy */
+#define MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    7U         /* type info: logic_stream_info */
+#define MSPROF_REPORT_MODEL_EXEOM_TYPE           8U         /* type info: exeom */
+#define MSPROF_REPORT_MODEL_UDF_BASE_TYPE        0x010000U  /* type info: udf_info */
+#define MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      0x020000U  /* type info: aicpu */
 
 /* Msprof report type of node(10000) level, offset: 0x000000 */
-const uint32_t MSPROF_REPORT_NODE_BASIC_INFO_TYPE       = 0;  /* type info: node_basic_info */
-const uint32_t MSPROF_REPORT_NODE_TENSOR_INFO_TYPE      = 1;  /* type info: tensor_info */
-const uint32_t MSPROF_REPORT_NODE_FUSION_OP_INFO_TYPE   = 2;  /* type info: funsion_op_info */
-const uint32_t MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  = 4;  /* type info: context_id_info */
-const uint32_t MSPROF_REPORT_NODE_LAUNCH_TYPE           = 5;  /* type info: launch */
-const uint32_t MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      = 6;  /* type info: task_memory_info */
-const uint32_t MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     = 8;  /* type info: op exec */
-const uint32_t MSPROF_REPORT_NODE_ATTR_INFO_TYPE        = 9;  /* type info: node_attr_info */
+#define MSPROF_REPORT_NODE_BASIC_INFO_TYPE       0U  /* type info: node_basic_info */
+#define MSPROF_REPORT_NODE_TENSOR_INFO_TYPE      1U  /* type info: tensor_info */
+#define MSPROF_REPORT_NODE_FUSION_OP_INFO_TYPE   2U  /* type info: funsion_op_info */
+#define MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  4U  /* type info: context_id_info */
+#define MSPROF_REPORT_NODE_LAUNCH_TYPE           5U  /* type info: launch */
+#define MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      6U  /* type info: task_memory_info */
+#define MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     8U  /* type info: op exec */
+#define MSPROF_REPORT_NODE_ATTR_INFO_TYPE        9U  /* type info: node_attr_info */
 
 /* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
-const uint32_t MSPROF_REPORT_NODE_GE_API_BASE_TYPE      = 0x010000U; /* type info: ge api */
-const uint32_t MSPROF_REPORT_NODE_HCCL_BASE_TYPE        = 0x020000U; /* type info: hccl api */
-const uint32_t MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    = 0x030000U; /* type info: dvpp api */
+#define MSPROF_REPORT_NODE_GE_API_BASE_TYPE      0x010000U /* type info: ge api */
+#define MSPROF_REPORT_NODE_HCCL_BASE_TYPE        0x020000U /* type info: hccl api */
+#define MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    0x030000U /* type info: dvpp api */
 
 /* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
-const uint32_t MSPROF_REPORT_HCCL_NODE_BASE_TYPE        = 0x010000U;
-const uint32_t MSPROF_REPORT_HCCL_MASTER_TYPE           = 0x010001U;
-const uint32_t MSPROF_REPORT_HCCL_SLAVE_TYPE            = 0x010002U;
+#define MSPROF_REPORT_HCCL_NODE_BASE_TYPE        0x010000U
+#define MSPROF_REPORT_HCCL_MASTER_TYPE           0x010001U
+#define MSPROF_REPORT_HCCL_SLAVE_TYPE            0x010002U
 
 enum ProfileCallbackType {
     PROFILE_CTRL_CALLBACK = 0,
@@ -100,6 +100,16 @@ enum ProfileCallbackType {
     PROFILE_REPORT_REG_TYPE_INFO_CALLBACK,
     PROFILE_REPORT_GET_HASH_ID_CALLBACK,
     PROFILE_HOST_FREQ_IS_ENABLE_CALLBACK
+};
+
+enum MsprofAicpuAdditionalType {
+    TYPE_DP = 0,
+    TYPE_AICPU
+};
+
+struct AicpuStartPara {
+    uint32_t devId;
+    uint32_t hostPid;
 };
 
 struct MsprofApi { // for MsprofReportApi
@@ -396,6 +406,16 @@ MSVP_PROF_API int32_t MsprofFinalize();
  * @return system cycle time of CPU
  */
 MSVP_PROF_API uint64_t MsprofSysCycleTime();
+
+/*
+ * @ingroup libascend_devprof
+ * @name  MsprofAicpuStartRegister
+ * @brief regist aicpu start report func
+ * @param [in] aicpuStartCallback: aicpu start report func
+ * @param [in] para: aicpu start para
+ * @return 0:SUCCESS, !0:FAILED
+ */
+MSVP_PROF_API int32_t MsprofAicpuStartRegister(AicpuStartFunc aicpuStartCallback, const struct AicpuStartPara *para);
 #ifdef __cplusplus
 }
 #endif

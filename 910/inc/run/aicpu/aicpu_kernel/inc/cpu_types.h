@@ -108,7 +108,20 @@ enum Format {
     FORMAT_FRACTAL_Z_G,
     FORMAT_RESERVED,
     FORMAT_ALL,
-    FORMAT_NULL
+    FORMAT_NULL,
+    FORMAT_ND_RNN_BIAS,
+    FORMAT_FRACTAL_ZN_RNN,
+    FORMAT_NYUV = 45,
+    FORMAT_NYUV_A,
+    FORMAT_NCL,
+    FORMAT_FRACTAL_Z_WINO,
+    // Add new formats definition here
+    FORMAT_END,
+    // FORMAT_MAX defines the max value of Format.
+    // Any Format should not exceed the value of FORMAT_MAX.
+    // ** Attention ** : FORMAT_MAX stands for the SPEC of enum Format and almost SHOULD NOT be used in code.
+    //                   If you want to judge the range of Format, you can use FORMAT_END.
+    FORMAT_MAX = 0xff
 };
 
 enum DeviceType {

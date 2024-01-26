@@ -1761,9 +1761,9 @@ REG_OP(RollV2)
  * @par Inputs:
  * Tow inputs, including:
  * @li input_x: A tensor. Must be one of the following types:
- *     float16, float32. \n
+ *     float16, float32, bfloat16. \n
  * @li input_y: A tensor. Must be one of the following types:
- *     float16, float32. \n
+ *     float16, float32, bfloat16. \n
 
  * @par Attributes:
  * reduction: An optional string.Defaults to "mean". \n
@@ -1776,10 +1776,10 @@ REG_OP(RollV2)
  * Compatible with the Pytorch operator SoftMarginLoss. \n
  */
 REG_OP(SoftMarginLoss)
-    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(reduction, String, "mean")
-    .OUTPUT(output_z, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(output_z, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .OP_END_FACTORY_REG(SoftMarginLoss)
 
 /**

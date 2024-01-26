@@ -32,9 +32,6 @@ enum class ExecutorType {
   // 基于host缓存的执行器，在`kTopologicalPriority`的基础上，支持按照冻结后的图执行，被冻结的节点不再执行
   kHostCache,
 
-  // 基于拓扑的多线程执行器
-  kTopologicalMultiThread,
-
   // 基于tprt的多线程执行器
   kTprt,
 

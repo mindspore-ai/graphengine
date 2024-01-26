@@ -219,8 +219,8 @@ class VISIBILITY_EXPORT ModelV2Executor {
   std::map<uint32_t, ge::AippConfigInfo> aipp_info_list_;
   std::map<uint32_t, std::pair<ge::InputAippType, size_t>> aipp_type_list_;
 
-  StreamAllocator builtin_stream_allocator_;
   EventAllocator builtin_event_allocator_;
+  StreamAllocator builtin_stream_allocator_; // insure stream destory before event
 };
 }  // namespace gert
 

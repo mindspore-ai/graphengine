@@ -75,18 +75,17 @@ typedef enum {
 } aclprofSubscribeOpAttri;
 
 typedef enum {
-    ACL_PROF_ARGS_MIN = 0,
-    ACL_PROF_STORAGE_LIMIT,
-    ACL_PROF_AIV_METRICS,
-    ACL_PROF_SYS_HARDWARE_MEM_FREQ,
-    ACL_PROF_LLC_MODE,
-    ACL_PROF_SYS_IO_FREQ,
-    ACL_PROF_SYS_INTERCONNECTION_FREQ,
-    ACL_PROF_DVPP_FREQ,
-    ACL_PROF_HOST_SYS,
-    ACL_PROF_HOST_SYS_USAGE,
-    ACL_PROF_HOST_SYS_USAGE_FREQ,
-    ACL_PROF_ARGS_MAX
+    ACL_PROF_ARGS_MIN                   = 0,
+    ACL_PROF_STORAGE_LIMIT              = 1,
+    ACL_PROF_SYS_HARDWARE_MEM_FREQ      = 3,
+    ACL_PROF_LLC_MODE                   = 4,
+    ACL_PROF_SYS_IO_FREQ                = 5,
+    ACL_PROF_SYS_INTERCONNECTION_FREQ   = 6,
+    ACL_PROF_DVPP_FREQ                  = 7,
+    ACL_PROF_HOST_SYS                   = 8,
+    ACL_PROF_HOST_SYS_USAGE             = 9,
+    ACL_PROF_HOST_SYS_USAGE_FREQ        = 10,
+    ACL_PROF_ARGS_MAX                   = 11
 } aclprofConfigType;
 
 typedef struct aclprofConfig aclprofConfig;

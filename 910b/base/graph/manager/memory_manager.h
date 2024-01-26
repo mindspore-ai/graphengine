@@ -22,6 +22,20 @@
 #include "runtime/mem.h"
 
 namespace ge {
+class VarMemoryAllocator {
+ public:
+  VarMemoryAllocator() = default;
+  virtual ~VarMemoryAllocator() = default;
+
+  VarMemoryAllocator(const VarMemoryAllocator &) = delete;
+  VarMemoryAllocator &operator=(const VarMemoryAllocator &) & = delete;
+
+  virtual uint8_t *MallocMemory(rtMemType_t memory_type, const std::string &purpose, int64_t memory_size,
+                                const uint32_t device_id = 0U, bool alloc = true) = 0;
+
+  virtual Status FreeMemory(const uint32_t device_id = 0U) = 0;
+};
+
 class MemoryManager {
  public:
   MemoryManager() = default;
@@ -48,6 +62,7 @@ class MemoryManager {
 
   virtual uint8_t *GetHostPoolMemory(const rtMemType_t memory_type, const size_t memory_size) = 0;
 };
+
 }  // namespace ge
 
 #endif  // GE_GRAPH_COMMON_GRAPH_MANAGER_MEMORY_MANAGER_H_

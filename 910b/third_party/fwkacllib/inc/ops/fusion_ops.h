@@ -114,7 +114,7 @@ REG_OP(IncreFlashAttention)
     .INPUT(query, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
     .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
     .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
-    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_BFL16}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_FLOAT32, DT_INT8, DT_UINT8}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64}))
@@ -243,7 +243,7 @@ REG_OP(FusedInferAttentionScore)
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale, Float, 1.0)
     .ATTR(pre_tokens, Int, 2147483647)
-    .ATTR(next_tokens, Int, 0)
+    .ATTR(next_tokens, Int, 2147483647)
     .ATTR(input_layout, String, "BSH")
     .ATTR(num_key_value_heads, Int, 0)
     .ATTR(sparse_mode, Int, 0)
@@ -322,7 +322,7 @@ REG_OP(FlashAttentionScoreGrad)
 /**
 * @brief Fusion op for FFN.
 * @par Inputs:
-* ten inputs, including:
+* fourteen inputs, including:
 * @li x: A matrix Tensor. The type support int8, float16.
 * @li weight1: A matrix Tensor. The type support int8, float16.
 * @li weight2: A matrix Tensor. The type support int8, float16.
@@ -347,8 +347,8 @@ REG_OP(FlashAttentionScoreGrad)
 */
 REG_OP(FFN)
     .INPUT(x, TensorType({DT_INT8, DT_FLOAT16, DT_BF16}))
-    .INPUT(weight1, TensorType({DT_INT8, DT_FLOAT16, DT_BF16}))
-    .INPUT(weight2, TensorType({DT_INT8, DT_FLOAT16, DT_BF16}))
+    .INPUT(weight1, TensorType({DT_INT8, DT_FLOAT16, DT_BF16, DT_INT4}))
+    .INPUT(weight2, TensorType({DT_INT8, DT_FLOAT16, DT_BF16, DT_INT4}))
     .OPTIONAL_INPUT(expert_tokens, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(bias1, TensorType({DT_INT32, DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(bias2, TensorType({DT_INT32, DT_FLOAT16, DT_FLOAT}))
@@ -405,7 +405,7 @@ REG_OP(AllGatherMatmul)
 /**
 * @brief Fusion op of matmul and reduce scatter.
 * @par Inputs:
-* twelve inputs, including:
+* three inputs, including:
 * @li x1: A matrix Tensor. The type support float16, bfloat16.
 * @li x2: A matrix Tensor. The type support float16, bfloat16.
 * @li bias: A matrix Tensor. The type support float16, bfloat16. \n
@@ -440,7 +440,7 @@ REG_OP(MatmulReduceScatter)
 * @brief Function MatmulAllReduce.
 
 * @par Inputs:
-* twelve inputs, including:
+* three inputs, including:
 * @li x1: A matrix Tensor. The type support float16, bf16.
 * @li x2: A matrix Tensor. The type support float16, bf16.
 * @li bias: A matrix Tensor. The type support float16, bf16. \n
@@ -477,18 +477,23 @@ REG_OP(MatmulAllReduce)
 * @brief Function WeightQuantBatchMatmulV2. \n
 
 * @par Inputs:
-* @li x: A matrix Tensor.
-* @li weight: A matrix Tensor of quantized weight.
+* @li x: A matrix Tensor. Shape supports (m,k)/(k,m), Format supports ND.
+* @li weight: A matrix Tensor of quantized weight. Shape supports (n,k)/(k,n), Format supports ND.
 * @li antiquant_scale: A Tensor for antiquant scale.
-* @li antiquant_offset: A Tensor for antiquant offset.
-* @li quant_scale: A Tensor for quantization parameters.
-* @li quant_offset: A Tensor for quantization parameters.
-* @li bias: A Tensor. \n
-
+* Shape supports (1)/(1,n)/(n,1)/(ceil(k/antiquant_group_size),n)/(n,ceil(k/antiquant_group_size)),
+* Format supports ND.
+* @li antiquant_offset: A Tensor for antiquant offset. Shape and Format is same with antiquant_scale.
+* @li quant_scale: A Tensor for quantization parameters. Shape supports (1)/(1,n), Format supports ND.
+* @li quant_offset: A Tensor for quantization parameters. Shape and Format is same with quant_scale.
+* @li bias: A Tensor. Shape supports (n)/(1,n), Format supports ND.\n
 
 * @par Attributes:
 * @li transpose_x: A bool. x is transposed if true.
-* @li transpose_weight: A bool. weight is transposed if true. \n
+* @li transpose_weight: A bool. weight is transposed if true.
+* when transpose_weight is true, weight's shape is (n, k), antiquant_scale's shape should be (n, 1).
+* @li antiquant_group_size: int, when weight's dtype is int8, antiquant_group_size can only be 0,
+* weight's dtype is int4, antiquant_group_size must in [32, max(k-1, int_max_value)]
+* and antiquant_group_size % 32 == 0. \n
 
 * @par Outputs:
 * y: A matrix Tensor.
@@ -504,6 +509,7 @@ REG_OP(WeightQuantBatchMatmulV2)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
     .ATTR(transpose_x, Bool, false)
     .ATTR(transpose_weight, Bool, false)
+    .ATTR(antiquant_group_size, Int, 0)
     .OP_END_FACTORY_REG(WeightQuantBatchMatmulV2)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUSION_OPS_H_

@@ -28,6 +28,7 @@
 #include "nlohmann/json.hpp"
 
 namespace ge {
+using ConstNodeWeightHashMap = std::map<NodePtr, std::pair<GeTensorPtr, std::string>>;
 struct FileConstantInfo {
     std::string value_bin_file_id;
     std::string value_bin_file_path;
@@ -87,6 +88,12 @@ class FileConstantUtils {
   /// @param [out] file_constant_weight_dir
   /// @return Status
   static Status GetExternalWeightDirFromOmPath(const std::string &om_path, string &file_constant_weight_dir);
+
+  /// @brief get dir name to save external weight from model data
+  /// @param [in] model_data
+  /// @param [out] file_constant_weight_dir
+  /// @return Status
+  static Status GetExternalWeightDir(const ge::ModelData &model_data, string &file_constant_weight_dir);
 
   /// @brief set absolute file path for one fileconstant node
   /// @param [in] op_desc
@@ -150,7 +157,7 @@ class FileConstantUtils {
   /// @brief get tmp weight dir
   /// @param [in] pid
   /// @param [in] session_id
-  /// @return Status
+  /// @return string
   static std::string GetTmpWeightDir(const int32_t pid, const uint64_t session_id);
 
   /// @brief set weight file path to attr location(private attribute)
@@ -158,19 +165,31 @@ class FileConstantUtils {
   /// @param [in] file_path
   /// @param [in] offset
   /// @param [in] length
-  /// @return Status
-  static Status SetFileConstantPath(const OpDescPtr &op_desc, const std::string &file_path, const int64_t offset = 0,
-                                    const int64_t length = 0);
+  /// @return void
+  static void SetFileConstantPath(const OpDescPtr &op_desc, const std::string &file_path, const int64_t offset = 0,
+                                  const int64_t length = 0);
 
-  /// @brief convert all const nodes to fileconstant nodes with meta in graph
-  /// @param [in] op_desc
-  /// @param [in] file_path
-  /// @param [in] offset
-  /// @param [in] length
+  /// @brief get a map of graph, [key]:const node, [value]:a pair of weight and hash
+  /// @param [in] compute_graph
+  /// @return ConstNodeWeightHashMap(std::map<NodePtr, std::pair<GeTensorPtr, std::string>>)
+  static ConstNodeWeightHashMap GetAllWeightsAndHashes(const ComputeGraphPtr &graph);
+
+  /// @brief save all const weight to file with multi threads
+  /// @param [in] const_to_weight_hash_map
+  /// @param [in] external_weight_manager
+  /// @param [in] external_weight_dir
   /// @return Status
-  static Status ConvertConstToFileConstWithMeta(const ComputeGraphPtr &compute_graph,
-                                                const ExternalWeightManagerPtr &external_weight_manager,
-                                                const std::string &file_const_dir, FileConstantMeta &meta);
+  static Status SaveWeightToFile(const ConstNodeWeightHashMap &const_to_weight_hash_map,
+                                 const ExternalWeightManagerPtr &external_weight_manager,
+                                 const std::string &weight_dir);
+
+  /// @brief add fileconstant node to graph and delete const node
+  /// @param [in] const_to_weight_hash_map
+  /// @param [in] fileconstant meta
+  /// @param [in] external_weight_dir
+  /// @return Status
+  static Status AddFileConstantToGraph(const ConstNodeWeightHashMap &const_to_weight_hash_map,
+                                       const FileConstantMeta &meta, const std::string &weight_dir);
 
   /// @brief change all fileconstant nodes attr location in graph
   /// @param [in] compute_graph
@@ -185,16 +204,11 @@ class FileConstantUtils {
   /// @return Status
   static Status MoveFilePath(const std::map<std::string, std::string> &old_file_to_new_file);
 
-  /// @brief check whether conversion is needed
-  /// @param [in] compute_graph
-  /// @return true/false
-  static bool IsNeedConvert(const ComputeGraphPtr &compute_graph);
-
   /// @brief get dir_name + file_name
   /// @param [in] dir_name
   /// @param [in] file_name
   /// @param [out] full_name
-  /// @return Status
+  /// @return void
   static void GetValidFullPath(const std::string &dir_name, const std::string &file_name, std::string &full_name);
 };
 }

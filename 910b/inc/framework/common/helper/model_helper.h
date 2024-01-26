@@ -131,6 +131,8 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper, const ModelData &model_data);
 
+  Status CheckIfWeightPathValid(const ge::ComputeGraphPtr &graph,
+                                const ge::ModelData &model_data) const;
   Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                        const GeModelPtr &first_ge_model, const size_t mode_index) const;
   virtual Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,

@@ -188,5 +188,37 @@ REG_OP(GroupNormSilu)
     .ATTR(eps, Float, 0.00001)
     .OP_END_FACTORY_REG(GroupNormSilu)
 
+/**
+* @brief AddRmsNorm operator interface implementation
+*  calculating: x1, x2, gamma
+*  x = x1 + x2
+*  rstd = np.rsqrt(np.mean(np.power(x,2), reduce_axis, keepdims=True) + epsilon))
+*  y = gamma * (x * rstd)
+
+* @par Inputs:
+* Two inputs, including:
+* @li x1: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x2: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+* @par Attributes:
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-6 . \n
+
+* @par Outputs:
+* Two outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+*/
+REG_OP(AddRmsNorm)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(rstd, TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .ATTR(epsilon, Float, 1e-6)
+    .OP_END_FACTORY_REG(AddRmsNorm)
+
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_

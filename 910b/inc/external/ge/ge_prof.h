@@ -33,6 +33,7 @@ enum ProfDataTypeConfig {
     kProfTrainingTrace  = 0x0040,
     kProfFwkScheduleL0  = 0x0200,
     kProfTaskTimeL0     = 0x0800,
+    kProfTaskTimeL2     = 0x2000,
     kProfFwkScheduleL1  = 0x01000000,
 };
 

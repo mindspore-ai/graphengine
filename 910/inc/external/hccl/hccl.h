@@ -291,6 +291,15 @@ extern HcclResult HcclGetCommAsyncError(HcclComm comm, HcclResult *asyncError);
  * @param code enum HcclResult.
 */
 extern const char *HcclGetErrorString(HcclResult code);
+
+/**
+ * @brief  Batch SEND/RECV
+ * @param sendRecvInfo A pointer to an send/recv item array.
+ * @param itemNum The size of the send/recv item array.
+ * @param comm A pointer identifying the communication resource based on.
+ * @param stream A pointer identifying the stream information.
+*/
+extern HcclResult HcclBatchSendRecv(HcclSendRecvItem* sendRecvInfo, uint32_t itemNum, HcclComm comm, aclrtStream stream);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -55,6 +55,8 @@ constexpr float64_t kVarMemoryManagerMallocRatio = 5.0 / 32.0;
 constexpr float64_t kMaxMemorySizeRatio = (26.0 + 5.0) / 32.0;
 constexpr uint32_t kDefaultDeviceId = 0U;
 constexpr char_t kFeatureMemoryKey[] = "0_f";
+const std::string  kExtendSizeType = "2";
+const std::string  kStaticMemory = "1";
 
 enum class SessionVersion : std::int32_t
 {
@@ -75,6 +77,7 @@ struct VarDevAddrMgr {
   ge::GeTensorDesc tensor_desc;
   const uint8_t *logic_addr;
   uint8_t *dev_addr;
+  bool is_extern_mem;
 };
 
 struct VarBroadCastInfo {
@@ -227,11 +230,13 @@ class MemResource {
   static std::shared_ptr<MemResource> BuildMemResourceFromType(const rtMemType_t mem_type);
 
   virtual Status AssignVarMem(const std::string &var_name, const uint64_t size, const uint64_t session_id,
-                              size_t &mem_offset) = 0;
+                              size_t &mem_offset, const OpDescPtr &op_desc) = 0;
 
   uint64_t GetVarMemSize() const;
 
   void UpdateVarMemSize(const int64_t mem_size);
+
+  uint64_t GetVarConstPlaceHolderMemSize() const;
 
  private:
   MemResource(MemResource const &) = delete;
@@ -240,6 +245,7 @@ class MemResource {
  protected:
   uint64_t total_size_ = 0U;
   uint64_t var_mem_size_ = 0U;
+  uint64_t const_place_holder_mem_size_ = 0U;
 };
 
 class HbmMemResource : public MemResource {
@@ -248,7 +254,7 @@ class HbmMemResource : public MemResource {
   ~HbmMemResource() override = default;
 
   Status AssignVarMem(const std::string &var_name, const uint64_t size, const uint64_t session_id,
-                      size_t &mem_offset) override;
+                      size_t &mem_offset, const OpDescPtr &op_desc) override;
 };
 
 class RdmaMemResource : public MemResource {
@@ -257,7 +263,7 @@ class RdmaMemResource : public MemResource {
   ~RdmaMemResource() override = default;
 
   Status AssignVarMem(const std::string &var_name, const uint64_t size, const uint64_t session_id,
-                      size_t &mem_offset) override;
+                      size_t &mem_offset, const OpDescPtr &op_desc) override;
 };
 
 class HostMemResource : public MemResource {
@@ -266,7 +272,7 @@ class HostMemResource : public MemResource {
   ~HostMemResource() override = default;
 
   Status AssignVarMem(const std::string &var_name, const uint64_t size, const uint64_t session_id,
-                      size_t &mem_offset) override;
+                      size_t &mem_offset, const OpDescPtr &op_desc) override;
 };
 
 class VarManager {
@@ -307,6 +313,9 @@ class VarManager {
   Status MallocVarMemory(const uint64_t memory_size = kMemoryVarManagerMallocSize,
                          const uint32_t device_id = kDefaultDeviceId);
 
+  Status ExtendVarMemory(VarMemoryAllocator *const var_memory_allocator,
+                         const uint32_t device_id = kDefaultDeviceId);
+
   Status FreeVarMemory();
 
   Status SetTransRoad(const std::string &var_name, const VarTransRoad &trans_road);
@@ -331,6 +340,17 @@ class VarManager {
       return (option_value == "1");
     }
     return false;
+  }
+
+  static bool IsGeUseExtendSizeStaticMemory() {
+    std::string static_memory_policy;
+    (void)GetThreadLocalContext().GetOption(STATIC_MEMORY_POLICY, static_memory_policy);
+    const char *static_mem_env = std::getenv(&kEnvGeuseStaticMemory[0U]);
+    if (static_mem_env != nullptr) {
+      GELOGI("%s is set to %s", kEnvGeuseStaticMemory, static_mem_env);
+    }
+    return ((static_mem_env != nullptr) && ((static_mem_env == kStaticMemory) || (static_mem_env == kExtendSizeType)))
+        || (static_memory_policy == kStaticMemory) || (static_memory_policy == kExtendSizeType);
   }
 
   uint64_t GetGraphMemoryMaxSize(const bool for_check = false) const {
@@ -365,6 +385,8 @@ class VarManager {
   const uint64_t &SessionId() const;
 
   int64_t GetVarMemSize(const rtMemType_t memory_type) const;
+
+  int64_t GetVarConstPlaceHolderMemSize(const rtMemType_t memory_type) const;
 
   bool IsVarExist(const std::string &var_name, const ge::GeTensorDesc &tensor_desc) const;
 
@@ -416,6 +438,7 @@ class VarManager {
   bool IsVarMemAutoMalloc() const { return var_mem_auto_malloc_; }
 
   int64_t GetVarMallocMemSize() const { return var_malloc_mem_size_; }
+
  private:
   int64_t var_malloc_mem_size_ = 0LL;
   bool var_mem_auto_malloc_ = true;
@@ -431,6 +454,7 @@ class VarManager {
   std::map<rtMemType_t, std::shared_ptr<MemResource>> mem_resource_map_;
   mutable std::recursive_mutex mutex_;
   MemoryManager *mem_manager_{nullptr};
+  VarMemoryAllocator *var_memory_allocator_{nullptr};
 };
 
 class VarManagerPool {

@@ -32,7 +32,7 @@ extern "C" {
 #define RT_STREAM_OVERFLOW (0x100U)
 #define RT_STREAM_FAST_LAUNCH (0x200U)
 #define RT_STREAM_FAST_SYNC   (0x400U)
-#define RT_STREAM_CP_PROCESS_USE (0x800U)
+#define RT_STREAM_CP_PROCESS_USE (0x800U) // RT_STREAM_CP_PROCESS_USE does not support OR with other flags
 
 /**
  * @ingroup stream_config

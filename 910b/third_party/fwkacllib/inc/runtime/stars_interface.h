@@ -44,8 +44,8 @@ typedef struct stars_trans_parm {
 /* SDMA SQE的数据结构 */
 typedef struct sdma_trans_parm {
     unsigned int length;
-    unsigned short s_substreamid;
-    unsigned short d_substreamid;
+    unsigned int s_substreamid;
+    unsigned int d_substreamid;
     unsigned long long s_addr;
     unsigned long long d_addr;
     unsigned int s_stride_len;
@@ -125,6 +125,24 @@ typedef struct stars_wait_output {
     unsigned int        out_num; /* 数组长度 */
     stars_cqe_output_t  *cqe_output;
 } stars_wait_output_t;
+
+typedef enum {
+    STARS_EVENT_TYPE_RAS_ERROR                  = 0x1,
+    STARS_EVENT_TYPE_EXIT_EVENTFD_HANDLE        = 0xffff,
+} STARS_EVENTFD_TYPE;
+
+#ifndef CCE_RUNTIME_BASE_H
+typedef struct rtExceptionInfo {
+    uint32_t taskid;   /* 任务id，是流上的任务 */
+    uint32_t streamid; /* 流id */
+    uint32_t tid;
+    uint32_t deviceid; /* 设备id */
+    uint32_t retcode;  /* 异常错误码 STARS_EVENTFD_TYPE */
+    uint32_t reserved[2];
+} rtExceptionInfo_t;
+
+typedef void (*rtTaskFailCallback)(rtExceptionInfo_t *exceptionInfo);
+#endif
 
 /* 用户态获取Stars设备信息的数据结构 */
 typedef struct device_info {
@@ -267,6 +285,33 @@ RTS_API int stars_get_rdma_cq_addr(int dev_id, unsigned int die_id, uint64_t *ad
 
 /**
  * @ingroup rt_stars
+ * @brief 使能通道的profiling功能并申请对应缓存
+ * @param [in]  phandle           stars句柄
+ * @return ACL_RT_SUCCESS         成功
+ * @return 其他错误码              失败
+ */
+RTS_API int stars_set_rtsq_profiling(void *phandle);
+
+/**
+ * @ingroup rt_stars
+ * @brief 打印profiling数据到日志文件中
+ * @param [in]  phandle           stars句柄
+ * @return ACL_RT_SUCCESS         成功
+ * @return 其他错误码              失败
+ */
+RTS_API int stars_print_profiling_log(void *phandle);
+
+/**
+ * @ingroup rt_stars
+ * @brief 去使能通道的profiling功能并释放对应profiling缓存
+ * @param [in]  phandle           stars句柄
+ * @return ACL_RT_SUCCESS         成功
+ * @return 其他错误码              失败
+ */
+RTS_API int stars_release_profiling_buffer(void *phandle);
+
+/**
+ * @ingroup rt_stars
  * @brief 为用户进程虚拟地址PIN页表
  * @param [in]  dev_id               设备id
  * @param [in]  vma                  虚拟地址
@@ -286,6 +331,27 @@ RTS_API int stars_pin_umem(int dev_id, void *vma, unsigned int size, uint64_t *c
  * @return 其他错误码                 失败
  */
 RTS_API int stars_unpin_umem(int dev_id, uint64_t cookie);
+
+/**
+ * @ingroup rt_stars
+ * @brief SDMA任务授权其他进程访问本进程(授权是单向的，A授权B, A访问B, 但B不能访问A)
+ * @param [in] dev_id                设备id
+ * @param [in] pid_list              pid数组
+ * @param [in] pid_num               pid数组的长度, 范围[1,100]
+ * @return ACL_RT_SUCCESS            成功
+ * @return 其他错误码                 失败
+ */
+RTS_API int stars_sdma_authorize(int dev_id, int *pid_list, unsigned int pid_num);
+
+/**
+ * @ingroup rt_stars
+ * @brief 用户注册任务异常时的回调函数
+ * @param [in] dev_id                设备id
+ * @param [in] callback              异常时的回调函数
+ * @return ACL_RT_SUCCESS            成功
+ * @return 其他错误码                 失败
+ */
+RTS_API int stars_register_task_cb(int dev_id, const rtTaskFailCallback callback);
 
 #if defined(__cplusplus)
 }

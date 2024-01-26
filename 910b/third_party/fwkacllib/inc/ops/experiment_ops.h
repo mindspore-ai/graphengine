@@ -36,8 +36,8 @@ namespace ge {
 *     Should be from a Variable().
 * @li v: A mutable Tensor of the same type as "var".
 *     Should be from a Variable().
-* @li beta1_power: A scalar of the same type as "var".
-* @li beta2_power: A scalar of the same type as "var".
+* @li beta1_power: A scalar of the same type as "var", value is beta1**(step-1).
+* @li beta2_power: A scalar of the same type as "var", value is beta2**(step-1).
 * @li lr: learning_rate. A scalar of the same type as "var".
 * @li weight_decay: learning_rate. A scalar of the same type as "var".
 * @li beta1: A scalar of the same type as "var".
@@ -48,8 +48,7 @@ namespace ge {
 *     Should be from a Variable().
 *
 * @par Attributes:
-* @li amsgrad: An optional bool. Defaults to "False".
-*     If "True", max_grad_norm input and output must be entered.
+* @li amsgrad: An optional bool. Defaults to "False", only support "False".
 * @li maximize: An optional bool. Defaults to "False".
 *
 * @par Outputs:
@@ -3644,7 +3643,7 @@ REG_OP(ForeachLerpList)
 
 * @par Inputs:
 * four inputs, including:
-* @li u: A multi-dimensional Tensor of type bfloat16, float16 or float32.
+* @li u: A multi-dimensional Tensor of type float32.
 * @li m: A multi-dimensional Tensor of type bfloat16, float16 or float32.
 * @li eps: A 1-dimensional Tensor, specifying the epsilon value.
 * @li beta1: A 1-dimensional Tensor, specifying the beta1 value.
@@ -3665,7 +3664,7 @@ REG_OP(ForeachLerpList)
 * Compatible with PyTorch operator BCEWithLogitsLoss.
 */
 REG_OP(ApplyCamePart3)
-    .INPUT(u, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(u, TensorType({DT_FLOAT}))
     .INPUT(m, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
     .INPUT(eps, TensorType({DT_FLOAT}))
     .INPUT(beta1, TensorType({DT_FLOAT}))

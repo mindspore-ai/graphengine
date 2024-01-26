@@ -27,7 +27,6 @@ namespace ge {
 class ExceptionDumper;
 }
 namespace gert {
-constexpr size_t kAdumpHeadLen = 2UL;
 // for global info for exception_dump and global switch
 class VISIBILITY_EXPORT GlobalDumper {
  public:

@@ -146,7 +146,7 @@ typedef struct tagCmoTaskInfo {
     uint8_t  pmg;
     uint8_t  reserved;
     uint16_t cmoType;
-    uint16_t opCode;
+    uint16_t opCode; // 6: Preload; 7: Prewriteback; 8: invalid; 9: flush;
     uint16_t numInner;
     uint16_t numOuter;
     uint32_t logicId;

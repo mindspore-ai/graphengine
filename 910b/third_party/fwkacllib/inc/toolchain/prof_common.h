@@ -78,6 +78,7 @@ struct MsprofCommandHandle {
     uint32_t devIdList[MSPROF_MAX_DEV_NUM];
     uint32_t modelId;
     uint32_t type;
+    uint32_t cacheFlag;
     struct MsprofCommandHandleParams params;
 };
 

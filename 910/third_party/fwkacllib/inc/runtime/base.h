@@ -240,6 +240,7 @@ typedef struct rtProfCommandHandle {
     uint32_t devIdList[RT_PROF_MAX_DEV_NUM];
     uint32_t modelId;
     uint32_t type;
+    uint32_t cacheFlag;
     rtCommandHandleParams_t commandHandleParams;
 } rtProfCommandHandle_t;
 

@@ -88,7 +88,7 @@ enum MsprofReporterCallbackType {
     MSPROF_REPORTER_HASH                  // hash data to id
 };
 
-#define MSPROF_OPTIONS_DEF_LEN_MAX (2048)
+#define MSPROF_OPTIONS_DEF_LEN_MAX (2048U)
 
 /**
  * @name  MsprofGeOptions

@@ -47,18 +47,18 @@ typedef struct tagIpcIntNoticeInfo {
 #define RT_EVENT_DDSYNC_NS    0x01U
 #define RT_EVENT_STREAM_MARK  0x02U
 #define RT_EVENT_DDSYNC       0x04U
-#define RT_EVENT_MC2          0x05U
 #define RT_EVENT_TIME_LINE    0x08U
+#define RT_EVENT_MC2          0x10U             // RT_EVENT_MC2 does not support OR with other flags
 
 #define RT_NOTIFY_FLAG_DEFAULT (0x00U)
-#define RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV (0x01U)
+#define RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV (0x01U)  // RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV does not support OR with other flags
 
 /**
  * @ingroup notify_flags
  * @brief notify op bit flags
  */
 #define RT_NOTIFY_DEFAULT   0x00U
-#define RT_NOTIFY_MC2       0x01U
+#define RT_NOTIFY_MC2       0x01U               // RT_NOTIFY_MC2 does not support OR with other flags
 #define RT_DMS_MAX_EVENT_NAME_LENGTH 256
 #define RT_DMS_MAX_EVENT_DATA_LENGTH 32
 #define RT_DMS_MAX_EVENT_RESV_LENGTH 32

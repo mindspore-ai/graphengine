@@ -25,6 +25,7 @@ constexpr uint64_t kInvalidPrefixId = UINT64_MAX;
 
 struct LLMEngineStatus {
   uint64_t empty_max_prompt_kv;  // 全量集群可容纳的KV
+  int32_t num_free_blocks;
 };
 
 class LLMReq {
@@ -72,6 +73,14 @@ class LLMReq {
     return prefix_id_;
   }
 
+  void SetSequenceLen(const uint64_t sequence_length) {
+    sequence_length_ = sequence_length;
+  }
+
+  uint64_t GetSequenceLen() const {
+    return sequence_length_;
+  }
+
  private:
   uint64_t req_id_{kInvalidReqId};
   // 请求prompt的句子长度，做完padding的值， 用于申请prompt的KVCache
@@ -79,7 +88,8 @@ class LLMReq {
   uint64_t prompt_cluster_id_{0UL};  // in/out， runPrompt的输出， runecoder的输入
   uint64_t decoder_cluster_id_{0UL};
   uint64_t prefix_id_{kInvalidPrefixId};
-  int8_t reserved_[128];
+  uint64_t sequence_length_{0UL};
+  int8_t reserved_[120];
 };
 
 constexpr const char LLM_OPTION_INPUTS_BATCH_DIM_INDEX[] = "llm.InputsBatchSizeDimIndex";
@@ -118,6 +128,21 @@ constexpr const char LLM_OPTION_POSTPROCESS_MODEL_OM_CACHE_PATH[] = "llm.PostPro
 constexpr const char LLM_OPTION_POSTPROCESS_OUTPUT_NUM[] = "llm.PostProcessOutputNums";
 // optional, "postprocess:1;postprocess:2"
 constexpr const char LLM_OPTION_OUTPUT_MAPPING[] = "llm.OutputMapping";
+
+// options for pipeline stage execution, example: "40;40"
+constexpr const char LLM_OPTION_KV_CACHE_COUNTS[] = "llm.KvCacheCounts";
+constexpr const char LLM_OPTION_HCOM_CLUSTER_CONFIG[] = "llm.HcomClusterConfig";
+// "enable" or "disable", default value is "enable" if option not set
+constexpr const char LLM_OPTION_PIPELINE_EXECUTION[] = "llm.PipelineExecution";
+// example, 2 stage, "0,1,2,3,4,5,6;"
+constexpr const char LLM_OPTION_PIPELINE_INPUT_INDICES[] = "llm.PipelineInputIndices";
+// PagedAttention options
+constexpr const char LLM_OPTION_ENABLE_PAGED_ATTENTION[] = "llm.EnablePagedAttention";
+constexpr const char LLM_OPTION_PAGED_ATTENTION_BLOCK_SIZE[] = "llm.PagedAttentionBlockSize";
+constexpr const char LLM_OPTION_PAGED_ATTENTION_BLOCKS_NUM[] = "llm.PagedAttentionBlocksNum";
+constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_SEQ_LEN[] = "llm.PagedAttentionMaxSeqLen";
+constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_SEQS_NUM[] = "llm.PagedAttentionMaxSeqsNum";
+constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_PROMPT_LEN[] = "llm.PagedAttentionMaxPromptLen";
 
 struct IpInfo {
   uint32_t ip = 0U;

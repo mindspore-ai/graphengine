@@ -44,10 +44,12 @@ class ExternalWeightManager {
 
   Status CreateWeightPath();
 
-  static bool CanReuseExternalWeight(FileConstantMeta &meta, const std::string &file_dir, const GeTensorPtr &weight,
-                                     const std::string &weight_hash, std::string &file_name);
+  bool CanReuseExternalWeight(const std::string &file_dir, const GeTensorPtr &weight,
+                              const std::string &weight_hash, const std::string &file_name);
 
-  static bool IsWeightExist(const FileConstantMeta& meta, const std::string &file_name, const size_t file_size);
+  void UpdateFileConstMeta(const std::vector<std::pair<std::string, std::string>> &files_to_save);
+
+  bool IsWeightExist(const std::string &file_name, const size_t file_size);
 
   bool IsWeightLoaded(const std::string &file_name, const uint32_t device_id);
 
@@ -56,7 +58,10 @@ class ExternalWeightManager {
   void Finalize() noexcept;
 
   void SetWeightPath(const std::string &weight_path) { weight_path_ = weight_path; }
+
   const std::string &GetWeigthPath() const { return weight_path_; };
+
+  FileConstantMeta &GetMetaFile() { return meta_file_; };
  private:
   static Status CheckFilesSame(const std::string &file_name,
                                const uint8_t *const data,
@@ -66,6 +71,7 @@ class ExternalWeightManager {
   std::mutex mutex_;
   uint64_t session_id_;
   std::string weight_path_;
+  FileConstantMeta meta_file_;
   std::map<uint32_t, std::set<std::string>> loaded_external_weight_files_;
 };
 

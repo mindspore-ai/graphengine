@@ -28,7 +28,7 @@ class VISIBILITY_EXPORT MultiThreadExecutorOption : public ExecutorOption {
  public:
   MultiThreadExecutorOption() : MultiThreadExecutorOption(3U) {}
   explicit MultiThreadExecutorOption(size_t thread_num)
-      : ExecutorOption(ExecutorType::kTopologicalMultiThread), thread_num_(thread_num) {}
+      : ExecutorOption(ExecutorType::kTprt), thread_num_(thread_num) {}
   MultiThreadExecutorOption(ExecutorType executor_type, size_t thread_num)
       : ExecutorOption(executor_type), thread_num_(thread_num) {}
 

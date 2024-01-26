@@ -42,17 +42,19 @@ struct InitFlowGwInfo {
 };
 
 typedef enum {
-    TSD_CAPABILITY_PIDQOS       = 0,
-    TSD_CAPABILITY_LEVEL        = 1,
-    TSD_CAPABILITY_OM_INNER_DEC = 2,
-    TSD_CAPABILITY_BUILTIN_UDF  = 3,
-    TSD_CAPABILITY_BUT          = 0xFF
+    TSD_CAPABILITY_PIDQOS         = 0,
+    TSD_CAPABILITY_LEVEL          = 1,
+    TSD_CAPABILITY_OM_INNER_DEC   = 2,
+    TSD_CAPABILITY_BUILTIN_UDF    = 3,
+    TSD_CAPABILITY_DRIVER_VERSION = 4,
+    TSD_CAPABILITY_BUT            = 0xFF
 } TsdCapabilityType;
 
 typedef enum {
     SUB_PROCESS_STATUS_NORMAL = 0,
     SUB_PROCESS_STATUS_EXITED = 1,
     SUB_PROCESS_STATUS_STOPED = 2,
+    SUB_PROCESS_STATUS_UNKNOW = 3,
     SUB_PROCESS_STATUS_MAX    = 0xFF
 } SubProcessStatus;
 
@@ -70,6 +72,12 @@ typedef enum {
 
 struct ProcStatusInfo {
     pid_t pid;
+    SubProcessStatus curStat;
+};
+
+struct ProcStatusParam {
+    pid_t pid;
+    SubProcType procType;
     SubProcessStatus curStat;
 };
 
@@ -93,6 +101,8 @@ struct ProcOpenArgs {
     uint64_t     extParamCnt;
     pid_t        *subPid;
 };
+
+const uint64_t NOTIFY_PM_START_TSD_VERSION = 1UL;
 /**
 * @ingroup Open
 * @brief Used for the Framework process to communicate with the TSDDaemon process,
@@ -390,6 +400,48 @@ TDT_LIB_EXPORT uint32_t TsdProcessOpen(const uint32_t logicDeviceId, ProcOpenArg
 * @retval OtherValues Failure
 */
 TDT_LIB_EXPORT uint32_t TsdProcessClose(const uint32_t logicDeviceId, const pid_t closePid);
+
+/**
+* @ingroup NotifyPmToStartTsdaemon
+* @brief Tsd notify pm to start tsd
+*
+* @par logicDeviceId
+* logic device id
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t NotifyPmToStartTsdaemon(const uint32_t logicDeviceId);
+
+/**
+* @ingroup ProcessCloseSubProcEx
+* @brief Tsd close pid array
+*
+* @par logicDeviceId
+* logic device id
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t ProcessCloseSubProcList(const uint32_t logicDeviceId, const ProcStatusParam *closeList,
+                                                const uint32_t listSize);
+
+/**
+* @ingroup TsdGetProcStatus
+* @brief Tsd query subproc status
+*
+* @par logicDeviceId
+* logic device id
+*
+* @par pidArry
+* the pid list
+
+* @par arrayLen
+* the list length
+
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*/
+TDT_LIB_EXPORT uint32_t TsdGetProcListStatus(const uint32_t logicDeviceId, ProcStatusParam *pidInfo,
+                                             const uint32_t arrayLen);
 
 #ifdef __cplusplus
 }

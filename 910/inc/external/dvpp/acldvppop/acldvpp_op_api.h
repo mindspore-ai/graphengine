@@ -21,6 +21,7 @@
 #include "acldvpp_adjust_brightness.h"
 #include "acldvpp_adjust_contrast.h"
 #include "acldvpp_adjust_hue.h"
+#include "acldvpp_auto_contrast.h"
 #include "acldvpp_decode_jpeg.h"
 #include "acldvpp_adjust_saturation.h"
 #include "acldvpp_crop.h"
@@ -39,4 +40,6 @@
 #include "acldvpp_warp_affine.h"
 #include "acldvpp_rotate.h"
 #include "acldvpp_rgb_to_grayscale.h"
+#include "acldvpp_equalize.h"
+#include "acldvpp_adjust_sharpness.h"
 #endif // ACLDVPP_OP_API_H_

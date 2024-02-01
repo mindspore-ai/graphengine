@@ -2199,9 +2199,10 @@ REG_OP(AddLayerNorm)
  * @li dy: A ND Tensor of type float16 or float32 or bf16, with format ND. \n
  * @li x_1: A Tensor of type float16 or float32 or bf16. with format ND. \n
  * @li x_2: A Tensor of type float16 or float32 or bf16. with format ND. \n
- * @li rstd: A Tensor of type float16 or float32 or bf16. with format ND. \n
- * @li mean: A Tensor of type float16 or float32 or bf16. with format ND. \n
- * @li gamma: A Tensor of type float16 or float32 or bf16. with format ND. \n
+ * @li rstd: A Tensor of type float32. with format ND. \n
+ * @li mean: A Tensor of type float32. with format ND. \n
+ * @li gamma: A Tensor of type float16 or float32 or bf16. Must be 1D. \n
+ * @li dsum: A Tensor of type float16 or float32 or bf16. with format ND. \n
 
  * @param Outputs:
  * @li d_x: A ND Tensor of type float16 or float32 or bf16, with format ND.
@@ -2215,6 +2216,7 @@ REG_OP(AddLayerNormGrad)
 .INPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
 .INPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
 .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+.OPTIONAL_INPUT(dsum, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
 .OUTPUT(dx, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
 .OUTPUT(dgamma, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
 .OUTPUT(dbeta, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))

@@ -44,6 +44,7 @@ enum class SocVersion {
     ASCEND910 = 0,
     ASCEND910B,
     ASCEND310P,
+    ASCEND310B,
     RESERVED_VERSION = 99999
 };
 
@@ -69,8 +70,13 @@ public:
      */
     uint32_t GetCoreNumAiv(void) const;
     /**
+     * Get Core Number VectorCore for m200
+     * @return vector_core_num if m200, otherwise 0
+     */
+    uint32_t GetVectorCoreNum(void) const;
+    /**
      * Calc task schedule block dim
-     * @sliceNum number slice of data division
+    * @sliceNum number slice of data division
      * @aicCoreNum value of GetCoreNumAic() if used cube API, otherwise 0
      * @aivCoreNum value of GetCoreNumAiv() if used vector API, otherwise 0
      * @return task schedule block dim

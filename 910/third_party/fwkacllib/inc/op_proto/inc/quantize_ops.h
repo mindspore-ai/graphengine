@@ -179,8 +179,8 @@ REG_OP(AscendAntiQuant)
 
 * @par Inputs:
 * x: An tensor of type int8/int4, specifying the input . \n
-* scale: A required float32 scale.
-* offset: A required float32 offset.
+* scale: A required float32/bfloat16 scale.
+* offset: A optional float32/bfloat16 offset.
 
 * @par Attributes:
 * @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
@@ -193,8 +193,8 @@ REG_OP(AscendAntiQuant)
 */
 REG_OP(AscendAntiQuantV2)
     .INPUT(x, TensorType({DT_INT8, DT_INT4}))
-    .INPUT(scale, TensorType({DT_FLOAT}))
-    .INPUT(offset, TensorType({DT_FLOAT}))
+    .INPUT(scale, TensorType({DT_FLOAT, DT_BFLOAT16}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT, DT_BFLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_BFLOAT16}))
     .ATTR(dst_type, Int, DT_FLOAT16)
     .ATTR(sqrt_mode, Bool, false)

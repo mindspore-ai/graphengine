@@ -41,18 +41,20 @@ typedef struct tagIpcIntNoticeInfo {
  * @ingroup event_flags
  * @brief event op bit flags
  */
-#define RT_EVENT_DEFAULT (0x0EU)
-#define RT_EVENT_WITH_FLAG (0x0BU)
-
 #define RT_EVENT_DDSYNC_NS    0x01U
 #define RT_EVENT_STREAM_MARK  0x02U
 #define RT_EVENT_DDSYNC       0x04U
 #define RT_EVENT_TIME_LINE    0x08U
 #define RT_EVENT_MC2          0x10U             // RT_EVENT_MC2 does not support OR with other flags
 
+#define RT_EVENT_DEFAULT (RT_EVENT_DDSYNC | RT_EVENT_TIME_LINE | RT_EVENT_STREAM_MARK)
+#define RT_EVENT_WITH_FLAG (RT_EVENT_DDSYNC_NS)
+
 #define RT_NOTIFY_FLAG_DEFAULT (0x00U)
 #define RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV (0x01U)  // RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV does not support OR with other flags
-
+#define RT_NOTIFY_FLAG_SHR_ID_SHADOW (0x1U << 6)
+#define RT_NOTIFY_FLAG_MAX \
+    (RT_NOTIFY_FLAG_DOWNLOAD_TO_DEV |RT_NOTIFY_FLAG_SHR_ID_SHADOW)
 /**
  * @ingroup notify_flags
  * @brief notify op bit flags
@@ -108,6 +110,15 @@ RTS_API rtError_t rtEventCreate(rtEvent_t *evt);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEventCreateWithFlag(rtEvent_t *evt, uint32_t flag);
+
+/**
+ * @ingroup dvrt_event
+ * @brief create event instance with flag for single mode
+ * @param [in|out] event  created event  flag event op flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtEventCreateExWithFlag(rtEvent_t *evt, uint32_t flag);
 
 /**
  * @ingroup dvrt_event

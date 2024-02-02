@@ -61,6 +61,10 @@ namespace ge {
 
   Status SetLogicDeviceId(const std::string &logic_device_id) override;
 
+  std::string GetRedundantLogicDeviceId() const override;
+
+  Status SetRedundantLogicDeviceId(const std::string &logic_device_id) override;
+
   void SetWeightSize(const int64_t weight_size) { total_weight_size_ = weight_size; }
   int64_t GetWeightSize() const { return total_weight_size_; }
 
@@ -110,7 +114,15 @@ namespace ge {
     return file_constant_weight_dir_;
   }
 
+  uint32_t GetCurModelId() const { return cur_model_id_; }
+
+  void SetCurModelId(uint32_t model_id) { cur_model_id_ = model_id; }
+
  private:
+  Status SetLogicDeviceId(const std::string &logic_device_id, bool is_redundant);
+
+  std::string GetLogicDeviceId(bool is_redundant) const;
+
   std::map<std::string, GeModelPtr> subgraph_instance_name_to_model_;
   // In multithread online secenario, same graph can owns different davinci_model for for concurrency
   std::vector<uint32_t> model_ids_;
@@ -129,6 +141,7 @@ namespace ge {
   bool so_in_om_ = false;
   SoInOmInfo so_info_ = {};
   std::string file_constant_weight_dir_;
+  uint32_t cur_model_id_ = 0U;
 };
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
 }  // namespace ge

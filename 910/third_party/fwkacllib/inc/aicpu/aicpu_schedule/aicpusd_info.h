@@ -222,5 +222,12 @@ struct __attribute__((visibility("default"))) ReDeployConfig {
     uint32_t modelIdNum;  // modelIdNum
     char rsv[4];
 } __attribute__((packed));
+
+struct __attribute__((visibility("default"))) CheckKernelSupportedConfig {
+    uint64_t kernelNameAddr;    // ptr which point to kernelName
+    uint32_t kernelNameLen;
+    uint64_t checkResultAddr;   // int32: 0 is supported, others are not supported
+    uint32_t checkResultLen;
+} __attribute__((packed));
 }
 #endif  // AICPUSD_AICPUSD_INFO_H

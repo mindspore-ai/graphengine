@@ -18,22 +18,29 @@
 #define GE_GRAPH_COMMON_GRAPH_MANAGER_MEMORY_MANAGER_H_
 
 #include <string>
+#include <sstream>
 #include "external/ge/ge_api_types.h"
 #include "runtime/mem.h"
 
 namespace ge {
-class VarMemoryAllocator {
+inline std::string ToMallocMemInfo(const std::string &purpose, const void *const ptr, const uint32_t device_id,
+                                   const uint16_t module_id) {
+  std::stringstream ss;
+  ss << purpose << ", ptr=" << ptr << ", device_id=" << device_id << ", module_id=" << module_id;
+  return ss.str();
+}
+
+class ExpandableMemoryAllocator {
  public:
-  VarMemoryAllocator() = default;
-  virtual ~VarMemoryAllocator() = default;
+  ExpandableMemoryAllocator() = default;
+  virtual ~ExpandableMemoryAllocator() = default;
 
-  VarMemoryAllocator(const VarMemoryAllocator &) = delete;
-  VarMemoryAllocator &operator=(const VarMemoryAllocator &) & = delete;
+  ExpandableMemoryAllocator(const ExpandableMemoryAllocator &) = delete;
+  ExpandableMemoryAllocator &operator=(const ExpandableMemoryAllocator &) & = delete;
 
-  virtual uint8_t *MallocMemory(rtMemType_t memory_type, const std::string &purpose, int64_t memory_size,
-                                const uint32_t device_id = 0U, bool alloc = true) = 0;
+  virtual uint8_t *MallocMemory(const std::string &purpose, int64_t memory_size, bool incremental = false) = 0;
 
-  virtual Status FreeMemory(const uint32_t device_id = 0U) = 0;
+  virtual Status FreeMemory() = 0;
 };
 
 class MemoryManager {

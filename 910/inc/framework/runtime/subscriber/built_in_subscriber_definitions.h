@@ -90,11 +90,13 @@ struct TraceAttr{
 struct SubscriberExtendInfo {
   ModelV2Executor *executor;
   ge::ComputeGraphPtr exe_graph;
+  ge::ComputeGraphPtr root_graph;
   ge::ModelData model_data;
   std::shared_ptr<ge::GeRootModel> root_model;
   std::map<ge::Anchor *, ge::Anchor *> anchors_to_symbol;
   SymbolsToValue symbols_to_value;
   uint32_t model_id;
+  std::string model_name;
   rtStream_t stream;
   std::unordered_map<std::string, TraceAttr> node_names_to_attrs;
 };

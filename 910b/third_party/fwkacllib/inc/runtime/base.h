@@ -97,6 +97,7 @@ typedef struct tagRtTaskCfgInfo {
     uint8_t partId;
     uint8_t schemMode; // rtschemModeType_t 0:normal;1:batch;2:sync
     uint8_t res[1]; // res
+    uint32_t blockDimOffset;
 } rtTaskCfgInfo_t;
 
 /**
@@ -638,6 +639,30 @@ RTS_API rtError_t rtUnbindHostPid(rtBindHostpidInfo info);
  */
 RTS_API rtError_t rtQueryProcessHostPid(int32_t pid, uint32_t *chipId, uint32_t *vfId, uint32_t *hostPid,
     uint32_t *cpType);
+/**
+ * @ingroup dvrt_base
+ * @brief Sets the SSID of the shinared notify.
+ * @param [in] name share id name to be set
+ * @param [in] sdid whitelisted sdid
+ * @param [in] pid  whitelisted process
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtSetIpcNotifySuperPodPid(const char *name, uint32_t sdid, int32_t pid);
+ 
+/**
+ * @ingroup dvrt_base
+ * @brief Setting SSIDs of Shared Memory in Batches.
+ * @param [in] name Name used for sharing between processes
+ * @param [in] sdid whitelisted sdid
+ * @param [in] pid  host pid whitelist array
+ * @param [in] num  number of pid arrays
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtSetIpcMemorySuperPodPid(const char *name, uint32_t sdid, int32_t pid[], int32_t num);
 #if defined(__cplusplus)
 }
 #endif

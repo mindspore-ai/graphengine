@@ -35,6 +35,7 @@
 #include "graph/manager/memory_manager.h"
 #include "proto/var_manager.pb.h"
 #include "graph/ge_local_context.h"
+#include "mmpa/mmpa_api.h"
 
 namespace ge {
 constexpr uint64_t kGraphMemoryManagerMallocMaxSize = 27917287424U; // 26UL * 1024UL * 1024UL * 1024UL;
@@ -313,8 +314,7 @@ class VarManager {
   Status MallocVarMemory(const uint64_t memory_size = kMemoryVarManagerMallocSize,
                          const uint32_t device_id = kDefaultDeviceId);
 
-  Status ExtendVarMemory(VarMemoryAllocator *const var_memory_allocator,
-                         const uint32_t device_id = kDefaultDeviceId);
+  Status ExtendVarMemory(ExpandableMemoryAllocator *const var_memory_allocator);
 
   Status FreeVarMemory();
 
@@ -345,12 +345,15 @@ class VarManager {
   static bool IsGeUseExtendSizeStaticMemory() {
     std::string static_memory_policy;
     (void)GetThreadLocalContext().GetOption(STATIC_MEMORY_POLICY, static_memory_policy);
-    const char *static_mem_env = std::getenv(&kEnvGeuseStaticMemory[0U]);
-    if (static_mem_env != nullptr) {
-      GELOGI("%s is set to %s", kEnvGeuseStaticMemory, static_mem_env);
+    char_t static_mem_env[MMPA_MAX_PATH] = {'\0'};
+    INT32 res = mmGetEnv(&kEnvGeuseStaticMemory[0U], &static_mem_env[0U], static_cast<uint32_t>(MMPA_MAX_PATH));
+    if (res == EN_OK) {
+      GELOGI("%s is set to %s", &kEnvGeuseStaticMemory[0U], &static_mem_env[0U]);
     }
-    return ((static_mem_env != nullptr) && ((static_mem_env == kStaticMemory) || (static_mem_env == kExtendSizeType)))
+    bool use_extend = (((static_mem_env == kStaticMemory) || (static_mem_env == kExtendSizeType)))
         || (static_memory_policy == kStaticMemory) || (static_memory_policy == kExtendSizeType);
+    GELOGI("Final StaticMemoryPolicy is set to %s.", use_extend ? ge::kExtendSizeType.c_str() : "0");
+    return use_extend;
   }
 
   uint64_t GetGraphMemoryMaxSize(const bool for_check = false) const {
@@ -454,7 +457,7 @@ class VarManager {
   std::map<rtMemType_t, std::shared_ptr<MemResource>> mem_resource_map_;
   mutable std::recursive_mutex mutex_;
   MemoryManager *mem_manager_{nullptr};
-  VarMemoryAllocator *var_memory_allocator_{nullptr};
+  ExpandableMemoryAllocator *var_memory_allocator_{nullptr};
 };
 
 class VarManagerPool {

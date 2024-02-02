@@ -38,6 +38,7 @@ struct ExtraOpInfo {
   uint32_t tiling_key{0U};
   uintptr_t args{0U};
   size_t args_size{0UL};
+  std::map<uint64_t, uint64_t> cust_to_relevant_offset_;
   std::vector<void *> input_addrs;
   std::vector<void *> output_addrs;
   std::vector<uint64_t> input_sizes;

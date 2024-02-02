@@ -2086,12 +2086,13 @@ REG_OP(MaskedSoftmaxWithRelPosBias)
 * twelve inputs, including:
 * @li x1: A matrix Tensor. The type support int8.
 * @li x2: A matrix Tensor. The type support int8.
-* @li scale: A matrix Tensor. The type support uint64, float32. 
+* @li scale: A matrix Tensor. The type support uint64, float32.
 * @li offset: A matrix Tensor. The type support float32.
 * @li bias: A matrix Tensor. The type support int32. \n
 
 
 * @par Attributes:
+* @li dtype: A Int. declare the output dtype, support float16, int8.
 * @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
 * [M, K] before multiplication. Default: false.
 * @li transpose_x1: A bool. If True, changes the shape of "x2" from [N, K] to
@@ -2103,10 +2104,11 @@ REG_OP(MaskedSoftmaxWithRelPosBias)
 REG_OP(QuantBatchMatmulV3)
     .INPUT(x1, TensorType({DT_INT8}))
     .INPUT(x2, TensorType({DT_INT8}))
-    .INPUT(scale, TensorType({DT_UINT64, DT_FLOAT, DT_INT64}))
+    .INPUT(scale, TensorType({DT_UINT64, DT_FLOAT, DT_INT64, DT_BF16}))
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
+    .REQUIRED_ATTR(dtype, Int)
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
     .OP_END_FACTORY_REG(QuantBatchMatmulV3)

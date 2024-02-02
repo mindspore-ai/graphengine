@@ -125,8 +125,18 @@ class PneModel {
   virtual std::string GetLogicDeviceId() const { return ""; }
 
   virtual Status SetLogicDeviceId(const std::string &logic_device_id) {
+    const std::lock_guard<std::mutex> lk(pne_model_mutex_);
     for (const auto &submdel : submodels_) {
       (void)submdel.second->SetLogicDeviceId(logic_device_id);
+    }
+    return SUCCESS;
+  }
+
+  virtual std::string GetRedundantLogicDeviceId() const { return ""; }
+
+  virtual Status SetRedundantLogicDeviceId(const std::string &logic_device_id) {
+    for (const auto &submdel : submodels_) {
+      (void)submdel.second->SetRedundantLogicDeviceId(logic_device_id);
     }
     return SUCCESS;
   }

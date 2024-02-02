@@ -149,6 +149,9 @@ const std::string OPTION_HCCL_COMPILER_OFFLINE = "ge.offline_hccl_compile";
 // option for screen log
 const char_t *const OPTION_SCREEN_PRINT_MODE = "ge.screen_print_mode";
 
+// option for experimental
+constexpr char_t const OPTION_STATIC_MODEL_OPS_LOWER_LIMIT[] = "ge.exec.static_model_ops_lower_limit";
+
 namespace configure_option {
 const char_t *const STREAM_NUM = "ge.streamNum";
 const char_t *const HEAD_STREAM = "ge.headStream";

@@ -45,10 +45,20 @@ class SerializedModel : public PneModel {
     return logic_device_id_;
   }
 
+  Status SetRedundantLogicDeviceId(const std::string &logic_device_id) override {
+    redundant_logic_device_id_ = logic_device_id;
+    return SUCCESS;
+  }
+
+  std::string GetRedundantLogicDeviceId() const override {
+    return redundant_logic_device_id_;
+  }
+
  private:
   std::shared_ptr<uint8_t> serialized_data_ = nullptr;
   uint64_t serialized_data_length_ = 0;
   std::string logic_device_id_;
+  std::string redundant_logic_device_id_;
 };
 }  // namespace ge
 #endif  // BASE_PNE_MODEL_SERIALIZED_MODEL_H_

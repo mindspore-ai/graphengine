@@ -98,6 +98,18 @@ class LLMEngine {
                         const std::vector<ge::Tensor> &inputs,
                         std::vector<ge::Tensor> &outputs);
 
+  // @brief 执行Decoder推理
+  // @param [in] requests 每个batch对应的request_id
+  // @param [in] inputs 输入tensor
+  // @param [out] outputs 输出tensor
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式, request_id与batch不对应等
+  //         FAILED: 执行推理失败
+  ge::Status RunDecoder(const std::vector<LLMReq> &requests,
+                        const std::vector<ge::Tensor> &inputs,
+                        std::vector<ge::Tensor> &outputs);
+
   // @brief 进行device间建链
   // @param [in] clusters 需要建链的cluster信息
   // @param [in] timeout 超时时间，单位ms

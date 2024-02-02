@@ -27,12 +27,10 @@
 #include "exec_runtime/deploy/exchange_service.h"
 
 namespace ge {
-constexpr uint32_t kRedeploying = 1U;
-constexpr uint32_t kRedeployDone = 2U;
-constexpr uint32_t kDeploying = 3U;
-constexpr uint32_t kDeployDone = 4U;
-constexpr uint32_t kStartRedeploy = 1U;
-constexpr uint32_t kDynamicSched = 2U;
+constexpr uint32_t kCallbackStartRedeploy = 1U;
+constexpr uint32_t kCallbackDynamicSched = 2U;
+constexpr uint32_t kCallbackFailedRedeploy = 3U;
+constexpr uint32_t kCallbackRedeployDone = 4U;
 struct DeployResult {
   uint32_t model_id;
   std::vector<DeployQueueAttr> input_queue_attrs;

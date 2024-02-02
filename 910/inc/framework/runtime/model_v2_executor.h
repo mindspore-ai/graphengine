@@ -100,8 +100,10 @@ class VISIBILITY_EXPORT ModelV2Executor {
  public:
   static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph, const ge::ModelData &model_data,
                                                  const std::shared_ptr<ge::GeRootModel> &root_model);
-  static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph);
-  static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph, const ExecutorOption &option);
+  static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph,
+                                                 const std::shared_ptr<ge::GeRootModel> &root_model = nullptr);
+  static std::unique_ptr<ModelV2Executor> Create(const ge::ComputeGraphPtr &root_graph, const ExecutorOption &option,
+                                                 const std::shared_ptr<ge::GeRootModel> &root_model = nullptr);
 
   ge::graphStatus Load();
   /**

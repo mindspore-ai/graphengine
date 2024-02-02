@@ -77,7 +77,8 @@ class ModelRelationBuilder {
   virtual ~ModelRelationBuilder() = default;
 
  protected:
-  Status CreateQueueDef(const GeTensorDesc &tensor_desc, const std::string &queue_name, bool is_dummy = false);
+  Status CreateQueueDef(const GeTensorDesc &tensor_desc, const std::string &queue_name, const Node &node,
+                        bool is_dummy = false);
   static Status GetInputQueueNames(const NodePtr &node,
                                    const std::map<NodePtr, std::map<int32_t, std::string>> &paired_inputs,
                                    std::vector<std::string> &input_queue_names);
@@ -112,6 +113,9 @@ class ModelRelationBuilder {
   Status GetP2pNodeAndSetEndpoint(
       const NodePtr &node,
       const std::map<std::string, std::map<std::string, std::vector<Endpoint>>> &all_endpoints_by_graph);
+  bool GetFlowAttr(const AttrHolder *obj, const std::string &queue_name, int64_t &depth, std::string &enqueue_policy);
+  void GetFlowAttr(const std::string &queue_name, const GeTensorDesc &tensor_desc, const Node &node, int64_t &depth,
+                   std::string &enqueue_policy);
   std::map<std::string, Endpoint> endpoints_;
 };
 

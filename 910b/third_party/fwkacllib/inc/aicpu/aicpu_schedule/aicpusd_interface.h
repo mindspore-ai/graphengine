@@ -190,5 +190,12 @@ __attribute__((visibility("default"))) int32_t AICPUModelStop(const ReDeployConf
  */
 __attribute__((visibility("default"))) int32_t AICPUModelClearInputAndRestart(const ReDeployConfig * const ptr);
 
+/**
+ * @brief it is used to check kernel support.
+ * @param [in] cfgPtr : cfgPtr which point to CheckKernelSupportedConfig.
+ * @return AICPU_SCHEDULE_OK: supported  other: not supported
+ */
+__attribute__((visibility("default"))) int32_t CheckKernelSupported(const CheckKernelSupportedConfig * const cfgPtr);
+
 }
 #endif  // INC_AICPUSD_AICPUSD_INTERFACE_H_

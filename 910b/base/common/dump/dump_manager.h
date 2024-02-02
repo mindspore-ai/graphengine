@@ -46,6 +46,8 @@ class DumpManager {
   void SetDumpList(const DumpConfig &dump_config, DumpProperties &dump_properties) const;
   std::mutex mutex_;
   bool dump_flag_ = false;
+  // enable dump from acl first time
+  bool if_acl_dump_set_ = false;
   std::map<uint64_t, DumpProperties> dump_properties_map_;
   // enable dump from acl with session_id 0
   std::map<uint64_t, DumpProperties> infer_dump_properties_map_;

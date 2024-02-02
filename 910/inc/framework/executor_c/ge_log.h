@@ -19,9 +19,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#if !defined (LITEOS_PRINT)
 #include "toolchain/slog.h"
-#include <unistd.h>
-#include <sys/syscall.h>
+#endif
+#include "mmpa_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,13 +39,39 @@ extern "C" {
 enum TraceStatus { TRACE_INT = 0, TRACE_RUNNING, TRACE_WAITTING, TRACE_STOP };
 
 static inline uint64_t GetTid() {
-  const uint64_t tid = (uint64_t)(syscall(__NR_gettid));
+  const uint64_t tid = (uint64_t)(mmGetTaskId());
   return tid;
 }
 
-#ifdef RUN_TEST
+#ifdef LITEOS_PRINT
+#define GELOGD(fmt, ...)                                                                                 \
+  do {                                                                                                   \
+    drv_uart_send("[DEBUG][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
+  } while (false)
+
+#define GELOGI(fmt, ...)                                                                                \
+  do {                                                                                                  \
+    drv_uart_send("[INFO][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
+  } while (false)
+
+#define GELOGW(fmt, ...)                                                                                   \
+  do {                                                                                                     \
+    drv_uart_send("[WARNING][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
+  } while (false)
+
+#define GELOGE(ERROR_CODE, fmt, ...)                                                                    \
+  do {                                                                                                  \
+    drv_uart_send("[ERROR][%s:%d]%ld ErrorNo:%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(),    \
+      (long int)ERROR_CODE, ##__VA_ARGS__);                                                             \
+  } while (false)
+
+#define GEEVENT(fmt, ...)                                                                                \
+  do {                                                                                                   \
+    drv_uart_send("[EVENT][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
+  } while (false)
+#elif defined(RUN_TEST)
 #define GELOGD(fmt, ...)                                                                          \
-  do {                                                                                            \
+do {                                                                                              \
     printf("[DEBUG][%s:%d]%ld " fmt "\n", __FILE__, __LINE__, (long int)GetTid(), ##__VA_ARGS__); \
   } while (false)
 

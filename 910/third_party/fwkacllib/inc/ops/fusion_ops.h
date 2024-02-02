@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,8 @@ namespace ge {
 * @li pre_tockens: A int. Previous tokens.
 * @li next_tockens: A int. Next tokens.
 * @li head_num: A int. The number of the heads.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
-* @li inner_precise: A int. 0, float16 high precision. 1, high performance.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH", "BNSD", "BSND"]. Default: "BSH".
+* @li inner_precise: A int. 0, 1, reserved value. 2, support invalid lines.
 * @li sparse_mode: A int. 0, defaultMsk. 1, allMask. 2, leftUpCasual. 3, rightDownCasual. 4, band. 5, prefix.
 *
 * @par Outputs:
@@ -87,7 +87,7 @@ REG_OP(FlashAttentionScore)
 * @li query: A matrix Tensor. The type support float16, bf16, float32, int8.
 * @li key: A matrix Tensor. The type support float16, bf16, float32, int8.
 * @li value: A matrix Tensor. The type support float16, bf16, float32, int8.
-* @li padding_mask: A matrix Tensor. The type support float16, float32.
+* @li pse_shift: A matrix Tensor. The type support float16, float32.
 * @li atten_mask: A matrix Tensor. The type support float16, bool, float32.
 * @li actual_seq_lengths: A Tensor. The type support INT64.
 * @li dequant_scale1: A Tensor. The type support INT64.
@@ -114,7 +114,7 @@ REG_OP(IncreFlashAttention)
     .INPUT(query, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
     .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
     .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
-    .OPTIONAL_INPUT(padding_mask, TensorType({DT_FLOAT16, DT_BFL16}))
+    .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_FLOAT32, DT_INT8, DT_UINT8}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64}))
@@ -356,10 +356,10 @@ REG_OP(FFN)
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
     .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
-    .OPTIONAL_INPUT(antiquant_scale1, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(antiquant_scale2, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(antiquant_offset1, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(antiquant_offset2, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(antiquant_scale1, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_scale2, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset1, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset2, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(activation, String)
     .ATTR(inner_precise, Int, 0)
@@ -511,5 +511,30 @@ REG_OP(WeightQuantBatchMatmulV2)
     .ATTR(transpose_weight, Bool, false)
     .ATTR(antiquant_group_size, Int, 0)
     .OP_END_FACTORY_REG(WeightQuantBatchMatmulV2)
+
+
+/**
+* @brief Function GroupedMatmul. \n
+
+* @par Inputs:
+* @li x: A Tensor List.
+* @li weight: A Tensor List of weight.
+* @li bias: A Tensor List of bias.
+* @li group_list: a Tensor.
+
+* @par Attributes:
+* @li split_item: A int.
+
+* @par Outputs:
+* y: A Tensor List.
+*/
+  REG_OP(GroupedMatmul)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .DYNAMIC_INPUT(weight, TensorType({DT_FLOAT16, DT_BF16}))
+    .DYNAMIC_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(group_list, TensorType({DT_INT64}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
+    .ATTR(split_item, Int, 0)
+    .OP_END_FACTORY_REG(GroupedMatmul)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUSION_OPS_H_

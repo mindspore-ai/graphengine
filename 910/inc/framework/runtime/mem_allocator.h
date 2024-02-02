@@ -59,6 +59,7 @@ class VISIBILITY_EXPORT Allocators {
   ge::Status SetAllocator(const TensorPlacement &placement, const size_t &usage,
                           std::shared_ptr<ge::Allocator> &allocator);
  private:
+  // todo remove usage
   std::shared_ptr<ge::Allocator> allocators[static_cast<size_t>(TensorPlacement::kTensorPlacementEnd)]
                                                   [static_cast<size_t>(AllocatorUsage::kEnd)];
 };

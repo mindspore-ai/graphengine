@@ -23,6 +23,8 @@
 #include "common/model/model_deploy_resource.h"
 
 namespace ge {
+// root_model_id, submodel instance name, state
+using RootModelId2SubmodelName = std::map<uint32_t, std::map<const std::string, bool>>;
 struct ModelQueueIndex {
   std::string model_name;
   // if not empty, means model is invoked by others.
@@ -84,19 +86,38 @@ class DeployPlan {
     int32_t hcom_device_id_ = 0;
     int32_t os_id_ = 0;
   };
+
+  struct ExtendedIndexInfo {
+    DeviceInfo device_info;
+    std::string submodel_instance_name;
+    bool is_normal;
+  };
+
+  struct DynamicGroupRouteInfo {
+    int32_t entry_index;
+    int32_t endpoint_index;
+    ExtendedIndexInfo extended_info;
+    bool is_redundant;
+  };
+
+  struct DstGroupInfo {
+    uint32_t model_id;
+    std::vector<DynamicGroupRouteInfo> routes;
+  };
+
   // model id, src endpoint index (device info, is_normal_state)
-  // group id, dst mul_submodel_id, (entry index,
-  // dst endpoint index, device info, is_normal_state)
-  using DynamicSchedIndex = std::map<int32_t, std::map<int32_t, std::pair<std::pair<DeviceInfo, bool>,
-      std::map<int32_t, std::pair<uint32_t, std::vector<std::pair<int32_t,
-      std::pair<int32_t, std::pair<DeviceInfo, bool>>>>>>>>>;
+  // group id, dst group info
+  using DynamicSchedIndex = std::map<int32_t, std::map<int32_t, std::pair<ExtendedIndexInfo,
+      std::map<int32_t, DstGroupInfo>>>>;
   // node_id、device_id、device_type、is_normal_state
   using DeviceStateList = std::map<DeviceInfo, bool>;
-
+  // model_name model_instance_name device_info
+  using ModelDeployInfo = std::map<std::string, std::map<std::string, DeviceInfo>>;
+  using AbnormalStatusCallback = std::function<Status(uint32_t, RootModelId2SubmodelName &)>;
   struct AbnormalStatusCallbackInfo {
     std::mutex mu;
-    // key: root_model_id
-    std::map<uint32_t, std::function<Status(uint32_t, DeviceStateList)>> callback_list;
+    // key: root_model_id, data:callback
+    std::map<uint32_t, AbnormalStatusCallback> callback_list;
   };
 
   enum class QueueAction {
@@ -182,6 +203,7 @@ class DeployPlan {
     std::vector<int32_t> sched_input_queue_indices;
     std::vector<int32_t> sched_output_queue_indices;
     bool is_head = false;
+    bool is_redundant = false;
   };
 
   class DynamicSchedPlan {
@@ -236,7 +258,7 @@ class DeployPlan {
   const DynamicSchedPlan &GetDynamicSchedPlan() const;
   void SetIsDynamicSched(const bool is_dynamic_sched);
   const bool &GetIsDynamicSched() const;
-  std::map<std::string, std::vector<DeployPlan::DeviceInfo>> &GetModelName2DeviceInfo();
+  DeployPlan::ModelDeployInfo &GetModelDeployInfos();
 
  private:
   friend class DeployPlannerBase;
@@ -258,7 +280,7 @@ class DeployPlan {
   std::map<std::string, DeployPlan::DeviceInfo> flow_recv_tag_name_to_local_device_info_;
   DynamicSchedPlan dynamic_sched_plan_;
   bool is_dynamic_sched_ = false;
-  std::map<std::string, std::vector<DeployPlan::DeviceInfo>> model_name_to_device_infos_;
+  ModelDeployInfo model_deploy_infos_;
 };
 
 class DeployPlannerBase {
@@ -427,6 +449,11 @@ class DeployPlannerBase {
                                      const int32_t dst_idx,
                                      int32_t &group_index);
   void UpdateDynamicSchedDeployPlan();
+  void DynamicSchedGroupFormat(const int32_t &real_entry_index,
+                               const int32_t &entry_index,
+                               const DeployPlan::QueueInfo *src_queue_info,
+                               const int32_t &src_q_idx,
+                               const int32_t &dst_q_idx);
   Status BuildDynamicSchedInfo();
   Status SetHeadNodeInfo();
 

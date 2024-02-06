@@ -658,22 +658,6 @@ RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launc
                                               uint32_t flags);
 
 /**
- * @ingroup rtAicpuKernelLaunchEx
- * @brief launch cpu kernel to device  with dump identifier and kernelType
- * @param [in] kernelType    aicpu kernel type
- * @param [in] soName        address of op name
- * @param [in] blockDim      block dimentions
- * @param [in] argsInfo      argments address for kernel function
- * @param [in] smDesc        shared memory description
- * @param [in] stm           associated stream
- * @param [in] flags         dump flag or others function flag
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtAicpuKernelLaunchEx(uint32_t kernelType, const rtKernelLaunchNames_t *launchNames,
-                                        uint32_t blockDim, const rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc,
-                                        rtStream_t stm, uint32_t flags);
-/**
  * @ingroup rtAicpuKernelLaunchExWithArgs
  * @brief launch cpu kernel to device  with dump identifier and kernelType
  * @param [in] kernelType    aicpu kernel type

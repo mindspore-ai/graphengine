@@ -3779,8 +3779,8 @@ REG_OP(StrideAdd)
 * Compatible with the Pytorch equal operator. \n
 */
 REG_OP(TensorEqual)
-    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
-    .INPUT(input_y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL, DT_BF16}))
+    .INPUT(input_y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL, DT_BF16}))
     .OUTPUT(output_z, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(TensorEqual)
 

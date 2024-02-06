@@ -232,6 +232,25 @@ typedef enum tagGeneralCtrlType {
  */
 RTS_API rtError_t rtGeneralCtrl(uintptr_t *ctrl, uint32_t num, uint32_t type);
 
+/**
+ * @ingroup rt_stars
+ * @brief 5612(tiny) need translate addr
+ * @param [out] needTranslate
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtNeedDevVA2PA(bool *need);
+ 
+/**
+ * @ingroup rt_stars
+ * @brief translate addr from va to pa
+ * @param [in] devAddr translate addr
+ * @param [in] len addr len
+ * @param [in] stm stream
+* @param [in] isAsync async or sync
+ * @return RT_ERROR_NONE for ok, others failed
+ */
+RTS_API rtError_t rtDevVA2PA(uint64_t devAddr, uint64_t len, rtStream_t stm, bool isAsync);
+
 #if defined(__cplusplus)
 }
 #endif

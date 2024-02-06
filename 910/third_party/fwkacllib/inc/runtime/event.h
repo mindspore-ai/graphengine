@@ -319,16 +319,6 @@ RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify, rtStream_t stm, uin
 
 /**
  * @ingroup dvrt_event
- * @brief Name a notify
- * @param [in] notify_ notify to be named
- * @param [in|out] name   identification name
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtNameNotify(rtNotify_t notify, const char_t *name);
-
-/**
- * @ingroup dvrt_event
  * @brief get notify id
  * @param [in] notify_ notify to be get
  * @param [in|out] notify_id   notify id

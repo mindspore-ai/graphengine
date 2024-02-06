@@ -23,6 +23,7 @@ namespace ge {
 class GE_FUNC_VISIBILITY FlowModelHelper {
  public:
   static Status LoadToFlowModel(const std::string &model_path, FlowModelPtr &flow_model);
+  static Status UpdateGeModelSessionId(const FlowModelPtr &flow_model, const uint64_t session_id);
   static Status UpdateSessionGraphId(const FlowModelPtr &flow_model, const std::string &session_graph_id);
   static Status SaveToOmModel(const FlowModelPtr &flow_model, const std::string &output_file);
   static Status LoadFlowModelFromBuffData(const ModelBufferData &model_buffer_data,

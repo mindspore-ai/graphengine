@@ -49,6 +49,7 @@ struct DeployResult {
   std::map<int32_t, int32_t> datagw_request_bindings;
   bool is_dynamic_sched = false;
   DeployPlan::AbnormalStatusCallbackInfo *abnormal_status_callback_info = nullptr;
+  std::set<std::string> model_trimming_edges_model_instances;
 };
 
 class ModelDeployer {

@@ -90,9 +90,9 @@ REG_OP(FlashAttentionScore)
 * @li pse_shift: A matrix Tensor. The type support float16, float32.
 * @li atten_mask: A matrix Tensor. The type support float16, bool, float32.
 * @li actual_seq_lengths: A Tensor. The type support INT64.
-* @li dequant_scale1: A Tensor. The type support INT64.
+* @li dequant_scale1: A Tensor. The type support uint64, float32.
 * @li quant_scale1: A Tensor. The type support float32.
-* @li dequant_scale2: A Tensor. The type support INT64.
+* @li dequant_scale2: A Tensor. The type support uint64, float32.
 * @li quant_scale2: A Tensor. The type support float32.
 * @li quant_offset2: A Tensor. The type support float32.
 * @li antiquant_scale: A Tensor. The type support float16.
@@ -102,7 +102,7 @@ REG_OP(FlashAttentionScore)
 * @par Attributes:
 * @li num_heads: A int. The number of the heads.
 * @li scale_value: A float. The scale value. Default: 1.0.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD"]. Default: "BSH".
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD", "BSND"]. Default: "BSH".
 * @li num_key_value_heads: key value num heads.
 * @li block_size: A int. Max length in pageattention's kv block.
 * @li inner_precise: A int. mode of precision in float16.
@@ -117,9 +117,9 @@ REG_OP(IncreFlashAttention)
     .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_FLOAT32, DT_INT8, DT_UINT8}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
-    .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64, DT_FLOAT}))
     .OPTIONAL_INPUT(quant_scale1, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(dequant_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(dequant_scale2, TensorType({DT_UINT64, DT_FLOAT}))
     .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
@@ -145,9 +145,9 @@ REG_OP(IncreFlashAttention)
 * @li atten_mask: A matrix Tensor. The type support float16, bool, int8, uint8.
 * @li actual_seq_lengths: A Tensor. The type support int64.
 * @li actual_seq_lengths_kv: A Tensor. The type support int64.
-* @li deq_scale1: A Tensor. The type support uint64.
+* @li deq_scale1: A Tensor. The type support uint64,float32.
 * @li quant_scale1: A Tensor. The type support float32.
-* @li deq_scale2: A Tensor. The type support uint64.
+* @li deq_scale2: A Tensor. The type support uint64,float32.
 * @li quant_scale2: A Tensor. The type support float32.
 * @li quant_offset2: A Tensor. The type support float32.
 
@@ -172,9 +172,9 @@ REG_OP(PromptFlashAttention)
     .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_INT8, DT_UINT8}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(actual_seq_lengths_kv, TensorType({DT_INT64}))
-    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64, DT_FLOAT32}))
     .OPTIONAL_INPUT(quant_scale1, TensorType({DT_FLOAT32}))
-    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64, DT_FLOAT32}))
     .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT32}))
     .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT32}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16, DT_INT8}))
@@ -354,8 +354,8 @@ REG_OP(FFN)
     .OPTIONAL_INPUT(bias2, TensorType({DT_INT32, DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64}))
-    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64, DT_BF16}))
+    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_scale1, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_scale2, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_offset1, TensorType({DT_FLOAT16, DT_BF16}))
@@ -363,6 +363,7 @@ REG_OP(FFN)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(activation, String)
     .ATTR(inner_precise, Int, 0)
+    .ATTR(output_dtype, Int, -1)
     .OP_END_FACTORY_REG(FFN)
 
 

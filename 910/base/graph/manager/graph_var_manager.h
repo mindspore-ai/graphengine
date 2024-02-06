@@ -345,12 +345,12 @@ class VarManager {
   static bool IsGeUseExtendSizeStaticMemory() {
     std::string static_memory_policy;
     (void)GetThreadLocalContext().GetOption(STATIC_MEMORY_POLICY, static_memory_policy);
-    char_t static_mem_env[MMPA_MAX_PATH] = {'\0'};
-    INT32 res = mmGetEnv(&kEnvGeuseStaticMemory[0U], &static_mem_env[0U], static_cast<uint32_t>(MMPA_MAX_PATH));
+    char_t static_mem_env[MMPA_MAX_PATH] = {};
+    const INT32 res = mmGetEnv(&kEnvGeuseStaticMemory[0U], &static_mem_env[0U], static_cast<uint32_t>(MMPA_MAX_PATH));
     if (res == EN_OK) {
       GELOGI("%s is set to %s", &kEnvGeuseStaticMemory[0U], &static_mem_env[0U]);
     }
-    bool use_extend = (((static_mem_env == kStaticMemory) || (static_mem_env == kExtendSizeType)))
+    const bool use_extend = (((&static_mem_env[0U] == kStaticMemory) || (&static_mem_env[0U] == kExtendSizeType)))
         || (static_memory_policy == kStaticMemory) || (static_memory_policy == kExtendSizeType);
     GELOGI("Final StaticMemoryPolicy is set to %s.", use_extend ? ge::kExtendSizeType.c_str() : "0");
     return use_extend;

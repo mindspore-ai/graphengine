@@ -118,6 +118,11 @@ namespace ge {
 
   void SetCurModelId(uint32_t model_id) { cur_model_id_ = model_id; }
 
+  void SetFixedFeatureMemoryBase(const void * const memory, const size_t size) {
+    fixed_feature_mem_ = std::make_pair(memory, size);
+  }
+
+  const std::pair<const void *, size_t> &GetFixedFeatureMemoryBase() const { return fixed_feature_mem_; }
  private:
   Status SetLogicDeviceId(const std::string &logic_device_id, bool is_redundant);
 
@@ -142,6 +147,8 @@ namespace ge {
   SoInOmInfo so_info_ = {};
   std::string file_constant_weight_dir_;
   uint32_t cur_model_id_ = 0U;
+  // save input fix addr and size <mem_base, mem_size>
+  std::pair<const void *, size_t> fixed_feature_mem_;
 };
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
 }  // namespace ge

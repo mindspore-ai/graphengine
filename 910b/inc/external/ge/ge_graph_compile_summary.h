@@ -53,6 +53,20 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
   Status GetFeatureMemorySize(size_t &size) const;
 
   ///
+  /// @brief get fix fearute memory size after compiled
+  /// @param [out] size const memory size
+  /// @return Status result of function
+  ///
+  Status GetFixedFeatureMemorySize(size_t &size) const;
+
+  ///
+  /// @brief get refreshable fearturemap memory size after compiled, without input and output and fix memory
+  /// @param [out] size fearturemap memory size
+  /// @return Status result of function
+  ///
+  Status GetRefreshableFeatureMemorySize(size_t &size) const;
+
+  ///
   /// @brief get whether or not the graph support featuremap memory base refreshable
   /// @param [out] v refreshable or not
   /// @return Status result of function

@@ -46,6 +46,8 @@ const char * const MODEL                                     = "model";
 const char * const WEIGHT                                    = "weight";
 const char * const HELP                                      = "help";
 const char * const PROGRESS                                  = "progress_bar";
+const char * const INIT_BYPASS                               = "init_bypass";
+const char * const BUILD_BYPASS                              = "build_bypass";
 
 // aoe 命令行支持的GE参数 (包括parser)
 const char * const SOC_VER                                   = "soc_version"; // AOE命令行不支持，内部通过acl接口获取

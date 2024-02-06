@@ -180,6 +180,10 @@ class GraphNode {
     feature_mem_ = std::make_pair(memory, size);
   }
   const InputMemoryBaseInfo &GetFeatureMemoryBase() const { return feature_mem_; }
+  void SetRefreshableFeatureMemoryBase(const void * const memory, const size_t size) {
+    refreshable_feature_mem_ = std::make_pair(memory, size);
+  }
+  const InputMemoryBaseInfo &GetRefreshableFeatureMemoryBase() const { return refreshable_feature_mem_; }
   CompiledGraphSummaryPtr GetCompiledGraphSummary() const { return compiled_summary_; }
   void SaveCompiledGraphSummary(const CompiledGraphSummaryPtr &summary) { compiled_summary_ = summary; }
   void SetAppRefreshConstMemoryFlag() {
@@ -257,6 +261,7 @@ class GraphNode {
 
   InputMemoryBaseInfo const_mem_;
   InputMemoryBaseInfo feature_mem_;
+  InputMemoryBaseInfo refreshable_feature_mem_;
   CompiledGraphSummaryPtr compiled_summary_{nullptr};
 
   bool app_refresh_const_memory_flag_{false};

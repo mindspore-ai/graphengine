@@ -395,16 +395,6 @@ RTS_API rtError_t rtRegDeviceStateCallbackEx(const char_t *regName, rtDeviceStat
 
 /**
  * @ingroup dvrt_base
- * @brief register callback for deviceid
- * @param [in] uniName unique register name, can't be null
- * @param [in] callback Device state callback function
- * @param [out] NA
- * @return RT_ERROR_NONE for ok
- */
-RTS_API rtError_t rtRegDeviceStateCallback(const char_t *regName, rtDeviceStateCallback callback);
-
-/**
- * @ingroup dvrt_base
  * @brief register callback for fail task
  * @param [in] uniName unique register name, can't be null
  * @param [in] callback fail task callback function
@@ -459,20 +449,6 @@ RTS_API rtError_t rtLabelDestroy(rtLabel_t lbl);
 
 /**
  * @ingroup dvrt_base
- * @brief label switch instance
- * @param [in] ptr  address to get value compared
- * @param [in] condition
- * @param [in] val  to compare
- * @param [in] true_label   goto label
- * @param [in] stm  to submit label_switch task
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtLabelSwitch(void *ptr, rtCondition_t condition, uint32_t val, rtLabel_t trueLabel,
-                                rtStream_t stm);
-
-/**
- * @ingroup dvrt_base
  * @brief goto label instance
  * @param [in] lbl   goto label
  * @param [in] stm  to submit label_goto task
@@ -480,16 +456,6 @@ RTS_API rtError_t rtLabelSwitch(void *ptr, rtCondition_t condition, uint32_t val
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtLabelGoto(rtLabel_t lbl, rtStream_t stm);
-
-/**
- * @ingroup dvrt_base
- * @brief name label instance
- * @param [in] lbl  instance
- * @param [in] name  label name
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtNameLabel(rtLabel_t lbl, const char_t *name);
 
 /**
  * @ingroup dvrt_base

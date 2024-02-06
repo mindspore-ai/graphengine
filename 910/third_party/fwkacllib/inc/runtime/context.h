@@ -102,13 +102,6 @@ RTS_API rtError_t rtCtxSetCurrent(rtContext_t currentCtx);
 
 /**
  * @ingroup rt_context
- * @brief block for a context's tasks to complete
- * @return RT_ERROR_NONE for ok
- */
-RTS_API rtError_t rtCtxSynchronize(void);
-
-/**
- * @ingroup rt_context
  * @brief returns the context bound to the calling CPU thread.
  * @param [out] currentCtx   returned context
  * @return RT_ERROR_NONE for ok

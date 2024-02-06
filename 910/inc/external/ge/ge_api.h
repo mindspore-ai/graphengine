@@ -333,6 +333,26 @@ class GE_FUNC_VISIBILITY Session {
   ///
   Status UpdateGraphFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
 
+  ///
+  /// @ingroup ge_graph
+  /// @brief set fix feature memory base after compiled and before loaded, only allows setting once
+  /// @param [in] graphId graph id
+  /// @param [in] memory const memory base
+  /// @param [out] size const memory size
+  /// @return Status result of function
+  ///
+  Status SetGraphFixedFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief set or update tefreshable fearture memory base after compiled, not include fix memory
+  /// @param [in] graphId graph id
+  /// @param [in] memory feature map memory base, without input and output mem
+  /// @param [out] size feature map memory size
+  /// @return Status result of function
+  ///
+  Status UpdateGraphRefreshableFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+
   /// @ingroup ge_graph
   /// @brief register external allocator to GE.
   /// @param [in] stream stream handle

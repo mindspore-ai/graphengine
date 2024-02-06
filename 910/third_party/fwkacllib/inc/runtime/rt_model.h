@@ -662,6 +662,15 @@ RTS_API rtError_t rtSetStreamSqLock(rtStream_t stm);
  */
 RTS_API rtError_t rtSetStreamSqUnlock(rtStream_t stm);
 
+/**
+ * @ingroup rt_model
+ * @brief support reuse or not
+ * @param [out]  bSupport
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error
+ */
+RTS_API rtError_t rtSupportModelStreamReuse(bool *bSupport);
+
 #if defined(__cplusplus)
 }
 #endif

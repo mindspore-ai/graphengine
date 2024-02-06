@@ -58,6 +58,8 @@ typedef struct TagStreamConfigHandle {
  */
 #define RT_STREAM_PRIORITY_DEFAULT (0U)
 
+#define RT_MAX_MODELS_IN_ONE_STREAM (255)
+
 /**
  * @ingroup dvrt_stream
  * @brief create stream instance
@@ -249,20 +251,6 @@ rtError_t rtGetAvailEventNum(uint32_t * const eventCount);
 RTS_API rtError_t rtNameStream(rtStream_t stm, const char_t *name);
 
 /**
- * @ingroup dvrt_stream
- * @brief switch to the corresponding stream according to the contents of the ptr
- * @param [in] ptr  Determine the address where the value of the true and false branches is located
- * @param [in] condition switch condition
- * @param [in] val  switch value
- * @param [in] trueStream  Stream that needs to be activated when the value is non-zero
- * @param [in] stm input stream to init task
- * @return RT_ERROR_NONE for complete
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t val, rtStream_t trueStream,
-                                 rtStream_t stm);
-
-/**
  * @brief execute extensible stream switch task
  * @param [in] ptr   pointer of value
  * @param [in] condition   judge condition
@@ -349,6 +337,16 @@ RTS_API rtError_t rtGetStreamOverflowSwitch(rtStream_t stm, uint32_t *flags);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetStreamTag(rtStream_t stm, uint32_t *geOpTag);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief get remain task num by stream
+ * @param [in]  stream
+ * @param [out]  task num
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error
+ */
+RTS_API rtError_t rtGetRemainTaskNumByStream(rtStream_t stm, uint32_t *taskNum);
 
 #if defined(__cplusplus)
 }

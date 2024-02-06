@@ -259,6 +259,7 @@ class DeployPlan {
   void SetIsDynamicSched(const bool is_dynamic_sched);
   const bool &GetIsDynamicSched() const;
   DeployPlan::ModelDeployInfo &GetModelDeployInfos();
+  const std::set<std::string> &GetTrimmingEdgesModelInstances() const;
 
  private:
   friend class DeployPlannerBase;
@@ -281,6 +282,7 @@ class DeployPlan {
   DynamicSchedPlan dynamic_sched_plan_;
   bool is_dynamic_sched_ = false;
   ModelDeployInfo model_deploy_infos_;
+  std::set<std::string> model_trimming_edges_model_instances_;
 };
 
 class DeployPlannerBase {
@@ -387,7 +389,7 @@ class DeployPlannerBase {
   bool IsInputMultiConnected(const int32_t dst_endpoint_idx);
   bool IsMultiDeployed(const std::string &model_instance_name) const;
   bool CheckSkipBinding(const std::string &src_model_instance_name,
-                        const std::string &dst_model_instance_name) const;
+                        const std::string &dst_model_instance_name);
   static bool CanConnectWithQ(const DeployPlan::DeviceInfo &src_device_info,
                               const DeployPlan::DeviceInfo &dst_device_info);
   static bool CanConnectWithLocalQ(const DeployPlan::DeviceInfo &src_device_info,
@@ -456,6 +458,8 @@ class DeployPlannerBase {
                                const int32_t &dst_q_idx);
   Status BuildDynamicSchedInfo();
   Status SetHeadNodeInfo();
+  void AddTrimmingEdgesModelInstance(const std::string &src_model_instance_name,
+                                     const std::string &dst_model_instance_name);
 
   ModelRelation model_relation_;
   std::unique_ptr<ModelRelationReader> relation_reader_;

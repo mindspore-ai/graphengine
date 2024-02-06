@@ -154,6 +154,7 @@ const std::set<std::string> EXECUTOR_INIT_OPTION_SET = {
     DEBUG_DIR,
     OP_TUNE_MODE,
     OPTION_SCREEN_PRINT_MODE,
+    INIT_BYPASS,
 };
 
 const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
@@ -198,6 +199,7 @@ const std::set<std::string> EXECUTOR_COMPILE_OPTION_SET = {
     ge::OPTION_GRAPH_RUN_MODE,
     DETERMINISTIC,
     IMPL_MODE,
+    BUILD_BYPASS,
 };
 
 /**

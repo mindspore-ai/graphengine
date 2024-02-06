@@ -130,6 +130,20 @@ class LLMEngine {
   ge::Status UnlinkClusters(const std::vector<ClusterInfo> &clusters, std::vector<ge::Status> &rets,
                             const int32_t timeout = -1);
 
+  // @brief 执行Prompt推理
+  // @param [in] req 请求
+  // @param [in] inputs 输入tensor
+  // @param [out] outputs 输出tensor
+  // @param [in] model_id 模型ID
+  // @return Status result of function
+  //         SUCCESS: 成功
+  //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式
+  //         FAILED: 执行推理失败
+  ge::Status RunPrompt(const std::vector<LLMReq> &reqs,
+                       const std::vector<ge::Tensor> &inputs,
+                       std::vector<ge::Tensor> &output,
+                       uint64_t model_id = 0UL);
+
  private:
   std::shared_ptr<PromptManager> prompt_manager_;
   std::shared_ptr<DecoderManager> decoder_manager_;

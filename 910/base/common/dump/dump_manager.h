@@ -39,7 +39,7 @@ class DumpManager {
  private:
   bool CheckHasNpuCollectPath() const;
   bool NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump_properties);
-  void SetDumpDebugConf(const DumpConfig &dump_config, DumpProperties &dump_properties) const;
+  void SetDumpDebugConf(const DumpConfig &dump_config, DumpProperties &dump_properties);
   bool SetL0ExceptionDump(const DumpConfig &dump_config) const;
   Status SetDumpPath(const DumpConfig &dump_config, DumpProperties &dump_properties) const;
   Status SetNormalDumpConf(const DumpConfig &dump_config, DumpProperties &dump_properties);

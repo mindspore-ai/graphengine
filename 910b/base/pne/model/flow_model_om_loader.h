@@ -48,7 +48,9 @@ class FlowModelOmLoader {
   static Status RefreshNodeOffset(const NodeRefreshInfo &inputs_need_refresh,
                                   const NodeRefreshInfo &outputs_need_refresh,
                                   std::map<int64_t, int64_t> &logical_addr_mapping);
-  static Status UpdateModelTaskAddr(const PneModelPtr &pne_model,
+  static Status RefreshAndGetAddrMapping(const ComputeGraphPtr &graph, const uint64_t session_id,
+                                         const bool is_cache, std::map<int64_t, int64_t> &logical_addr_mapping);
+  static Status UpdateModelTaskAddr(const PneModelPtr &pne_model, const uint64_t session_id,
                                     const std::map<int64_t, int64_t> &logical_addr_mapping);
 };
 }  // namespace ge

@@ -23,6 +23,8 @@
 #include "mem_allocator.h"
 #include "memory/allocator_desc.h"
 #include "exe_graph/lowering/lowering_opt.h"
+#include "stream_allocator.h"
+#include "event_allocator.h"
 
 namespace gert {
 /**
@@ -46,6 +48,13 @@ std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &
 VISIBILITY_EXPORT
 std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
                                                            const ExecutorOption &executor_option,
+                                                           ge::graphStatus &error_code);
+
+VISIBILITY_EXPORT
+std::unique_ptr<ModelV2Executor> LoadExecutorFromModelData(const ge::ModelData &model_data,
+                                                           const ExecutorOption &executor_option,
+                                                           StreamAllocator *const stream_allocator,
+                                                           EventAllocator *const event_allocator,
                                                            ge::graphStatus &error_code);
 
 VISIBILITY_EXPORT

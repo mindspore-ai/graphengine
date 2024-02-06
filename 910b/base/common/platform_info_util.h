@@ -22,6 +22,7 @@ namespace ge {
 class PlatformInfoUtil {
  public:
   static std::string GetJitCompileDefaultValue();
+  static size_t GetMemorySize();
 };
 } // namespace ge
 #endif  // GE_GRAPH_COMMON_PLATFORM_INFO_UTIL_H_

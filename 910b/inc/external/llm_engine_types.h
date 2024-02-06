@@ -105,6 +105,7 @@ constexpr const char LLM_OPTION_CLUSTER_INFO[] = "llm.ClusterInfo";
 constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
 constexpr const char LLM_OPTION_MODEL_INPUTS_SHAPES[] = "llm.InputShapes";
 constexpr const char LLM_OPTION_MODEL_INPUTS_DTYPES[] = "llm.InputDtypes";
+constexpr const char LLM_OPTION_MODEL_INPUTS_PADDING[] = "llm.InputPaddings";
 constexpr const char LLM_OPTION_MODEL_KV_CACHE_SHAPES[] = "llm.RefInputShapes";
 constexpr const char LLM_OPTION_MODEL_KV_CACHE_DTYPES[] = "llm.RefInputDtypes";
 constexpr const char LLM_OPTION_OUTPUT_NUM[] = "llm.OutputNums";

@@ -148,6 +148,14 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
     return enable_flags_.load() & BuiltInSubscriberUtil::EnableBit<ProfilingType>(profiling_type);
   }
 
+  void IncreaseProfCount() {
+    prof_count_++;
+  }
+
+  uint64_t GetProfCount() const {
+    return prof_count_.load();
+  }
+
   void DumpAndFree(std::ostream &out_stream) {
     Dump(out_stream);
     Free();
@@ -227,6 +235,7 @@ class VISIBILITY_EXPORT GlobalProfilingWrapper {
   // rt2流程acl会给推理场景生成一个model id，但是静态子图没有办法获取这个model id，生成的davinci model
   // 的model id为uint32_t的最大值，因此这种情况下，需要给它一个model id且生成model id的逻辑需要与acl一致
   std::atomic_uint32_t model_id_generator_{std::numeric_limits<uint32_t>::max() / 2U};
+  std::atomic<uint64_t> prof_count_{0UL};
 };
 
 class ScopeProfiler {

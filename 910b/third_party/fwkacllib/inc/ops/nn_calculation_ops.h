@@ -842,7 +842,7 @@ REG_OP(Conv2DBackpropFilterD)
 * @par Quantization supported or not
 * Yes
 *
-* @par Third-party framework compatibility
+* @par0 Third-party framework compatibility
 *@li Compatible with the TensorFlow operator "conv2d".
 *@li Compatible with the Caffe operator 2D "Convolution".
 */
@@ -1021,6 +1021,115 @@ REG_OP(DeformableConv2D)
     .ATTR(deformable_groups, Int, 1)
     .ATTR(modulated, Bool, true)
     .OP_END_FACTORY_REG(DeformableConv2D)
+
+/**
+* @brief Computes a quant and 2D convolution given 4D "x", "filter" and "scale" tensors.
+* @par Inputs:
+* @li x: A 4D tensor of input image. With the format "NHWC" or "NCHW", the data is stored in the
+* order of:[batch, in_height, in_width, in_channels] or [batch, in_channels, in_height, in_width].
+* @li filter: A 4D tensor of learnable filters. With the format "NCHW" or "HWCN",
+* the data is stored in the order of:
+* [out_channels, in_channels / groups, filter_height, filter_width] or
+* [filter_height, filter_width, in_channels / groups, out_channels].
+* @li scale: A requied 1D tensor of Quantization algorithm.
+* @li bias: An optional 1D tensor of additive biases to the filter outputs.
+* The data is stored in the order of: [out_channels].
+* @li offset: Reserved.
+*\n
+*\n
+* The following are the supported data types and data formats (for Ascend310P3):
+*\n
+*\n
+| Tensor    | x       | filter  | scale   | bias    | offset  | y       |\n
+| :-------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: |\n
+| Data Type | int8    | int8    | uint64  | int32   | float32 | float16 |\n
+|           |         |         |         |         |         |         |\n
+| Format    | NCHW    | NCHW    | ND      | ND      | ND      | NCHW    |\n
+|           | NCHW    | HWCN    | ND      | ND      | ND      | NCHW    |\n
+|           | NHWC    | HWCN    | ND      | ND      | ND      | NHWC    |\n
+*\n
+*
+* @par Attributes:
+* @li dtype: Required. A integer of type int8.
+* @li strides: Required. A list of 4 integers. The stride of the sliding window
+* for each dimension of input. The dimension order is determined by the data
+* format of "x". The N and C dimensions must be set to 1.
+* @li pads: Required. A list of 4 integers. The number of pixels to add to each
+* (top, bottom, left, right) side of the input.
+* @li dilations: Optional. A list of 4 integers. The dilation factor for each
+* dimension of input. The dimension order is determined by the data format of
+* "x". The N and C dimensions must be set to 1. Defaults to [1, 1, 1, 1].
+* @li groups: Optional. An integer of type int32. The number of blocked
+* connections from input channels to output channels. In_channels and
+* out_channels must both be divisible by "groups". Defaults to 1.
+* @li data_format: Optional. An String. Defaults to "NHWC".
+* @li offset_x: Optional. An integer of type int32. The negative offset added
+* to the input image for int8 type. Ensure that the output is within the
+* effective range. Defaults to 0.
+* @li round_mode: Optional. Reserved.
+*\n
+*\n
+* The following value range restrictions must be met:
+*\n
+*\n
+| Name             | Field    | Scope       |\n
+| :--------------: | :------: | :---------: |\n
+| Input Image Size | H        | [1, 100000] |\n
+|                  | W        | [1, 4096]   |\n
+| Filter Size      | H        | [1, 255]    |\n
+|                  | W        | [1, 255]    |\n
+| Stride           | H        | [1, 63]     |\n
+|                  | W        | [1, 63]     |\n
+| Padding          | Top      | [0, 255]    |\n
+|                  | Bottom   | [0, 255]    |\n
+|                  | Left     | [0, 255]    |\n
+|                  | Right    | [0, 255]    |\n
+| Dilation         | H        | [1, 255]    |\n
+|                  | W        | [1, 255]    |\n
+| Offset_x         | -        | [-128, 127] |\n
+*\n
+* The W dimension of the input image supports cases exceeding 4096, but it may
+* cause compilation errors.
+*\n
+* If any dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647),
+* the product of each dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647) or
+* the value of stride/padding/dilation/offset_x exceeds the range in the above table,
+* the correctness of the function cannot be guaranteed.
+*\n
+*
+*@par Outputs:
+* y: A 4D Tensor of output feature map. Has the same type as "x". With the
+* format "NHWC", the data is stored in the order of: [batch, out_height,
+* out_width, out_channels].
+*\n
+*     out_height = (in_height + pad_top + pad_bottom -
+*                   (dilation_h * (filter_height - 1) + 1))
+*                  / stride_h + 1
+*\n
+*     out_width = (in_width + pad_left + pad_right -
+*                  (dilation_w * (filter_width - 1) + 1))
+*                 / stride_w + 1
+*\n
+*
+* @par Quantization supported or not
+* Yes
+*/
+REG_OP(QuantConv2D)
+    .INPUT(x, TensorType({DT_INT8}))
+    .INPUT(filter, TensorType({DT_INT8}))
+    .INPUT(scale, TensorType({DT_UINT64}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(dtype, Int)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(dilations, ListInt, {1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NHWC")
+    .ATTR(offset_x, Int, 0)
+    .ATTR(round_mode, String, "rint")
+    .OP_END_FACTORY_REG(QuantConv2D)
 
 /**
 *@brief Computes a 3D convolution given 5D "x" and "filter" tensors.

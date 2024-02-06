@@ -71,18 +71,26 @@ struct ModelExecuteArg {
   Allocators *external_allocator;
 
   /**
-   * 所有的流，streams[0]代表主流，streams[1:]为辅流。
-   * 如果外部不希望管理辅流，可以传入空指针，此时模型会自行分配辅流，辅流为模型独占资源，在模型卸载时释放
+   * 是否使用外部的stream allocator来申请辅流。如果本成员指针为空，那么执行器会自行创建一个默认的stream allocator使用。
+   * 该stream allocator与ModelExecuteArg的第一个参数stream（外部主流）生命周期一致。若切换主流，也需要对应切换该allocator
    */
-  TypedContinuousVector<rtStream_t> *streams;
-
-  TypedContinuousVector<rtEvent_t> *events;
+  StreamAllocator *external_stream_allocator;
+  /**
+   * 是否使用外部的event allocator来申请event。如果本成员指针为空，那么执行器会自行创建一个默认的event allocator使用。
+   * 该event allocator与ModelExecuteArg的第一个参数stream（外部主流）生命周期一致。若切换主流，也需要对应切换该allocator
+   * event allocator与stream allocator需要同时传入
+   */
+  EventAllocator *external_event_allocator;
 
   uint64_t reserved[8];
 
   ModelExecuteArg() : ModelExecuteArg(nullptr, nullptr) {}
   ModelExecuteArg(const rtStream_t stream_, Allocators *const external_allocator_ = nullptr)
-      : stream(stream_), external_allocator(external_allocator_), streams{nullptr}, events(nullptr), reserved{0U} {}
+      : stream(stream_),
+        external_allocator(external_allocator_),
+        external_stream_allocator{nullptr},
+        external_event_allocator{nullptr},
+        reserved{0U} {}
 };
 static_assert(std::is_standard_layout<ModelExecuteArg>::value, "The class ModelExecuteArg must be a POD");
 
@@ -207,6 +215,8 @@ class VISIBILITY_EXPORT ModelV2Executor {
   friend class ModelV2ExecutorTestHelper;
   ModelV2Executor();
   ge::graphStatus SpecifyArgsInputs(const ModelExecuteArg &arg, size_t input_num, ExeGraphExecutor &graph_executor);
+  ge::graphStatus OccupyStreamEvents(const ModelExecuteArg &arg, TypedContinuousVector<rtStream_t> *&streams,
+                                     TypedContinuousVector<rtEvent_t> *&events);
 
  private:
   TopologicalResourceGuard resource_guard_;

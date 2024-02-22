@@ -24,22 +24,17 @@
 
 namespace ge {
 struct DevResourceAllocator {
-  gert::StreamAllocator stream_allocator;
   gert::EventAllocator event_allocator;
+  gert::StreamAllocator stream_allocator;
 };
-
 class ExternalAllocatorManager {
  public:
   static void SetExternalAllocator(const void *const stream, AllocatorPtr allocator);
   static void DeleteExternalAllocator(const void *const stream);
   static AllocatorPtr GetExternalAllocator(const void *const stream);
-  static DevResourceAllocator &GetDevResourceAllocator(const void *const stream);
-  static void ClearDevResourceAllocators();
  private:
   static std::mutex stream_to_external_allocator_Mutex_;
   static std::map<const void *const, AllocatorPtr> stream_to_external_allocator_;
-  static std::mutex stream_to_resource_allocator_Mutex_;
-  static std::map<const void *const, DevResourceAllocator> stream_to_resource_allocator_;
 };
 }  // namespace ge
 #endif // GE_COMMON_EXECUTOR_H

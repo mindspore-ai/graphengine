@@ -1302,6 +1302,46 @@ REG_OP(Scatter)
     .OP_END_FACTORY_REG(Scatter)
 
 /**
+* @brief Multiplies quantize and sparse updates into a variable reference . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li var: An ND Tensor.
+* Must be one of the following types: int32, int8, uint8
+* @li indices: An ND Tensor.
+* Must be one of the following types: int32 or int64
+* @li updates: An ND Tensor .
+* Must be one of the following types: float16, float, bfloat16
+* @li quant_scales: An ND Tensor . 
+* Must be one of the following types: float, bfloat16
+* @li quant_zero_points: An ND optional Tensor . 
+* Must be one of the following types: int8, uint8, int32, bfloat16 \n
+
+* @par Attributes:
+* @li axis: An optional attribute. Defaults to 0.
+* @li reduction: An optional attribute. Defaults to string "none" and can be
+* "update". 
+* @li quant_axis: An optional attribute. Defaults to -1. \n
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the Mindspore operator Scatter.
+*/
+REG_OP(QuantUpdateScatter)
+    .INPUT(var, TensorType({DT_INT32, DT_INT8, DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(quant_scales, TensorType({DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(quant_zero_points, TensorType({DT_INT8, DT_UINT8, DT_INT32, DT_BF16}))
+    .OUTPUT(var, TensorType({DT_INT32, DT_INT8, DT_UINT8}))
+    .REQUIRED_ATTR(reduce, String)
+    .ATTR(axis, Int, 0)
+    .ATTR(quant_axis, Int, 1)
+    .OP_END_FACTORY_REG(QuantUpdateScatter)
+
+/**
 * @brief Multiplies sparse updates into a variable reference . \n
 
 * @par Inputs:
@@ -1815,19 +1855,19 @@ REG_OP(FillDiagonal)
 
 * @par Inputs:
 * x: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16, bool,
-*                                                 int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
+*                                                 int8, uint8, int16, uint16, int32, uint32, int64, uint64, bfloat16,. \n
 
 * @par Outputs:
-* y: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16, int64, uint64. \n
+* y: A Tensor. Must be one of the following types:complex128, complex64, float64, float32, float16, int64, uint64, bfloat16. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Trace.
 */
 
 REG_OP(Trace)
-    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_BOOL,
-                          DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_BOOL, DT_INT8,
+                          DT_UINT8, DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT64, DT_UINT64, DT_BF16}))
     .OP_END_FACTORY_REG(Trace)
 
 /**

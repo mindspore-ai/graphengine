@@ -21,6 +21,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <mutex>
 #include "ge/ge_ir_build.h"
 #include "llm_engine_types.h"
 
@@ -38,14 +39,30 @@ class LLMEngine {
   ~LLMEngine();
   ge::Status LLMEngineInitialize(const std::vector<ge::ModelBufferData> &model_buffer_datas,
                                  const std::map<ge::AscendString, ge::AscendString> &options);
+  // @brief 添加模型
+  // @param [in] model_type_to_buffer_datas
+  // @param [in] options 模型options
+  // @param [out] model_id 模型ID
+  // @return 返回状态 SUCCESS: 成功
+  ge::Status AddLLMModel(const std::map<ge::AscendString, std::vector<ge::ModelBufferData>> &model_type_to_buffer_datas,
+                         const std::map<ge::AscendString, ge::AscendString> &options, uint64_t &model_id);
   ge::Status LLMEngineInitializeV2(
       const std::map<ge::AscendString, std::vector<ge::ModelBufferData>> &model_type_to_buffer_datas,
       const std::map<ge::AscendString, ge::AscendString> &options);
   LLMEngineStatus FetchLLMEngineStatus();
   int64_t FetchLlmEngineQueueStatus();
   // API2：execute prompt
-  ge::Status RunPromptAsync(const LLMReq &req, const std::vector<ge::Tensor> &inputs, ge::RunAsyncCallback callback);
-  ge::Status RunPrompt(const LLMReq &req, const std::vector<ge::Tensor> &inputs, std::vector<ge::Tensor> &output);
+  ge::Status RunPromptAsync(const LLMReq &req, const std::vector<ge::Tensor> &inputs, ge::RunAsyncCallback callback,
+                            uint64_t model_id = 0UL);
+
+  // @brief 运行prompt模型
+  // @param [in] llm请求
+  // @param [in] 模型输入
+  // @param [in] 模型输出
+  // @param [out] model_id 模型ID
+  // @return 返回状态 SUCCESS: 成功
+  ge::Status RunPrompt(const LLMReq &req, const std::vector<ge::Tensor> &inputs, std::vector<ge::Tensor> &output,
+                       uint64_t model_id = 0UL);
 
   // API3: Execute the Decoder calculation
   // a. Assign an idle index for the request
@@ -61,10 +78,10 @@ class LLMEngine {
   ge::Status LLMEngineFinalize();
 
   // Preload prompt prefix model to generate kv cache
-  ge::Status PreloadPromptPrefix(const LLMReq &req, const std::vector<ge::Tensor> &inputs);
+  ge::Status PreloadPromptPrefix(const LLMReq &req, const std::vector<ge::Tensor> &inputs, uint64_t model_id = 0UL);
 
   // Release kv cache of prompt prefix model
-  ge::Status ReleasePromptPrefix(const LLMReq &req);
+  ge::Status ReleasePromptPrefix(const LLMReq &req, uint64_t model_id = 0UL);
 
   // @brief 从Prompt cluster拉取该request对应的KV到本Decoder cluster的暂存区中，每次调用成功后都会覆盖暂存区之前的kv
   // @param [in] req instance of LLMReq
@@ -73,7 +90,7 @@ class LLMEngine {
   //         LLM_PARAM_INVALID: 参数错误, 如cluster id校验错误, 当前非manual batching模式等
   //         LLM_KV_CACHE_NOT_EXIST: prompt中不存在该request对应的KV
   //         FAILED: 拉取KV失败
-  ge::Status PullKv(const LLMReq &req);
+  ge::Status PullKv(const LLMReq &req, uint64_t model_id = 0UL);
 
   // @brief 将KV从本暂存区中merge到batch中, 该接口会释放暂存区中的kv
   // @param [in] req_id 请求id, 需要与PullKv的匹配
@@ -84,7 +101,8 @@ class LLMEngine {
   //         LLM_PARAM_INVALID: 参数错误, 如cluster id校验错, 当前非manual batching模式, batch_index越界等
   //         LLM_KV_CACHE_NOT_EXIST: KV不在暂存区
   //         FAILED: 合并KV失败
-  ge::Status MergeKv(const uint64_t req_id, const int32_t batch_index, const int32_t batch_id = 0);
+  ge::Status MergeKv(const uint64_t req_id, const int32_t batch_index, const int32_t batch_id = 0,
+                     uint64_t model_id = 0UL);
 
   // @brief 执行Decoder推理
   // @param [in] req_ids 每个batch对应的request_id, 如果一个batch无效，其对应的req_id需要设置为UINT64_MAX
@@ -99,16 +117,17 @@ class LLMEngine {
                         std::vector<ge::Tensor> &outputs);
 
   // @brief 执行Decoder推理
-  // @param [in] requests 每个batch对应的request_id
+  // @param [in] requests 每个batch对应的request, 如果一个batch无效，其对应的req_id需要设置为UINT64_MAX
   // @param [in] inputs 输入tensor
   // @param [out] outputs 输出tensor
+  // @param [in] model_id 模型ID
   // @return Status result of function
   //         SUCCESS: 成功
   //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式, request_id与batch不对应等
   //         FAILED: 执行推理失败
   ge::Status RunDecoder(const std::vector<LLMReq> &requests,
                         const std::vector<ge::Tensor> &inputs,
-                        std::vector<ge::Tensor> &outputs);
+                        std::vector<ge::Tensor> &outputs, uint64_t model_id = 0UL);
 
   // @brief 进行device间建链
   // @param [in] clusters 需要建链的cluster信息
@@ -145,6 +164,11 @@ class LLMEngine {
                        uint64_t model_id = 0UL);
 
  private:
+  ge::Status InitializePriorityScheduer(const std::map<ge::AscendString, ge::AscendString> &options);
+  ge::Status CheckValidityOfRequest(const LLMReq &req, uint64_t cluster_id, const std::string &role,
+                                    uint64_t model_id = 0UL);
+  ge::Status CheckValidityOfRequest(const std::vector<LLMReq> &reqs, uint64_t cluster_id, const std::string &role,
+                                    uint64_t model_id = 0UL);
   std::shared_ptr<PromptManager> prompt_manager_;
   std::shared_ptr<DecoderManager> decoder_manager_;
   std::shared_ptr<PriorityScheduleManager> priority_schedule_manager_;
@@ -153,6 +177,10 @@ class LLMEngine {
   std::atomic<bool> is_initialized_{false};
   std::atomic<bool> is_finalized_{false};
   RunMode run_mode_{RunMode::kSeparateSchedule};
+  std::vector<std::map<ge::AscendString, std::vector<ge::ModelBufferData>>> model_defines;
+  std::vector<std::map<ge::AscendString, ge::AscendString>> model_options;
+  uint64_t model_id_ = 0U;
+  std::mutex mutex_;
 };
 }  // namespace llm
 

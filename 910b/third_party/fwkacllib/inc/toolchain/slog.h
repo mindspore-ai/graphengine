@@ -376,6 +376,9 @@ DLL_EXPORT void DlogEventInner(int moduleId, const char *fmt, ...);
 DLL_EXPORT void DlogInner(int moduleId, int level, const char *fmt, ...);
 DLL_EXPORT void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
+// log interface
+DLL_EXPORT void DlogWrite(int moduleId, int level, const char *fmt, ...);
+
 #ifdef __cplusplus
 #ifndef LOG_CPP
 }
@@ -489,6 +492,9 @@ DLL_EXPORT void DlogFlushForC(void);
  */
 DLL_EXPORT void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
 DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+
+// log interface
+DLL_EXPORT void DlogWriteForC(int moduleId, int level, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

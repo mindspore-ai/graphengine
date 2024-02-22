@@ -40,6 +40,7 @@ class ThreadPool {
  public:
   explicit ThreadPool(const uint32_t size = 4U);
   ~ThreadPool();
+  void Destroy();
 
   template <class Func, class... Args>
   auto commit(Func &&func, Args &&... args) -> std::future<decltype(func(args...))> {

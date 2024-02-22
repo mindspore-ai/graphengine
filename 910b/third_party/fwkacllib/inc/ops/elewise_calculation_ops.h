@@ -2270,7 +2270,7 @@ REG_OP(FloorMod)
 * @par Inputs:
 * Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types:
-*     bfloat16, float16, float32, int32, int64, int8, uint8, double, complex64, complex128.
+*     bfloat16, float16, float32, int32, int64, int8, int16, uint8, double, complex64, complex128.
 * @li x2: A Tensor of the same type as "x1". \n
 
 * @par Outputs:
@@ -2283,9 +2283,9 @@ REG_OP(Pow)
     .INPUT(x1, "T1")
     .INPUT(x2, "T2")
     .OUTPUT(y, "T3")
-    .DATATYPE(T1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+    .DATATYPE(T1, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8, DT_INT16,
                               DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
-    .DATATYPE(T2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
+    .DATATYPE(T2, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8, DT_INT16,
                               DT_UINT8, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .DATATYPE(T3, Promote({"T1", "T2"}))
     .OP_END_FACTORY_REG(Pow)

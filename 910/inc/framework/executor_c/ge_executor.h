@@ -18,22 +18,21 @@
 #define INC_FRAMEWORK_EXECUTOR_GE_C_EXECUTOR_H_
 
 #include <stdint.h>
-#include "external/ge/ge_error_codes.h"
 #include "framework/executor_c/ge_executor_types.h"
 #include "framework/executor_c/types.h"
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-Status GeInitialize();
-Status GeFinalize();
+Status GeInitialize(void);
+Status GeFinalize(void);
 Status GetModelDescInfo(uint32_t modelId, ModelInOutInfo *info);
 
 Status GetMemAndWeightSize(const char *fileName, size_t *workSize, size_t *weightSize);
-Status ExecModel(uint32_t modelId, ExecHandleDesc *execDesc, bool basync, InputData *inputData, OutputData *outputData);
+Status ExecModel(uint32_t modelId, ExecHandleDesc *execDesc, bool sync, InputData *inputData, OutputData *outputData);
 Status LoadModelFromData(uint32_t *modelId, const ModelData *modelData, void *weightPtr, size_t weightSize);
 Status LoadDataFromFile(const char *modelPath, ModelData *data);
-void FreeModelData(ModelData *data);
+void FreeModelData(ModelData *model_data);
 Status UnloadModel(uint32_t modelId);
 Status GetModelDescInfoFromMem(const ModelData *modelData, ModelInOutInfo *info);
 void DestoryModelInOutInfo(ModelInOutInfo *info);

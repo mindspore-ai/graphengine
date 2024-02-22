@@ -97,6 +97,14 @@ struct NanoDbgOpDesc {
   std::vector<NanoDbgMemInfoDesc> mem_info_list;
 };
 
+struct NanoZeroCopyValueToKey {
+  int64_t offset_;
+  NanoZeroCopyValueToKey(int64_t offset) : offset_(offset) {}
+  bool operator()(const std::pair<int64_t, uint32_t> &item) {
+    return item.second == offset_;
+  }
+};
+
 class NanoDbgData {
  public:
   explicit NanoDbgData(const GeModelPtr &ge_model, const std::unordered_map<int64_t, uint32_t> zerocopy_info);
@@ -168,5 +176,5 @@ class NanoDbgData {
   std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> output_mem_types_;
   std::map<int64_t, std::vector<toolkit::aicpu::dump::AddressType>> input_mem_types_;
 };
-} // namespace ge
+}  // namespace ge
 #endif  // AIR_BASE_COMMON_MODEL_NANO_DBG_DATA_H_

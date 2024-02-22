@@ -38,7 +38,7 @@ extern "C" {
 // trace status of log
 enum TraceStatus { TRACE_INT = 0, TRACE_RUNNING, TRACE_WAITTING, TRACE_STOP };
 
-static inline uint64_t GetTid() {
+static inline uint64_t GetTid(void) {
   const uint64_t tid = (uint64_t)(mmGetTaskId());
   return tid;
 }

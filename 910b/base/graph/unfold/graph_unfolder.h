@@ -41,8 +41,20 @@ class GraphUnfolder {
     static ge::Status MergeNetOutputNode(ge::ComputeGraph &compute_graph);
     static ge::Status MergeNetOutputInData(const ge::NodePtr &parent_node, const ge::OpDescPtr &net_output_desc,
                                            const ge::InDataAnchorPtr &in_data_anchor);
-    static ge::Status UnfoldSubgraph(const ge::ComputeGraphPtr &root_graph, const ge::ComputeGraphPtr &parent_graph,
-                                     ge::ComputeGraph &sub_graph, const uint32_t depth = 0U);
+    static ge::Status UnfoldSubgraph(const ge::ComputeGraphPtr &root_graph,
+                                     const ge::ComputeGraphPtr &origin_sub_graph,
+                                     ge::ComputeGraphPtr &merged_graph,
+                                     const uint32_t depth = 0U);
+    static ge::Status UnfoldPartitionedCallSubgraph(const ge::ComputeGraphPtr &sub_graph,
+                                                    ge::ComputeGraphPtr &merged_graph,
+                                                    const ge::ComputeGraphPtr &root_graph,
+                                                    const ge::NodePtr &node,
+                                                    const uint32_t &depth);
+    static ge::Status UnfoldControlNodeSubgraph(const std::vector<ge::ComputeGraphPtr> &subgraphs,
+                                                const ge::ComputeGraphPtr &root_graph,
+                                                const ge::NodePtr &node,
+                                                const uint32_t &depth);
+    static ge::Status MarkGraphNodeIndex(const ge::ComputeGraphPtr &merged_graph);
 };
 }
 

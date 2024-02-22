@@ -762,6 +762,7 @@ REG_OP(Conv2DBackpropFilterD)
 |           | bfloat16| bfloat16| bfloat16 | float32 |\n
 |           | float32 | float32 | float32 | float32 |\n
 |           | int8    | int8    | int32   | int32   |\n
+|           | int4    | int4    | int32   | int32   |\n
 | Format    | NCHW    | NCHW    | ND      | NCHW    |\n
 |           | NHWC    | HWCN    | ND      | NHWC    |\n
 |           | NCHW    | HWCN    | ND      | NCHW    |\n

@@ -2318,17 +2318,17 @@ REG_OP(CumulativeLogsumexpD)
 REG_OP(InplaceIndexAdd)
     .INPUT(var, TensorType({DT_INT16, DT_INT32, DT_INT8,
                             DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
-                            DT_INT64, DT_BOOL}))
+                            DT_INT64, DT_BOOL, DT_BF16}))
     .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
     .INPUT(updates, TensorType({DT_INT16, DT_INT32, DT_INT8,
                                 DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
-                                DT_INT64, DT_BOOL}))
+                                DT_INT64, DT_BOOL, DT_BF16}))
     .OPTIONAL_INPUT(alpha, TensorType({DT_INT16, DT_INT32, DT_INT8,
                                        DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
-                                       DT_INT64, DT_BOOL}))
+                                       DT_INT64, DT_BOOL, DT_BF16}))
     .OUTPUT(var, TensorType({DT_INT16, DT_INT32, DT_INT8,
                              DT_UINT8, DT_FLOAT32, DT_FLOAT16, DT_DOUBLE,
-                             DT_INT64, DT_BOOL}))
+                             DT_INT64, DT_BOOL, DT_BF16}))
     .REQUIRED_ATTR(axis, Int)
     .OP_END_FACTORY_REG(InplaceIndexAdd)
 

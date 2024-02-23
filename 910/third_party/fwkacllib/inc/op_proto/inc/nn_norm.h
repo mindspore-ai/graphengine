@@ -165,6 +165,7 @@ REG_OP(GroupNormGrad)
 * @li num_groups: An required int32/int64, specifying the number of group.
 * @li eps: An optional float32, specifying the small value added to
 variance to avoid dividing by zero. Defaults to "0.0001".
+* @li activate_silu: An optional bool.  Defaults to "true".
 
 * @par Outputs:
 * Three outputs
@@ -186,6 +187,7 @@ REG_OP(GroupNormSilu)
     .OUTPUT(rstd, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(num_groups, Int)
     .ATTR(eps, Float, 0.00001)
+    .ATTR(activate_silu, Bool, true)
     .OP_END_FACTORY_REG(GroupNormSilu)
 
 /**

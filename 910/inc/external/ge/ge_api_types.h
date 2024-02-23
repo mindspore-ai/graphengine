@@ -204,6 +204,7 @@ const char_t *const OP_DEBUG_CONFIG = "op_debug_config";
 const char_t *const ATOMIC_CLEAN_POLICY = "ge.exec.atomicCleanPolicy";
 const char_t *const STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
 const char_t *const EXTERNAL_WEIGHT = "ge.externalWeight";
+const char_t *const QUANT_DUMPABLE = "ge.quant_dumpable";
 static const char_t *const DETERMINISTIC = "ge.deterministic";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
@@ -467,6 +468,8 @@ const std::string EXTERNAL_WEIGHT = "ge.externalWeight";
 
 const std::string DETERMINISTIC = "ge.deterministic";
 
+const std::string QUANT_DUMPABLE = "ge.quant_dumpable";
+
 constexpr char_t EVENT[] = "ge.event";
 
 // Graph run mode
@@ -570,6 +573,7 @@ static const char_t *const MODEL_RELATION_CONFIG = ge::MODEL_RELATION_CONFIG.c_s
 static const char_t *const CLUSTER_CONFIG = ge::CLUSTER_CONFIG.c_str();
 static const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
 static const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
+static const char_t *const QUANT_DUMPABLE = ge::QUANT_DUMPABLE.c_str();
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
 const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
@@ -610,7 +614,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              MODEL_RELATION_CONFIG,
                                                              ENABLE_GRAPH_PARALLEL,
                                                              AC_PARALLEL_ENABLE,
-                                                             GRAPH_PARALLEL_OPTION_PATH};
+                                                             GRAPH_PARALLEL_OPTION_PATH,
+                                                             QUANT_DUMPABLE};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {

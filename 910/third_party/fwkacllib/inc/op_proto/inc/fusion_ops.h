@@ -38,6 +38,8 @@ namespace ge {
 * @li padding_mask: A matrix Tensor. The type support float16, bf16.
 * @li atten_mask: A matrix Tensor. The type support bool, uint8.
 * @li prefix: A matrix Tensor. The type support int64.
+* @li actual_seq_qlen: A matrix Tensor. The type support int64. If used, layout need to be setted TND. ex. If the q seqlen is [2,2,2,2,2], this parameter need be setted [2,4,6,8,10]
+* @li actual_seq_kvlen: A matrix Tensor. The type support int64. If used, layout need to be setted TND. ex. If the kv seqlen is [2,2,2,2,2], this parameter need be setted [2,4,6,8,10]
 
 * @par Attributes:
 * @li scale_value: A float. The scale value. Default: 1.0.
@@ -45,7 +47,7 @@ namespace ge {
 * @li pre_tockens: A int. Previous tokens.
 * @li next_tockens: A int. Next tokens.
 * @li head_num: A int. The number of the heads.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH", "BNSD", "BSND"]. Default: "BSH".
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH", "BNSD", "BSND", "TND"]. Default: "BSH".
 * @li inner_precise: A int. 0, 1, reserved value. 2, support invalid lines.
 * @li sparse_mode: A int. 0, defaultMsk. 1, allMask. 2, leftUpCasual. 3, rightDownCasual. 4, band. 5, prefix.
 *
@@ -331,8 +333,8 @@ REG_OP(FlashAttentionScoreGrad)
 * @li bias2: A matrix Tensor. The type support int32, float16.
 * @li scale: A matrix Tensor. The type support float32.
 * @li offset: A matrix Tensor. The type support float32.
-* @li deq_scale1: A matrix Tensor. The type support uint64.
-* @li deq_scale2: A matrix Tensor. The type support uint64.
+* @li deq_scale1: A matrix Tensor. The type support uint64, bfloat16.
+* @li deq_scale2: A matrix Tensor. The type support uint64, bfloat16.
 * @li antiquant_scale1: A matrix Tensor. The type support float16.
 * @li antiquant_scale2: A matrix Tensor. The type support float16.
 * @li antiquant_offset1: A matrix Tensor. The type support float16.
@@ -341,6 +343,7 @@ REG_OP(FlashAttentionScoreGrad)
 * @par Attributes:
 * @li activation: A string. The type of activation.
 * @li inner_precise: A int. 0, fp16 high precision. 1, high performance. Default value: 0
+* @li output_dtype: A int. -1, output data type is float16. 0, quant and output data type is float16. 1, quant and output data type is bfloat16. Default -1.
 *
 * @par Outputs:
 * y: A matrix Tensor. The type support float16. \n
@@ -442,9 +445,13 @@ REG_OP(MatmulReduceScatter)
 
 * @par Inputs:
 * three inputs, including:
-* @li x1: A matrix Tensor. The type support float16, bf16.
-* @li x2: A matrix Tensor. The type support float16, bf16.
-* @li bias: A matrix Tensor. The type support float16, bf16. \n
+* @li x1: A matrix Tensor. The type support float16, bf16, int8.
+* @li x2: A matrix Tensor. The type support float16, bf16, int8.
+* @li bias: A matrix Tensor. The type support float16, bf16, int32.
+* @li x3: A matrix Tensor. The type support float16, bf16.
+* @li antiquant_scale: A matrix Tensor. The type support float16, bf16.
+* @li antiquant_offset: A matrix Tensor. The type support float16, bf16.
+* @li dequant_scale: A matrix Tensor. The type support float16, bf16, uint64. \n
 
 
 * @par Attributes:
@@ -456,21 +463,27 @@ REG_OP(MatmulReduceScatter)
 * [M, K] before multiplication. Default: false.
 * @li is_trans_b: A bool. If True, changes the shape of "x2" from [N, K] to
 * [K, N] before multiplication. Default: false.
-* @li comm_turn: A int. Number of communications with AICPU. Default: 0. \n
+* @li comm_turn: A int. Number of communications with AICPU. Default: 0.
+* @li antiquant_group_size: A int. Number of per-group for quant. Default: 0. \n
 
 * @par Outputs:
 * y: A matrix Tensor. The type support float16, bf16.
 */
 REG_OP(MatmulAllReduce)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16, DT_INT32}))
+    .OPTIONAL_INPUT(x3, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(dequant_scale, TensorType({DT_FLOAT16, DT_BF16, DT_UINT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(group, String)
     .ATTR(reduce_op, String, "sum")
     .ATTR(is_trans_a, Bool, false)
     .ATTR(is_trans_b, Bool, false)
     .ATTR(comm_turn, Int, 0)
+    .ATTR(antiquant_group_size, Int, 0)
     .OP_END_FACTORY_REG(MatmulAllReduce)
 
 
@@ -486,15 +499,17 @@ REG_OP(MatmulAllReduce)
 * @li antiquant_offset: A Tensor for antiquant offset. Shape and Format is same with antiquant_scale.
 * @li quant_scale: A Tensor for quantization parameters. Shape supports (1)/(1,n), Format supports ND.
 * @li quant_offset: A Tensor for quantization parameters. Shape and Format is same with quant_scale.
-* @li bias: A Tensor. Shape supports (n)/(1,n), Format supports ND.\n
+* @li bias: A Tensor. Shape supports (n)/(1,n), Format supports ND.
+* Specifically, these optional inputs support the shape (0,). At this point,
+* it means that the optional input doesn't exist. \n
 
 * @par Attributes:
 * @li transpose_x: A bool. x is transposed if true.
 * @li transpose_weight: A bool. weight is transposed if true.
 * when transpose_weight is true, weight's shape is (n, k), antiquant_scale's shape should be (n, 1).
 * @li antiquant_group_size: int, when weight's dtype is int8, antiquant_group_size can only be 0,
-* weight's dtype is int4, antiquant_group_size must in [32, max(k-1, int_max_value)]
-* and antiquant_group_size % 32 == 0. \n
+* weight's dtype is int4, antiquant_group_size must in [0, k-1] and antiquant_group_size % 32 == 0.
+* When the antiquant_group_size is 0, it means that the per-group mode is not used. \n
 
 * @par Outputs:
 * y: A matrix Tensor.

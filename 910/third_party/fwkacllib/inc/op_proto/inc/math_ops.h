@@ -25,6 +25,49 @@
 #include "graph/operator.h"
 
 namespace ge {
+/**
+* @brief silentcheck.
+
+* @par Inputs:
+* @li val: A Tensor, dtype is float16 bfloat16 or float32.
+* @li input_grad: A Tensor, dtype is float16 bfloat16 or float32.
+* @li pre_val: A Tensor, dtype is float32.
+* @li min_val: A Tensor, dtype is float32.
+* @li max_val: A Tensor, dtype is float32.
+* @li val_counter: A Tensor, dtype is int32.
+*
+* @par Attributes:
+* @li c_min_steps: An optional int
+* @li c_thresh_l1: An optional float
+* @li c_coeff_l1: An optional float
+* @li c_thresh_l2: An optional float
+* @li c_coeff_l2: An optional float
+*
+* @par Outputs:
+* @li pre_val: A ref tensor, dtype is float32.
+* @li min_val: A ref tensor, dtype is float32.
+* @li max_val: A ref tensor, dtype is float32.
+* @li input_grad: A ref tensor, dtype is float16 bfloat16 or float32.
+* @li result: A tensor, dtype is int32.
+*/
+REG_OP(SilentCheck)
+    .INPUT(val, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BFLOAT16})) 
+    .INPUT(input_grad, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BFLOAT16}))
+    .INPUT(pre_val, TensorType({DT_FLOAT32})) 
+    .INPUT(min_val, TensorType({DT_FLOAT32})) 
+    .INPUT(max_val, TensorType({DT_FLOAT32})) 
+    .INPUT(val_counter, TensorType({DT_INT32})) 
+    .OUTPUT(input_grad, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BFLOAT16}))
+    .OUTPUT(pre_val, TensorType({DT_FLOAT32}))
+    .OUTPUT(min_val, TensorType({DT_FLOAT32}))
+    .OUTPUT(max_val, TensorType({DT_FLOAT32}))
+    .OUTPUT(result, TensorType({DT_INT32})) 
+    .ATTR(c_min_steps, Int, 7) 
+    .ATTR(c_thresh_l1, Float, 1000000)
+    .ATTR(c_coeff_l1, Float, 100000)
+    .ATTR(c_thresh_l2, Float, 10000)
+    .ATTR(c_coeff_l2, Float, 5000)
+    .OP_END_FACTORY_REG(SilentCheck)
 
 /**
 * @brief Computes the output as (shift + scale * x) ^ power . \n
@@ -152,12 +195,13 @@ REG_OP(Igammac)
 */
 
 REG_OP(Histogram)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
     .ATTR(bins, Int, 100)
     .ATTR(min, Float, 0.0)
     .ATTR(max, Float, 0.0)
     .OP_END_FACTORY_REG(Histogram);
+
 
 /**
 *@brief Compare values of input to threshold and pack resulting bits into
@@ -1271,7 +1315,7 @@ REG_OP(Angle)
 * @brief  Computes the element_wise angle(in radians) of the given input tensor.
 
 * @par Inputs:
-* @li x: An ND tensor of type float16, float, complex64. \n
+* @li x: An ND tensor of type float16, float, complex64, bool, uint8, int8, int16, int32, int64. \n
 *
 * @par Outputs:
 * y: An ND tensor of type float16, float32. \n
@@ -1280,7 +1324,8 @@ REG_OP(Angle)
 * Compatible with the Pytorch operator Angle. \n
 */
 REG_OP(AngleV2)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_COMPLEX64}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_COMPLEX64, DT_BOOL, DT_UINT8,
+                          DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(AngleV2)
 

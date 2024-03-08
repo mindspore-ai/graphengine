@@ -59,7 +59,7 @@ extern "C" {
 #define  ACL_ERROR_RT_REPEATED_INIT              207015 // repeated init
 #define  ACL_ERROR_RT_AIVEC_OVER_FLOW            207016 // aivec over flow
 #define  ACL_ERROR_RT_OVER_FLOW                  207017 // common over flow
-#define  ACL_ERROR_RT_DEVIDE_OOM                 207018 // device oom
+#define  ACL_ERROR_RT_DEVICE_OOM                 207018 // device oom
 
 #define  ACL_ERROR_RT_INTERNAL_ERROR             507000 // runtime internal error
 #define  ACL_ERROR_RT_TS_ERROR                   507001 // ts internel error

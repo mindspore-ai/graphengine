@@ -80,7 +80,16 @@ REG_OP(ApplyAdamW)
 * @brief Updates "var" "m" "v" and "max_grad_norm" according to the AdamWV2 algorithm.
 *
 * @attention Constraints:
-*  The input tensors must have the same shape, except for the step. The shape of step must be (1,).*
+*  The input tensors must have the same shape, except for the step. The shape of step must be (1,).
+*  When the data types of the input tensors var,m,v,grad,max_grad_norm are the same, the data type can be
+*  float16,bfloat16 or float32.
+*  The data types of the input tensors var,m and v must be the same.For example,if var tensor is float16,
+*  the data types of m and v must also be float16.
+*  The data tytpes of the input tensors grad and max_grad_norm must be the same.For example,if grad tensor is float16,
+*  the data types of max_grad_norm must also be float16.
+*  When data type of the input tensor var,m and v are different with input tensor grad and max_grad_norm,
+*  the data types of var,m and v can only be float32,and the data type of grad and max_grad_norm tensor
+*  can only be float16 or bfloat16.
 *
 * @par Inputs:
 * @li var: A Tensor, dtype is float16 bfloat16 or float32.
@@ -252,7 +261,7 @@ REG_OP(Index)
     .INPUT(x, TensorType::BasicType())
     .INPUT(indexed_sizes, TensorType({DT_INT64}))
     .INPUT(indexed_strides, TensorType({DT_INT64}))
-    .DYNAMIC_INPUT(indices, TensorType({DT_INT64}))
+    .DYNAMIC_INPUT(indices, TensorType({DT_INT64, DT_INT32}))
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Index)
 
@@ -285,7 +294,7 @@ REG_OP(IndexPutV2)
     .INPUT(value, TensorType::BasicType())
     .INPUT(indexed_sizes, TensorType({DT_INT64}))
     .INPUT(indexed_strides, TensorType({DT_INT64}))
-    .DYNAMIC_INPUT(indices, TensorType({DT_INT64}))
+    .DYNAMIC_INPUT(indices, TensorType({DT_INT64, DT_INT32}))
     .OUTPUT(x, TensorType::BasicType())
     .ATTR(accumulate, Bool, false)
     .OP_END_FACTORY_REG(IndexPutV2)
@@ -449,6 +458,36 @@ REG_OP(FusedBiasLeakyReluGrad)
     .OUTPUT(x_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(FusedBiasLeakyReluGrad)
 
+/**
+* @brief multi-scale deformable attention grad.
+*
+* @par Inputs:
+* @li value: A Tensor. Must be one of the following types: float32.
+* @li value_spatial_shapes: A Tensor. Must be one of the following types: int32.
+* @li value_level_start_index: A Tensor. Must be one of the following types: int32.
+* @li sampling_locations: A Tensor. Must be one of the following types: float32.
+* @li attention_weights: A Tensor. Must be one of the following types: float32.
+* @li grad_output: A Tensor. Must be one of the following types: float32.
+*
+* @par Outputs:
+* grad_value: A Tensor. Must be one of the following types: float32.
+* grad_sampling_locations: A Tensor. Must be one of the following types: float32.
+* grad_attention_weights: A Tensor. Must be one of the following types: float32.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(MultiScaleDeformableAttentionGrad)
+    .INPUT(value, TensorType({DT_FLOAT}))
+    .INPUT(value_spatial_shapes, TensorType({DT_INT32}))
+    .INPUT(value_level_start_index, TensorType({DT_INT32}))
+    .INPUT(sampling_locations, TensorType({DT_FLOAT}))
+    .INPUT(attention_weights, TensorType({DT_FLOAT}))
+    .INPUT(grad_output, TensorType({DT_FLOAT}))
+    .OUTPUT(grad_value, TensorType({DT_FLOAT}))
+    .OUTPUT(grad_sampling_locations, TensorType({DT_FLOAT}))
+    .OUTPUT(grad_attention_weights, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(MultiScaleDeformableAttentionGrad)
 
 /**
 * @brief Set initial values for memory of sizes list . \n
@@ -2048,6 +2087,36 @@ REG_OP(MoeInitRouting)
     .DATATYPE(T2, TensorType({DT_INT32}))
     .REQUIRED_ATTR(active_num, Int)
     .OP_END_FACTORY_REG(MoeInitRouting)
+
+/**
+* @brief compute init routing quant for moe input.
+* @par Inputs:
+* @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li row_idx: A Tensor. Type is:Int32.
+* @li expert_idx: A Tensor. Type is:Int32.
+* @par Outputs:
+* @li expanded_x: A Tensor. Type is:Int8.
+* @li expanded_row_idx: A Tensor. Type is:Int32.
+* @li expanded_expert_idx: A Tensor. Type is:Int32.
+* @par Attributes:
+* @li active_num: Required parameter. Type is:Int32.
+* @li scale: Required parameter. Type is:Float.
+* @li offset: Required parameter. Type is:Float.
+*/
+REG_OP(MoeInitRoutingQuant)
+    .INPUT(x, "T1")
+    .INPUT(row_idx, "T2")
+    .INPUT(expert_idx, "T2")
+    .OUTPUT(expanded_x, "T3")
+    .OUTPUT(expanded_row_idx, "T2")
+    .OUTPUT(expanded_expert_idx, "T2")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_INT32}))
+    .DATATYPE(T3, TensorType({DT_INT8}))
+    .REQUIRED_ATTR(active_num, Int)
+    .REQUIRED_ATTR(scale, Float)
+    .REQUIRED_ATTR(offset, Float)
+    .OP_END_FACTORY_REG(MoeInitRoutingQuant)
 
 /**
 * @brief In MoE computation, the final step involves processing and merging the output results of the MoE FNN.
@@ -3780,7 +3849,7 @@ REG_OP(MatMulV2CompressDequant)
 * y: The result matrix Tensor. 2D. Must be one of the following types: float32,
 * float16. Has format [ND, NHWC]. \n
 */
-REG_OP(MatmulV3)
+REG_OP(MatMulV3)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
     .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
@@ -3789,7 +3858,7 @@ REG_OP(MatmulV3)
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
     .ATTR(offset_x, Int, 0)
-    .OP_END_FACTORY_REG(MatmulV3)
+    .OP_END_FACTORY_REG(MatMulV3)
 
 /**
 * @brief multi-scale deformable attention.

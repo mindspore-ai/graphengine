@@ -78,7 +78,7 @@ REG_OP(FlashAttentionScore)
     .ATTR(next_tockens, Int, 2147483647)
     .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(input_layout, String)
-    .ATTR(inner_precise, Int, 1)
+    .ATTR(inner_precise, Int, 0)
     .ATTR(sparse_mode, Int, 0)
     .OP_END_FACTORY_REG(FlashAttentionScore)
 
@@ -100,6 +100,7 @@ REG_OP(FlashAttentionScore)
 * @li antiquant_scale: A Tensor. The type support float16.
 * @li antiquant_offset: A Tensor. The type support float16.
 * @li block_table: A Tensor. The type support int32.
+* @li kv_padding_size: A Tensor. The type support int64.
 
 * @par Attributes:
 * @li num_heads: A int. The number of the heads.
@@ -127,6 +128,7 @@ REG_OP(IncreFlashAttention)
     .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(block_table, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(kv_padding_size, TensorType({DT_INT64}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
@@ -158,7 +160,7 @@ REG_OP(IncreFlashAttention)
 * @li scale_value: A float. The scale value. Default: 1.0.
 * @li pre_tokens: A int. Previous tokens. Default: 214748647.
 * @li next_tokens: A int. Next tokens. Default: 0.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD"]. Default: "BSH".
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD", "BSND", "NSD", "SH"]. Default: "BSH".
 * @li num_key_value_heads: key value num heads. Default: 1.
 * @li sparse_mode: sparse mode. Default: 0.
 * @li inner_precise: A int. 0, float16 high precision. 1, high performance.
@@ -215,8 +217,8 @@ REG_OP(PromptFlashAttention)
 * @li num_heads: An int. The number of the heads.
 * @li scale: A float. The scale value. Default: 1.0.
 * @li pre_tokens: An int. Previous tokens. Default: 2147483647.
-* @li next_tokens: An int. Next tokens. Default: 0.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
+* @li next_tokens: An int. Next tokens. Default: 2147483647.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD", "BSND", "NSD", "SH"]. Default: "BSH".
 * @li num_key_value_heads: key value num heads. Default: 0.
 * @li sparse_mode: sparse mode. Default: 0.
 * @li inner_precise: An int. 0, float16 high precision. 1, high performance. Default: 1.
@@ -272,7 +274,8 @@ REG_OP(FusedInferAttentionScore)
 * @li softmax_in: A matrix Tensor. The type support float16, bf16.
 * @li attention_in: A matrix Tensor. The type support float16, bf16.
 * @li prefix: A matrix Tensor. The type support int64.
-
+* @li actual_seq_qlen: A matrix Tensor. The type support int64. If used, layout need to be setted TND. ex. If the q seqlen is [2,2,2,2,2], this parameter need be setted [2,4,6,8,10]
+* @li actual_seq_kvlen: A matrix Tensor. The type support int64. If used, layout need to be setted TND. ex. If the kv seqlen is [2,2,2,2,2], this parameter need be setted [2,4,6,8,10]
 
 * @par Attributes:
 * @li scale_value: A float. The scale value. Default: 1.0.
@@ -280,9 +283,9 @@ REG_OP(FusedInferAttentionScore)
 * @li pre_tockens: A int. Previous tokens.
 * @li next_tockens: A int. Next tokens.
 * @li head_num: A int. The number of the heads.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
-* @li inner_precise: A int. 0, float16 high precision. 1, high performance.
-* @li sparse_mode: A int. 0, defaultMsk. 1, allMask. 2, leftUpCasual. 3, rightDownCasual. 4, band. 5, prefix.
+* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH", "BNSD", "BSND", "TND"]. Default: "BSH".
+* @li inner_precise: A int. 0, 1, reserved value. 2, support invalid lines.
+* @li sparse_mode: A int. 0, defaultMask. 1, allMask. 2, leftUpCasual. 3, rightDownCasual. 4, band. 5, prefix.
 
 * @par Outputs:
 * @li dq: A matrix Tensor. The type support float16, bf16.
@@ -316,7 +319,7 @@ REG_OP(FlashAttentionScoreGrad)
     .ATTR(next_tockens, Int, 65536)
     .REQUIRED_ATTR(head_num, Int)
     .REQUIRED_ATTR(input_layout, String)
-    .ATTR(inner_precise, Int, 1)
+    .ATTR(inner_precise, Int, 0)
     .ATTR(sparse_mode, Int, 0)
     .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
 
@@ -357,8 +360,8 @@ REG_OP(FFN)
     .OPTIONAL_INPUT(bias2, TensorType({DT_INT32, DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT}))
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64, DT_BF16}))
-    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64, DT_BF16}))
+    .OPTIONAL_INPUT(deq_scale1, TensorType({DT_UINT64, DT_BF16, DT_INT64, DT_FLOAT}))
+    .OPTIONAL_INPUT(deq_scale2, TensorType({DT_UINT64, DT_BF16, DT_INT64, DT_FLOAT}))
     .OPTIONAL_INPUT(antiquant_scale1, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_scale2, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_offset1, TensorType({DT_FLOAT16, DT_BF16}))
@@ -405,6 +408,31 @@ REG_OP(AllGatherMatmul)
     .ATTR(gather_index, Int, 0)
     .ATTR(comm_turn, Int, 0)
     .OP_END_FACTORY_REG(AllGatherMatmul)
+
+/**
+* @brief Combine similar tokens using the matching algorithm.
+* @par Inputs:
+* @li token_a: A Tensor. Type is:DT_FLOAT16.
+* @li token_b: A Tensor. Type is:DT_FLOAT16.
+* @li topk_indice: A Tensor. Type is:DT_INT64.
+* @li arg_max: A Tensor. Type is:DT_INT64.
+* @par Outputs:
+* @li unmerge_token_a: A Tensor. Type is:DT_FLOAT16.
+* @li unmerge_token_b: A Tensor. Type is:DT_FLOAT16.
+* @li unreduce_count: A Tensor. Type is:DT_FLOAT.
+* @par Attributes:
+* @li top_rate: Type is:Float.
+*/
+REG_OP(TomeMerge)
+    .INPUT(token_a, TensorType({DT_FLOAT16}))
+    .INPUT(token_b, TensorType({DT_FLOAT16}))
+    .INPUT(topk_indice, TensorType({DT_INT64}))
+    .INPUT(arg_max, TensorType({DT_INT64}))
+    .OUTPUT(unmerge_token_a, TensorType({DT_FLOAT16}))
+    .OUTPUT(unreduce_token_b, TensorType({DT_FLOAT16}))
+    .OUTPUT(unreduce_count, TensorType({DT_FLOAT}))
+    .ATTR(top_rate, Float, 0.5)
+    .OP_END_FACTORY_REG(TomeMerge)
 
 /**
 * @brief Fusion op of matmul and reduce scatter.
@@ -507,8 +535,7 @@ REG_OP(MatmulAllReduce)
 * @li transpose_x: A bool. x is transposed if true.
 * @li transpose_weight: A bool. weight is transposed if true.
 * when transpose_weight is true, weight's shape is (n, k), antiquant_scale's shape should be (n, 1).
-* @li antiquant_group_size: int, when weight's dtype is int8, antiquant_group_size can only be 0,
-* weight's dtype is int4, antiquant_group_size must in [0, k-1] and antiquant_group_size % 32 == 0.
+* @li antiquant_group_size: int, antiquant_group_size must in [0, k-1] and antiquant_group_size % 32 == 0.
 * When the antiquant_group_size is 0, it means that the per-group mode is not used. \n
 
 * @par Outputs:
@@ -536,21 +563,59 @@ REG_OP(WeightQuantBatchMatmulV2)
 * @li x: A Tensor List.
 * @li weight: A Tensor List of weight.
 * @li bias: A Tensor List of bias.
+* @li scale: A Tensor List of scale.
+* @li offset: A Tensor List of offset.
+* @li antiquant_scale: A Tensor List of antiquant_scale.
+* @li antiquant_offset: A Tensor List of antiquant_offset.
 * @li group_list: a Tensor.
 
 * @par Attributes:
 * @li split_item: A int.
+* @li dtype: A int, reserved parameter, not enabled.
+* @li transpose_weight: A bool, reserved parameter, not enabled.
 
 * @par Outputs:
 * y: A Tensor List.
 */
   REG_OP(GroupedMatmul)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
-    .DYNAMIC_INPUT(weight, TensorType({DT_FLOAT16, DT_BF16}))
-    .DYNAMIC_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .DYNAMIC_INPUT(weight, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .DYNAMIC_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .DYNAMIC_INPUT(scale, TensorType({DT_UINT64}))
+    .DYNAMIC_INPUT(offset, TensorType({DT_FLOAT32}))
+    .DYNAMIC_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .DYNAMIC_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(group_list, TensorType({DT_INT64}))
     .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .ATTR(split_item, Int, 0)
+    .ATTR(dtype, Int, 0)
+    .ATTR(transpose_weight, Bool, false)
     .OP_END_FACTORY_REG(GroupedMatmul)
+
+  /**
+  * @brief Function TomeUnmerge. \n
+
+  * @par Inputs:
+  * @li attention: A Tensor List, attention out.
+  * @li ori_index_a: A Tensor List of origin index A.
+  * @li ori_index_b: A Tensor List of origin index B.
+  * @li topk_indice: A Tensor List of topK indice.
+  * @li arg_max: A Tensor List of ArgMax.
+
+  * @par Attributes:
+  * @li top_rate: A Float.
+
+  * @par Outputs:
+  * unzip_token: A Tensor List, restore by ori_index_a and ori_index_b.
+  */
+  REG_OP(TomeUnmerge)
+      .INPUT(attention, TensorType({DT_FLOAT16}))
+      .INPUT(ori_index_a, TensorType({DT_INT64}))
+      .INPUT(ori_index_b, TensorType({DT_INT64}))
+      .INPUT(topk_indice, TensorType({DT_INT64}))
+      .INPUT(arg_max, TensorType({DT_INT64}))
+      .OUTPUT(unzip_token, TensorType({DT_FLOAT16}))
+      .ATTR(top_rate, Float, 0.5)
+      .OP_END_FACTORY_REG(TomeUnmerge)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUSION_OPS_H_

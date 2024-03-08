@@ -628,7 +628,7 @@ REG_OP(UnsortedSegmentSumD)
 * @par Inputs:
 * Two inputs, including:
 * @li x: An ND Tensor (up to 8D).
-* Must be one of the following types: int8, uint8, int16, uint16, int32, int64, bool, float16, float32,
+* Must be one of the following types: int8, uint8, int16, uint16, int32, int64, bool, bfloat16, float16, float32,
 * double, complex64, complex128, string.
 * @li axis: A 1D Tensor.
 * Must be one of the following types: int32, int64
@@ -645,11 +645,11 @@ REG_OP(UnsortedSegmentSumD)
 REG_OP(ReverseV2)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
                           DT_INT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
-                          DT_COMPLEX64, DT_COMPLEX128, DT_STRING}))
+                          DT_COMPLEX64, DT_COMPLEX128, DT_STRING, DT_BF16}))
     .INPUT(axis, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
                            DT_INT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
-                           DT_COMPLEX64, DT_COMPLEX128, DT_STRING}))
+                           DT_COMPLEX64, DT_COMPLEX128, DT_STRING, DT_BF16}))
     .OP_END_FACTORY_REG(ReverseV2)
 
 /**
@@ -2487,11 +2487,11 @@ REG_OP(StridedSliceV2)
 * @par Inputs:
 * Three inputs, including:
 * @li x: A tensor. Must be one of the following types:
-*     float16, float32, int32. \n
+*     float16, float32, int32, bfloat16. \n
 * @li assist1: A tensor. Must be one of the following types:
-*     float16, float32, int32. \n
+*     float16, float32, int32, bfloat16. \n
 * @li assist2: A tensor. Must be one of the following types:
-*     float16, float32, int32. \n
+*     float16, float32, int32, bfloat16. \n
 
 * @par Attributes:
 * dim: A required int. Used to select the dimension of this tensor. \n
@@ -2506,10 +2506,10 @@ REG_OP(StridedSliceV2)
 * The operator will not be enhanced in the future.
 */
 REG_OP(IndexFillD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(assist1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(assist2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .INPUT(assist1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .INPUT(assist2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .REQUIRED_ATTR(dim, Int)
     .OP_END_FACTORY_REG(IndexFillD)
 

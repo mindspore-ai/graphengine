@@ -37,13 +37,14 @@ typedef int32_t (*MsprofSetDeviceHandle)(VOID_PTR data, uint32_t len);
 typedef int32_t (*AicpuStartFunc)();
 
 /* Msprof report level */
-#define MSPROF_REPORT_PYTORCH_LEVEL 30000U
-#define MSPROF_REPORT_PTA_LEVEL 25000U
-#define MSPROF_REPORT_ACL_LEVEL 20000U
-#define MSPROF_REPORT_MODEL_LEVEL 15000U
-#define MSPROF_REPORT_NODE_LEVEL 10000U
-#define MSPROF_REPORT_HCCL_NODE_LEVEL 5500U
-#define MSPROF_REPORT_RUNTIME_LEVEL 5000U
+#define MSPROF_REPORT_PYTORCH_LEVEL     30000U
+#define MSPROF_REPORT_PTA_LEVEL         25000U
+#define MSPROF_REPORT_ACL_LEVEL         20000U
+#define MSPROF_REPORT_MODEL_LEVEL       15000U
+#define MSPROF_REPORT_NODE_LEVEL        10000U
+#define MSPROF_REPORT_AICPU_LEVEL       6000U
+#define MSPROF_REPORT_HCCL_NODE_LEVEL   5500U
+#define MSPROF_REPORT_RUNTIME_LEVEL     5000U
 
 /* Msprof report type of acl(20000) level(acl), offset: 0x000000 */
 #define MSPROF_REPORT_ACL_OP_BASE_TYPE            0x010000U
@@ -84,6 +85,11 @@ typedef int32_t (*AicpuStartFunc)();
 #define MSPROF_REPORT_NODE_GE_API_BASE_TYPE      0x010000U /* type info: ge api */
 #define MSPROF_REPORT_NODE_HCCL_BASE_TYPE        0x020000U /* type info: hccl api */
 #define MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    0x030000U /* type info: dvpp api */
+/* Msprof report type of aicpu(6000), offset: 0x000000 */
+#define MSPROF_REPORT_AICPU_NODE_TYPE            0U /* type info: DATA_PREPROCESS.AICPU */
+#define MSPROF_REPORT_AICPU_DP_TYPE              1U /* type info: DATA_PREPROCESS.DP */
+#define MSPROF_REPORT_AICPU_MODEL_TYPE           2U /* type info: DATA_PREPROCESS.AICPU_MODEL */
+#define MSPROF_REPORT_AICPU_MI_TYPE              3U /* type info: DATA_PREPROCESS.AICPUMI */
 
 /* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
 #define MSPROF_REPORT_HCCL_NODE_BASE_TYPE        0x010000U

@@ -527,9 +527,9 @@ REG_OP(ReduceSumD)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: A Tensor. Must be one of the following types: float16, float32 .
-*@li count: A Tensor. Must be one of the following types: float16, float32 .
-*@li count_sum: A Tensor. Must be one of the following types: float16, float32 . \n
+*@li x: A Tensor. Must be one of the following types: float16, float32 bfloat16 .
+*@li count: A Tensor. Must be one of the following types: float16, float32 bfloat16 .
+*@li count_sum: A Tensor. Must be one of the following types: float16, float32 bfloat16 . \n
 
 *@par Attributes:
 *@li axes: A required 1D list or tuple of int32 or int64. Specifies the dimensions to reduce.
@@ -542,10 +542,10 @@ REG_OP(ReduceSumD)
 * Compatible with the TensorFlow operator Sum.
 */
 REG_OP(ReduceMeanWithCount)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(count, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(count_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(count, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(count_sum, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMeanWithCount)
@@ -1381,7 +1381,7 @@ REG_OP(ReduceMeanVariance)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32. \n
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
 * @li mean: A Tensor. It's the mean of X. Has the same shape and type as "x" \n
 
 * @par Attributes:
@@ -1406,9 +1406,9 @@ REG_OP(ReduceMeanVariance)
 * Compatible with the Pytorch operator Var_mean.
 */
 REG_OP(ReduceStdV2Update)
-    .INPUT(x, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .INPUT(mean, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .OUTPUT(output_var, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(x, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(output_var, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(dim, ListInt)
     .ATTR(if_std, Bool, false)
     .ATTR(unbiased, Bool, true)

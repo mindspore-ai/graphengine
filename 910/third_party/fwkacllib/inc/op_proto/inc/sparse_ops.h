@@ -277,7 +277,7 @@ REG_OP(SparseSliceGrad)
 *@par Inputs:
 * @li indices: A 2D Tensor of type int64. The indices of the SparseTensor.
 * @li values: A 1D Tensor. The values of the SparseTensor.
-* @li shape: A 2D Tensor of type int64. The shape of the SparseTensor.
+* @li shape: A 1D Tensor of type int64. The shape of the SparseTensor.
 * @li start:  A 1D Tensor of type int64. The start of the slice.
 * @li size: A 1D Tensor of type int64. The size of the slice . \n
 
@@ -384,11 +384,11 @@ REG_OP(SparseFillEmptyRowsGrad)
 REG_OP(SparseTensorDenseMatMul)
     .INPUT(x1_indices, TensorType({DT_INT32, DT_INT64}))
     .INPUT(x1_values, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, \
-        DT_COMPLEXT64, DT_COMPLEX128, DT_FLOAT16, DT_INT64}))
+        DT_COMPLEX64, DT_COMPLEX128, DT_FLOAT16, DT_INT64}))
     .INPUT(x1_shape, TensorType({DT_INT64}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_COMPLEXT64, \
+    .INPUT(x2, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_COMPLEX64, \
         DT_COMPLEX128, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_COMPLEXT64, \
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_COMPLEX64, \
         DT_COMPLEX128, DT_FLOAT16}))
     .ATTR(adjoint_a, Bool, false)
     .ATTR(adjoint_b, Bool, false)

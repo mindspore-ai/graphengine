@@ -317,32 +317,32 @@ REG_OP(SmoothL1LossGrad)
     .OP_END_FACTORY_REG(SmoothL1LossGrad)
 
 /**
-*@brief Creates a criterion that measures the Binary Cross Entropy between the target and the output . \n
+* @brief Creates a criterion that measures the Binary Cross Entropy between the target and the output . \n
 
-*@par Inputs:
+* @par Inputs:
 * Three inputs, including:
-*@li x: A 1D or 2D Tensor of type float16 or float32, specifying a predictive value.
-*@li y: A 1D or 2D Tensor of type float16 or float32, indicating a tag.
-*@li weight: An optional 1D or 2D Tensor, specifying the weight . \n
+* @li x: A 1D or 2D Tensor of type float16 or float32, specifying a predictive value.
+* @li y: A 1D or 2D Tensor of type float16 or float32, indicating a tag.
+* @li weight: An optional 1D or 2D Tensor, specifying the weight . \n
 
-*@par Attributes:
-*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
+* @par Attributes:
+* reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
 
-*@par Outputs:
-*output: Output loss. Has the same dimension with the inputs. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output . \n
+* @par Outputs:
+* output: Output loss. Has the same dimension with the inputs. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output . \n
 
-*@attention Constraints:
-*@li The value of "x" must range from 0 to 1.
-*@li The value of "y" must be "0" or "1" . \n
+* @attention Constraints:
+* @li The value of "x" must range from 0 to 1.
+* @li The value of "y" must be "0" or "1" . \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with PyTorch operator BCELoss.
 */
 REG_OP(BinaryCrossEntropy)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(BinaryCrossEntropy)
 
@@ -471,8 +471,8 @@ REG_OP(LogSoftmaxV2)
 
 *@par Inputs:
 *Two inputs, including:
-* @li grad: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32 . \n
+* @li grad: A Tensor. Must be one of the following types: bfloat16, float16, float32.
+* @li x: A Tensor. Must be one of the following types: bfloat16, float16, float32 . \n
 
 *@par Outputs:
 * y: A Tensor of the same type as "grad" . \n
@@ -481,34 +481,34 @@ REG_OP(LogSoftmaxV2)
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionSoftmaxGrad)
-  .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+  .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+  .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
   .OP_END_FACTORY_REG(ConfusionSoftmaxGrad)
 
 /**
 *@brief Function softmax gradients ext . \n
 
 *@par Inputs:
-* @li grad: A Tensor dtype of float16, float32.
-* @li x1: A Tensor dtype of float16, float32.
-* @li x2: A Tensor dtype of float16, float32 . \n
+* @li grad: A Tensor dtype of bfloat16, float16, float32.
+* @li x1: A Tensor dtype of bfloat16, float16, float32.
+* @li x2: A Tensor dtype of bfloat16, float16, float32 . \n
 
 *@par Attributes:
 *@li axis: A int Scalar. The axis for reduce.
 *@li keepdims: A bool Scalar. If true, retains reduced dimensions with length 1 . \n
 
 *@par Outputs:
-* y: A Tensor dtype of float16, float32. \n
+* y: A Tensor dtype of bfloat16, float16, float32. \n
 
 *@attention Constraints:
 * THIS OPERATOR IS DEPRECATED. It will be removed in a future version.
 */
 REG_OP(SoftmaxGradExt)
-  .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .INPUT(x2, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+  .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+  .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+  .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
   .ATTR(axes, Int, 1)
   .ATTR(keep_dims, Bool, false)
   .OP_END_FACTORY_REG(SoftmaxGradExt)
@@ -1492,7 +1492,7 @@ REG_OP(InstanceNormGrad)
 
 * @par Inputs:
 * Three inputs, including:
-* @li grad: A Tensor. Must be one of the following types: float16, float32.
+* @li grad: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * Required.
 * @li input: A Tensor. Has the same type as "grad". Required.
 * @li target: A Tensor. Has the same type as "grad". Required. \n
@@ -1508,10 +1508,10 @@ REG_OP(InstanceNormGrad)
 * Compatible with the Pytorch operator KlDivLossGrad.
 */
 REG_OP(KlDivLossGrad)
-    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(input, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(input, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .ATTR(log_target, Bool, false)
     .OP_END_FACTORY_REG(KlDivLossGrad)
@@ -1547,8 +1547,8 @@ REG_OP(L1LossGrad)
 * @brief Computes loss of lp, p=1,2,3....
 
 * @par Inputs:
-* @li predict: An ND tensor of type float16, float32.
-* @li label: An ND tensor of type float16, float32. \n
+* @li predict: An ND tensor of type float16, float32 or bfloat16.
+* @li label: An ND tensor of type float16, float32 or bfloat16. \n
 
 * @par Attributes:
 * @li p: A required int attribute that decides which loss to compute, now the p only can be 1 to compute l1_loss.
@@ -1561,9 +1561,9 @@ REG_OP(L1LossGrad)
 * Compatible with the Pytorch operator LpLoss.
 */
 REG_OP(LpLoss)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(p, Int)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(LpLoss)
@@ -1786,11 +1786,11 @@ REG_OP(SoftMarginLoss)
 * @brief Computes gradients of sigmoid_cross_entropy_with_logits_v2.
 
 * @par Inputs:
-* @li predict: An ND tensor of type float16, float32.
-* @li target: An ND tensor of type float16, float32.
-* @li dout: An ND tensor of type float16, float32.
-* @li weight: An optional ND tensor of type float16, float32.
-* @li pos_weight: An optional ND tensor of type float16, float32. \n
+* @li predict: An ND tensor of type float16, float32, bfloat16.
+* @li target: An ND tensor of type float16, float32, bfloat16.
+* @li dout: An ND tensor of type float16, float32, bfloat16.
+* @li weight: An optional ND tensor of type float16, float32, bfloat16.
+* @li pos_weight: An optional ND tensor of type float16, float32, bfloat16. \n
 
 * @par Attributes:
 * reduction: An optional string.Defaults to "mean". \n
@@ -1802,12 +1802,12 @@ REG_OP(SoftMarginLoss)
 * Compatible with the Pytorch operator SigmoidCrossEntropyWithLogitsGrad.
 */
 REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
 /**

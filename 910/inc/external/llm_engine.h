@@ -24,6 +24,7 @@
 #include <mutex>
 #include "ge/ge_ir_build.h"
 #include "llm_engine_types.h"
+#include "llm_error_codes.h"
 
 namespace llm {
 class DecoderManager;
@@ -150,7 +151,7 @@ class LLMEngine {
                             const int32_t timeout = -1);
 
   // @brief 执行Prompt推理
-  // @param [in] req 请求
+  // @param [in] reqs 请求, 按实际请求设置，不须要使用req_id为UINT64_MAX的req补齐到batch size
   // @param [in] inputs 输入tensor
   // @param [out] outputs 输出tensor
   // @param [in] model_id 模型ID

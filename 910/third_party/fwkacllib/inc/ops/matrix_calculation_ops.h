@@ -1312,15 +1312,15 @@ REG_OP(Scatter)
 * Must be one of the following types: int32 or int64
 * @li updates: An ND Tensor .
 * Must be one of the following types: float16, float, bfloat16
-* @li quant_scales: An ND Tensor . 
+* @li quant_scales: An ND Tensor .
 * Must be one of the following types: float, bfloat16
-* @li quant_zero_points: An ND optional Tensor . 
+* @li quant_zero_points: An ND optional Tensor .
 * Must be one of the following types: int8, uint8, int32, bfloat16 \n
 
 * @par Attributes:
 * @li axis: An optional attribute. Defaults to 0.
 * @li reduction: An optional attribute. Defaults to string "none" and can be
-* "update". 
+* "update".
 * @li quant_axis: An optional attribute. Defaults to -1. \n
 
 * @par Outputs:
@@ -2126,27 +2126,27 @@ REG_OP(MaskedSoftmaxWithRelPosBias)
 * twelve inputs, including:
 * @li x1: A matrix Tensor. The type support int8.
 * @li x2: A matrix Tensor. The type support int8.
-* @li scale: A matrix Tensor. The type support uint64, float32.
+* @li scale: A matrix Tensor. The type support uint64, float32, bfloat16.
 * @li offset: A matrix Tensor. The type support float32.
 * @li bias: A matrix Tensor. The type support int32. \n
 
 
 * @par Attributes:
-* @li dtype: A Int. declare the output dtype, support float16, int8.
+* @li dtype: A Int. declare the output dtype, support float16, int8, bfloat16(1, 2, 27).
 * @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
 * [M, K] before multiplication. Default: false.
 * @li transpose_x1: A bool. If True, changes the shape of "x2" from [N, K] to
 * [K, N] before multiplication. Default: false. \n
 
 * @par Outputs:
-* y: A matrix Tensor. The type support float16, int8.
+* y: A matrix Tensor. The type support float16, int8, bfloat16.
 */
 REG_OP(QuantBatchMatmulV3)
     .INPUT(x1, TensorType({DT_INT8}))
     .INPUT(x2, TensorType({DT_INT8}))
     .INPUT(scale, TensorType({DT_UINT64, DT_FLOAT, DT_INT64, DT_BF16}))
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
     .REQUIRED_ATTR(dtype, Int)
     .ATTR(transpose_x1, Bool, false)

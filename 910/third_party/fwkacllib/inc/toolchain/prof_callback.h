@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef MSPROFILER_PROF_CALLBACK_H_
-#define MSPROFILER_PROF_CALLBACK_H_
+#ifndef MSPROFILER_PROF_CALLBACK_H
+#define MSPROFILER_PROF_CALLBACK_H
 
 #include <stddef.h>
 #include <stdint.h>

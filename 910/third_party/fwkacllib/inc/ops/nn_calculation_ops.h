@@ -1038,12 +1038,13 @@ REG_OP(DeformableConv2D)
 * @li offset: Reserved.
 *\n
 *\n
-* The following are the supported data types and data formats (for Ascend310P3):
+* The following are the supported data types and data formats (for Ascend310P):
 *\n
 *\n
 | Tensor    | x       | filter  | scale   | bias    | offset  | y       |\n
 | :-------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: |\n
 | Data Type | int8    | int8    | uint64  | int32   | float32 | float16 |\n
+|           | int8    | int8    | int64   | int32   | float32 | float16 |\n
 |           |         |         |         |         |         |         |\n
 | Format    | NCHW    | NCHW    | ND      | ND      | ND      | NCHW    |\n
 |           | NCHW    | HWCN    | ND      | ND      | ND      | NCHW    |\n
@@ -1118,7 +1119,7 @@ REG_OP(DeformableConv2D)
 REG_OP(QuantConv2D)
     .INPUT(x, TensorType({DT_INT8}))
     .INPUT(filter, TensorType({DT_INT8}))
-    .INPUT(scale, TensorType({DT_UINT64}))
+    .INPUT(scale, TensorType({DT_UINT64, DT_INT64}))
     .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16}))

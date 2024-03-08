@@ -41,5 +41,39 @@ REG_OP(TransQuantParamV2)
     .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_UINT64}))
     .OP_END_FACTORY_REG(TransQuantParamV2)
+
+/**
+*@brief Fake-quantize the data of 'x' tensor with scale, zero_point, quant_min and quant_max. \n
+
+*@par Inputs:
+*Three inputs, including:
+*@li x: A Tensor. Must be one of the following types: float16, float32.
+*@li scale: A Tensor of type float32 or float16. Has the same type and format as "x".
+*@li zero_point: A Tensor of type int32, float16 or float32.\n
+
+*@par Attributes:
+*@li axis: An required attribute of type int64.
+*@li quant_min: An required attribute of type int64.
+*@li quant_max: An required attribute of type int64.\n
+
+*@par Outputs:
+*y: A Tensor of type float32 or float16. 
+*mask: A Tensor of type bool. \n
+
+*@par Third-party framework compatibility
+* Compatible with Pytorch operator FakeQuantAffineCachemask.
+*/
+
+REG_OP(FakeQuantAffineCachemask)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(scale, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(zero_point, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(mask, TensorType({DT_BOOL}))
+    .REQUIRED_ATTR(axis, Int)
+    .REQUIRED_ATTR(quant_min, Int)
+    .REQUIRED_ATTR(quant_max, Int)
+    .OP_END_FACTORY_REG(FakeQuantAffineCachemask)
 }  // namespace ge
+
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_QUANTIZE_H_

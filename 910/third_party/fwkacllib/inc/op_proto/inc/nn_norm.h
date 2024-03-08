@@ -221,6 +221,151 @@ REG_OP(AddRmsNorm)
     .OUTPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(epsilon, Float, 1e-6)
     .OP_END_FACTORY_REG(AddRmsNorm)
+/**
+* @brief QuantizeAddLayerNorm operator interface implementation
+* @par Inputs:
+* @li x1: A tensor of type float16/bfloat16/float.
+* @li x2: A tensor of type float16/bfloat16/float.
+* @li gamma: A tensor of type float16/bfloat16/float.
+* @li beta: A tensor of type float16/bfloat16/float.
+* @li bias: A tensor of type float16/bfloat16/float.
+* @li scales: A tensor of type bfloat16/float.
+* @li zero_points: A optional tensor of type int8/uint8/bfloat16/int32.
 
+* @par Attributes:
+* @li dtype: A required int.
+* @li axis: A optional int.
+* @li epsilon: A optional float.
+* @li additional_output: A optional bool.
+
+* @par Outputs:
+* @li y: A tensor of type int8/uint8/int32, describing the result. \n
+* @li x: A tensor of type float16/bfloat16/float, describing the result. \n
+*/
+REG_OP(QuantizeAddLayerNorm)
+    .INPUT(x1, ge::TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(beta, ge::TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(bias, ge::TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(scales, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(zero_points, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, ge::TensorType({DT_INT8, DT_INT8, DT_INT8}))
+    .OUTPUT(x, ge::TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .REQUIRED_ATTR(dtype, Int)
+    .ATTR(axis, Int, -1)
+    .ATTR(epsilon, Float, 1e-5)
+    .ATTR(additional_output, Bool, false)
+    .OP_END_FACTORY_REG(QuantizeAddLayerNorm)
+
+/**
+* @brief DuaQuantizeAddLayerNorm operator interface implementation
+* @par Inputs:
+* @li x1: A tensor of type float16/bfloat16/float.
+* @li x2: A tensor of type float16/bfloat16/float.
+* @li gamma: A tensor of type float16/bfloat16/float.
+* @li beta: A tensor of type float16/bfloat16/float.
+* @li bias: A tensor of type float16/bfloat16/float.
+* @li scales1: A tensor of type bfloat16/float.
+* @li scales2: A tensor of type bfloat16/float.
+* @li zero_points1: A optional tensor of type int8/uint8/bfloat16/int32.
+* @li zero_points2: A optional tensor of type int8/uint8/bfloat16/int32.
+
+* @par Attributes:
+* @li dtype: A required int.
+* @li axis: A optional int.
+* @li epsilon: A optional float.
+* @li additional_output: A optional bool.
+
+* @par Outputs:
+* @li y1: A tensor of type int8/uint8/int32, describing the result. \n
+* @li y2: A tensor of type int8/uint8/int32, describing the result. \n
+* @li x: A tensor of type float16/bfloat16/float, describing the result. \n
+*/
+REG_OP(DuaQuantizeAddLayerNorm)
+    .INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(beta, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(bias, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(scales1, ge::TensorType({DT_BF16, DT_FLOAT}))
+    .INPUT(scales2, ge::TensorType({DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(zero_points1, ge::TensorType({DT_INT8, DT_UINT8, DT_BF16, DT_INT32}))
+    .OPTIONAL_INPUT(zero_points2, ge::TensorType({DT_INT8, DT_UINT8, DT_BF16, DT_INT32}))
+    .OUTPUT(y1, ge::TensorType({DT_INT8, DT_UINT8, DT_INT32}))
+    .OUTPUT(y2, ge::TensorType({DT_INT8, DT_UINT8, DT_INT32}))
+    .OUTPUT(x, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .REQUIRED_ATTR(dtype, Int)
+    .ATTR(axis, Int, -1)
+    .ATTR(epsilon, Float, 1e-5)
+    .ATTR(additional_output, Bool, false)
+    .OP_END_FACTORY_REG(DuaQuantizeAddLayerNorm)
+
+/**
+* @brief InplaceAddRmsNorm operator interface implementation
+*  calculating: x1, x2, gamma
+*  x2 = x1 + x2
+*  rstd = np.rsqrt(np.mean(np.power(x,2), reduce_axis, keepdims=True) + epsilon))
+*  x1 = gamma * (x2 * rstd)
+
+* @par Inputs:
+* Two inputs, including:
+* @li x1: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x2: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+* @par Attributes:
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-6 . \n
+
+* @par Outputs:
+* Two outputs, including:
+* @li x1: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li rstd: A Tensor. Must be one of the following types: float32.
+* @li x2: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+*/
+REG_OP(InplaceAddRmsNorm)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(rstd, TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .ATTR(epsilon, Float, 1e-6)
+    .OP_END_FACTORY_REG(InplaceAddRmsNorm)
+
+/*
+* @brief Fused Operator of Add and LayerNorm . \n
+
+* @par Inputs:
+* @li x1: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li x2: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li gamma: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li beta: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li bias: A tensor of type float16/bfloat16/float, describing the feature_map.
+
+* @par Attributes:
+* @li epsilon: A optional float.
+* @li additional_output: A optional bool.
+
+* @par Outputs:
+* @li x1: A tensor of type float16/bfloat16/float, describing the result. \n
+* @li mean: A tensor of type float32, describing the result. \n
+* @li rstd: A tensor of type float32, describing the result. \n
+* @li x2: A tensor of type float16/bfloat16/float, describing the result. \n
+
+*/
+REG_OP(InplaceAddLayerNorm)
+    .INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(beta, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .ATTR(epsilon, Float, 1e-5)
+    .ATTR(additional_output, Bool, false)
+    .OP_END_FACTORY_REG(InplaceAddLayerNorm)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_

@@ -38,6 +38,35 @@ typedef int32_t acldvppStatus;
 #define ACLDVPP_ERR_INNER_NOT_TRANS_EXECUTOR 506102
 #define ACLDVPP_ERR_INNER_NULLPTR 506103
 
+enum acldvppConvertMode {
+    COLOR_BGR2BGRA     = 0, // 新增alpha通道到RGB或BGR图像
+    COLOR_RGB2RGBA     = COLOR_BGR2BGRA,
+
+    COLOR_BGRA2BGR     = 1, // 从RGB或BGR图像删除alpha通道
+    COLOR_RGBA2RGB     = COLOR_BGRA2BGR,
+
+    COLOR_BGR2RGBA     = 2, // 在RGB和BGR空间之间转换，同时新增alpha通道
+    COLOR_RGB2BGRA     = COLOR_BGR2RGBA,
+
+    COLOR_RGBA2BGR     = 3, // 在RGB和BGR空间之间转换，同时删除alpha通道
+    COLOR_BGRA2RGB     = COLOR_RGBA2BGR,
+
+    COLOR_BGR2RGB      = 4,
+    COLOR_RGB2BGR      = COLOR_BGR2RGB,
+
+    COLOR_BGRA2RGBA    = 5,
+    COLOR_RGBA2BGRA    = COLOR_BGRA2RGBA,
+
+    COLOR_BGR2GRAY     = 6,
+    COLOR_RGB2GRAY     = 7,
+    COLOR_GRAY2BGR     = 8,
+    COLOR_GRAY2RGB     = COLOR_GRAY2BGR,
+    COLOR_GRAY2BGRA    = 9,
+    COLOR_GRAY2RGBA    = COLOR_GRAY2BGRA,
+    COLOR_BGRA2GRAY    = 10,
+    COLOR_RGBA2GRAY    = 11,
+};
+
 #ifdef __cplusplus
 }
 #endif

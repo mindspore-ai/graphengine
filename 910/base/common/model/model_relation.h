@@ -25,6 +25,8 @@
 #include "common/checker.h"
 
 namespace ge {
+constexpr const char_t *ATTR_NAME_DATA_FLOW_UDF_INVOKED_NN = "_dflow_udf_invoked_nn";
+
 /*lint -e148*/
 struct ModelRelation {
   struct InvokedModelQueueInfo {

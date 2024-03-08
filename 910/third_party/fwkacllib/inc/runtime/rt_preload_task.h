@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+typedef int32_t (*rtKernelLaunchFillFunc)(void* cfgAddr, uint32_t cfglen);
+
 typedef enum tagRtTaskBuffType {
     HWTS_STATIC_TASK_DESC = 0,       /**< static task */
     HWTS_DYNAMIC_TASK_DESC = 1,      /**< dynamic task */
@@ -130,6 +132,33 @@ RTS_API rtError_t rtTaskBuild(const rtTaskInput_t * const taskInput, uint32_t* t
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetElfOffset(void * const elfData, const uint32_t elfLen, uint32_t* offset);
+
+/**
+ * @ingroup rt_preload_task
+ * @brief regkernel callback function
+ * @param [in] symbol   symbol_name
+ * @param [in] kenelLauchFillFunc kenelLauchFillFunc
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtRegkenelLaunchFillFunc(const char* symbol, rtKernelLaunchFillFunc callback);
+
+/**
+ * @ingroup rt_preload_task
+ * @brief unregkernel callback function
+ * @param [in] symbol   symbol_name
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtUnRegkenelLaunchFillFunc(const char* symbol);
+
+/**
+* @ingroup rt_preload_task
+* @brief get l2cache offset
+* @param [out]  offset l2cache offset
+* @return  0 for success, others for fail
+*/
+RTS_API rtError_t rtGetL2CacheOffset(uint32_t *offset);
 
 /**
  * @ingroup rt_preload_task

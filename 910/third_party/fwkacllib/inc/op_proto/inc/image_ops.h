@@ -2100,13 +2100,13 @@ REG_OP(DenseImageWarpGrad)
  the interpolation value of 4 nearest corner points. The output tensor shape will be [N, C, H, W].
 
 *@par Inputs:
-*@li x: 4-D Tensor with shape `[batch, channels, height, width]`.
-*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]`.
+*@li x: 4-D Tensor with shape `[batch, channels, height, width]`. Must be one of the following types: float16, float, double.
+*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]` and has same dype as `X`.
 
 *@par Attributes:
 *@li interpolation_mode: An optional string specifying the interpolation method. Only 'bilinear' is
  supported for now .
-*@li padding_mode: An optional string specifying the pad method. Only 'zeros' is supported for now .
+*@li padding_mode: An optional string specifying the pad method, either "zeros", "border", or "reflection". The default value is "zeros".
 *@li align_corners: An optional bool. If "true", the centers of the corner
  pixels of the input and output tensors are aligned. Defaults to "false" .
 

@@ -306,7 +306,7 @@ REG_OP(Reciprocal)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, float64,
-*     float16, float32, complex128, complex64, complex32, uint16, bfloat16.
+*     float16, float32, complex128, complex64, complex32, uint16, bfloat16, bool.
 * @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
@@ -316,13 +316,13 @@ REG_OP(Reciprocal)
 */
 REG_OP(Sub)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BOOL,
                            DT_COMPLEX64, DT_COMPLEX128, DT_BF16, DT_COMPLEX32}))
     .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BOOL,
                            DT_COMPLEX64, DT_COMPLEX128, DT_BF16, DT_COMPLEX32}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
-                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64,
+                           DT_UINT16, DT_INT16, DT_INT32, DT_INT64, DT_BOOL,
                            DT_COMPLEX64, DT_COMPLEX128, DT_BF16, DT_COMPLEX32}))
     .OP_END_FACTORY_REG(Sub)
 
@@ -3225,7 +3225,7 @@ REG_OP(SquareSumAll)
 * @par Inputs:
 * Three inputs, including:
 * @li x1: A Tensor. Must be one of the following types:int32, int16,
-* float16, float32.
+* bfloat16, float16, float32.
 * @li x2: A Tensor of the same type as "x1".
 * @li x3: A Tensor of the same type as "x1". \n
 
@@ -3236,10 +3236,10 @@ REG_OP(SquareSumAll)
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(FusedMulAddN)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
-    .INPUT(x3, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16, DT_BF16}))
+    .INPUT(x3, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16, DT_BF16}))
     .OP_END_FACTORY_REG(FusedMulAddN)
 
 /**
@@ -3351,20 +3351,20 @@ REG_OP(FusedMulAddNL2loss)
 *@brief Tests whether the input exceeds a threshold. \n
 
 *@par Inputs:
-* x: A Tensor with any format. Must be one of the following types: float16, float32. \n
+* x: A Tensor with any format. Must be one of the following types: float16, float32, bfloat16. \n
 
 *@par Attributes:
 * threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
 
 *@par Outputs:
-* y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
+* y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32, bfloat16.
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Threshold.
 */
 
  REG_OP(Threshold)
-     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
      .ATTR(threshold, Float, 0.0)
      .OP_END_FACTORY_REG(Threshold);
 
@@ -3931,7 +3931,7 @@ REG_OP(Dot)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A tensor. Must be one of the following types:
-*     float16, float, double, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool. \n
+*     float16, float, double, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool, bfloat16. \n
 
 * @li x2: A tensor with the same type and shape of x1's. \n
 
@@ -3947,8 +3947,8 @@ REG_OP(Dot)
 *Compatible with the Pytorch operator isclose. \n
 */
 REG_OP(IsClose)
-    .INPUT(x1, TensorType({BasicType(), DT_BOOL}))
-    .INPUT(x2, TensorType({BasicType(), DT_BOOL}))
+    .INPUT(x1, TensorType({BasicType(), DT_BOOL, DT_BF16}))
+    .INPUT(x2, TensorType({BasicType(), DT_BOOL, DT_BF16}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .ATTR(rtol, Float, 1e-05)
     .ATTR(atol, Float, 1e-08)

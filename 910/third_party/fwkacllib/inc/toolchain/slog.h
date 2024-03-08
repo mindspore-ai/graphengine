@@ -54,8 +54,6 @@ extern "C" {
 #define DLOG_WARN  0x2      // warning level id
 #define DLOG_ERROR 0x3      // error level id
 #define DLOG_NULL  0x4      // don't print log
-#define DLOG_TRACE 0x5      // trace log print level id
-#define DLOG_OPLOG 0x6      // oplog log print level id
 #define DLOG_EVENT 0x10     // event log print level id
 
 /**
@@ -377,7 +375,8 @@ DLL_EXPORT void DlogInner(int moduleId, int level, const char *fmt, ...);
 DLL_EXPORT void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 // log interface
-DLL_EXPORT void DlogWrite(int moduleId, int level, const char *fmt, ...);
+DLL_EXPORT void DlogWrite(int moduleId, int level, const char *fmt, ...) __attribute((weak));
+DLL_EXPORT void DlogRecord(int moduleId, int level, const char *fmt, ...) __attribute((weak));
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -494,7 +493,8 @@ DLL_EXPORT void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
 DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 // log interface
-DLL_EXPORT void DlogWriteForC(int moduleId, int level, const char *fmt, ...);
+DLL_EXPORT void DlogWriteForC(int moduleId, int level, const char *fmt, ...) __attribute((weak));
+DLL_EXPORT void DlogRecordForC(int moduleId, int level, const char *fmt, ...) __attribute((weak));
 
 #ifdef __cplusplus
 }

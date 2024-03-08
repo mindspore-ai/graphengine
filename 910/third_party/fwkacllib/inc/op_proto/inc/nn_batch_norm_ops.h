@@ -152,12 +152,12 @@ REG_OP(BatchNorm)
 
 * @par Inputs:
 * include:
-* @li mean_all: A Tensor. The mean of each device. Must be one of the following types: float16, float32.
-* @li invert_std_all: A Tensor. Reciprocal of the variances of each device. Must be one of the following types: float16, float32.
-* @li count_all: A Tensor. Number of data for each device. Must be one of the following types: float16, float32.
-* @li mean_broadcast: A Tensor. The overall average and broadcast. Must be one of the following types: float16, float32.
-* @li count_sum: A Tensor. General statistics. Must be one of the following types: float16, float32.
-* @li running_var: A Tensor. Runtime variance. Must be one of the following types: float16, float32. \n
+* @li mean_all: A Tensor. The mean of each device. Must be one of the following types: float16, float32, bfloat16.
+* @li invert_std_all: A Tensor. Reciprocal of the variances of each device. Must be one of the following types: float16, float32, bfloat16.
+* @li count_all: A Tensor. Number of data for each device. Must be one of the following types: float16, float32, bfloat16.
+* @li mean_broadcast: A Tensor. The overall average and broadcast. Must be one of the following types: float16, float32, bfloat16.
+* @li count_sum: A Tensor. General statistics. Must be one of the following types: float16, float32, bfloat16.
+* @li running_var: A Tensor. Runtime variance. Must be one of the following types: float16, float32, bfloat16. \n
 
 * @par Attributes:
 * Two Attributes, including:
@@ -174,14 +174,14 @@ REG_OP(BatchNorm)
 * compatible with the Pytorch operator BatchNormGatherStatsWithCounts.
 */
 REG_OP(SyncBatchNormGatherStatsWithCounts)
-    .INPUT(mean_all, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(invert_std_all, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(count_all, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mean_broadcast, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(count_sum, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(running_var, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(invert_std, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(running_var_update, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean_all, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(invert_std_all, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(count_all, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(mean_broadcast, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(count_sum, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(running_var, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(invert_std, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(running_var_update, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(momentum, Float, 0.1)
     .ATTR(epsilon, Float, 0.001)
     .OP_END_FACTORY_REG(SyncBatchNormGatherStatsWithCounts)

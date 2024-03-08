@@ -42,6 +42,27 @@ REG_OP(RotaryMul)
     .OP_END_FACTORY_REG(RotaryMul)
 
 /**
+ * @brief Apply rotary position embedding.
+ * @par Inputs:
+ * query: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * key: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * cos: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * sin: A tensor. Must be one of the following types: float16, float, bfloat16. 
+ * @par Outputs:
+ * query: A Tensor. Has the same shape as "query".
+ * key: A Tensor. Has the same shape as "key".
+ */
+REG_OP(ApplyRotaryPosEmb)
+    .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(key, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(cos, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(sin, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .ATTR(layout, Int, 1)
+    .OUTPUT(query,TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .OUTPUT(key,TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+   .OP_END_FACTORY_REG(ApplyRotaryPosEmb)
+
+/**
  * @brief Calculate the inverse gradient of RotaryMul.
  * @par Inputs:
  * x: A tensor. Must be one of the following types: float16, float, bfloat16.
@@ -539,5 +560,31 @@ REG_OP(EmbeddingComputeVarImport)
     .INPUT(table_id, TensorType({DT_INT32}))
     .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingComputeVarImport)
+
+/**
+* @brief Step the original data block of y forward one by one, 
+* discard the first data block, and then update x to the last data block of y. \n
+
+* @par Inputs:
+* @li x: A Tensor, A tensor that stores updated data.
+*        Must be one of the following types:
+*        int8, uint8, int16, uint16, int32, uint32, int64, uint64, float16, float, bfloat16
+*        double, complex64, complex128, qint8, qint16, qint32, quint8, quint16.
+* @li clean_cache: A Bool, Indicates whether to reset y to zero first. \n
+
+* @par Attributes:
+* @li axis: A int, dtype is int64. Specify which dimension to start updating elements from. \n
+* @li cache_depth: A int, dtype is int64. Specify the depth of data caching. \n
+
+* @par Outputs:
+* @li y: The updated tensor. Dtype is same as x. \n
+*/
+REG_OP(FillWindowCache)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(clean_cache, TensorType({DT_BOOL}))
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(axis, Int)
+    .REQUIRED_ATTR(cache_depth, Int)
+    .OP_END_FACTORY_REG(FillWindowCache)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_OTHER_H_

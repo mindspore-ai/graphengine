@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef MSPROFILER_API_PROF_ACL_API_H_
-#define MSPROFILER_API_PROF_ACL_API_H_
+#ifndef MSPROFILER_API_PROF_ACL_API_H
+#define MSPROFILER_API_PROF_ACL_API_H
 
 #include <cstdint>
 #include <cstddef>

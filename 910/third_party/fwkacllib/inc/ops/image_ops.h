@@ -2005,6 +2005,8 @@ REG_OP(DenseImageWarp)
     Defaults to "nearest". \n
 *@li nearest_mode: An optional String.
     Defaults to "round_prefer_floor". \n
+*@li data_format: An optional String.
+    Defaults to "NCHW". \n
 
 *@par Outputs:
 *y: A Tensor with the same type of x's,
@@ -2025,6 +2027,7 @@ REG_OP(ResizeD)
     .ATTR(extrapolation_value, Float, 0.0)
     .ATTR(mode, String, "nearest")
     .ATTR(nearest_mode, String, "round_prefer_floor")
+    .ATTR(data_format, String, "NCHW")
     .OP_END_FACTORY_REG(ResizeD)
 
 /**
@@ -2053,6 +2056,8 @@ REG_OP(ResizeD)
     Defaults to "nearest". \n
 *@li nearest_mode: An optional String.
     Defaults to "round_prefer_floor". \n
+*@li data_format: An optional String.
+    Defaults to "NCHW". \n
 
 *@par Outputs:
 *y: A Tensor with the same type of x's,
@@ -2070,6 +2075,7 @@ REG_OP(ResizeGradD)
     .ATTR(extrapolation_value, Float, 0.0)
     .ATTR(mode, String, "nearest")
     .ATTR(nearest_mode, String, "round_prefer_floor")
+    .ATTR(data_format, String, "NCHW")
     .OP_END_FACTORY_REG(ResizeGradD)
 
 /**

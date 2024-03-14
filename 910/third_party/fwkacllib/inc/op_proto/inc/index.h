@@ -110,5 +110,35 @@ REG_OP(CoalesceSparse)
     .OUTPUT(new_inidces, TensorType({ DT_INT32, DT_INT64 }))
     .OUTPUT(new_values, TensorType({ DT_INT32, DT_FLOAT16, DT_FLOAT32 }))
     .OP_END_FACTORY_REG(CoalesceSparse)
+
+/**
+* @brief Give transparency to the image.
+*
+* @par Inputs:
+* @li rgb: A tensor of the type DT_UINT8.
+* @li alpha:A tensor of the type DT_UINT8.
+*
+* @par Outputs:
+* @li dst: A tensor of the type DT_UINT8.
+*/
+REG_OP(MrgbaCustom)
+    .INPUT(rgb, TensorType({ DT_UINT8 }))
+    .INPUT(alpha, TensorType({ DT_UINT8 }))
+    .OUTPUT(dst, TensorType({ DT_UINT8 }))
+    .OP_END_FACTORY_REG(MrgbaCustom)
+
+/**
+* @brief Replace Background to the image.
+* @li bkg: A tensor of the type DT_UINT8, DT_FLOAT16.
+* @li src:A tensor of the type DT_UINT8, DT_FLOAT16.
+* @li mask:A tensor of the type DT_FLOAT16.
+* @li out: A tensor of the type DT_UINT8, DT_FLOAT16.
+*/
+REG_OP(BackgroundReplace)
+    .INPUT(bkg, TensorType({ DT_UINT8, DT_FLOAT16 }))
+    .INPUT(src, TensorType({ DT_UINT8, DT_FLOAT16 }))
+    .INPUT(mask, TensorType({ DT_FLOAT16, DT_FLOAT16 }))
+    .OUTPUT(out, TensorType({ DT_UINT8, DT_FLOAT16 }))
+    .OP_END_FACTORY_REG(BackgroundReplace)
 }
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_INDEX_H_

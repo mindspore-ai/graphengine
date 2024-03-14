@@ -194,6 +194,20 @@ typedef enum {
     ACL_OPT_DETERMINISTIC = 0,
 } aclSysParamOpt;
 
+typedef enum {
+    ACL_CANN_ATTR_UNDEFINED = -1,
+    ACL_CANN_ATTR_INF_NAN = 0,
+    ACL_CANN_ATTR_BF16 = 1,
+    ACL_CANN_ATTR_JIT_COMPILE = 2
+} aclCannAttr;
+
+typedef enum {
+    ACL_DEVICE_INFO_UNDEFINED = -1,
+    ACL_DEVICE_INFO_AI_CORE_NUM = 0,
+    ACL_DEVICE_INFO_VECTOR_CORE_NUM = 1,
+    ACL_DEVICE_INFO_L2_SIZE = 2
+} aclDeviceInfo;
+
 /**
  * @ingroup AscendCL
  * @brief Converts data of type aclFloat16 to data of type float
@@ -666,6 +680,44 @@ ACL_FUNC_VISIBILITY const char *aclrtGetSocName();
 
 #define ACL_APP_LOG(level, fmt, ...) \
     aclAppLog(level, __FUNCTION__, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+
+/**
+ * @ingroup AscendCL
+ * @brief Get a list of the available CANN attributes in current environment
+ *
+ * @param  cannAttrList [OUT]  list of the available CANN attributes
+ * @param  num [OUT]  the number of the available CANN attributes
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues  Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclGetCannAttributeList(const aclCannAttr **cannAttrList, size_t *num);
+
+/**
+ * @ingroup AscendCL
+ * @brief Check whether the specified CANN attribute is available in current
+ * environment
+ *
+ * @param  cannAttr [IN]  CANN attributes to query
+ * @param  num [OUT]  0/1: 0 represents unavailable , 1 available
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues  Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclGetCannAttribute(aclCannAttr cannAttr, int32_t *value);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get capability value of the specified device
+ *
+ * @param  deviceId [IN]  device id
+ * @param  deviceInfo [IN]  device capability to query
+ * @param  value [OUT]    returned device capability value
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues  Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclGetDeviceCapability(uint32_t deviceId, aclDeviceInfo deviceInfo, int64_t *value);
 
 #ifdef __cplusplus
 }

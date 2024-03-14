@@ -189,6 +189,8 @@ extern HcclResult HcomGatherByOs(void* inputBuf, uint64_t inputCount, HcclDataTy
 
 extern HcclResult HcomBcastByOS(void* buf, uint64_t count, HcclDataType dataType, int root, const char *group,
     uint64_t flag);
+
+extern HcclResult HcomGetCommHandleByGroup(const char *group, HcclComm *commHandle);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -141,7 +141,7 @@ RTS_API rtError_t rtGetElfOffset(void * const elfData, const uint32_t elfLen, ui
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtRegkenelLaunchFillFunc(const char* symbol, rtKernelLaunchFillFunc callback);
+RTS_API rtError_t rtRegKernelLaunchFillFunc(const char* symbol, rtKernelLaunchFillFunc callback);
 
 /**
  * @ingroup rt_preload_task
@@ -150,15 +150,16 @@ RTS_API rtError_t rtRegkenelLaunchFillFunc(const char* symbol, rtKernelLaunchFil
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtUnRegkenelLaunchFillFunc(const char* symbol);
+RTS_API rtError_t rtUnRegKernelLaunchFillFunc(const char* symbol);
 
 /**
 * @ingroup rt_preload_task
 * @brief get l2cache offset
+* @param [in] deviceId   device id
 * @param [out]  offset l2cache offset
 * @return  0 for success, others for fail
 */
-RTS_API rtError_t rtGetL2CacheOffset(uint32_t *offset);
+RTS_API rtError_t rtGetL2CacheOffset(uint32_t deviceId, uint64_t *offset);
 
 /**
  * @ingroup rt_preload_task

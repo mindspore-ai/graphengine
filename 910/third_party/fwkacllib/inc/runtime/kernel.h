@@ -1153,6 +1153,36 @@ rtError_t rtBinaryLoadWithoutTilingKey(const void *data, const uint64_t length, 
 rtError_t rtLaunchKernelByFuncHandleV3(rtFuncHandle funcHandle, uint32_t blockDim, const rtArgsEx_t * const argsInfo,
                                        rtStream_t stm, const rtTaskCfgInfo_t * const cfgInfo);
 
+/**
+ * @ingroup rt_kernel
+ * @brief launch vector kernel with handle to device
+ * @param [in] hdl             program
+ * @param [in] tilingKey       tilingKey
+ * @param [in] blockDim        block dimentions
+ * @param [in] argsInfo        argments address for kernel function
+ * @param [in] smDesc          shared memory description
+ * @param [in] stm             associated stream
+ * @param [in] cfgInfo      task config
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtVectorCoreKernelLaunchWithHandle(void *hdl, const uint64_t tilingKey, uint32_t blockDim,
+    rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm, const rtTaskCfgInfo_t *cfgInfo);
+
+/**
+ * @ingroup rt_kernel
+ * @brief Vector Kernel Launch to device
+ * @param [in] funcHandle  function Handle
+ * @param [in] blockDim  block dimentions
+ * @param [in] argsHandle  args Handle
+ * @param [in] stm  associated stream
+ * @param [in] cfgInfo task config info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtVectorCoreKernelLaunch(const void *stubFunc, uint32_t blockDim, rtArgsEx_t *argsInfo,
+    rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags, const rtTaskCfgInfo_t *cfgInfo);
+
 #if defined(__cplusplus)
 }
 #endif

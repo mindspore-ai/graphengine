@@ -47,7 +47,9 @@ REG_OP(RotaryMul)
  * query: A tensor. Must be one of the following types: float16, float, bfloat16.
  * key: A tensor. Must be one of the following types: float16, float, bfloat16.
  * cos: A tensor. Must be one of the following types: float16, float, bfloat16.
- * sin: A tensor. Must be one of the following types: float16, float, bfloat16. 
+ * sin: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * @par Attributes:
+ *@li layout: Optional.Explanation Input Format. 1-"BSND" 2-"SBH" 3-"BNSD".Defaults to 1.
  * @par Outputs:
  * query: A Tensor. Has the same shape as "query".
  * key: A Tensor. Has the same shape as "key".
@@ -134,7 +136,7 @@ REG_OP(UninitPartitionMap)
 * @li seed: A Int, Defaults to "0". \n
 * @li seed2: A Int, Defaults to "0". \n
 * @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter". \n
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop". indicates the type of the optimizer_mode,
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop" or "ftrl". indicates the type of the optimizer_mode,
 * Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
@@ -246,7 +248,7 @@ REG_OP(UninitEmbeddingHashmap)
 * @li default_key_or_value: A bool, indicates the default value get way.
 * @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
 * @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop". indicates the type of the optimizer_mode,
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop" or "ftrl". indicates the type of the optimizer_mode,
 * Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
@@ -444,6 +446,38 @@ REG_OP(EmbeddingApplyRmsprop)
     .OP_END_FACTORY_REG(EmbeddingApplyRmsprop)
 
 /**
+* @brief embedding hashtable embedding applyftrl. \n
+
+* @par Inputs:
+* @li var_handle: The handle of embedding hashtable.
+* @li lr: A Scalar, dtype is DT_FLOAT16 or DT_FLOAT. 0-D. indicates the learning rate.
+* @li lr_power: A Scalar, dtype is same as "lr". 0-D. indicates the learning rate factor.
+* @li lambda1: A Scalar, dtype is same as "lr". 0-D. indicates the lambda1 param.
+* @li lambda2: A Scalar, dtype is same as "lr". 0-D. indicates the lambda2 param.
+* @li grad: A Tensor, dtype is same as "lr". 1-D. indicates the grad.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key. \n
+
+* @par Outputs:
+* @li var_handle: The handle of embedding hashtable. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
+*/
+REG_OP(EmbeddingApplyFtrl)
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(lr_power, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(lambda1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(lambda2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(mask_zero, Bool, false)
+    .OP_END_FACTORY_REG(EmbeddingApplyFtrl)
+
+/**
 * @brief Exponential decay algorithm. \n
 
 * @par Inputs:
@@ -586,5 +620,23 @@ REG_OP(FillWindowCache)
     .REQUIRED_ATTR(axis, Int)
     .REQUIRED_ATTR(cache_depth, Int)
     .OP_END_FACTORY_REG(FillWindowCache)
+
+/**
+* @brief Generate rgb and frame images into a out image with alpha transparency. \n
+
+* @par Inputs:
+* @li rgb: A Int, dtype is uint8, rgb images data.
+* @li alpha: A Int, dtype is uint8, alpha transparency images data.
+* @li frame: A Int, dtype is uint8, frame images data.  \n
+
+* @par Outputs:
+* @li out: The out tensor. Dtype is same as rgb. \n
+*/
+REG_OP(BlendImagesCustom)
+    .INPUT(rgb, TensorType({DT_UINT8}))
+    .INPUT(alpha, TensorType({DT_UINT8}))
+    .INPUT(frame, TensorType({DT_UINT8}))
+    .OUTPUT(out, TensorType({DT_UINT8}))
+    .OP_END_FACTORY_REG(BlendImagesCustom)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_OTHER_H_

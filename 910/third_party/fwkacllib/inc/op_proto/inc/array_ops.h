@@ -1451,6 +1451,26 @@ REG_OP(NonZeroWithValueShape)
     .OUTPUT(out_index, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(NonZeroWithValueShape)
 
+/**
+*@Returns a tensor with updated shape from NonZeroWithValue. \n
+
+*@par Inputs:
+* value: A Tensor. The output of NonZeroWithValue. \n
+* index: A Tensor. The output of NonZeroWithValue. \n
+* count: A Tensor. The type is INT32, means count for non_zero ele in input. \n
+*@par Outputs:
+* value: A Tensor. The output value is the updated shape of the input value. \n
+* index: A Tensor. The output index is the updated shape of the input index. \n
+*/
+REG_OP(NonZeroWithValueShapeV2)
+    .INPUT(value, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16,
+                            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .INPUT(index, TensorType({DT_INT32}))
+    .INPUT(count, TensorType({DT_INT32}))
+    .OUTPUT(value, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16,
+                              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(index, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(NonZeroWithValueShapeV2)
 
 /**
 * @brief Expand the input tensor to a compatible shape. \n

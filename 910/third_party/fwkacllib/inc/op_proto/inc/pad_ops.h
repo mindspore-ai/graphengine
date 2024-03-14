@@ -95,8 +95,8 @@ REG_OP(FillD)
 *
 * @par Inputs:
 * @li x: A tensor.
-* @li shape: A tensor of type int32.
-*     A 1D tensor of type int32, for the shape of the desired output.
+* @li shape: A tensor of type int32 or int64.
+*     A 1D tensor of type int32 or int64, for the shape of the desired output.
 *
 * @par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -170,7 +170,7 @@ REG_OP(Pad)
 * x: A Tensor. Must be one of the following types: bfloat16, float16, float32, int32 . \n
 
 * @par Attributes:
-* paddings: An optional "vector<vector<int>>". Defaults to "{}".
+* paddings: An required "vector<vector<int>>". Defaults to "{}".
 *     For each dimension D of input, paddings[D, 0] indicates how many
 *     values to add before the contents of tensor in that dimension,
 *     and paddings[D, 1] indicates how many values to add after the
@@ -408,6 +408,9 @@ REG_OP(Diag)
       DT_INT8, DT_UINT8, DT_DOUBLE, DT_BOOL,
       DT_COMPLEX32, DT_COMPLEX128, DT_COMPLEX64 . \n
 
+* @par Attributes:
+* diagonal: A optional int32. Specifies the position of output tensors'value. Defaults to "0" . \n
+
 * @par Outputs:
 * y: A mutable Tensor. Has the same type as "x" . \n
 
@@ -432,6 +435,12 @@ REG_OP(DiagV2)
 * x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
 *     following types:
 *     float16, float32, double, int8, int16,int32, int64, complex32, complex64, complex128 . \n
+
+* @par Attributes:
+* @li diagonal: An optional int value. Defaults to 0, this attribute controls which diagonal to consider:
+*               If diagonal = 0, it is the main diagonal.
+*               If diagonal > 0, it is above the main diagonal.
+*               If diagonal < 0, it is below the main diagonal.
 
 * @par Outputs:
 * y: A mutable Tensor. Has the same type as "x" . \n

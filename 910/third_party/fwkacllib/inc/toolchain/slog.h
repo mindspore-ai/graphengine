@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,11 +76,6 @@ extern "C" {
 #define LOG_SAVE_MODE_DEF   (0x0U)          // default
 #define LOG_SAVE_MODE_UNI   (0xFE756E69U)   // unify save mode
 #define LOG_SAVE_MODE_SEP   (0xFE736570U)   // separate save mode
-
-typedef struct tagKV {
-    char *kname;
-    char *value;
-} KeyValue;
 
 typedef enum {
     APPLICATION = 0,
@@ -229,7 +224,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttrInfo);
  * @ingroup     : slog
  * @brief       : print log, need va_list variable, exec CheckLogLevel() before call this function
  * @param[in]   : moduleId      module id, eg: CCE
- * @param[in]   : level         (0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param[in]   : level         (0: debug, 1: info, 2: warning, 3: error, 16: event)
  * @param[in]   : fmt           log content
  * @param[in]   : list          variable list of log content
  */
@@ -250,7 +245,7 @@ DLL_EXPORT void DlogFlush(void);
  */
 #define dlog_error(moduleId, fmt, ...)                                          \
     do {                                                                          \
-        DlogErrorInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+        DlogRecord(moduleId, DLOG_ERROR, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
     } while (TMP_LOG != 0)
 
 /**
@@ -264,7 +259,7 @@ DLL_EXPORT void DlogFlush(void);
 #define dlog_warn(moduleId, fmt, ...)                                               \
     do {                                                                              \
         if (CheckLogLevel(moduleId, DLOG_WARN) == 1) {                                   \
-            DlogWarnInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+            DlogRecord(moduleId, DLOG_WARN, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
         }                                                                               \
     } while (TMP_LOG != 0)
 
@@ -279,7 +274,7 @@ DLL_EXPORT void DlogFlush(void);
 #define dlog_info(moduleId, fmt, ...)                                               \
     do {                                                                              \
         if (CheckLogLevel(moduleId, DLOG_INFO) == 1) {                                   \
-            DlogInfoInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+            DlogRecord(moduleId, DLOG_INFO, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
         }                                                                               \
     } while (TMP_LOG != 0)
 
@@ -294,7 +289,7 @@ DLL_EXPORT void DlogFlush(void);
 #define dlog_debug(moduleId, fmt, ...)                                              \
     do {                                                                              \
         if (CheckLogLevel(moduleId, DLOG_DEBUG) == 1) {                                  \
-            DlogDebugInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+            DlogRecord(moduleId, DLOG_DEBUG, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
         }                                                                               \
     } while (TMP_LOG != 0)
 
@@ -307,7 +302,7 @@ DLL_EXPORT void DlogFlush(void);
  */
 #define dlog_event(moduleId, fmt, ...)                                          \
     do {                                                                          \
-        DlogEventInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+        DlogRecord(moduleId, DLOG_EVENT, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
     } while (TMP_LOG != 0)
 
 /**
@@ -316,13 +311,13 @@ DLL_EXPORT void DlogFlush(void);
  * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
- * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 16: event)
  * @param [in]fmt: log content
  */
 #define Dlog(moduleId, level, fmt, ...)                                                 \
     do {                                                                                  \
         if (CheckLogLevel(moduleId, level) == 1) {                                           \
-            DlogInner(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
+            DlogRecord(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
         }                                                                                  \
     } while (TMP_LOG != 0)
 
@@ -333,49 +328,17 @@ DLL_EXPORT void DlogFlush(void);
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]submodule: eg: engine
- * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 16: event)
  * @param [in]fmt: log content
  */
 #define DlogSub(moduleId, submodule, level, fmt, ...)                                                   \
     do {                                                                                                  \
         if (CheckLogLevel(moduleId, level) == 1) {                                                           \
-            DlogInner(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
+            DlogRecord(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
         }                                                                                                   \
     } while (TMP_LOG != 0)
 
-/**
- * @ingroup slog
- * @brief DlogWithKV: print log, need caller to specify level and other paramters
- * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
- *
- * @param [in]moduleId: module id, eg: CCE
- * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
- * @param [in]pstKVArray: key-value array
- * @param [in]kvNum: key-value element num in array
- * @param [in]fmt: log content
- */
-#define DlogWithKV(moduleId, level, pstKVArray, kvNum, fmt, ...)                                                \
-    do {                                                                                                          \
-        if (CheckLogLevel(moduleId, level) == 1) {                                                                   \
-            DlogWithKVInner(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
-        }                                                                                                           \
-    } while (TMP_LOG != 0)
-
-
-/**
- * @ingroup slog
- * @brief Internal log interface, other modules are not allowed to call this interface
- */
-DLL_EXPORT void DlogErrorInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogWarnInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogInfoInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogDebugInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogEventInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogInner(int moduleId, int level, const char *fmt, ...);
-DLL_EXPORT void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
-
 // log interface
-DLL_EXPORT void DlogWrite(int moduleId, int level, const char *fmt, ...) __attribute((weak));
 DLL_EXPORT void DlogRecord(int moduleId, int level, const char *fmt, ...) __attribute((weak));
 
 #ifdef __cplusplus
@@ -434,13 +397,13 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttrInfo);
  * call CheckLogLevelForC in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
- * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 16: event)
  * @param [in]fmt: log content
  */
 #define DlogForC(moduleId, level, fmt, ...)                                                 \
     do {                                                                                  \
         if (CheckLogLevelForC(moduleId, level) == 1) {                                           \
-            DlogInnerForC(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
+            DlogRecordForC(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
         }                                                                                  \
     } while (TMP_LOG != 0)
 
@@ -451,32 +414,14 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttrInfo);
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]submodule: eg: engine
- * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 16: event)
  * @param [in]fmt: log content
  */
 #define DlogSubForC(moduleId, submodule, level, fmt, ...)                                                   \
     do {                                                                                                  \
         if (CheckLogLevelForC(moduleId, level) == 1) {                                                           \
-            DlogInnerForC(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
+            DlogRecordForC(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
         }                                                                                                   \
-    } while (TMP_LOG != 0)
-
-/**
- * @ingroup slog
- * @brief DlogWithKVForC: print log, need caller to specify level and other paramters
- * call CheckLogLevelForC in advance to optimize performance, call interface with fmt input take time
- *
- * @param [in]moduleId: module id, eg: CCE
- * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
- * @param [in]pstKVArray: key-value array
- * @param [in]kvNum: key-value element num in array
- * @param [in]fmt: log content
- */
-#define DlogWithKVForC(moduleId, level, pstKVArray, kvNum, fmt, ...)                                                \
-    do {                                                                                                          \
-        if (CheckLogLevelForC(moduleId, level) == 1) {                                                                \
-            DlogWithKVInnerForC(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
-        }                                                                                                           \
     } while (TMP_LOG != 0)
 
 /**
@@ -485,15 +430,7 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttrInfo);
  */
 DLL_EXPORT void DlogFlushForC(void);
 
-/**
- * @ingroup slog
- * @brief Internal log interface, other modules are not allowed to call this interface
- */
-DLL_EXPORT void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
-DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
-
 // log interface
-DLL_EXPORT void DlogWriteForC(int moduleId, int level, const char *fmt, ...) __attribute((weak));
 DLL_EXPORT void DlogRecordForC(int moduleId, int level, const char *fmt, ...) __attribute((weak));
 
 #ifdef __cplusplus

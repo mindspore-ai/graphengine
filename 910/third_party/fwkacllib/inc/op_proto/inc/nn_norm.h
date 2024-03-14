@@ -116,11 +116,11 @@ REG_OP(GroupNormV2)
  * @par Inputs:
  * Five input, including:
  * @li dy: A Tensor. Group grad. Must be one of the following types:
- *     float32, float16
- * @li mean: A Tensor. Mean of each group. Support float32, float16
- * @li rstd: A Tensor. Reciprocal standard deviation of each group. Support float32, float16
- * @li x: A Tensor. Specifies the offset. Support float32, float16
- * @li gamma: A Tensor. Specifies the scaling factor. Support float32, float16
+ *     float32, float16, bfloat16
+ * @li mean: A Tensor. Mean of each group. Support float32, float16, bfloat16
+ * @li rstd: A Tensor. Reciprocal standard deviation of each group. Support float32, float16, bfloat16
+ * @li x: A Tensor. Specifies the offset. Support float32, float16, bfloat16
+ * @li gamma: A Tensor. Specifies the scaling factor. Support float32, float16, bfloat16
 
  * @par Attributes:
  * @li num_groups: Int.Number specifying the number of group.
@@ -137,11 +137,11 @@ REG_OP(GroupNormV2)
  */
 
 REG_OP(GroupNormGrad)
-    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(rstd, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(rstd, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(dx, TensorType({DT_FLOAT}))
     .OUTPUT(dgamma, TensorType({DT_FLOAT}))
     .OUTPUT(dbeta, TensorType({DT_FLOAT}))

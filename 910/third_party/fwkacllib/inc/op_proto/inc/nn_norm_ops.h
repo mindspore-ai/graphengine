@@ -321,8 +321,8 @@ REG_OP(SmoothL1LossGrad)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A 1D or 2D Tensor of type float16 or float32, specifying a predictive value.
-* @li y: A 1D or 2D Tensor of type float16 or float32, indicating a tag.
+* @li x: A 1D or 2D Tensor of type bfloat16, float16 or float32, specifying a predictive value.
+* @li y: A 1D or 2D Tensor of type bfloat16, float16 or float32, indicating a tag.
 * @li weight: An optional 1D or 2D Tensor, specifying the weight . \n
 
 * @par Attributes:
@@ -1521,7 +1521,7 @@ REG_OP(KlDivLossGrad)
 
 * @par Inputs:
 * Three inputs, including:
-* @li grads: A Tensor. Must be one of the following types: float16, float32.
+* @li grads: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * Required.
 * @li predict: A Tensor. Has the same type as "grads". Required.
 * @li label: A Tensor. Has the same type as "grads". Required. \n
@@ -1536,10 +1536,10 @@ REG_OP(KlDivLossGrad)
 * Compatible with the Pytorch operator L1LossGrad.
 */
 REG_OP(L1LossGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(L1LossGrad)
 
@@ -1620,7 +1620,7 @@ REG_OP(MseLoss)
 * @par Inputs:
 * Three Inputs, including:
 * @li predict: A Tensor. Must be one of the following types:
-*     float16, float32.
+*     float16, bfloat16 or float32.
 * @li label: A Tensor. Has the same type as "predict".
 * @li dout: A Tensor. Has the same type as "predict". \n
 
@@ -1638,10 +1638,10 @@ REG_OP(MseLoss)
 * Compatible with the Pytorch operator SmoothL1LossBackward.
 */
 REG_OP(SmoothL1LossGradV2)
-    .INPUT(predict, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(label, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(dout, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(gradient, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(predict, TensorType({DT_FLOAT, DT_FLOAT16,DT_BF16}))
+    .INPUT(label, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(dout, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(sigma, Float, 1.0)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SmoothL1LossGradV2)
@@ -1653,9 +1653,9 @@ REG_OP(SmoothL1LossGradV2)
 * exploding gradients.
 
 * @par Inputs:
-* @li predict: A multi-dimensional Tensor of type float16 or float32,
+* @li predict: A multi-dimensional Tensor of type float16, bfloat16 or float32
 * specifying the predictive value. \n
-* @li label: A multi-dimensional Tensor of type float16 or float32,
+* @li label: A multi-dimensional Tensor of type float16, bfloat16 or float32
 * specifying the target value. \n
 
 * @par Attributes:
@@ -1674,9 +1674,9 @@ REG_OP(SmoothL1LossGradV2)
 * Compatible with the Pytorch operator smooth_l1_loss. \n
 */
 REG_OP(SmoothL1LossV2)
-    .INPUT(predict, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .INPUT(label, TensorType({ DT_FLOAT, DT_FLOAT16 }))
-    .OUTPUT(loss, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(predict, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(label, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(loss, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(sigma, Float, 1.0)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SmoothL1LossV2)

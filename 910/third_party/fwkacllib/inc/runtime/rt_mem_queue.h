@@ -592,7 +592,8 @@ RTS_API rtError_t rtMbufChainGetMbuf(rtMbufPtr_t memBufChainHead, uint32_t index
 typedef struct {
     uint64_t maxMemSize; // max buf size in grp, in KB. = 0 means no limit
     uint32_t cacheAllocFlag;
-    int32_t rsv[RT_MEM_GRP_NAME_LEN - 1];
+    uint32_t addGrpTimeout;
+    int32_t rsv[RT_MEM_GRP_NAME_LEN - 2];
 } rtMemGrpConfig_t;
 
 typedef struct {

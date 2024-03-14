@@ -98,6 +98,7 @@ typedef struct tagRtTaskCfgInfo {
     uint8_t schemMode; // rtschemModeType_t 0:normal;1:batch;2:sync
     uint8_t res[1]; // res
     uint32_t blockDimOffset;
+    uint8_t dumpflag; // dumpflag 0:fault 2:RT_KERNEL_DUMPFLAG 4:RT_FUSION_KERNEL_DUMPFLAG
 } rtTaskCfgInfo_t;
 
 /**

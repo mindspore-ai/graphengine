@@ -195,7 +195,7 @@ REG_OP(Igammac)
 */
 
 REG_OP(Histogram)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
     .ATTR(bins, Int, 100)
     .ATTR(min, Float, 0.0)

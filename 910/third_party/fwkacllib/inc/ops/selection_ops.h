@@ -711,12 +711,12 @@ REG_OP(Select)
     .OP_END_FACTORY_REG(Select)
 
 /**
-* @brief: SelectV2s elements from "then" or "else", depending on "condition" . \n
+* @brief: Select elements from "then" or "else", depending on "condition" . \n
 
 * @par Inputs:
 * Three inputs, including:
 * @li condition: A Tensor of type bool.
-* @li then: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, bfloat16.
+* @li then: A Tensor. Must be one of the following types: float16, float32, int64, int32, int8, uint8, bfloat16.
 * @li else: A Tensor of the same type as "then" . \n
 
 * @par Outputs:

@@ -926,9 +926,9 @@ REG_OP(MishGrad)
  * @par Inputs:
  * Two inputs, including:
  * @li result, minimum tensor of the linear region range,
- * datatype: float16/float32, format:ND/5HD.
+ * datatype: bfloat16/float16/float32, format:ND/5HD.
  * @li grad, maximum tensor of the linear region range,
- * datatype:float16/float32, format:ND/5HD. \n
+ * datatype: bfloat16/float16/float32, format:ND/5HD. \n
 
  * @par Attributes:
  * Two attributes, including:
@@ -941,15 +941,15 @@ REG_OP(MishGrad)
  * input result. \n
 
  * @attention Constraints:
- * This operator only supports dataType: float16/float32, format: ND/5HD. \n
+ * This operator only supports dataType: bfloat16/float16/float32, format: ND/5HD. \n
 
  * @par Third-party framework compatibility
  * Compatible with the Pytorch operator HardtanhGrad.
  */
 REG_OP(HardtanhGrad)
-    .INPUT(result, TensorType({ DT_FLOAT16, DT_FLOAT })) /* "First operand." */
-    .INPUT(grad, TensorType({ DT_FLOAT16, DT_FLOAT }))   /* "Second operand." */
-    .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT }))     /* "Result, has same element type as two inputs" */
+    .INPUT(result, TensorType({ DT_BFLOAT16, DT_FLOAT16, DT_FLOAT })) /* "First operand." */
+    .INPUT(grad, TensorType({ DT_BFLOAT16, DT_FLOAT16, DT_FLOAT }))   /* "Second operand." */
+    .OUTPUT(y, TensorType({ DT_BFLOAT16, DT_FLOAT16, DT_FLOAT }))     /* "Result, has same element type as two inputs" */
     .ATTR(min_val, Float, -1.0)
     .ATTR(max_val, Float, 1.0)
     .OP_END_FACTORY_REG(HardtanhGrad)

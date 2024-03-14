@@ -1472,73 +1472,6 @@ REG_OP(AscendAttention)
     .OP_END_FACTORY_REG(AscendAttention)
 
 /**
-* @brief Function AscendAttentionGrad. \n
-
-* @par Inputs:
-* twelve inputs, including:
-* @li x: A matrix Tensor. The type support float16, bf16.
-* @li w: A matrix Tensor. The type support float16, bf16.
-* @li qkv: A matrix Tensor. The type support float16, bf16.
-* @li dy: A matrix Tensor. The type support float16, bf16.
-* @li pse: A matrix Tensor. The type support float16, bf16.
-* @li atten_mask: A matrix Tensor. The type support uint8, bool.
-* @li prefix: A list Tensor. The type support UINT64.
-* @li drop_mask: A matrix Tensor. The type support uint8.
-* @li softmax_max: A matrix Tensor. The type support float32.
-* @li softmax_sum: A matrix Tensor. The type support float32.
-* @li attention_in: A matrix Tensor. The type support float16, bf16.
-* @li bias: A matrix Tensor. The type support float16, bf16.
-
-* @par Attributes:
-* @li scale_qk: A float. The scale value. Default: 1.0.
-* @li scale_q: A float. The scale value. Default: 1.0.
-* @li scale_k: A float. The scale value. Default: 1.0.
-* @li keep_prob: A float. The keep probability of dropout. Default: 1.0.
-* @li pre_token: A int. Previous tokens.
-* @li next_token: A int. Next tokens.
-* @li sparse_mode: sparse mask scense, int.
-* @li head_num: A int. The number of the heads.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "SBH"]. Default: "BSH".
-* @li pse_type: pse type, int.
-* @li head_size: D size, int.
-
-* @par Outputs:
-* @li dx: A matrix Tensor. The type support float16, bf16.
-* @li dw: A matrix Tensor. The type support float16, bf16.
-* @li dpse: A matrix Tensor. The type support float16, bf16.
-* @li dbias: A matrix Tensor. The type support float16, bf16.\n
-*/
-REG_OP(AscendAttentionGrad)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
-    .INPUT(w, TensorType({DT_FLOAT16, DT_BF16}))
-    .INPUT(qkv, TensorType({DT_FLOAT16, DT_BF16}))
-    .INPUT(dy, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(pse, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_BOOL, DT_UINT8}))
-    .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
-    .OPTIONAL_INPUT(drop_mask, TensorType({DT_UINT8}))
-    .OPTIONAL_INPUT(softmax_max, TensorType({DT_FLOAT32}))
-    .OPTIONAL_INPUT(softmax_sum, TensorType({DT_FLOAT32}))
-    .OPTIONAL_INPUT(attention_in, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16}))
-    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_BF16}))
-    .OUTPUT(dw, TensorType({DT_FLOAT16, DT_BF16}))
-    .OUTPUT(dpse, TensorType({DT_FLOAT16, DT_BF16}))
-    .OUTPUT(dbias, TensorType({DT_FLOAT16, DT_BF16}))
-    .ATTR(scale_qk, Float, 1.0)
-    .ATTR(scale_q, Float, 1.0)
-    .ATTR(scale_k, Float, 1.0)
-    .ATTR(keep_prob, Float, 1.0)
-    .ATTR(pre_token, Int, 2147483647)
-    .ATTR(next_token, Int, 2147483647)
-    .ATTR(sparse_mode, Int, 0)
-    .REQUIRED_ATTR(head_num, Int)
-    .REQUIRED_ATTR(input_layout, String)
-    .ATTR(pse_type, Int, 0)
-    .REQUIRED_ATTR(head_size, Int)
-    .OP_END_FACTORY_REG(AscendAttentionGrad)
-
-/**
 * @brief Function MultiHeadAttentionScore. \n
 
 * @par Inputs:
@@ -1796,6 +1729,21 @@ REG_OP(ForeachNonFiniteCheckAndUnscale)
     .INPUT(found_inf, TensorType({DT_FLOAT}))
     .INPUT(inv_scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(ForeachNonFiniteCheckAndUnscale)
+
+/**
+* @brief Check if there are non-finite numbers (+inf/-inf/nan) in the tensor_list. 
+* If there are, set found_flag to 1, otherwise, set found_flag to 0.
+* @par Inputs:
+ * @li tensor_list: A tensor list containing multiple tensors, dtype can be float16, bfloat16, float.
+ * The dtype of each tensor in the tensor_list must be consistent, 
+ * and the tensor_list can contain a maximum of 256 tensors.
+* @par Outputs:
+ * @li found_flag: A tensor with only one element, the shape must be (1,), must be float.
+*/
+REG_OP(NonFiniteCheck)
+    .DYNAMIC_INPUT(tensor_list, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(found_flag, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(NonFiniteCheck)
 
 /**
 * @brief Provide the universal template for foreach operators, which have one tensorlist input,
@@ -3700,7 +3648,7 @@ REG_OP(GeGluV2)
     .OP_END_FACTORY_REG(GeGluV2)
 
 /**
-* @brief Apply power operation for a scalar 
+* @brief Apply power operation for a scalar
 * in manner of element-wise
 * @par Inputs:
 * Two inputs:
@@ -3832,9 +3780,9 @@ REG_OP(MatMulV2CompressDequant)
 * @brief Multiplies matrix "x1" by matrix "x2", producing "x1 * x2". \n
 * @par Inputs:
 * Four inputs, including:
-* @li x1: A matrix Tensor. 2D. Must be one of the following types: float32,
+* @li x1: A matrix Tensor. 2D. Must be one of the following types: bfloat16,
 * float16. Has format [ND].
-* @li x2: A matrix Tensor. 2D. Must be one of the following types: float32,
+* @li x2: A matrix Tensor. 2D. Must be one of the following types: bfloat16,
 * float16. Has format [ND].
 * @li bias: A 1D Tensor. Must be one of the following types: float32,
 * float16. Has format [ND]. \n
@@ -3846,14 +3794,14 @@ REG_OP(MatMulV2CompressDequant)
 * [K, N] before multiplication. \n
 
 * @par Outputs:
-* y: The result matrix Tensor. 2D. Must be one of the following types: float32,
+* y: The result matrix Tensor. 2D. Must be one of the following types: bfloat16,
 * float16. Has format [ND, NHWC]. \n
 */
 REG_OP(MatMulV3)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)

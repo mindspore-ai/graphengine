@@ -368,6 +368,7 @@ typedef struct tagMdlLoad {
     void *pcBaseAddr;
     void *paramBaseAddr;
     void *weightBaseAddr;
+    uint8_t weightPrefetch;
 } rtMdlLoad_t;
 
 typedef struct tagMdlExecute {

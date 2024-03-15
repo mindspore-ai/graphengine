@@ -116,6 +116,7 @@ enum MsprofAicpuAdditionalType {
 struct AicpuStartPara {
     uint32_t devId;
     uint32_t hostPid;
+    uint32_t channelId;
 };
 
 struct MsprofApi { // for MsprofReportApi

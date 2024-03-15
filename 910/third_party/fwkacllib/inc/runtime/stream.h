@@ -105,16 +105,6 @@ RTS_API rtError_t rtStreamCreateWithConfig(rtStream_t *stm, rtStreamConfigHandle
 /**
  * @ingroup dvrt_stream
  * @brief create stream instance
- * @param [in|out] stm   created stream
- * @param [in] meid   stream op meid
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-RTS_API rtError_t rtStreamSetLastMeid(rtStream_t stm, const uint64_t meid);
-
-/**
- * @ingroup dvrt_stream
- * @brief create stream instance
  * @param [in] stm   stream hadle
  * @param [out] sqId   stream op sqId
  * @return RT_ERROR_NONE for ok

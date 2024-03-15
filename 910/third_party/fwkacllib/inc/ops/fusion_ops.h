@@ -86,11 +86,11 @@ REG_OP(FlashAttentionScore)
 * @brief Function IncreFlashAttention.
 
 * @par Inputs:
-* @li query: A matrix Tensor. The type support float16, bf16, float32, int8.
-* @li key: A matrix Tensor. The type support float16, bf16, float32, int8.
-* @li value: A matrix Tensor. The type support float16, bf16, float32, int8.
-* @li pse_shift: A matrix Tensor. The type support float16, float32.
-* @li atten_mask: A matrix Tensor. The type support float16, bool, float32.
+* @li query: A matrix Tensor. The type support float16, bf16, int8.
+* @li key: A matrix Tensor. The type support float16, bf16, int8.
+* @li value: A matrix Tensor. The type support float16, bf16, int8.
+* @li pse_shift: A matrix Tensor. The type support float16, bf16.
+* @li atten_mask: A matrix Tensor. The type support float16, bool.
 * @li actual_seq_lengths: A Tensor. The type support INT64.
 * @li dequant_scale1: A Tensor. The type support uint64, float32.
 * @li quant_scale1: A Tensor. The type support float32.
@@ -111,7 +111,7 @@ REG_OP(FlashAttentionScore)
 * @li inner_precise: A int. mode of precision in float16.
 
 * @par Outputs:
-* attention_out: A matrix Tensor. The type support float16, bf16, float32, int8. \n
+* attention_out: A matrix Tensor. The type support float16, bf16, int8. \n
 */
 REG_OP(IncreFlashAttention)
     .INPUT(query, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))

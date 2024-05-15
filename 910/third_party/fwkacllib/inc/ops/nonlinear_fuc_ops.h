@@ -108,9 +108,9 @@ REG_OP(Swish)
 *Three inputs, including:
 * @li grad: A Tensor. Must be one of the following types: float16, bfloat16, float32
 * @li x: A Tensor of the same type as "grad".
-* @li y: A Tensor of the same type as "grad" . \n
+* @li y: A Tensor of the same type as "grad", and y = x / (1 + e ^ (-scale * x)) \n
 * @par Attributes:
-* scale: A optional scalar. The data type is float . \n
+* scale: A optional scalar. The data type is float, default value = 1.0. \n
 *@par Outputs:
 *grad_x: A Tensor. Has the same type as "grad".
 *@par Third-party framework compatibility
@@ -947,9 +947,9 @@ REG_OP(MishGrad)
  * Compatible with the Pytorch operator HardtanhGrad.
  */
 REG_OP(HardtanhGrad)
-    .INPUT(result, TensorType({ DT_BFLOAT16, DT_FLOAT16, DT_FLOAT })) /* "First operand." */
-    .INPUT(grad, TensorType({ DT_BFLOAT16, DT_FLOAT16, DT_FLOAT }))   /* "Second operand." */
-    .OUTPUT(y, TensorType({ DT_BFLOAT16, DT_FLOAT16, DT_FLOAT }))     /* "Result, has same element type as two inputs" */
+    .INPUT(result, TensorType({ DT_BF16, DT_FLOAT16, DT_FLOAT })) /* "First operand." */
+    .INPUT(grad, TensorType({ DT_B16, DT_FLOAT16, DT_FLOAT }))   /* "Second operand." */
+    .OUTPUT(y, TensorType({ DT_BF16, DT_FLOAT16, DT_FLOAT }))     /* "Result, has same element type as two inputs" */
     .ATTR(min_val, Float, -1.0)
     .ATTR(max_val, Float, 1.0)
     .OP_END_FACTORY_REG(HardtanhGrad)
@@ -1259,15 +1259,18 @@ REG_OP(Shrink)
 * @li x: A Tensor.
 * Must be one of the following types on Ascend310: float16, int8, int32, uint8.
 * Must be one of the following types on Ascend310P: float16, float32, int8, int32, uint8. \n
-* Must be one of the following types on Ascend910 or Ascend910B: float16, float32, int8, int32, uint8, int64. \n
+* Must be one of the following types on Ascend910: float16, float32, int8, int32, uint8, int64. \n
+* Must be one of the following types on Ascend910B: float16, float32, int8, int32, uint8, int64, bfloat16. \n
 * @li threshold: A Tensor which should have the shape (1,), the value to threshold at.
 * Must be one of the following types on Ascend310: float16, int8, int32, uint8.
 * Must be one of the following types on Ascend310P: float16, float32, int8, int32, uint8. \n
-* Must be one of the following types on Ascend910 or Ascend910B: float16, float32, int8, int32, uint8, int64. \n
+* Must be one of the following types on Ascend910: float16, float32, int8, int32, uint8, int64. \n
+* Must be one of the following types on Ascend910B: float16, float32, int8, int32, uint8, int64, bfloat16. \n
 * @li value: A Tensor which should have the shape (1,), the value to replace with. default value is 0.
 * Must be one of the following types on Ascend310: float16, int8, int32, uint8.
 * Must be one of the following types on Ascend310P: float16, float32, int8, int32, uint8. \n
-* Must be one of the following types on Ascend910 or Ascend910B: float16, float32, int8, int32, uint8, int64. \n
+* Must be one of the following types on Ascend910: float16, float32, int8, int32, uint8, int64. \n
+* Must be one of the following types on Ascend910B: float16, float32, int8, int32, uint8, int64, bfloat16. \n
 
 * @par Outputs:
 * y: A Tensor which has the same shape and type as the input x. \n
@@ -1276,10 +1279,10 @@ REG_OP(Shrink)
 * Compatible with the Pytorch operator Threshold.
 */
 REG_OP(ThresholdV2)
-     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
-     .INPUT(threshold, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
-     .OPTIONAL_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
-     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64}))
+     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64, DT_BF16}))
+     .INPUT(threshold, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64, DT_BF16}))
+     .OPTIONAL_INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64, DT_BF16}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_INT32, DT_UINT8, DT_INT64, DT_BF16}))
      .OP_END_FACTORY_REG(ThresholdV2)
 
 /**

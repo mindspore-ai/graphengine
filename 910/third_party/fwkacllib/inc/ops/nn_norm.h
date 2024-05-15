@@ -51,6 +51,7 @@ with format NCHW for 4D.
 
 * @attention Constraints:
 * @li For Ascend 310, only support NCHW which can be trans to 5HD. \n
+* @li the value range of the inputs should be constrained between -10000 and 10000. \n
 
 * @par Third-party framework compatibility
 * @li Compatible with the PyTorch operator GroupNorm.
@@ -115,23 +116,24 @@ REG_OP(GroupNormV2)
  * @brief backward operator for group normalization. \n
  * @par Inputs:
  * Five input, including:
- * @li dy: A Tensor. Group grad. Must be one of the following types:
- *     float32, float16, bfloat16
- * @li mean: A Tensor. Mean of each group. Support float32, float16, bfloat16
- * @li rstd: A Tensor. Reciprocal standard deviation of each group. Support float32, float16, bfloat16
- * @li x: A Tensor. Specifies the offset. Support float32, float16, bfloat16
- * @li gamma: A Tensor. Specifies the scaling factor. Support float32, float16, bfloat16
+ * @li dy: A Tensor. Group grad. Datatype support float32, float16, bfloat16. Format support ND. 
+ * @li mean: A Tensor. Mean of each group. Datatype support float32, float16, bfloat16. Format support ND.
+ * @li rstd: A Tensor. Reciprocal standard deviation of each group. Datatype support float32, float16, bfloat16. Format support ND.
+ * @li x: A Tensor. Specifies the offset. Datatype support float32, float16, bfloat16. Format support ND.
+ * @li gamma: A Tensor. Specifies the scaling factor. Datatype support float32, float16, bfloat16. Format support ND.
 
  * @par Attributes:
  * @li num_groups: Int.Number specifying the number of group.
- * @li data_format: An optional String, Defaults to NCHW.
- * @li gamma_is_defined: An optional bool, controls whether to return dgamma and dbeta. Defaults to false.
+ * @li data_format: An optional String, Defaults to NCHW. 
+ * @li dx_is_require: An optional bool, controls whether to return x.grad. Defaults to true. 
+ * @li dgamma_is_require: An optional bool, controls whether to return weight.grad. Defaults to true.
+ * @li dbeta_is_require: An optional bool, controls whether to return beta.grad. Defaults to true.
 
  * @par Outputs:
  * Three output, including:
- * @li dx: A Tensor. Datatype and format is same as input_data. Data sorted.
- * @li dgamma: A Tensor. scale factor grad.
- * @li dbeta: A Tensor. offset factor grad.
+ * @li dx: A Tensor. x factor grad. Datatype only support float32. Format support ND.
+ * @li dgamma: A Tensor. scale factor grad. Datatype only support float32. Format support ND.
+ * @li dbeta: A Tensor. offset factor grad. Datatype only support float32. Format support ND.
  * @par Third-party framework compatibility
  * @li Compatible with the PyTorch operator GroupNorm.
  */
@@ -333,7 +335,42 @@ REG_OP(InplaceAddRmsNorm)
     .ATTR(epsilon, Float, 1e-6)
     .OP_END_FACTORY_REG(InplaceAddRmsNorm)
 
-/*
+/**
+* @brief AddRmsNormQuant operator interface implementation
+* @par Inputs:
+* @li x1: A tensor of type float16/bfloat16/float.
+* @li x2: A tensor of type float16/bfloat16/float.
+* @li gamma: A tensor of type float16/bfloat16/float.
+* @li scales1: A tensor of type bfloat16/float.
+* @li scales2: A tensor of type bfloat16/float.
+* @li zero_points1: A optional tensor of type bfloat16/int32.
+* @li zero_points2: A optional tensor of type bfloat16/int32.
+
+* @par Attributes:
+* @li axis: A optional int.
+* @li epsilon: A optional float.
+
+* @par Outputs:
+* @li y1: A tensor of type int8, describing the result. \n
+* @li y2: A tensor of type int8, describing the result. \n
+* @li x: A tensor of type float16/bfloat16/float, describing the result. \n
+*/
+REG_OP(AddRmsNormQuant)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(scales1, TensorType({DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(scales2, TensorType({DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(zero_points1, TensorType({DT_INT32, DT_BF16}))
+    .OPTIONAL_INPUT(zero_points2, TensorType({DT_INT32, DT_BF16}))
+    .OUTPUT(y1, TensorType({DT_INT8}))
+    .OUTPUT(y2, TensorType({DT_INT8}))
+    .OUTPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .ATTR(axis, Int, -1)
+    .ATTR(epsilon, Float, 1e-6)
+    .OP_END_FACTORY_REG(AddRmsNormQuant)
+
+/**
 * @brief Fused Operator of Add and LayerNorm . \n
 
 * @par Inputs:
@@ -367,5 +404,45 @@ REG_OP(InplaceAddLayerNorm)
     .ATTR(epsilon, Float, 1e-5)
     .ATTR(additional_output, Bool, false)
     .OP_END_FACTORY_REG(InplaceAddLayerNorm)
+
+/*
+* @brief Fused Operator of Add and LayerNorm . \n
+
+* @par Inputs:
+* @li x1: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li x2: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li gamma: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li beta: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li bias: A tensor of type float16/bfloat16/float, describing the feature_map.
+
+* @par Attributes:
+* @li epsilon: A optional float.
+* @li additional_output: A optional bool.
+
+* @par Outputs:
+* @li y: A tensor of type float16/bfloat16/float, describing the result. \n
+* @li x: A tensor of type float16/bfloat16/float, describing the result. \n
+* @li scale: A tensor of type float32, describing the result. \n
+
+*/
+REG_OP(AddLayerNormQuant)
+    .INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(beta, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(scales1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(scales2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(zero_points1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(zero_points2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(y1, ge::TensorType({DT_INT8, DT_INT8, DT_INT8}))
+    .OUTPUT(y2, ge::TensorType({DT_INT8, DT_INT8, DT_INT8}))
+    .OUTPUT(x, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(out_scales1, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(out_scales2, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .ATTR(quant_mode, String, "dynamic")
+    .ATTR(epsilon, Float, 1e-5)
+    .ATTR(additional_output, Bool, false)
+    .OP_END_FACTORY_REG(AddLayerNormQuant)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_H_

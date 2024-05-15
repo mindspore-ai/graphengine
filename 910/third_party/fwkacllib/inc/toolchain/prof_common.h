@@ -12,12 +12,107 @@
 #define MSPROFILER_PROF_COMMON_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 #define MSPROF_DATA_HEAD_MAGIC_NUM  0x5A5AU
+#define MSPROF_REPORT_DATA_MAGIC_NUM 0x5A5AU
+#define MSPROF_TASK_TIME_L0 0x00000800ULL  // mean PROF_TASK_TIME
+#define MSPROF_EVENT_FLAG 0xFFFFFFFFFFFFFFFFULL
+typedef void* VOID_PTR;
+typedef int32_t (*MsprofReportHandle)(uint32_t moduleId, uint32_t type, VOID_PTR data, uint32_t len);
+typedef int32_t (*MsprofCtrlHandle)(uint32_t type, VOID_PTR data, uint32_t len);
+typedef int32_t (*MsprofSetDeviceHandle)(VOID_PTR data, uint32_t len);
+typedef int32_t (*MsprofCtrlCallback)(uint32_t type, void *data, uint32_t len);
+typedef int32_t (*MsprofReporterCallback)(uint32_t moduleId, uint32_t type, void *data, uint32_t len);
+
+/**
+ * @name  ProfCommandHandle
+ * @brief callback to start/stop profiling
+ * @param type      [IN] enum call back type
+ * @param data      [IN] callback data
+ * @param len       [IN] callback data size
+ * @return enum MsprofErrorCode
+ */
+typedef int32_t (*ProfCommandHandle)(uint32_t type, VOID_PTR data, uint32_t len);
+
+/* Msprof report level */
+#define MSPROF_REPORT_PYTORCH_LEVEL     30000U
+#define MSPROF_REPORT_PTA_LEVEL         25000U
+#define MSPROF_REPORT_ACL_LEVEL         20000U
+#define MSPROF_REPORT_MODEL_LEVEL       15000U
+#define MSPROF_REPORT_NODE_LEVEL        10000U
+#define MSPROF_REPORT_AICPU_LEVEL       6000U
+#define MSPROF_REPORT_HCCL_NODE_LEVEL   5500U
+#define MSPROF_REPORT_RUNTIME_LEVEL     5000U
+
+/* Msprof report type of acl(20000) level(acl), offset: 0x000000 */
+#define MSPROF_REPORT_ACL_OP_BASE_TYPE            0x010000U
+#define MSPROF_REPORT_ACL_MODEL_BASE_TYPE         0x020000U
+#define MSPROF_REPORT_ACL_RUNTIME_BASE_TYPE       0x030000U
+#define MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        0x040000U
+
+
+/* Msprof report type of acl(20000) level(host api), offset: 0x050000 */
+#define MSPROF_REPORT_ACL_NN_BASE_TYPE            0x050000U
+#define MSPROF_REPORT_ACL_ASCENDC_TYPE            0x060000U
+#define MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     0x070000U
+#define MSPROF_REPORT_ACL_DVPP_BASE_TYPE          0x090000U
+#define MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         0x0A0000U
+
+/* Msprof report type of model(15000) level, offset: 0x000000 */
+#define MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    0U         /* type info: graph_id_map */
+#define MSPROF_REPORT_MODEL_EXECUTE_TYPE         1U         /* type info: execute */
+#define MSPROF_REPORT_MODEL_LOAD_TYPE            2U         /* type info: load */
+#define MSPROF_REPORT_MODEL_INPUT_COPY_TYPE      3U         /* type info: IntputCopy */
+#define MSPROF_REPORT_MODEL_OUTPUT_COPY_TYPE     4U         /* type info: OutputCopy */
+#define MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    7U         /* type info: logic_stream_info */
+#define MSPROF_REPORT_MODEL_EXEOM_TYPE           8U         /* type info: exeom */
+#define MSPROF_REPORT_MODEL_UDF_BASE_TYPE        0x010000U  /* type info: udf_info */
+#define MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      0x020000U  /* type info: aicpu */
+
+/* Msprof report type of node(10000) level, offset: 0x000000 */
+#define MSPROF_REPORT_NODE_BASIC_INFO_TYPE       0U  /* type info: node_basic_info */
+#define MSPROF_REPORT_NODE_TENSOR_INFO_TYPE      1U  /* type info: tensor_info */
+#define MSPROF_REPORT_NODE_FUSION_OP_INFO_TYPE   2U  /* type info: funsion_op_info */
+#define MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  4U  /* type info: context_id_info */
+#define MSPROF_REPORT_NODE_LAUNCH_TYPE           5U  /* type info: launch */
+#define MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      6U  /* type info: task_memory_info */
+#define MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     8U  /* type info: op exec */
+#define MSPROF_REPORT_NODE_ATTR_INFO_TYPE        9U  /* type info: node_attr_info */
+#define MSPROF_REPORT_NODE_HCCL_OP_INFO_TYPE    10U  /* type info: hccl_op_info */
+#define MSPROF_REPORT_NODE_STATIC_OP_MEM_TYPE   11U  /* type info: static_op_mem */
+#define MSPROF_REPORT_NODE_MC2_COMMINFO_TYPE    12U  /* type info: mc2_comm_info */
+
+/* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
+#define MSPROF_REPORT_NODE_GE_API_BASE_TYPE      0x010000U /* type info: ge api */
+#define MSPROF_REPORT_NODE_HCCL_BASE_TYPE        0x020000U /* type info: hccl api */
+#define MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    0x030000U /* type info: dvpp api */
+/* Msprof report type of aicpu(6000), offset: 0x000000 */
+#define MSPROF_REPORT_AICPU_NODE_TYPE            0U /* type info: DATA_PREPROCESS.AICPU */
+#define MSPROF_REPORT_AICPU_DP_TYPE              1U /* type info: DATA_PREPROCESS.DP */
+#define MSPROF_REPORT_AICPU_MODEL_TYPE           2U /* type info: DATA_PREPROCESS.AICPU_MODEL */
+#define MSPROF_REPORT_AICPU_MI_TYPE              3U /* type info: DATA_PREPROCESS.AICPUMI */
+
+/* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
+#define MSPROF_REPORT_HCCL_NODE_BASE_TYPE        0x010000U
+#define MSPROF_REPORT_HCCL_MASTER_TYPE           0x010001U
+#define MSPROF_REPORT_HCCL_SLAVE_TYPE            0x010002U
+
+enum ProfileCallbackType {
+    PROFILE_CTRL_CALLBACK = 0,
+    PROFILE_DEVICE_STATE_CALLBACK,
+    PROFILE_REPORT_API_CALLBACK,
+    PROFILE_REPORT_EVENT_CALLBACK,
+    PROFILE_REPORT_COMPACT_CALLBACK,
+    PROFILE_REPORT_ADDITIONAL_CALLBACK,
+    PROFILE_REPORT_REG_TYPE_INFO_CALLBACK,
+    PROFILE_REPORT_GET_HASH_ID_CALLBACK,
+    PROFILE_HOST_FREQ_IS_ENABLE_CALLBACK
+};
 
 enum MsprofDataTag {
     MSPROF_ACL_DATA_TAG = 0,            // acl data tag, range: 0~19
@@ -443,6 +538,40 @@ struct MsprofAicpuMiAdditionalData {
     uint64_t runEndTime;
 };
 
+struct AicpuKfcProfCommTurn {
+    uint64_t waitNotifyStartTime;   // 开始等待通信参数
+    uint64_t kfcAlgExeStartTime;    // 开始通信算法执行
+    uint64_t sendTaskStartTime;     // 开始下发task
+    uint64_t waitActiveStartTime;   // 开始等待激活
+    uint64_t acitveStartTime;       // 开始激活处理
+    uint64_t waitExeEndStartTime;   // 开始等待认为执行结束
+    uint64_t rtsqExeEndTime;        // 任务执行结束时间
+    uint64_t dataLen;               // 本轮通信数据长度
+    uint8_t currentTurn;
+    uint8_t reserve[7];
+};
+
+struct AicpuKfcProfComputeTurn {
+    uint64_t waitComputeStartTime;  // 开始等待计算
+    uint64_t computeStartTime;      // 开始计算
+    uint64_t computeExeEndTime;     // 计算执行结束
+    uint64_t dataLen;               // 本轮计算数据长度
+    uint8_t currentTurn;
+    uint8_t reserve[7];
+};
+
+struct MsprofAicpuKfcProfData {
+    uint32_t deviceId;
+    uint16_t streamId;
+    uint16_t taskId;
+    uint8_t version;
+    uint8_t commTurn;       // 总通信轮次
+    uint8_t computeTurn;    // 总计算轮次
+    uint8_t reserve[5];
+    struct AicpuKfcProfCommTurn commTurnProf;
+    struct AicpuKfcProfComputeTurn computeTurnProf;
+};
+
 /**
  * @brief struct of data reported by HCCL
  */
@@ -533,7 +662,9 @@ struct MsprofHcclInfo {
     uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
     uint32_t transportType; // transport type {0: SDMA, 1: RDMA, 2:LOCAL}
     uint32_t rdmaType; // RDMA type {0: RDMASendNotify, 1:RDMASendPayload}
-    uint32_t reserve2;
+    uint32_t taskId;
+    uint16_t streamId;
+    uint16_t reserve[3];
 #ifdef __cplusplus
     MsprofHcclInfo() : role(MSPROF_HCCL_INVALID_UINT), opType(MSPROF_HCCL_INVALID_UINT),
         dataType(MSPROF_HCCL_INVALID_UINT), linkType(MSPROF_HCCL_INVALID_UINT),
@@ -541,6 +672,16 @@ struct MsprofHcclInfo {
     {
     }
 #endif
+};
+
+struct profilingDeviceCommResInfo {
+    uint64_t groupName; // 通信域
+    uint32_t rankSize; // 通信域内rank总数
+    uint32_t rankId; // 当前device rankId，通信域内编号
+    uint32_t usrRankId; // 当前device rankId，全局编号
+    int32_t aicpuKfcStreamId; // MC2中launch aicpu kfc算子的stream
+    uint32_t commStreamSize; // 当前device侧使用的通信stream数量
+    int32_t commStreamIds[8]; // 具体streamId
 };
 
 #define MSPROF_MULTI_THREAD_MAX_NUM 25
@@ -560,7 +701,13 @@ struct MsprofNodeBasicInfo {
     uint32_t opFlag;
 };
 
+enum AttrType {
+    OP_ATTR = 0,
+};
+
 struct MsprofAttrInfo {
+    uint64_t opName;
+    uint32_t attrType;
     uint64_t hashId;
 };
 
@@ -575,6 +722,15 @@ struct MsprofTensorInfo {
     uint64_t opName;
     uint32_t tensorNum;
     struct MsrofTensorData tensorData[MSPROF_GE_TENSOR_DATA_NUM];
+};
+
+struct MsprofHCCLOPInfo {  // for MsprofReportCompactInfo buffer data
+    uint8_t relay : 1;     // 借轨通信
+    uint8_t retry : 1;     // 重传标识
+    uint8_t dataType;      // 跟HcclDataType类型保存一致
+    uint16_t algType;      // algtype 每4位表示一个算法阶段
+    uint64_t count;        // 发送数据个数
+    uint64_t groupName;    // group hash id
 };
 
 struct ProfFusionOpInfo {
@@ -603,32 +759,17 @@ struct MsprofGraphIdInfo {
 struct MsprofMemoryInfo {
     uint64_t addr;
     int64_t size;
-    uint64_t nodeId;
+    uint64_t nodeId; // op name hash id
     uint64_t totalAllocateMemory;
     uint64_t totalReserveMemory;
     uint32_t deviceId;
     uint32_t deviceType;
 };
 
-#define MSPROF_PHYSIC_STREAM_ID_MAX_NUM 56
-struct MsprofLogicStreamInfo {
-    uint32_t logicStreamId;
-    uint32_t physicStreamNum;
-    uint32_t physicStreamId[MSPROF_PHYSIC_STREAM_ID_MAX_NUM];
-};
-
-struct MsprofExeomLoadInfo {
-    uint32_t modelId;
-    uint32_t reserve;
-    uint64_t modelName; /* name hash */
-};
-#pragma pack()
-
 /**
  * @name  MsprofStampInfo
  * @brief struct of data reported by msproftx
  */
-#define CALLSTACK_MAX_LENGTH 75
 struct MsprofStampInfo {
     uint16_t magicNumber;
     uint16_t dataTag;
@@ -649,8 +790,237 @@ struct MsprofStampInfo {
     uint64_t endTime;
     int32_t messageType;
     char message[128];
-    char callStack[CALLSTACK_MAX_LENGTH + 1];
 };
+
+struct MsprofStaticOpMem {
+    int64_t size;        // op memory size
+    uint64_t opName;     // op name hash id
+    uint64_t lifeStart;  // serial number of op memory used
+    uint64_t lifeEnd;    // serial number of op memory used
+    uint64_t totalAllocateMemory; // static graph total allocate memory
+    uint64_t dynOpName;  // 0: invalid， other： dynamic op name of root
+    uint32_t graphId;    // multipe model
+};
+
+#define MSPROF_PHYSIC_STREAM_ID_MAX_NUM 56
+struct MsprofLogicStreamInfo {
+    uint32_t logicStreamId;
+    uint32_t physicStreamNum;
+    uint32_t physicStreamId[MSPROF_PHYSIC_STREAM_ID_MAX_NUM];
+};
+
+struct MsprofExeomLoadInfo {
+    uint32_t modelId;
+    uint32_t reserve;
+    uint64_t modelName; /* name hash */
+};
+#pragma pack()
+
+struct MsprofApi { // for MsprofReportApi
+#ifdef __cplusplus
+    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
+    uint16_t level;
+    uint32_t type;
+    uint32_t threadId;
+    uint32_t reserve;
+    uint64_t beginTime;
+    uint64_t endTime;
+    uint64_t itemId;
+};
+
+struct MsprofEvent {  // for MsprofReportEvent
+#ifdef __cplusplus
+    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
+    uint16_t level;
+    uint32_t type;
+    uint32_t threadId;
+    uint32_t requestId; // 0xFFFF means single event
+    uint64_t timeStamp;
+#ifdef __cplusplus
+    uint64_t eventFlag = MSPROF_EVENT_FLAG;
+#else
+    uint64_t eventFlag;
+#endif
+    uint64_t itemId;
+};
+
+struct MsprofRuntimeTrack {  // for MsprofReportCompactInfo buffer data
+    uint16_t deviceId;
+    uint16_t streamId;
+    uint32_t taskId;
+    uint64_t taskType;       // task message hash id
+};
+
+#define MSPROF_COMPACT_INFO_DATA_LENGTH (40)
+struct MsprofCompactInfo {  // for MsprofReportCompactInfo buffer data
+#ifdef __cplusplus
+    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
+    uint16_t level;
+    uint32_t type;
+    uint32_t threadId;
+    uint32_t dataLen;
+    uint64_t timeStamp;
+    union {
+        uint8_t info[MSPROF_COMPACT_INFO_DATA_LENGTH];
+        struct MsprofRuntimeTrack runtimeTrack;
+        struct MsprofNodeBasicInfo nodeBasicInfo;
+        struct MsprofHCCLOPInfo hcclopInfo;
+    } data;
+};
+
+#define MSPROF_ADDTIONAL_INFO_DATA_LENGTH (232)
+struct MsprofAdditionalInfo {  // for MsprofReportAdditionalInfo buffer data
+#ifdef __cplusplus
+    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
+#else
+    uint16_t magicNumber;
+#endif
+    uint16_t level;
+    uint32_t type;
+    uint32_t threadId;
+    uint32_t dataLen;
+    uint64_t timeStamp;
+    uint8_t  data[MSPROF_ADDTIONAL_INFO_DATA_LENGTH];
+};
+
+/**
+ * @name  MsprofErrorCode
+ * @brief error code
+ */
+enum MsprofErrorCode {
+    MSPROF_ERROR_NONE = 0,
+    MSPROF_ERROR_MEM_NOT_ENOUGH,
+    MSPROF_ERROR_GET_ENV,
+    MSPROF_ERROR_CONFIG_INVALID,
+    MSPROF_ERROR_ACL_JSON_OFF,
+    MSPROF_ERROR,
+    MSPROF_ERROR_UNINITIALIZE,
+};
+
+#define MSPROF_ENGINE_MAX_TAG_LEN (63)
+
+/**
+ * @name  ReporterData
+ * @brief struct of data to report
+ */
+struct ReporterData {
+    char tag[MSPROF_ENGINE_MAX_TAG_LEN + 1];  // the sub-type of the module, data with different tag will be writen
+    int deviceId;                             // the index of device
+    size_t dataLen;                           // the length of send data
+    unsigned char *data;                      // the data content
+};
+
+/**
+ * @name  MsprofHashData
+ * @brief struct of data to hash
+ */
+struct MsprofHashData {
+    int deviceId;                             // the index of device
+    size_t dataLen;                           // the length of data
+    unsigned char *data;                      // the data content
+    uint64_t hashId;                          // the id of hashed data
+};
+
+/**
+ * @name  MsprofReporterModuleId
+ * @brief module id of data to report
+ */
+enum MsprofReporterModuleId {
+    MSPROF_MODULE_DATA_PREPROCESS = 0,    // DATA_PREPROCESS
+    MSPROF_MODULE_HCCL,                   // HCCL
+    MSPROF_MODULE_ACL,                    // AclModule
+    MSPROF_MODULE_FRAMEWORK,              // Framework
+    MSPROF_MODULE_RUNTIME,                // runtime
+    MSPROF_MODULE_MSPROF                  // msprofTx
+};
+
+/**
+ * @name  MsprofReporterCallbackType
+ * @brief reporter callback request type
+ */
+enum MsprofReporterCallbackType {
+    MSPROF_REPORTER_REPORT = 0,           // report data
+    MSPROF_REPORTER_INIT,                 // init reporter
+    MSPROF_REPORTER_UNINIT,               // uninit reporter
+    MSPROF_REPORTER_DATA_MAX_LEN,         // data max length for calling report callback
+    MSPROF_REPORTER_HASH                  // hash data to id
+};
+
+#define MSPROF_OPTIONS_DEF_LEN_MAX (2048U)
+
+/**
+ * @name  MsprofGeOptions
+ * @brief struct of MSPROF_CTRL_INIT_GE_OPTIONS
+ */
+struct MsprofGeOptions {
+    char jobId[MSPROF_OPTIONS_DEF_LEN_MAX];
+    char options[MSPROF_OPTIONS_DEF_LEN_MAX];
+};
+
+/**
+ * @name  MsprofCtrlCallbackType
+ * @brief ctrl callback request type
+ */
+enum MsprofCtrlCallbackType {
+    MSPROF_CTRL_INIT_ACL_ENV = 0,           // start profiling with acl env
+    MSPROF_CTRL_INIT_ACL_JSON,              // start pro with acl.json
+    MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
+    MSPROF_CTRL_FINALIZE,                   // stop profiling
+    MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
+    MSPROF_CTRL_INIT_PURE_CPU,              // start profiling in pure cpu
+    MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
+};
+
+enum MsprofCommandHandleType {
+    PROF_COMMANDHANDLE_TYPE_INIT = 0,
+    PROF_COMMANDHANDLE_TYPE_START,
+    PROF_COMMANDHANDLE_TYPE_STOP,
+    PROF_COMMANDHANDLE_TYPE_FINALIZE,
+    PROF_COMMANDHANDLE_TYPE_MODEL_SUBSCRIBE,
+    PROF_COMMANDHANDLE_TYPE_MODEL_UNSUBSCRIBE,
+    PROF_COMMANDHANDLE_TYPE_MAX
+};
+
+enum MsprofConfigType {
+    MSPROF_CONFIG_HELPER_HOST = 0
+};
+
+/**
+ * @brief   profiling command type
+ */
+enum ProfCtrlType {
+    PROF_CTRL_INVALID = 0,
+    PROF_CTRL_SWITCH,
+    PROF_CTRL_REPORTER,
+    PROF_CTRL_STEPINFO,
+    PROF_CTRL_BUTT
+};
+
+/**
+ * @brief   Prof Chip ID
+ */
+enum Prof_Chip_ID {
+    PROF_CHIP_ID0 = 0
+};
+
+/**
+ * @brief  the struct of profiling set setp info
+ */
+typedef struct ProfStepInfoCmd {
+    uint64_t index_id;
+    uint16_t tag_id;
+    void *stream;
+} ProfStepInfoCmd_t;
+
 #ifdef __cplusplus
 }
 #endif

@@ -31,7 +31,8 @@ typedef enum tagCtxMode {
 
 typedef enum tagSysParamOpt {
     SYS_OPT_DETERMINISTIC = 0,   // value: 0:non-DETERMINISTIC, 1:DETERMINISTIC
-    SYS_OPT_RESERVED = 1,
+    SYS_OPT_ENABLE_DEBUG_KERNEL = 1,   // value: 0:disable, 1:enable
+    SYS_OPT_RESERVED = 2,
 } rtSysParamOpt;
 
 typedef struct tagRtGroupInfo {

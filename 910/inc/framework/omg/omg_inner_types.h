@@ -105,6 +105,8 @@ struct OmgContext {
   bool is_subgraph_multi_batch = false;
   // dynamic dims
   std::vector<std::vector<int64_t>> batch_shapes;
+  // name of the pass that needs to take effect
+  std::string enable_scope_fusion_passes;
 };
 }  // namespace ge
 

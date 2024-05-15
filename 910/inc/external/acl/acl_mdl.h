@@ -83,7 +83,17 @@ typedef enum {
     ACL_MDL_OUTPUTQ_NUM_SIZET,
     ACL_MDL_OUTPUTQ_ADDR_PTR, /**< pointer to outputQ with shallow copy */
     ACL_MDL_WORKSPACE_MEM_OPTIMIZE,
-    ACL_MDL_WEIGHT_PATH_PTR /* < pointer to weight path with deep copy */
+    ACL_MDL_WEIGHT_PATH_PTR, /**< pointer to weight path with deep copy */
+    ACL_MDL_MODEL_DESC_PTR, /**< pointer to model desc of model with shallow copy */
+    ACL_MDL_MODEL_DESC_SIZET,
+    ACL_MDL_KERNEL_PTR, /**< pointer to kernel bin of model with shallow copy */
+    ACL_MDL_KERNEL_SIZET,
+    ACL_MDL_KERNEL_ARGS_PTR, /**< pointer to kernel args of model with shallow copy */
+    ACL_MDL_KERNEL_ARGS_SIZET,
+    ACL_MDL_STATIC_TASK_PTR, /**< pointer to static task desc of model with shallow copy */
+    ACL_MDL_STATIC_TASK_SIZET,
+    ACL_MDL_DYNAMIC_TASK_PTR, /**< pointer to dynamic task desc of model with shallow copy */
+    ACL_MDL_DYNAMIC_TASK_SIZET
 } aclmdlConfigAttr;
 
 typedef enum {
@@ -182,6 +192,17 @@ typedef struct aclAippInfo {
     aclAippDims outDims[ACL_MAX_SHAPE_COUNT];
     aclAippExtendInfo *aippExtend; /**< reserved parameters, current version needs to be null */
 } aclAippInfo;
+
+typedef struct aclmdlExeOMDesc {
+  size_t workSize;
+  size_t weightSize;
+  size_t modelDescSize;
+  size_t kernelSize;
+  size_t kernelArgsSize;
+  size_t staticTaskSize;
+  size_t dynamicTaskSize;
+  size_t reserved[9];
+} aclmdlExeOMDesc;
 
 /**
  * @ingroup AscendCL
@@ -600,6 +621,19 @@ ACL_FUNC_VISIBILITY aclError aclmdlQuerySize(const char *fileName, size_t *workS
 
 /**
  * @ingroup AscendCL
+ * @brief Get the size of each partition and working memory size
+ * required for model execution according to the model file
+ *
+ * @param  fileName [IN]          Model path to get memory information
+ * @param  aclmdlExeOMDesc [OUT]  The size of each partition and working memory size
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlQueryExeOMDesc(const char *fileName, aclmdlExeOMDesc *mdlPartitionSize);
+
+/**
+ * @ingroup AscendCL
  * @brief Obtain the weights required for
  * model execution according to the model data in memory
  *
@@ -917,6 +951,18 @@ ACL_FUNC_VISIBILITY aclmdlAIPP *aclmdlCreateAIPP(uint64_t batchSize);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclmdlDestroyAIPP(const aclmdlAIPP *aippParmsSet);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get dynamic aipp data need size according to batchSize
+ *
+ * @param batchSize [IN]    batchsizes of model
+ * @param size [OUT]    Pointer of aipp data need size according to batchSize
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlGetAippDataSize(uint64_t batchSize, size_t *size);
 
 /**
  * @ingroup AscendCL

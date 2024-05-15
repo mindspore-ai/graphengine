@@ -719,6 +719,40 @@ REG_OP(LayerNormV4)
     .OP_END_FACTORY_REG(LayerNormV4)
 
 /**
+*@brief Layernorm operator interface implementation with given sum and square sum of input tensor
+*  calculating: x, gamma, beta, sum, square_sum
+*  mean  = sum / reduce_axis
+*  variance = square_sum / reduce_aixs - mean * mean
+*  variance = np.mean(np.power((x - mean),2), reduce_axis, keepdims=True)
+*  y = gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta
+
+*@par Inputs:
+*Five inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16.
+* @li gamma: A Tensor. Must be one of the following types: float16.
+* @li beta: A Tensor. Must be one of the following types: float16.
+* @li sum. A Tensor. Must be one of the following types: float.
+* @li square_sum. A Tensor. Must be one of the following types: float. \n
+
+*@par Attributes:
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-5. \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16.
+*/
+REG_OP(LayerNormUpdate)
+    .INPUT(x1, TensorType({DT_FLOAT16}))
+    .INPUT(beta, TensorType({DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT16}))
+    .INPUT(sum, TensorType({DT_FLOAT}))
+    .INPUT(square_sum, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .ATTR(epsilon, Float, 0.00001)
+    .OP_END_FACTORY_REG(LayerNormUpdate)
+
+
+/**
 * @brief RmsNorm operator interface implementation
 *  calculating: x, gamma
 *  rstd = np.rsqrt(np.mean(np.power(x,2), reduce_axis, keepdims=True) + epsilon))
@@ -1996,18 +2030,18 @@ REG_OP(DeepNorm)
  * @li dgamma: A Tensor of type float32. Must be 1D. \n
  */
 REG_OP(DeepNormGrad)
-.INPUT(dy, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
-.INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
-.INPUT(gx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
-.INPUT(gamma, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
-.INPUT(mean, TensorType::({DT_FLOAT}))
-.INPUT(rstd, TensorType::({DT_FLOAT}))
-.OUTPUT(dx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
-.OUTPUT(dgx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
-.OUTPUT(dbeta, TensorType({DT_FLOAT}))
-.OUTPUT(dgamma, TensorType({DT_FLOAT}))
-.ATTR(alpha, Float, 0.3)
-.OP_END_FACTORY_REG(DeepNormGrad);
+    .INPUT(dy, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .INPUT(gx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .INPUT(mean, TensorType::({DT_FLOAT}))
+    .INPUT(rstd, TensorType::({DT_FLOAT}))
+    .OUTPUT(dx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .OUTPUT(dgx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
+    .OUTPUT(dbeta, TensorType({DT_FLOAT}))
+    .OUTPUT(dgamma, TensorType({DT_FLOAT}))
+    .ATTR(alpha, Float, 0.3)
+    .OP_END_FACTORY_REG(DeepNormGrad);
 
 /**
 * @brief Function dropout with softmaxgrad and muls
@@ -2158,7 +2192,7 @@ REG_OP(SigmoidFocalLossGrad)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidFocalLossGrad)
 
-/*
+/**
 * @brief Fused Operator of Add and LayerNorm . \n
 
 * @par Inputs:
@@ -2210,17 +2244,17 @@ REG_OP(AddLayerNorm)
  * @li d_beta: A Tensor of type float32. Must be 1D. \n
 */
 REG_OP(AddLayerNormGrad)
-.INPUT(dy, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
-.INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
-.INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
-.INPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
-.INPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
-.INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
-.OPTIONAL_INPUT(dsum, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
-.OUTPUT(dx, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
-.OUTPUT(dgamma, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
-.OUTPUT(dbeta, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
-.OP_END_FACTORY_REG(AddLayerNormGrad);
+    .INPUT(dy, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(x1, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(x2, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .INPUT(rstd, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .INPUT(mean, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .INPUT(gamma, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OPTIONAL_INPUT(dsum, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(dx, ge::TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OUTPUT(dgamma, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OUTPUT(dbeta, ge::TensorType({DT_FLOAT, DT_FLOAT, DT_FLOAT}))
+    .OP_END_FACTORY_REG(AddLayerNormGrad);
 
 /**
 * @brief MMCV Function: softmax_focal_loss_grad  . \n
@@ -2284,5 +2318,87 @@ REG_OP(RmsNormGrad)
     .OUTPUT(dx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
     .OUTPUT(dgamma, TensorType({DT_FLOAT,DT_FLOAT,DT_FLOAT}))
     .OP_END_FACTORY_REG(RmsNormGrad)
+
+/**
+* @brief AdaLayerNorm operator interface implementation
+*  calculating: x, scale, shift
+*  mean  = np.mean(x, reduce_axis, keepdims=True)
+*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
+*  y = ((x - mean) * rstd) * (1 + scale) + shift \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li scale: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li shift: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+*@par Attributes:
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-5 . \n
+
+*@par Outputs:
+*Four outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li ln_res: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float32.
+* @li rstd: A Tensor. Must be one of the following types: float32. \n
+*/
+REG_OP(AdaLayerNorm)
+    .INPUT(x, "T1")
+    .INPUT(scale, "T2")
+    .INPUT(shift, "T2")
+    .OUTPUT(y, "T1")
+    .OUTPUT(ln_res, "T1")
+    .OUTPUT(mean, "T3")
+    .OUTPUT(rstd, "T3")
+    .ATTR(epsilon, Float, 0.00001)
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T3, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(AdaLayerNorm)
+
+/**
+* @brief AdaLayerNormGrad operator interface implementation
+*  calculating: dy, x, mean, rstd, scale, ln_res
+*  pd_xl = dy * (1 + scale)
+*  pd_var = np.sum(((-0.5)*pd_xl*(x - data_mean)
+*           np.power(rstd, 3)),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(x - data_mean)), reduce_axis, keepdims=True)
+*  dx = pd_xl*rstd +
+*         pd_var*(2.0/m)*(x - data_mean) + pd_mean*(1.0/m)
+*  dscale = np.sum(dy * ln_res, param_axis, keepdims=True)
+*  dshift = np.sum(dy, param_axis, keepdims=True) \n
+
+*@par Inputs:
+*Six inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li mean: A Tensor. Must be one of the following types: float32.
+* @li rstd: A Tensor. Must be one of the following types: float32.
+* @li scale: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li ln_res: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li dx: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+* @li dshift: A Tensor. Must be one of the following types: float32.
+* @li dscale: A Tensor. Must be one of the following types: float32. \n
+*/
+REG_OP(AdaLayerNormGrad)
+    .INPUT(dy, "T1")
+    .INPUT(x, "T1")
+    .INPUT(mean, "T3")
+    .INPUT(rstd, "T3")
+    .INPUT(scale, "T2")
+    .INPUT(ln_res, "T1")
+    .OUTPUT(dx, "T1")
+    .OUTPUT(dshift, "T3")
+    .OUTPUT(dscale, "T3")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T3, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(AdaLayerNormGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

@@ -87,6 +87,10 @@ class PneModel {
 
   inline const std::string &GetModelName() const { return model_name_; }
 
+  inline void SetNormalizedModelName(const std::string &model_name) { normalized_model_name_ = model_name; }
+
+  inline const std::string &GetNormalizedModelName() const { return normalized_model_name_; }
+
   inline void SetRootGraph(const ComputeGraphPtr &graph) { root_graph_ = graph; }
 
   inline const ComputeGraphPtr &GetRootGraph() const { return root_graph_; }
@@ -134,6 +138,14 @@ class PneModel {
 
   virtual std::string GetRedundantLogicDeviceId() const { return ""; }
 
+  virtual std::string GetSavedModelPath() const { return saved_model_path_; }
+
+  virtual void SetSavedModelPath(const std::string &saved_model_path) { saved_model_path_ = saved_model_path; }
+
+  virtual bool GetIsBuiltinModel() const { return is_builtin_model_; }
+
+  virtual void SetIsBuiltinModel(const bool is_builtin) { is_builtin_model_ = is_builtin; }
+
   virtual Status SetRedundantLogicDeviceId(const std::string &logic_device_id) {
     for (const auto &submdel : submodels_) {
       (void)submdel.second->SetRedundantLogicDeviceId(logic_device_id);
@@ -149,9 +161,13 @@ class PneModel {
   std::shared_ptr<ModelCompileResource> compile_resource_;
   ComputeGraphPtr root_graph_ = nullptr;
   std::string model_name_;
+  // user define function is not empty
+  std::string normalized_model_name_;
   std::string model_type_;
+  std::string saved_model_path_;
   uint32_t model_id_ = INVALID_MODEL_ID;
   int32_t device_id_ = -1;
+  bool is_builtin_model_ = false;
 };
 
 using PneModelPtr = std::shared_ptr<PneModel>;

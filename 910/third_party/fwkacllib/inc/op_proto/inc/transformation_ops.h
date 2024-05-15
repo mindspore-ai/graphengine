@@ -179,7 +179,7 @@ REG_OP(Transpose)
 | HWCN <====> FRACTAL_Z       | float32, int32,uint32              | 8,16  | 1      |\n
 | HWCN <====> FRACTAL_Z       | bfloat16, float16                  | 16    | 1      |\n
 | HWCN <====> FRACTAL_Z       | int8, uint8                        | 32    | 1      |\n
-| NCDHW <====> NDC1HWC0       | float32, int32,uint32              | 16    | 1      |\n
+| NCDHW <====> NDC1HWC0       | float32, int32,uint32              | 8,16  | 1      |\n
 | NCDHW <====> NDC1HWC0       | bfloat16, float16                  | 16    | 1      |\n
 | NCDHW <====> NDC1HWC0       | int8, uint8                        | 32    | 1      |\n
 | NDHWC <====> NDC1HWC0       | float32, int32,uint32              | 16    | 1      |\n
@@ -198,6 +198,8 @@ REG_OP(Transpose)
 | NCDHW <====> FRACTAL_Z_3D   | float16, bfloat16, uint16, int16   | 16    | >1     |\n
 | FRACTAL_Z_3D ====> DHWCN    | float32, uint32, int32             | 8     | >1     |\n
 | FRACTAL_Z_3D ====> DHWCN    | float16, bfloat16, uint16, int16   | 16    | >1     |\n
+| NCHW ====> FRACTAL_Z_C04    | float16, bfloat16                  | 16    | 1      |\n
+| FRACTAL_Z_C04 ====> NCHW    | float32                            | 16    | 1      |\n
 *\n
 *
 */

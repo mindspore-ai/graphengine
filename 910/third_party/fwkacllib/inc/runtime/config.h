@@ -71,6 +71,8 @@ typedef enum tagRtDeviceCapabilityType {
     RT_MODE_NO_FFTS, // no ffts
     RT_MODE_FFTS, // 81 get ffts work mode, ffts
     RT_MODE_FFTS_PLUS, // 81 get ffts work mode, ffts plus
+    RT_DEV_CAP_SUPPORT, // Capability Support
+    RT_DEV_CAP_NOT_SUPPORT, // Capability not support
 } rtDeviceCapabilityType;
 
 typedef enum tagRtVersion {
@@ -114,6 +116,8 @@ typedef enum tagRtPlatformType {
     PLATFORM_CLOUD_V2_910B2C = 24,
     PLATFORM_CLOUD_V2_910C4 = 25,
     PLATFORM_DAVID_910D = 26,
+    PLATFORM_CLOUD_V2_910B4_1 = 27,
+    PLATFORM_CLOUD_V2_910C4_1 = 28,
     PLATFORM_END
 } rtPlatformType_t;
 

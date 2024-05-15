@@ -296,6 +296,15 @@ RTS_API rtError_t rtNotifyRecord(rtNotify_t notify, rtStream_t stm);
 
 /**
  * @ingroup dvrt_event
+ * @brief Reset a notify
+ * @param [in] notify_   notify to be destroyed
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNotifyReset(rtNotify_t notify);
+
+/**
+ * @ingroup dvrt_event
  * @brief Wait for a notify
  * @param [in] notify_ notify to be wait
  * @param [in] stream_  input stream

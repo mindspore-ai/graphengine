@@ -2540,8 +2540,6 @@ REG_OP(PeekData)
 * @par Attributes:
 * output_types: types of all outputs
 * output_shapes: shapes of all outputs
-* @par Restrictions:
-* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(OptionalGetValue)
   .INPUT(optional, TensorType({DT_VARIANT}))

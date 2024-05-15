@@ -117,7 +117,7 @@ extern "C" {
 #define  ACL_ERROR_RT_DRV_INTERNAL_ERROR         507899 // drv internal error
 #define  ACL_ERROR_RT_AICPU_INTERNAL_ERROR       507900 // aicpu internal error
 #define  ACL_ERROR_RT_SOCKET_CLOSE               507901 // hdc disconnect
-
+#define  ACL_ERROR_RT_AICPU_INFO_LOAD_RSP_ERR    507902 // aicpu info load response error
 #ifdef __cplusplus
 }
 #endif

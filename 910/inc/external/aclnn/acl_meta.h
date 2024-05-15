@@ -103,6 +103,9 @@ ACL_FUNC_VISIBILITY aclnnStatus aclInitTensor(aclTensor *tensor, const int64_t *
                                               aclDataType dataType, const int64_t *stride, int64_t offset,
                                               aclFormat format, const int64_t *storageDims, uint64_t storageDimsNum,
                                               void *tensorDataAddr);
+ACL_FUNC_VISIBILITY aclnnStatus aclUpdateTensorAddr(aclTensor *tensor, void *tensorDataAddr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetAclOpExecutorRepeatable(aclOpExecutor *executor);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyAclOpExecutor(aclOpExecutor *executor);
 
 #ifdef __cplusplus
 }

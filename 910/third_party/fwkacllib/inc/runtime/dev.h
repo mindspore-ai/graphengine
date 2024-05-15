@@ -17,6 +17,8 @@ extern "C" {
 #define RT_CAPABILITY_NOT_SUPPORT (0x0U)
 #define MEMORY_INFO_TS_4G_LIMITED (0x0U) // for compatibility
 
+#define INFO_TYPE_CUBE_NUM (0x775A5A5AU) // for cube core num
+
 typedef struct tagRTDeviceInfo {
     uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
     uint32_t ctrl_cpu_ip;
@@ -60,6 +62,7 @@ typedef enum tagRtDeviceFeatureType {
     FEATURE_TYPE_BLOCKING_OPERATOR,
     FEATURE_TYPE_FFTS_MODE,
     FEATURE_TYPE_MEMQ_EVENT_CROSS_DEV,
+    FEATURE_TYPE_MODEL_TASK_UPDATE,
     FEATURE_TYPE_END,
 } rtDeviceFeatureType_t;
 

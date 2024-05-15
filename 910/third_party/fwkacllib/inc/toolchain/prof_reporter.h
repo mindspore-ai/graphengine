@@ -18,7 +18,7 @@
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
 
-#include "prof_callback.h"
+#include "prof_api.h"
 
 /**
  * @file prof_reporter.h

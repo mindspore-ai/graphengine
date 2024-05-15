@@ -140,15 +140,6 @@ MSVP_PROF_API int aclprofSetStampPayload(void *stamp, const int32_t type, void *
 
 /**
 * @ingroup AscendCL
-* @brief set stamp tag name
-*
-*
-* @retval void
-*/
-MSVP_PROF_API int aclprofSetStampTagName(void *stamp, const char *tagName, uint16_t len);
-
-/**
-* @ingroup AscendCL
 * @brief set category and name
 *
 *
@@ -165,14 +156,6 @@ MSVP_PROF_API int aclprofSetCategoryName(uint32_t category, const char *category
 */
 MSVP_PROF_API int aclprofSetStampCategory(void *stamp, uint32_t category);
 
-/**
-* @ingroup AscendCL
-* @brief set stamp call trace
-*
-*
-* @retval void
-*/
-MSVP_PROF_API int aclprofSetStampCallStack(void *stamp, const char *callStack, uint32_t len);
 #ifdef __cplusplus
 }
 #endif

@@ -43,9 +43,6 @@ namespace ge{
 
     * @par Third-party framework compatibility:
     * New operator SwiGlu.
-
-    * @par Restrictions:
-    * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
     */
     REG_OP(SwiGlu)
         .INPUT(x, "T")
@@ -73,9 +70,6 @@ namespace ge{
 
     * @par Third-party framework compatibility:
     * New operator SwiGluGrad.
-
-    * @par Restrictions:
-    * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
     */
     REG_OP(SwiGluGrad)
         .INPUT(y_grad, "T")

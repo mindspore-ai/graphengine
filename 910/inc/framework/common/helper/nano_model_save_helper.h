@@ -52,17 +52,21 @@ class GE_FUNC_VISIBILITY NanoModelSaveHelper : public ModelHelper {
                        const GeModelPtr &ge_model, const size_t model_index = 0UL);
   Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                             const size_t model_index = 0UL) const;
+  Status SaveModelDescExtend(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                             const size_t model_index = 0UL);
 
  private:
   void SetModelDescInfo(const std::shared_ptr<uint8_t> &buff) { model_desc_info_ = buff; }
   void SetStaticTaskInfo(const std::shared_ptr<uint8_t> &buff) { static_task_info_ = buff; }
   void SetDynamicTaskInfo(const std::shared_ptr<uint8_t> &buff) { dynamic_task_info_ = buff; }
   void SetTaskParamInfo(const std::shared_ptr<uint8_t> &buff) { task_param_info_ = buff; }
+  void SetModelExtendInfo(const std::shared_ptr<uint8_t> &buff) { model_extend_info_ = buff; }
 
   std::shared_ptr<uint8_t> model_desc_info_ = nullptr;
   std::shared_ptr<uint8_t> static_task_info_ = nullptr;
   std::shared_ptr<uint8_t> dynamic_task_info_ = nullptr;
   std::shared_ptr<uint8_t> task_param_info_ = nullptr;
+  std::shared_ptr<uint8_t> model_extend_info_ = nullptr;
   bool is_offline_ = true;
   std::unordered_map<int64_t, uint32_t> search_ids_;
 };

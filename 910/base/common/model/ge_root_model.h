@@ -17,13 +17,34 @@
 #define GE_MODEL_GE_ROOT_MODEL_H_
 
 #include <map>
+#include <sstream>
+#include "ge/ge_graph_compile_summary.h"
+#include "ge/ge_allocator.h"
 #include "graph/compute_graph.h"
 #include "common/model/ge_model.h"
 #include "common/model/model_relation.h"
 #include "framework/pne/pne_model.h"
 #include "common/op_so_store/op_so_store.h"
+#include "common/memory/mem_type_utils.h"
+#include "common/memory/feature_memory_impl.h"
 
 namespace ge {
+struct FixedFeatureMemory {
+  std::string ToString() const {
+    std::stringstream ss;
+    ss << "rts memory type: " << MemTypeUtils::ToString(type) << ", addr: " << std::hex << addr << ", size: "
+       << std::dec << size << ", user_alloc: " << user_alloc << ", ge_alloc: " << ge_alloc << ", block: "
+       << std::hex << block;
+    return ss.str();
+  }
+  rtMemType_t type;
+  void *addr;
+  size_t size;
+  bool user_alloc;
+  bool ge_alloc;
+  MemBlock *block; // 外置allocator调用malloc返回MemBlock指针，释放内存时使用
+};
+
  class GeRootModel : public std::enable_shared_from_this<GeRootModel>, public PneModel {
  public:
   GeRootModel() = default;
@@ -118,11 +139,19 @@ namespace ge {
 
   void SetCurModelId(uint32_t model_id) { cur_model_id_ = model_id; }
 
-  void SetFixedFeatureMemoryBase(const void * const memory, const size_t size) {
-    fixed_feature_mem_ = std::make_pair(memory, size);
+  const std::map<rtMemType_t, FixedFeatureMemory> &GetFixedFeatureMemory() const {
+    return fixed_feature_mems_;
   }
 
-  const std::pair<const void *, size_t> &GetFixedFeatureMemoryBase() const { return fixed_feature_mem_; }
+  std::map<rtMemType_t, FixedFeatureMemory> &MutableFixedFeatureMemory() {
+    return fixed_feature_mems_;
+  }
+
+  Status GetSummaryFeatureMemory(std::vector<FeatureMemoryPtr> &all_feature_memory,
+                                 size_t &hbm_fixed_feature_mem);
+
+  bool IsNeedMallocFixedFeatureMem() const;
+  bool IsNeedMallocFixedFeatureMemByType(const rtMemType_t rt_mem_type) const;
  private:
   Status SetLogicDeviceId(const std::string &logic_device_id, bool is_redundant);
 
@@ -147,8 +176,10 @@ namespace ge {
   SoInOmInfo so_info_ = {};
   std::string file_constant_weight_dir_;
   uint32_t cur_model_id_ = 0U;
-  // save input fix addr and size <mem_base, mem_size>
-  std::pair<const void *, size_t> fixed_feature_mem_;
+
+  bool all_feature_memory_init_flag_ = false;
+  std::vector<FeatureMemoryPtr> all_feature_memory_;
+  std::map<rtMemType_t, FixedFeatureMemory> fixed_feature_mems_;
 };
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
 }  // namespace ge

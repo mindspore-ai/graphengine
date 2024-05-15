@@ -171,6 +171,7 @@ enum {
     ASYS,
     ATRACE,
     RTC,
+    SYSMONITOR,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 

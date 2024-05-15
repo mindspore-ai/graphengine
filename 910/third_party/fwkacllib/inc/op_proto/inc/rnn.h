@@ -190,7 +190,7 @@ REG_OP(DynamicRNNGrad)
 * @li x:A required 4D Tensor. Must be one of the following types: float16, float32.
 * @li w:A required 4D Tensor. Must be one of the following types: float16, float32.
 * @li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-* @li seq_length:A optional Tensor. Only Support int32 in ND.
+* @li seq_length:A optional Tensor. Must be one of the following types: float16, int32.
 * @li init_h:A optional 4D Tensor. Must be one of the following types: float16, float32.
 * @li init_c:A optional 4D Tensor. Must be one of the following types: float16, float32.
 * @li wci:A 4D optional Tensor. Must be one of the following types: float16, float32.
@@ -1549,10 +1549,9 @@ REG_OP(CommonGRU)
 
 * @par Inputs:
 * Four inputs, including:
-* @li weight: A mutable Tensor of word grad. Must be one of the following types:
-*     float32.
-* @li indices: A mutable word index Tensor of the int32 type.\n
-* @li offsets: A mutable word index Tensor of the int32 type.\n
+* @li weight: A mutable Tensor of word grad. Must be one of the following types: float16, float32.
+* @li indices: A mutable word index Tensor. Must be one of the following types: int32, int64.
+* @li offsets: A mutable word index Tensor. Must be one of the following types: int32, int64.
 * @li per_sample_weights: to indicate all weights should be taken to be 1.
 *     If specified, per_sample_weights must have exactly the same shape as input
 *     and is treated as having the same offsets, if those are not None.
@@ -1560,6 +1559,7 @@ REG_OP(CommonGRU)
 
 * @par Attributes:
 * @li mode: An string attr which use "sum"``, ``"mean"`` or ``"max"``. Specifies the way to reduce the bag. \n
+* @li mode: An int attr judge which word to fill zeros. Defaults to "-1". \n
 
 * @li scale_grad_by_freq: An optional bool. Defaults to "False".
 *     If "True", "grad_weight" will be scale by word_frequency.
@@ -1569,8 +1569,11 @@ REG_OP(CommonGRU)
 *     is equivalent to the size of indices. This matches the CSR format. \n
 
 * @par Outputs:
+* four outputs
 * y: A mutable output Tensor of new word grad has the same type as "grads". \n
-
+* offset2bag:A Tensor. Must be one of the following types: int32, int64.
+* bag_size:A Tensor. Must be one of the following types: int32, int64.
+* max_indices:A Tensor. Must be one of the following types: int32, int64.
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator EmbeddingBag.
 */

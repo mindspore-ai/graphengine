@@ -29,6 +29,50 @@ namespace ge {
  * @brief Apply rotary position embedding.
  * @par Inputs:
  * x: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * cos: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * sin: A tensor. Must be one of the following types: float16, float, bfloat16. 
+ * @par Outputs:
+ * y: A Tensor. Has the same shape as "x".
+ * @par Attributes:
+ * @li mode: Optional. Rotation type. 0-"rotate_half" 1-"rotate_interleaved". Defaults to 0.
+ */
+REG_OP(RotaryPositionEmbedding)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(cos, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(sin, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .ATTR(mode, Int, 0)
+    .OP_END_FACTORY_REG(RotaryPositionEmbedding)
+
+/**
+ * @brief Apply rotary position embedding grad.
+ * @par Inputs:
+ * dy: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * cos: A tensor. Must be one of the following types: float16, float, bfloat16.
+ * sin: A tensor. Must be one of the following types: float16, float, bfloat16. 
+ * x: An optional tensor. Must be one of the following types: float16, float, bfloat16.
+ * @par Outputs:
+ * dx: A Tensor. The grad of input x and has the same shape as "x".
+ * dcos: A Tensor. The grad of input cos and has the same shape as "cos".
+ * dsin: A Tensor. The grad of input sin and has the same shape as "sin".
+ * @par Attributes:
+ * @li mode: Optional. Rotation type. 0-"rotate_half" 1-"rotate_interleaved". Defaults to 0.
+ */
+REG_OP(RotaryPositionEmbeddingGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(cos, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .INPUT(sin, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .OPTIONAL_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .OUTPUT(dcos, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .OUTPUT(dsin, TensorType({DT_FLOAT16, DT_FLOAT, DT_BFLOAT16}))
+    .ATTR(mode, Int, 0)
+    .OP_END_FACTORY_REG(RotaryPositionEmbeddingGrad)
+
+/**
+ * @brief Apply rotary position embedding.
+ * @par Inputs:
+ * x: A tensor. Must be one of the following types: float16, float, bfloat16.
  * r1: A tensor. Must be one of the following types: float16, float, bfloat16.
  * r2: A tensor. Must be one of the following types: float16, float, bfloat16. 
  * @par Outputs:
@@ -295,7 +339,9 @@ REG_OP(EmbeddingTableFindAndInit)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li padding_key: An optional Int, indicates the padding hashtable key.
+* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
 */
 REG_OP(EmbeddingApplyAdam)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -311,6 +357,8 @@ REG_OP(EmbeddingApplyAdam)
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(mask_zero, Bool, false)
+    .ATTR(padding_key, Int, 0)
+    .ATTR(padding_key_mask, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingApplyAdam)
 
 /**
@@ -327,7 +375,8 @@ REG_OP(EmbeddingApplyAdam)
 * @li epsilon: A Tensor, dtype is same as "beta1_power". 0-D. indicates the small value param.
 * @li grad: A Tensor, dtype is same as "beta1_power". 1-D. indicates the grad.
 * @li keys: A Tensor, dtype is int64. 1-D. indicates the hashtable key.
-* @li max_grad_norm: A mutable Tensor of the same type as "beta1_power", an optional input. \n
+* @li max_grad_norm: A mutable Tensor of the same type as "beta1_power", an optional input.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
 * @par Outputs:
 * @li var_handle: The handle of embedding hashtable. \n
@@ -338,7 +387,9 @@ REG_OP(EmbeddingApplyAdam)
 *     the paper On the Convergence of Adam and Beyond.
 *     If "True", max_grad_norm input and output must be entered.
 * @li maximize: An optional bool, maximize the params based on the objective.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li padding_key: An optional Int, indicates the padding hashtable key.
+* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
 */
 REG_OP(EmbeddingApplyAdamW)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -352,11 +403,14 @@ REG_OP(EmbeddingApplyAdamW)
     .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(keys, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(max_grad_norm, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(amsgrad, Bool, false)
     .ATTR(maximize, Bool, false)
     .ATTR(mask_zero, Bool, false)
+    .ATTR(padding_key, Int, 0)
+    .ATTR(padding_key_mask, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingApplyAdamW)
 
 /**
@@ -374,7 +428,9 @@ REG_OP(EmbeddingApplyAdamW)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li padding_key: An optional Int, indicates the padding hashtable key.
+* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
 */
 REG_OP(EmbeddingApplyAdaGrad)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -385,6 +441,8 @@ REG_OP(EmbeddingApplyAdaGrad)
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(mask_zero, Bool, false)
+    .ATTR(padding_key, Int, 0)
+    .ATTR(padding_key_mask, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingApplyAdaGrad)
 
 /**
@@ -401,7 +459,9 @@ REG_OP(EmbeddingApplyAdaGrad)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0. \n
+* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0.
+* @li padding_key: An optional Int, indicates the padding hashtable key.
+* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
 */
 REG_OP(EmbeddingApplySgd)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -411,6 +471,8 @@ REG_OP(EmbeddingApplySgd)
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(mask_zero, Bool, false)
+    .ATTR(padding_key, Int, 0)
+    .ATTR(padding_key_mask, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingApplySgd)
 
 /**
@@ -430,7 +492,9 @@ REG_OP(EmbeddingApplySgd)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0. \n
+* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0.
+* @li padding_key: An optional Int, indicates the padding hashtable key.
+* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
 */
 REG_OP(EmbeddingApplyRmsprop)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -443,6 +507,8 @@ REG_OP(EmbeddingApplyRmsprop)
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(mask_zero, Bool, false)
+    .ATTR(padding_key, Int, 0)
+    .ATTR(padding_key_mask, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingApplyRmsprop)
 
 /**
@@ -462,7 +528,9 @@ REG_OP(EmbeddingApplyRmsprop)
 
 * @par Attributes:
 * @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0. \n
+* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li padding_key: An optional Int, indicates the padding hashtable key.
+* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
 */
 REG_OP(EmbeddingApplyFtrl)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -475,6 +543,8 @@ REG_OP(EmbeddingApplyFtrl)
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .REQUIRED_ATTR(embedding_dim, Int)
     .ATTR(mask_zero, Bool, false)
+    .ATTR(padding_key, Int, 0)
+    .ATTR(padding_key_mask, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingApplyFtrl)
 
 /**
@@ -483,7 +553,8 @@ REG_OP(EmbeddingApplyFtrl)
 * @par Inputs:
 * @li initial_learning_rate: A Scalar, dtype is DT_FLOAT/DT_FLOAT16. 0-D. indicates the learning rate.
 * @li decay_rate: A Scalar, dtype is  the same as lr. 0-D. indicates the decay rate.
-* @li decay_steps: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the decay steps. \n
+* @li decay_steps: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the decay steps.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
 * @par Outputs:
 * @li decayed_lr: Indicates the learning rate after updating. \n
@@ -497,6 +568,7 @@ REG_OP(ExponentialDecayLR)
     .INPUT(initial_learning_rate, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(decay_rate, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(decay_steps, TensorType({DT_INT32, DT_INT64}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(decayed_lr, TensorType({DT_FLOAT, DT_FLOAT16}))
     .ATTR(staircase, Bool, false)
     .OP_END_FACTORY_REG(ExponentialDecayLR)
@@ -508,6 +580,7 @@ REG_OP(ExponentialDecayLR)
 * @li file_path: A String, indicates the export file path.
 * @li ps_id: A Int, dtype is DT_INT32, indicates the ps server id.
 * @li table_id: A Tensor, 1D, dtype is DT_INT32, indicates the hashtable id.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
 * @par Attributes:
 * @li embedding_dim: A ListInt. indicates the hashtable value number.
@@ -516,12 +589,14 @@ REG_OP(ExponentialDecayLR)
 * @li only_var: A Bool. only export var, Defaults to "false".
 * @li file_type: A String. indicates the export file, Defaults to "bin".
 * @li table_name: A List String. represents table name corresponding to table id .
-* @li filter_export_flag: A Bool. represents filter export flag on counter filter scenario. \n
+* @li filter_export_flag: A Bool. represents filter export flag on counter filter scenario.
+* @li steps_to_live_list: A ListInt, dtype is DT_INT64. 0-D. indicates the step threshold. \n
 */
 REG_OP(EmbeddingTableExport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(embedding_dim, ListInt)
     .REQUIRED_ATTR(value_total_len, ListInt)
     .ATTR(export_mode, String, "all")
@@ -529,7 +604,27 @@ REG_OP(EmbeddingTableExport)
     .ATTR(file_type, String, "bin")
     .ATTR(table_name, ListString, {})
     .ATTR(filter_export_flag, Bool, false)
+    .ATTR(steps_to_live_list, ListInt, {})
     .OP_END_FACTORY_REG(EmbeddingTableExport)
+
+/**
+* @brief Embedding table eviction. \n
+
+* @par Inputs:
+* @li var_handle: The handle of embedding hashtable.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
+
+* @par Outputs:
+* @li var_handle: The handle of embedding hashtable.. \n
+
+* @par Attributes:
+* @li steps_to_live: A Scalar, dtype is DT_INT64. 0-D. indicates the step threshold. \n
+*/
+REG_OP(EmbeddingTableEvict)
+    .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
+    .ATTR(steps_to_live, Int, 0)
+    .OP_END_FACTORY_REG(EmbeddingTableEvict)
 
 /**
 * @brief embedding tableid trans to resource. \n
@@ -549,7 +644,7 @@ REG_OP(TableToResource)
 * @brief embedding feature_id trans to offset_id. \n
 
 * @par Inputs:
-* @li feature_id: A Tensor, dtype is int64.
+* @li feature_id: A Tensor, dtype is int64. \n
 
 * @par Outputs:
 * @li offset_id: A Tensor with same shape of feature_id, dtype is int32. \n
@@ -558,6 +653,149 @@ REG_OP(EmbeddingFeatureMapping)
     .INPUT(feature_id, TensorType({DT_INT64}))
     .OUTPUT(offset_id, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(EmbeddingFeatureMapping)
+
+/**
+* @brief embedding feature_id trans to offset_id according to table name. \n
+
+* @par Inputs:
+* @li table_name: A Tensor, dtype is string, indicates the hash table name.
+* @li feature_id: A Tensor, dtype is int64, indicates the original hash key. \n
+
+* @par Outputs:
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
+*                indicates the mapping value of hash key. \n
+
+* @par Attributes:
+* @li table_total_size: A Tensor, indicates the table total size of small table combination scenario.
+* @li table_total_size: A Tensor, indicates the table actual size of small table combination scenario. \n
+*/
+REG_OP(EmbeddingFeatureMappingV2)
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .INPUT(feature_id, TensorType({DT_INT64}))
+    .OUTPUT(offset_id, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(table_total_size, ListInt)
+    .REQUIRED_ATTR(table_acutal_size, ListInt)
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingV2)
+
+/**
+* @brief get export size of the embedding table. \n
+
+* @par Inputs:
+* @li table_name: A Tensor, dtype is string, indicates the hash table name. \n
+
+* @par Outputs:
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+*/
+REG_OP(EmbeddingFeatureMappingTableSize)
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .OUTPUT(feature_size, TensorType({DT_INT64}))
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingTableSize)
+
+/**
+* @brief query data in the embedding table based on table name. \n
+
+* @par Inputs:
+* @li table_name: A Tensor, dtype is string, indicates the hash table name.
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+
+* @par Outputs:
+* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32. 
+*                indicates the mapping value of hash key. \n
+*/
+REG_OP(EmbeddingFeatureMappingFind)
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .INPUT(feature_size, TensorType({DT_INT64}))
+    .OUTPUT(feature_id, TensorType({DT_INT64}))
+    .OUTPUT(offset_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingFind)
+
+/**
+* @brief export table data from the embedding table to file. \n
+
+* @par Inputs:
+* @li file_path: A Tensor, dtype is string, indicates the file path to export.
+* @li table_name: A Tensor, dtype is string, indicates the hash table name.
+* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
+*                indicates the mapping value of hash key.
+* @li values: An optional Tensor with same shape of feature_id, dtype is float32,
+*             indicates the values of hash key. \n
+*/
+REG_OP(EmbeddingFeatureMappingExport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .INPUT(feature_id, TensorType({DT_INT64}))
+    .INPUT(offset_id, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(values, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingExport)
+
+/**
+* @brief get import size of the embedding table file. \n
+
+* @par Inputs:
+* @li file_path: A Tensor, dtype is string, indicates the path of import file.
+* @li table_name: A Tensor, dtype is string, indicates the hash table name. \n
+
+* @par Outputs:
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the length of embedding.
+* @li only_offset_flag: A Bool. only export feature id and offset id, Defaults to "true".
+*/
+REG_OP(EmbeddingFeatureMappingFileSize)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .OUTPUT(feature_size, TensorType({DT_INT64}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(only_offset_flag, Bool, true)
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingFileSize)
+
+/**
+* @brief import table data from file to embedding table. \n
+
+* @par Inputs:
+* @li file_path: A Tensor, dtype is string, indicates the path of import file.
+* @li table_name: A Tensor, dtype is string, indicates the hash table name.
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+
+* @par Outputs:
+* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
+*                indicates the mapping value of hash key.
+* @li values: A Tensor with same shape of feature_id, dtype is float32.
+*             indicates the values of hash key. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the length of embedding.
+* @li only_offset_flag: A Bool. only export feature id and offset id, Defaults to "true".
+*/
+REG_OP(EmbeddingFeatureMappingImport)
+    .INPUT(file_path, TensorType({DT_STRING}))
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .INPUT(feature_size, TensorType({DT_INT64}))
+    .OUTPUT(feature_id, TensorType({DT_INT64}))
+    .OUTPUT(offset_id, TensorType({DT_INT32}))
+    .OUTPUT(values, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .ATTR(only_offset_flag, Bool, true)
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingImport)
+
+/**
+* @brief insert table data in the embedding table. \n
+
+* @par Inputs:
+* @li table_name: A Tensor, dtype is string, indicates the hash table name.
+* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
+* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
+*                indicates the mapping value of hash key. \n
+*/
+REG_OP(EmbeddingFeatureMappingInsert)
+    .INPUT(table_name, TensorType({DT_STRING}))
+    .INPUT(feature_id, TensorType({DT_INT64}))
+    .INPUT(offset_id, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(EmbeddingFeatureMappingInsert)
 
 /**
 * @brief embedding compute var export. \n
@@ -594,6 +832,70 @@ REG_OP(EmbeddingComputeVarImport)
     .INPUT(table_id, TensorType({DT_INT32}))
     .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingComputeVarImport)
+
+/**
+* @brief fake remote lookup host unique. \n
+
+* @par Inputs:
+* @li table_id: A Tensor, dtype is DT_INT32. 0-D. indicates the id of hashtable.
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li actual_keys_num: dtype is DT_INT64. 1-D. indicates the actual hashtable key to host.
+* @li unique_indices: A Tensor, dtype is DT_INT32. indicates the unique indices.
+* @li key_count: An optional input Tensor, dtype is DT_INT64.  1-D. indicates the count of each key. \n
+
+* @par Outputs:
+* @li values: indicates the hashtable value. \n
+
+* @par Attributes:
+* @li embedding_dim: A Int, indicates the dim of embedding var value in hashtable.
+* @li value_total_len: A Int, indicates the dim of embedding var+m+v or var+accum values in hashtable
+* @li initializer_mode: A String of "random_uniform", "truncated_normal" or "constant".
+* indicates the algo of init method, Defaults to "random_uniform".
+* @li constant_value: A Float, used when initializer_mode is "constant", Defaults to "0".
+* @li min: A Float, used when initializer_mode is "truncated_normal", the minimum value of the random number.
+* Defaults to "-2".
+* @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
+* Defaults to "2".
+* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
+* Defaults to "0".
+* @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
+* Defaults to "1".
+* @li seed: An Int, Used to create a random seed, Defaults to "0".
+* @li seed2: An Int, Used to create a random seed, Defaults to "0".
+* @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
+* @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
+* @li default_key_or_value: A bool, indicates the default value get way.
+* @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
+* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
+* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* Defaults to "".
+* @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
+*/
+REG_OP(FakeRemoteLookupUniqued)
+    .INPUT(table_id, TensorType({DT_INT32}))
+    .INPUT(keys, TensorType({DT_INT64}))
+    .INPUT(actual_keys_num, TensorType({DT_INT64}))
+    .INPUT(unique_indices, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(key_count, TensorType({DT_INT64}))
+    .OUTPUT(values, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(embedding_dim, Int)
+    .REQUIRED_ATTR(value_total_len, Int)
+    .ATTR(initializer_mode, String, "random_uniform")
+    .ATTR(constant_value, Float, 0)
+    .ATTR(min, Float, -2)
+    .ATTR(max, Float, 2)
+    .ATTR(mu, Float, 0)
+    .ATTR(sigma, Float, 1)
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .ATTR(filter_mode, String, "no_filter")
+    .ATTR(filter_freq, Int, 0)
+    .ATTR(default_key_or_value, Bool, false)
+    .ATTR(default_key, Int, 0)
+    .ATTR(default_value, Float, 0)
+    .ATTR(optimizer_mode, String, "")
+    .ATTR(optimizer_params, ListFloat, {})
+    .OP_END_FACTORY_REG(FakeRemoteLookupUniqued)
 
 /**
 * @brief Step the original data block of y forward one by one, 

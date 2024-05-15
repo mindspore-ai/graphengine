@@ -758,18 +758,18 @@ REG_OP(ShuffleChannel)
     .OP_END_FACTORY_REG(ShuffleChannel)
 
 /**
- * @briefGenerate a tensor of samples from a multinomial 
+ * @brief Generate a tensor of samples from a multinomial 
  * distribution according to the probabilities of each of 
  * the possible outcomes.
  * 
- * @par inputs
+ * @par Inputs:
  * one input including:
  * @li x:Input tensor with shape [batch_size, class_size], 
  * where class_size is the number of all possible outcomes.
  * Each value along the axis zero represents the unnormalized 
  * log-probability of each corresponding outcome in a batch.
  * 
- * @par output
+ * @par Outputs:
  * one output including:
  * @li y:Output tensor with shape [batch_size, sample_size], 
  * where sample_size is the number of times to sample. 
@@ -959,12 +959,12 @@ REG_OP(StatelessRandperm)
     .INPUT(seed, TensorType({DT_INT64}))
     .INPUT(offset, TensorType({DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT64, DT_INT32, DT_INT16,
-        DT_UINT8, DT_INT8, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+        DT_UINT8, DT_INT8, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .ATTR(layout, Int, 0)
     .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(StatelessRandperm)
 
-/*
+/**
 * @brief Generate random bool or uint1 mask for dropout v4 . \n
 
 * @par Inputs:

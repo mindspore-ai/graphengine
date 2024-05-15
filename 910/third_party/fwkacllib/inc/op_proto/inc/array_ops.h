@@ -1376,16 +1376,16 @@ REG_OP(Expand)
     .OP_END_FACTORY_REG(Expand)
 
 /**
-*@Returns a tensor containing the indices of all non-zero elements of input. \n
+*Returns a tensor containing the indices of all non-zero elements of input. \n
 
 *@par Inputs:
-* x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64.
-
+* x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64, double,
+*        int8, uint8, int16, uint16, uint32, uint64, bool.
 *@par Attributes:
-* transpose: the output tensor will be transposed if true. \n
+* transpose: An optional DType from: "bool". Defaults to False. \n
 
 *@par Outputs:
-* y: A Tensor. Has the same type as "x" . \n
+* y: A Tensor. Must be one of the following types: int32, int64. \n
 
 *@par Third-party framework compatibility
 *Compatible with the PyTorch operator NonZero.
@@ -1668,8 +1668,8 @@ REG_OP(RaggedTensorFromVariant)
 * Compatible with Pytorch operator _unique2.
 */
 REG_OP(UniqueWithCountsAndSorting)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({BasicType(), DT_BF16}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BF16}))
     .OUTPUT(indices, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(counts, TensorType({DT_INT32, DT_INT64}))
     .ATTR(return_inverse, Bool, false)

@@ -9,7 +9,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "toolchain/prof_callback.h"
+#include "toolchain/prof_api.h"
 
 #if defined(__cplusplus)
 extern "C" {

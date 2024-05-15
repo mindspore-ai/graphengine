@@ -31,7 +31,7 @@ DLL_EXPORT void DlogInfoInner(int moduleId, const char *fmt, ...);
 DLL_EXPORT void DlogDebugInner(int moduleId, const char *fmt, ...);
 DLL_EXPORT void DlogEventInner(int moduleId, const char *fmt, ...);
 DLL_EXPORT void DlogInner(int moduleId, int level, const char *fmt, ...);
-DLL_EXPORT void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+DLL_EXPORT void DlogWithKVInner(int moduleId, int level, const KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -49,7 +49,8 @@ extern "C" {
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
 DLL_EXPORT void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
-DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level,
+    const KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

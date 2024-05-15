@@ -8,6 +8,7 @@
 #define CCE_RUNTIME_RT_MODEL_H
 
 #include "base.h"
+#include "rt_ffts_plus.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -54,7 +55,9 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_NPU_CLEAR_DEBUG_FLOAT_STATUS,
     RT_MODEL_TASK_CMO_ADDR,
     RT_MODEL_TASK_VECTOR_KERNEL,
-    RT_MODEL_TASK_VECTOR_ALL_KERNEL
+    RT_MODEL_TASK_VECTOR_ALL_KERNEL,
+    RT_MODEL_TASK_UPDATE,
+    RT_MODEL_TASK_NOP,
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {
@@ -390,6 +393,13 @@ typedef struct tagMdlExecute {
     size_t mecTimeThreshHold;
 } rtMdlExecute_t;
 
+typedef struct tagMdlTaskUpdateInfo {
+    uint64_t *tilingKeyAddr;
+    uint64_t *blockDimAddr;
+    void *hdl;
+    rtFftsPlusTaskInfo_t *fftsPlusTaskInfo;
+} rtMdlTaskUpdateInfo_t;
+
 typedef rtError_t (*rtTaskGenCallback)(rtModel_t mdl, rtTaskInfo_t *taskInfo);
 
 /**
@@ -673,6 +683,28 @@ RTS_API rtError_t rtSetStreamSqUnlock(rtStream_t stm);
  * @return RT_ERROR_INVALID_VALUE for error
  */
 RTS_API rtError_t rtSupportModelStreamReuse(bool *bSupport);
+
+/**
+ * @ingroup rt_model
+ * @brief update model task info
+ * @param [in]  desStm
+ * @param [in]  desTaskId
+ * @param [in]  sinkStm
+ * @param [in]  para
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtModelTaskUpdate(rtStream_t desStm, uint32_t desTaskId, rtStream_t sinkStm,
+                            rtMdlTaskUpdateInfo_t *para);
+
+/**
+ * @ingroup rt_model
+ * @brief no operation task
+ * @param [in] stm
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNopTask(rtStream_t stm);
 
 #if defined(__cplusplus)
 }

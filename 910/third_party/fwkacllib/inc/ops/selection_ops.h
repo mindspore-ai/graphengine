@@ -545,6 +545,9 @@ REG_OP(StridedSliceGrad)
 * @li num_segments: A Tensor of type INT32,INT64
 * of segment_ids is high
 
+* @par Attributes:
+* @li check_ids: An optional bool. Defaults to false. \n
+
 * @par Outputs:
 * y: type is the same as x type . \n
 
@@ -557,6 +560,7 @@ REG_OP(UnsortedSegmentSum)
     .INPUT(num_segments, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
     .ATTR(is_preprocessed, Bool, false)
+    .ATTR(check_ids, Bool, false)
     .OP_END_FACTORY_REG(UnsortedSegmentSum)
 
 /**
@@ -711,7 +715,7 @@ REG_OP(Select)
     .OP_END_FACTORY_REG(Select)
 
 /**
-* @brief: Select elements from "then" or "else", depending on "condition" . \n
+* @brief Select elements from "then" or "else", depending on "condition" . \n
 
 * @par Inputs:
 * Three inputs, including:
@@ -2301,7 +2305,7 @@ REG_OP(CumulativeLogsumexpD)
 * @par Inputs:
 * Three inputs, including:
 * @li var: A Tensor. Must be one of the following types:
-*     double, float16, float32, int16, int32, int8, uint8, int64, bool.
+*     double, float16, float32, int16, int32, int8, uint8, int64, bool, bfloat16.
 * @li indices: A Tensor of the indices, type should be int32 or int64.
 * @li updates: A Tensor of the same type as "var".
 * @li alpha: An optional Tensor of the same type as "var". A scaling factor to updates. \n
@@ -2806,17 +2810,21 @@ REG_OP(SearchSorted)
 * @brief Repeat elements of input with copies of data along a specified dimension.
 * @par Inputs:
 * Two input:
-* input_x: A Tensor with any format. Support BasicType.
-* repeats: A Tensor with dim = 1 or a Scalar. Support BasicType. \n
+* @li x: A Tensor with ND format. Support float, float16, bfloat16, int8, int16, int32, int64, 
+     uint8, uint16, uint32, uint64, bool.
+* @li repeats: A Tensor with 0-D / 1-D or a Scalar. Support int32, int64. \n
 
 * @par Attributes:
 * @li axis: An optional int32, specifying the axis to repeat. Defaults to 1000.
 
 * @par Outputs:
-* output_y: A Tensor, which is the same dtype as input_x.Support BasicType. \n
+* y: A Tensor, which is the same dtype as x. \n
 
 * @attention Constraints:
 * @li "axis" must be within the rank of the input tensor.
+
+* @par Third-party framework compatibility
+* Compatible with the PyTorch operator RepeatInterleave.
 */
 REG_OP(RepeatInterleave)
     .INPUT(x, TensorType::BasicType())
@@ -2824,6 +2832,29 @@ REG_OP(RepeatInterleave)
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(axis, Int, 1000)
     .OP_END_FACTORY_REG(RepeatInterleave)
+
+/**
+* @brief Gradient op for RepeatInterleave op.
+* @par Inputs:
+* Two input:
+* y_grad: A Tensor with any format. Support float, float16, bf16.
+* repeats: A Tensor with dim = 1 or a Scalar. Support int32 or int64. \n
+
+* @par Attributes:
+* @li axis: An optional int32, specifying the axis to repeat. Defaults to -1.
+
+* @par Outputs:
+* x_grad: A Tensor, which is the same dtype as y_grad. Support float, float16, bf16. \n
+
+* @attention Constraints:
+* @li "axis" must be within the rank of the input tensor.
+*/
+REG_OP(RepeatInterleaveGrad)
+    .INPUT(y_grad, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16 }))
+    .INPUT(repeats, TensorType({ DT_INT32, DT_INT64 }))
+    .OUTPUT(x_grad, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16 }))
+    .ATTR(axis, Int, -1)
+    .OP_END_FACTORY_REG(RepeatInterleaveGrad)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

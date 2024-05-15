@@ -68,6 +68,8 @@ REG_OP(FlashAttentionScore)
     .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(actual_seq_qlen, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(actual_seq_kvlen, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(q_start_idx, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(kv_start_idx, TensorType({DT_INT64}))
     .OUTPUT(softmax_max, TensorType({DT_FLOAT32}))
     .OUTPUT(softmax_sum, TensorType({DT_FLOAT32}))
     .OUTPUT(softmax_out, TensorType({DT_FLOAT16, DT_BF16}))
@@ -80,6 +82,7 @@ REG_OP(FlashAttentionScore)
     .REQUIRED_ATTR(input_layout, String)
     .ATTR(inner_precise, Int, 0)
     .ATTR(sparse_mode, Int, 0)
+    .ATTR(pse_type, Int, 1)
     .OP_END_FACTORY_REG(FlashAttentionScore)
 
 /**
@@ -114,11 +117,11 @@ REG_OP(FlashAttentionScore)
 * attention_out: A matrix Tensor. The type support float16, bf16, int8. \n
 */
 REG_OP(IncreFlashAttention)
-    .INPUT(query, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
-    .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
-    .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
+    .INPUT(query, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .DYNAMIC_INPUT(key, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .DYNAMIC_INPUT(value, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
     .OPTIONAL_INPUT(pse_shift, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_FLOAT32, DT_INT8, DT_UINT8}))
+    .OPTIONAL_INPUT(atten_mask, TensorType({DT_FLOAT16, DT_BOOL, DT_INT8, DT_UINT8}))
     .OPTIONAL_INPUT(actual_seq_lengths, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(dequant_scale1, TensorType({DT_UINT64, DT_FLOAT}))
     .OPTIONAL_INPUT(quant_scale1, TensorType({DT_FLOAT}))
@@ -129,7 +132,7 @@ REG_OP(IncreFlashAttention)
     .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(block_table, TensorType({DT_INT32}))
     .OPTIONAL_INPUT(kv_padding_size, TensorType({DT_INT64}))
-    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32, DT_INT8}))
+    .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale_value, Float, 1.0)
     .ATTR(input_layout, String, "BSH")
@@ -137,6 +140,72 @@ REG_OP(IncreFlashAttention)
     .ATTR(block_size, Int, 0)
     .ATTR(inner_precise, Int, 1)
     .OP_END_FACTORY_REG(IncreFlashAttention)
+
+/**
+* @brief Compute the GeGluV2,
+* where the activations function in GLU is Gelu.
+
+* @par Inputs:
+* One input, including: \n
+* @li x: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
+
+* @par Outputs:
+* two inputs, including:
+* @li y: A Tensor. Must be one of the following types: bfloat16, float16, float32.
+* @li gelu: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
+
+* @par Attributes:
+* two attributes, including:
+* @li dim: A optional int. The dimension to be split, default is -1.
+* @li approximate: A optional int. The gelu approximation algorithm to use: 'none'(0) or 'tanh'(1), default is 'tanh'(1). \n
+* @li activate_left: A optional bool. The gelu activate_left algorithm to use: 'false'(activate right) or 'true'
+(activate left), defalut is 'false'(activate right). \n
+
+* @par Third-party framework compatibility:
+* New operator GeGluV2.
+*/
+REG_OP(GeGluV2)
+    .INPUT(x, "T")
+    .OUTPUT(y, "T")
+    .OUTPUT(gelu, "T")
+    .DATATYPE(T, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT}))
+    .ATTR(dim, Int, -1)
+    .ATTR(approximate, Int, 1)
+    .ATTR(activate_left, Bool, false)
+    .OP_END_FACTORY_REG(GeGluV2)
+
+/**
+* @brief Computes the gradient for the GeGluV2 of "x" .
+*
+* @par Inputs:
+* Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, bfloat16, float32.
+* @li x: A Tensor of the same type as "dy".
+* @li gelu: A Tensor of the same type as "dy".
+*
+* @par Outputs:
+* @li dx: A Tensor. Has the same type as "dy".
+*
+* @par Attributes:
+* @li dim: A optional Int.  default is -1.
+* @li approximate: A optional Int. The gelu grad approximation algorithm to use: 0 or 1, default is 1('tanh'). \n
+* @li activate_left: A optional Bool. Whether the left side of x is used as an input parameter to the activation function, \n
+*     default is false, use the right side.
+*
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator GeGluGradV2.
+*
+*/
+REG_OP(GeGluGradV2)
+    .INPUT(dy, "T")
+    .INPUT(x, "T")
+    .INPUT(gelu, "T")
+    .OUTPUT(dx, "T")
+    .DATATYPE(T, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .ATTR(dim, Int, -1)
+    .ATTR(approximate, Int, 1)
+    .ATTR(activate_left, Bool, false)
+    .OP_END_FACTORY_REG(GeGluGradV2)
 
 /**
 * @brief Function PromptFlashAttention.
@@ -240,10 +309,13 @@ REG_OP(FusedInferAttentionScore)
     .OPTIONAL_INPUT(dequant_scale2, TensorType({DT_UINT64}))
     .OPTIONAL_INPUT(quant_scale2, TensorType({DT_FLOAT32, DT_BF16}))
     .OPTIONAL_INPUT(quant_offset2, TensorType({DT_FLOAT32, DT_BF16}))
-    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32}))
     .OPTIONAL_INPUT(block_table, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(query_padding_size, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(kv_padding_size, TensorType({DT_INT64}))
     .OUTPUT(attention_out, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT8, DT_BF16}))
+    .OUTPUT(softmax_lse, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .REQUIRED_ATTR(num_heads, Int)
     .ATTR(scale, Float, 1.0)
     .ATTR(pre_tokens, Int, 2147483647)
@@ -253,6 +325,8 @@ REG_OP(FusedInferAttentionScore)
     .ATTR(sparse_mode, Int, 0)
     .ATTR(inner_precise, Int, 1)
     .ATTR(block_size, Int, 0)
+    .ATTR(antiquant_mode, Int, 0)
+    .ATTR(softmax_lse_flag, Bool, false)
     .OP_END_FACTORY_REG(FusedInferAttentionScore)
 
 
@@ -309,6 +383,8 @@ REG_OP(FlashAttentionScoreGrad)
     .OPTIONAL_INPUT(prefix, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(actual_seq_qlen, TensorType({DT_INT64}))
     .OPTIONAL_INPUT(actual_seq_kvlen, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(q_start_idx, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(kv_start_idx, TensorType({DT_INT64}))
     .OUTPUT(dq, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(dk, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(dv, TensorType({DT_FLOAT16, DT_BF16}))
@@ -321,6 +397,7 @@ REG_OP(FlashAttentionScoreGrad)
     .REQUIRED_ATTR(input_layout, String)
     .ATTR(inner_precise, Int, 0)
     .ATTR(sparse_mode, Int, 0)
+    .ATTR(pse_type, Int, 1)
     .OP_END_FACTORY_REG(FlashAttentionScoreGrad)
 
 
@@ -347,6 +424,7 @@ REG_OP(FlashAttentionScoreGrad)
 * @li activation: A string. The type of activation.
 * @li inner_precise: A int. 0, fp16 high precision. 1, high performance. Default value: 0
 * @li output_dtype: A int. -1, output data type is float16. 0, quant and output data type is float16. 1, quant and output data type is bfloat16. Default -1.
+* @li tokens_index_flag: A bool. false, values in expert tokens are values. true, values therein are indices. Default value: false
 *
 * @par Outputs:
 * y: A matrix Tensor. The type support float16. \n
@@ -370,6 +448,7 @@ REG_OP(FFN)
     .REQUIRED_ATTR(activation, String)
     .ATTR(inner_precise, Int, 0)
     .ATTR(output_dtype, Int, -1)
+    .ATTR(tokens_index_flag, Bool, false)
     .OP_END_FACTORY_REG(FFN)
 
 
@@ -390,7 +469,9 @@ REG_OP(FFN)
 * [K, N] before multiplication. Default: "false".
 * @li gather_index: A int. Represents the input index for doing gather.
   Default: "0".
-* @li comm_turn: A int. Number of communications with AICPU. Default: "0". \n
+* @li comm_turn: A int. Number of communications with AICPU. Default: "0".
+* @li rank_size: A int. Number of rank num. Default: "0".
+* @li is_gather_out: A bool. If True, output gather_out matrix. Default: "true". \n
 *
 * @par Outputs:
 * @li y: A matrix Tensor. The type support float16, bfloat16.
@@ -407,21 +488,25 @@ REG_OP(AllGatherMatmul)
     .ATTR(is_trans_b, Bool, false)
     .ATTR(gather_index, Int, 0)
     .ATTR(comm_turn, Int, 0)
+    .ATTR(rank_size, Int, 0)
+    .ATTR(is_gather_out, Bool, true)
     .OP_END_FACTORY_REG(AllGatherMatmul)
 
 /**
 * @brief Combine similar tokens using the matching algorithm.
 * @par Inputs:
-* @li token_a: A Tensor. Type is:DT_FLOAT16.
-* @li token_b: A Tensor. Type is:DT_FLOAT16.
-* @li topk_indice: A Tensor. Type is:DT_INT64.
-* @li arg_max: A Tensor. Type is:DT_INT64.
+* @li token_a: A Tensor. Type is:DT_FLOAT16. Shape is (B, S1, H).
+* @li token_b: A Tensor. Type is:DT_FLOAT16. Shape is (B, S2, H).
+* @li topk_indice: A Tensor. Type is:DT_INT64. Shape is (B, S1, H), S1 must equal with token_a. Value range is [0, S1), no dup.
+* @li arg_max: A Tensor. Type is:DT_INT64. Shape is (B, S1, H), S1 must equal with token_a. Value range is [0, S2), can dup.
 * @par Outputs:
 * @li unmerge_token_a: A Tensor. Type is:DT_FLOAT16.
 * @li unmerge_token_b: A Tensor. Type is:DT_FLOAT16.
 * @li unreduce_count: A Tensor. Type is:DT_FLOAT.
 * @par Attributes:
-* @li top_rate: Type is:Float.
+* @li top_rate: Type is:Float. rate to calculate how many rows of token_a merge to token_b. default is "0.5".
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TomeMerge)
     .INPUT(token_a, TensorType({DT_FLOAT16}))
@@ -466,6 +551,7 @@ REG_OP(MatmulReduceScatter)
     .ATTR(is_trans_a, Bool, false)
     .ATTR(is_trans_b, Bool, false)
     .ATTR(comm_turn, Int, 0)
+    .ATTR(rank_size, Int, 0)
     .OP_END_FACTORY_REG(MatmulReduceScatter)
 
 /**
@@ -504,7 +590,7 @@ REG_OP(MatmulAllReduce)
     .OPTIONAL_INPUT(x3, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
-    .OPTIONAL_INPUT(dequant_scale, TensorType({DT_FLOAT16, DT_BF16, DT_UINT64}))
+    .OPTIONAL_INPUT(dequant_scale, TensorType({DT_FLOAT16, DT_BF16, DT_UINT64, DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
     .REQUIRED_ATTR(group, String)
     .ATTR(reduce_op, String, "sum")
@@ -514,13 +600,175 @@ REG_OP(MatmulAllReduce)
     .ATTR(antiquant_group_size, Int, 0)
     .OP_END_FACTORY_REG(MatmulAllReduce)
 
+/**
+* @brief Function MatmulAllReduceAddRmsNorm.
+
+* @par Inputs:
+* three inputs, including:
+* @li x1: A matrix Tensor. The type support float16, bf16, int8.
+* @li x2: A matrix Tensor. The type support float16, bf16, int8, int4.
+* @li bias: A matrix Tensor. The type support float16, bf16, int32.
+* @li residual: A matrix Tensor. The type support float16, bf16.
+* @li gamma: A matrix Tensor. The type support float16, bf16.
+* @li antiquant_scale: A matrix Tensor. The type support float16, bf16.
+* @li antiquant_offset: A matrix Tensor. The type support float16, bf16.
+* @li dequant_scale: A matrix Tensor. The type support float16, bf16, uint64. \n
+
+
+* @par Attributes:
+* @li group: A required String identifying the group of ranks
+  participating in the op.
+* @li reduce_op: A required string identifying the reduction operation to
+ perform. support "sum", "min", "max" ,"prod" .
+* @li is_trans_a: A bool. If True, changes the shape of "x1" from [K, M] to
+* [M, K] before multiplication. Default: false.
+* @li is_trans_b: A bool. If True, changes the shape of "x2" from [N, K] to
+* [K, N] before multiplication. Default: false.
+* @li comm_turn: A int. Number of communications with AICPU. Default: 0.
+* @li antiquant_group_size: A int. Number of per-group for quant. Default: 0. \n
+* @li epsilon: A float32. Default: 1e-06. \n
+
+* @par Outputs:
+* y: A matrix Tensor. The type support float16, bf16.
+* norm_out: A matrix Tensor. The type support float16, bf16.
+*/
+REG_OP(MatmulAllReduceAddRmsNorm)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16, DT_INT8, DT_INT4}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16, DT_INT32}))
+    .INPUT(residual, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(dequant_scale, TensorType({DT_FLOAT16, DT_BF16, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(norm_out, TensorType({DT_FLOAT16, DT_BF16}))
+    .REQUIRED_ATTR(group, String)
+    .ATTR(reduce_op, String, "sum")
+    .ATTR(is_trans_a, Bool, false)
+    .ATTR(is_trans_b, Bool, false)
+    .ATTR(comm_turn, Int, 0)
+    .ATTR(antiquant_group_size, Int, 0)
+    .ATTR(epsilon, Float, 1e-06)
+    .OP_END_FACTORY_REG(MatmulAllReduceAddRmsNorm)
+
+/**
+* @brief Function InplaceMatmulAllReduceAddRmsNorm.
+
+* @par Inputs:
+* three inputs, including:
+* @li x1: A matrix Tensor. The type support float16, bf16, int8.
+* @li x2: A matrix Tensor. The type support float16, bf16, int8, int4.
+* @li bias: A matrix Tensor. The type support float16, bf16, int32.
+* @li residual: A matrix Tensor. The type support float16, bf16.
+* @li gamma: A matrix Tensor. The type support float16, bf16.
+* @li antiquant_scale: A matrix Tensor. The type support float16, bf16.
+* @li antiquant_offset: A matrix Tensor. The type support float16, bf16.
+* @li dequant_scale: A matrix Tensor. The type support float16, bf16, uint64. \n
+
+
+* @par Attributes:
+* @li group: A required String identifying the group of ranks
+  participating in the op.
+* @li reduce_op: A required string identifying the reduction operation to
+ perform. support "sum", "min", "max" ,"prod" .
+* @li is_trans_a: A bool. If True, changes the shape of "x1" from [K, M] to
+* [M, K] before multiplication. Default: false.
+* @li is_trans_b: A bool. If True, changes the shape of "x2" from [N, K] to
+* [K, N] before multiplication. Default: false.
+* @li comm_turn: A int. Number of communications with AICPU. Default: 0.
+* @li antiquant_group_size: A int. Number of per-group for quant. Default: 0. \n
+* @li epsilon: A float32. Default: 1e-06. \n
+
+* @par Outputs:
+* residual: A matrix Tensor. The type support float16, bf16.
+* norm_out: A matrix Tensor. The type support float16, bf16.
+*/
+REG_OP(InplaceMatmulAllReduceAddRmsNorm)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_BF16, DT_INT8, DT_INT4}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_BF16, DT_INT32}))
+    .INPUT(residual, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(dequant_scale, TensorType({DT_FLOAT16, DT_BF16, DT_UINT64}))
+    .OUTPUT(residual, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(norm_out, TensorType({DT_FLOAT16, DT_BF16}))
+    .REQUIRED_ATTR(group, String)
+    .ATTR(reduce_op, String, "sum")
+    .ATTR(is_trans_a, Bool, false)
+    .ATTR(is_trans_b, Bool, false)
+    .ATTR(comm_turn, Int, 0)
+    .ATTR(antiquant_group_size, Int, 0)
+    .ATTR(epsilon, Float, 1e-06)
+    .OP_END_FACTORY_REG(InplaceMatmulAllReduceAddRmsNorm)
+
+/**
+* @brief matmul layer norm reduce.
+*
+* @par Inputs:
+* @li x1: A Tensor. Must be one of the following types: float16.
+* @li x2: A Tensor. Must be one of the following types: float16.
+* @li bias: A Tensor. Must be one of the following types: float16.
+*
+* @par Outputs:
+* y: A Tensor. Must be one of the following types: float16.
+* sum: A Tensor. Must be one of the following types: float16.
+* square_sum: A Tensor. Must be one of the following types: float16.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(MatmulLayerNormReduce)
+    .INPUT(x1, TensorType({DT_FLOAT16}))
+    .INPUT(weight, TensorType({DT_FLOAT16}))
+    .INPUT(bias, TensorType({DT_FLOAT16}))
+    .INPUT(x2, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(x3, TensorType({DT_FLOAT16}))
+    .OUTPUT(x2, TensorType({DT_FLOAT16}))
+    .OUTPUT(sum, TensorType({DT_FLOAT}))
+    .OUTPUT(square_sum, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(MatmulLayerNormReduce)
+
+
+/**
+* @brief Function AGLU. \n
+
+* @par Inputs:
+* four inputs, including:
+* @li x: A required matrix Tensor. The type support float16.
+* @li weight1: A required matrix Tensor. The type support float16.
+* @li bias1: A optional matrix Tensor. The type support float16.
+* @li weight2: A optional matrix Tensor. The type support float16.
+* @li bias2: A optional matrix Tensor. The type support float16.
+
+* @par Attributes:
+* @li activate_func: A required string. The type of activation.
+* @li activate_left: A optional bool. Default: false.
+
+* @par Outputs:
+* y: A matrix Tensor. The type support float16. \n
+*/
+REG_OP(AGLU)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(weight1, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias1, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(weight2, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias2, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(activate_func, String)
+    .ATTR(activate_left, Bool, false)
+    .OP_END_FACTORY_REG(AGLU)
+
 
 /**
 * @brief Function WeightQuantBatchMatmulV2. \n
 
 * @par Inputs:
 * @li x: A matrix Tensor. Shape supports (m,k)/(k,m), Format supports ND.
-* @li weight: A matrix Tensor of quantized weight. Shape supports (n,k)/(k,n), Format supports ND.
+* @li weight: A matrix Tensor of quantized weight. Shape supports (n,k)/(k,n), Format supports ND/NZ.
 * @li antiquant_scale: A Tensor for antiquant scale.
 * Shape supports (1)/(1,n)/(n,1)/(ceil(k/antiquant_group_size),n)/(n,ceil(k/antiquant_group_size)),
 * Format supports ND.
@@ -571,42 +819,48 @@ REG_OP(WeightQuantBatchMatmulV2)
 
 * @par Attributes:
 * @li split_item: A int.
-* @li dtype: A int, reserved parameter, not enabled.
-* @li transpose_weight: A bool, reserved parameter, not enabled.
+* @li dtype: A int. Reserved parameter, not enabled.
+* @li transpose_weight: A bool. Indicate wether input weight is transposed.
+* @li transpose_x: A bool. Indicate wether input x is transposed.
+* @li group_type: A int. Indicates the splited dimension.
 
 * @par Outputs:
 * y: A Tensor List.
 */
   REG_OP(GroupedMatmul)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
-    .DYNAMIC_INPUT(weight, TensorType({DT_FLOAT16, DT_BF16, DT_INT8}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_BF16, DT_INT8, DT_FLOAT}))
+    .DYNAMIC_INPUT(weight, TensorType({DT_FLOAT16, DT_BF16, DT_INT8, DT_FLOAT}))
     .DYNAMIC_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .DYNAMIC_INPUT(scale, TensorType({DT_UINT64}))
     .DYNAMIC_INPUT(offset, TensorType({DT_FLOAT32}))
     .DYNAMIC_INPUT(antiquant_scale, TensorType({DT_FLOAT16, DT_BF16}))
     .DYNAMIC_INPUT(antiquant_offset, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(group_list, TensorType({DT_INT64}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16, DT_INT8, DT_FLOAT}))
     .ATTR(split_item, Int, 0)
     .ATTR(dtype, Int, 0)
-    .ATTR(transpose_weight, Bool, false)
+    .ATTR(transpose_weight, Bool, false)    
+    .ATTR(transpose_x, Bool, false)
+    .ATTR(group_type, Int, -1)
     .OP_END_FACTORY_REG(GroupedMatmul)
 
   /**
   * @brief Function TomeUnmerge. \n
 
   * @par Inputs:
-  * @li attention: A Tensor List, attention out.
-  * @li ori_index_a: A Tensor List of origin index A.
-  * @li ori_index_b: A Tensor List of origin index B.
-  * @li topk_indice: A Tensor List of topK indice.
-  * @li arg_max: A Tensor List of ArgMax.
+  * @li attention: A Tensor List, attention out. Shape is (B, S, H). S = S2 + S1 - (S2 + S1) * top_rate
+  * @li ori_index_a: A Tensor List of origin index A. Shape is (B, S1, H), Value range [0, S1 + S2), no dup and cant dup with ori_index_b.
+  * @li ori_index_b: A Tensor List of origin index B. Shape is (B, S2, H), Value range [0, S1 + S2), no dup and cant dup with ori_index_a.
+  * @li topk_indice: A Tensor List of topK indice. Shape is (B, S1, H), S1 must equal with ori_index_a.
+  * @li arg_max: A Tensor List of ArgMax. Shape is (B, S1, H), S1 must equal with ori_index_a.
 
   * @par Attributes:
-  * @li top_rate: A Float.
+  * @li top_rate: A Float. rate to calculate how many rows of token_a merge to token_b. default is "0.5".
 
   * @par Outputs:
   * unzip_token: A Tensor List, restore by ori_index_a and ori_index_b.
+  * @par Restrictions:
+  * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
   */
   REG_OP(TomeUnmerge)
       .INPUT(attention, TensorType({DT_FLOAT16}))
@@ -617,5 +871,175 @@ REG_OP(WeightQuantBatchMatmulV2)
       .OUTPUT(unzip_token, TensorType({DT_FLOAT16}))
       .ATTR(top_rate, Float, 0.5)
       .OP_END_FACTORY_REG(TomeUnmerge)
-} // namespace ge
+
+/**
+* @brief Function GroupedMatMulAllReduce. \n
+
+* @par Inputs:
+* @li x: A Tensor List.
+* @li weight: A Tensor List of weight.
+* @li bias: A Tensor List of bias.
+* @li group_list: a Tensor.
+
+* @par Attributes:
+* @li splitItem: A int64.
+* @li group: A string. A required String identifying the group of ranks
+* @li reduceOp: A string. A required string identifying the reduction operation to
+ perform. support "sum".
+* @li commTurn: A int64. Number of communications with AICPU. Default: 0.
+
+* @par Outputs:
+* y: A Tensor List.
+*/
+  REG_OP(GroupedMatMulAllReduce)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .DYNAMIC_INPUT(weight, TensorType({DT_FLOAT16, DT_BF16}))
+    .DYNAMIC_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(group_list, TensorType({DT_INT64}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_BF16}))
+    .ATTR(splitItem, Int, 0)
+    .REQUIRED_ATTR(group, String)
+    .ATTR(reduceOp, String, "sum")
+    .ATTR(commTurn, Int, 0)
+    .OP_END_FACTORY_REG(GroupedMatMulAllReduce)
+
+  /**
+   * @brief compute init routing for moe input.
+   * @par Inputs:
+   * @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li row_idx: A Tensor. Type is:Int32.
+   * @li expert_idx: A Tensor. Type is:Int32.
+   * @par Outputs:
+   * @li expanded_x: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li expanded_row_idx: A Tensor. Type is:Int32.
+   * @li expanded_expert_idx: A Tensor. Type is:Int32.
+   * @par Attributes:
+   * @li active_num: Required parameter. Type is:Int32.
+   */
+    REG_OP(MoeInitRouting)
+    .INPUT(x, "T1")
+    .INPUT(row_idx, "T2")
+    .INPUT(expert_idx, "T2")
+    .OUTPUT(expanded_x, "T1")
+    .OUTPUT(expanded_row_idx, "T2")
+    .OUTPUT(expanded_expert_idx, "T2")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(active_num, Int)
+    .OP_END_FACTORY_REG(MoeInitRouting)
+
+  /**
+   * @brief compute init routing quant for moe input.
+   * @par Inputs:
+   * @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li row_idx: A Tensor. Type is:Int32.
+   * @li expert_idx: A Tensor. Type is:Int32.
+   * @par Outputs:
+   * @li expanded_x: A Tensor. Type is:Int8.
+   * @li expanded_row_idx: A Tensor. Type is:Int32.
+   * @li expanded_expert_idx: A Tensor. Type is:Int32.
+   * @par Attributes:
+   * @li active_num: Required parameter. Type is:Int32.
+   * @li scale: Required parameter. Type is:Float.
+   * @li offset: Required parameter. Type is:Float.
+   */
+    REG_OP(MoeInitRoutingQuant)
+    .INPUT(x, "T1")
+    .INPUT(row_idx, "T2")
+    .INPUT(expert_idx, "T2")
+    .OUTPUT(expanded_x, "T3")
+    .OUTPUT(expanded_row_idx, "T2")
+    .OUTPUT(expanded_expert_idx, "T2")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_INT32}))
+    .DATATYPE(T3, TensorType({DT_INT8}))
+    .REQUIRED_ATTR(active_num, Int)
+    .REQUIRED_ATTR(scale, Float)
+    .REQUIRED_ATTR(offset, Float)
+    .OP_END_FACTORY_REG(MoeInitRoutingQuant)
+
+  /**
+   * @brief compute softmax and topk for moe input.
+   * @par Inputs:
+   * @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li finished: A Tensor. Type is:Bool.
+   * @par Outputs:
+   * @li y: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li expert_idx: A Tensor. Type is:Int32.
+   * @li row_idx: A Tensor. Type is:Int32.
+   * @par Attributes:
+   * @li k: Required parameter. Type is:Int32.
+   */
+    REG_OP(MoeGatingTopKSoftmax)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(finished, TensorType({DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(expert_idx, TensorType({DT_INT32}))
+    .OUTPUT(row_idx, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(k, Int)
+    .OP_END_FACTORY_REG(MoeGatingTopKSoftmax)
+
+/**
+* @brief In MoE computation, the final step involves processing and merging the output results of the MoE FNN.
+* @par Inputs:
+* @li expanded_x: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li x1: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li x2: An optional Tensor. Type is:BFloat16, Float16 or Float32.
+* @li bias: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li scales: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li expanded_row_idx: A Tensor. Type is:Int32.
+* @li expanded_expert_idx: A Tensor. Type is:Int32.
+* @par Outputs:
+* @li y: A Tensor. Type is:BFloat16, Float16 or Float32.
+*/
+REG_OP(MoeFinalizeRouting)
+    .INPUT(expanded_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(scales, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(expanded_row_idx, TensorType({DT_INT32, DT_INT32, DT_INT32}))
+    .INPUT(expanded_expert_idx, TensorType({DT_INT32, DT_INT32, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OP_END_FACTORY_REG(MoeFinalizeRouting)
+
+/**
+* @brief Binary finds the position of the last row processed by each expert in the sorted_experts array.
+* @par Inputs:
+* @li sorted_experts: A Tensor. Type is:Int32.
+* @par Outputs:
+* @li total_rows_before_expert: A Tensor. Type is:Int32.
+* @par Attributes:
+* @li num_experts: Required parameter. Type is:Int. The value must be more than 0 and less than 2147483647.
+*/
+REG_OP(MoeComputeExpertTokens)
+    .INPUT(sorted_experts, "T")
+    .OUTPUT(total_rows_before_expert, "T")
+    .REQUIRED_ATTR(num_experts, Int)
+    .DATATYPE(T, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(MoeComputeExpertTokens)
+
+/**
+* @brief The fusion operator of Gelu activation function and quantum quantization.
+* @par Inputs:
+* @li x: A Tensor. Type is:DT_FLOAT32, DT_FLOAT16, DT_BF16.
+* @li input_scale: A Tensor. Type is:DT_FLOAT32, DT_FLOAT16, DT_BF16.
+* @li input_offset: A Tensor. Type is:DT_FLOAT32, DT_FLOAT16, DT_BF16.
+* @par Outputs:
+* @li y: A Tensor. Type is:DT_INT8.
+* @li out_scale: A Tensor. Type is:DT_FLOAT32.
+* @par Attributes:
+* @li approximate: Required parameter. Type is:String. The value must be none or tanh.
+* @li quant_mode: Required parameter. Type is:String. The value must be dynamic or static.
+*/
+REG_OP(GeluQuant)
+    .INPUT(x, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(input_scale, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(input_offset, TensorType({DT_FLOAT32, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_INT8}))
+    .OUTPUT(out_scale, TensorType({DT_FLOAT32}))
+    .ATTR(approximate, String, "none")
+    .ATTR(quant_mode, String, "dynamic")
+    .OP_END_FACTORY_REG(GeluQuant)
+}  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUSION_OPS_H_

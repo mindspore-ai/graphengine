@@ -115,7 +115,7 @@ const char_t *const OPTION_EXEC_ROLE_TABLE_ADDR = "ge.exec.roleTableAddr";
 const char_t *const OPTION_EXEC_RANK_TABLE_LEN = "ge.exec.rankTableLen";
 const char_t *const OPTION_EXEC_ROLE_TABLE_LEN = "ge.exec.roleTableLen";
 const char_t *const OPTION_EXEC_WORKER_NUM = "ge.exec.workerNum";
-const char_t *const OPTION_EXECUTE_TIMES = "ge.execute_times";
+const char_t *const OPTION_EXECUTE_TIMES = "execute_times";
 const char_t *const OPTION_MAX_KEY_NUM = "ge.max_num";
 const char_t *const OPTION_EMBEDDING_DIM = "ge.embedding_dim";
 const char_t *const OPTION_USE_COUNTER_FILTER = "ge.use_counter_filter";
@@ -504,6 +504,19 @@ struct OutputTensorInfo {
 
 struct ModelDistibuteDesc {
   uint32_t logic_device_number;
+};
+
+enum class MemoryType : std::int64_t {
+  /*
+   * call aclrtMalloc with aclrtMemMallocPolicy::ACL_MEM_MALLOC_HUGE_FIRST,
+   * ACL_MEM_MALLOC_HUGE_ONLY, ACL_MEM_MALLOC_NORMAL_ONLY
+   */
+  MEMORY_TYPE_DEFAULT,
+  /*
+   * call aclrtMalloc with aclrtMemMallocPolicy::ACL_MEM_MALLOC_HUGE_FIRST_P2P,
+   * ACL_MEM_MALLOC_HUGE_ONLY_P2P, ACL_MEM_MALLOC_NORMAL_ONLY_P2P
+   */
+  MEMORY_TYPE_P2P
 };
 
 using Status = uint32_t;

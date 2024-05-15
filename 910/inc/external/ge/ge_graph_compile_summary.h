@@ -21,6 +21,7 @@
 #include <vector>
 #include "ge_api_types.h"
 #include "ge_error_codes.h"
+#include "ge_feature_memory.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY CompiledGraphSummary {
@@ -53,11 +54,17 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
   Status GetFeatureMemorySize(size_t &size) const;
 
   ///
-  /// @brief get fix fearute memory size after compiled
+  /// @brief get fix feature memory size after compiled
   /// @param [out] size const memory size
   /// @return Status result of function
   ///
   Status GetFixedFeatureMemorySize(size_t &size) const;
+
+  ///
+  /// @brief get all type feature memory size after compiled
+  /// @return vector of FeatureMemory pointer
+  ///
+  std::vector<FeatureMemoryPtr> GetAllFeatureMemoryTypeSize() const;
 
   ///
   /// @brief get refreshable fearturemap memory size after compiled, without input and output and fix memory

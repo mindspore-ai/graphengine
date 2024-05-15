@@ -66,13 +66,6 @@ public:
      */
     uint32_t GetOutputsSize() const;
 
-    /*
-     * update workspace size and addr.
-       @param workspace_size: workspace info size
-     * @param workspace_addr : workspace info addr
-     */
-    void UpdateWorkSpaceInfo(uint64_t workspace_size, uint64_t workspace_addr);
-
 private:
     std::string op_;                                           // op type
     std::vector<std::shared_ptr<Tensor> > inputs_;             // input tensor list

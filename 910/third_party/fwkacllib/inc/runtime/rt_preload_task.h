@@ -49,6 +49,7 @@ typedef struct {
     uint16_t softUser;
     uint16_t kernelCredit;
     uint32_t taskParamOffset;                      // need add rtTaskInput_t.argOffset
+    uint8_t swapOut;
 } rtHwtsStaticTaskDesc_t;
 
 typedef struct {

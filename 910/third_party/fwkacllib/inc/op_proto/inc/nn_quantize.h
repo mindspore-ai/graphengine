@@ -74,6 +74,22 @@ REG_OP(FakeQuantAffineCachemask)
     .REQUIRED_ATTR(quant_min, Int)
     .REQUIRED_ATTR(quant_max, Int)
     .OP_END_FACTORY_REG(FakeQuantAffineCachemask)
+
+/**
+ * @brief Dynamic Quant.
+ * @par Inputs:
+ * @li x: A Tensor. Type is:DT_FLOAT16 or DT_BF16. For 910B and 910C series produces, the last dim does not exceed 11264.
+ * @li smooth_scales: A Tensor. Type is:DT_FLOAT16 or DT_BF16.
+ * @par Outputs:
+ * @li z: A Tensor. Type is:DT_INT8.
+ * @li scale_data: A Tensor. Type is:DT_FLOAT32.
+ */
+REG_OP(DynamicQuant)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(smooth_scales, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_INT8}))
+    .OUTPUT(scale, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(DynamicQuant)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_QUANTIZE_H_

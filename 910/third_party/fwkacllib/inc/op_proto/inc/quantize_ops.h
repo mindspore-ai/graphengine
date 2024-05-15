@@ -119,6 +119,41 @@ REG_OP(AscendQuant)
     .OP_END_FACTORY_REG(AscendQuant)
 
 /**
+* @brief Quantizes the input . \n
+* @par Inputs:
+* @li x: shape and dtype of input_x. \n
+* @li scale: shape and dtype of input_scales. \n
+* @li offset: shape and dtype of input_x offset \n
+* @par Attributes:
+* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
+* Defaults to "False".
+* @li round_mode: An optional string, specifying the float16 to int8 cast type.
+* The value range is [round, floor, ceil, trunc]. Defaults to "round" .
+* @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_INT8" . \n
+
+* @par Outputs:
+* y: The quantized output tensor of type int8 or int4. \n
+
+* @attention Constraints:
+* round_mode value range is [round, floor, ceil, trunc].
+* @li round: round to nearest, tie to even(c language rint).
+* @li floor: round to minus infinity(c language floor).
+* @li ceil: round to positive infinity(c language ceil).
+* @li trunc: round to zero(c language trunc). \n
+* @par Outputs:
+* y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
+*/
+REG_OP(AscendQuantV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(scale, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_INT4}))
+    .ATTR(sqrt_mode, Bool, false)
+    .ATTR(round_mode, String, "round")
+    .ATTR(dst_type, Int, DT_INT8)
+    .OP_END_FACTORY_REG(AscendQuantV2)
+
+/**
 * @brief Dequantizes the input . \n
 
  *@par Inputs:
@@ -183,7 +218,7 @@ REG_OP(AscendAntiQuant)
 * offset: A optional float32/bfloat16 offset.
 
 * @par Attributes:
-* @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
+* @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_FLOAT16".
 * @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
 * Defaults to "False" . \n
 

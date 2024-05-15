@@ -160,6 +160,7 @@ struct HcomRemoteOperationParams {
     void *value{nullptr};
     std::string group;
     int count;
+    u64 keyNum{};
     int valueDim;
     HcclDataType keyType{HCCL_DATA_TYPE_RESERVED};
     HcclDataType valueType{HCCL_DATA_TYPE_RESERVED};
@@ -176,6 +177,7 @@ struct HcomRemoteOperationParams {
     s32 *keyCount{};
     std::string hcclType;
     s32 flags{};
+    void *globalStepAddr{ nullptr };
 
     s32 intZerocpyFlag{};
     s32 outZerocpyFlag{};
@@ -246,6 +248,7 @@ using ReqStatus = struct tagReqStatus {
     int tag;            // 与算子IR中的tag相同
     int actualSize;     // 如果是接收接口的status, 还返回实际接收到的size
     int rsvd0;
+    s64 globalStep;
 };
 
 using LookupReqStatus = struct tagLookupReqStatus {
@@ -261,6 +264,7 @@ using UpdateReqStatus = struct tagUpdateReqStatus {
     int tag;                // 与算子IR中的tag相同
     int actualKeyCount;     // 如果是接收接口的status, 还返回实际接收到的keyCount
     int actualValueCount;   // 如果是接收接口的status, 还返回实际接收到的keyCount
+    s64 globalStep;
 };
 
 using CalcParams = struct tagCalcParams {
@@ -332,6 +336,10 @@ typedef struct {
     uint32_t rsv2;
 } HcomStatus;
 
+typedef struct {
+    uint32_t algSets; // 可支持算法类型(bitmap组合),对应ge metadef中的comm_sets
+    uint32_t rankSize;
+} HcclTopoDescs;
 
 /**
  * @ingroup Hccl Address type

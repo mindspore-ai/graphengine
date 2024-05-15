@@ -186,6 +186,7 @@ REG_OP(SplitVD)
         All outputs of the PhonySplit are allocated with the same memory block. 
         GE calculates the memory offset of each output, 
         and the custom operators next read the memory by offset. \n
+* Warning: This operator is used only to identify that the GE allocates continuous memory and does not perform any calculation..
 
 * @par Inputs:
 * One input:
@@ -208,9 +209,6 @@ REG_OP(SplitVD)
 
 * @par Third-party framework support
 * Support ONNX  framework.
-
-* @par Restrictions:
-* Warning: This operator is used only to identify that the GE allocates continuous memory and does not perform any calculation..
 */
 REG_OP(PhonySplit)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_BF16,
@@ -228,6 +226,7 @@ REG_OP(PhonySplit)
         All input of the PhonyConcat are allocated with the same memory block. 
         GE calculates the memory offset of each input, 
         and the custom operators before write the memory by offset. \n
+* Warning: This operator is used only to identify that the GE allocates continuous memory and does not perform any calculation..
 
 * @par Inputs:
 * Dynamic input: A list of input tensors. Has the same type and format as "x" .
@@ -249,9 +248,6 @@ REG_OP(PhonySplit)
 
 * @par Third-party framework support
 * Support ONNX  framework.
-
-* @par Restrictions:
-* Warning: This operator is used only to identify that the GE allocates continuous memory and does not perform any calculation..
 */
 REG_OP(PhonyConcat)
     .DYNAMIC_INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_BF16,

@@ -42,9 +42,13 @@ enum DataType {
     DT_STRING_REF = 24,     // string ref type
     DT_DUAL = 25,           // dual output type
     DT_BFLOAT16 = 27,       // bf16 type
+    DT_UNDEFINED = 28,      // Used to indicate a DataType field has not been set.
+    DT_INT4 = 29,           // int4 type
     DT_UINT1 = 30,          // uint1 type
-    DT_COMPLEX32 = 33,       // complex32 type
-    DT_UNDEFINED            // Used to indicate a DataType field has not been set.
+    DT_INT2 = 31,           // int2 type
+    DT_UINT2 = 32,          // uint2 type
+    DT_COMPLEX32 = 33,      // complex32 type
+    DT_MAX                  // Mark the boundaries of data types
 };
 
 AICPU_VISIBILITY inline int GetSizeByDataType(DataType dataType)
@@ -56,7 +60,8 @@ AICPU_VISIBILITY inline int GetSizeByDataType(DataType dataType)
         { DT_STRING, -1 },     { DT_DUAL_SUB_INT8, 1 }, { DT_DUAL_SUB_UINT8, 1 }, { DT_COMPLEX64, 8 },
         { DT_COMPLEX128, 16 }, { DT_QINT8, 1 },         { DT_QINT16, 2 },         { DT_QINT32, 4 },
         { DT_QUINT8, 1 },      { DT_QUINT16, 2 },       { DT_RESOURCE, -1 },      { DT_STRING_REF, -1 },
-        { DT_DUAL, 5 },        { DT_BFLOAT16, 2 },      { DT_UINT1,   1},         {DT_COMPLEX32, 4}
+        { DT_DUAL, 5 },        { DT_BFLOAT16, 2 },      { DT_UINT1,   1},         { DT_INT2,   2},
+        { DT_UINT2,   2},      { DT_INT4,   4},         { DT_COMPLEX32, 4 }
     };
     auto iter = sizeMap.find(dataType);
     if (iter == sizeMap.end()) {
@@ -115,6 +120,7 @@ enum Format {
     FORMAT_NYUV_A,
     FORMAT_NCL,
     FORMAT_FRACTAL_Z_WINO,
+    FORMAT_C1HWC0,
     // Add new formats definition here
     FORMAT_END,
     // FORMAT_MAX defines the max value of Format.

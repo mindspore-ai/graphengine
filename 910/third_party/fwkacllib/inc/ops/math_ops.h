@@ -1365,9 +1365,11 @@ REG_OP(SoftMarginLossGrad)
 *@par Inputs:
 *One inputs, including:
 * @li x1: A tensor. Must be one of the following types:
-*     float16, float32, int32, int8, uint8, int16. \n
+*     float16, float32, int32, int8, uint8, int16, double,
+*     int64, uint16, uint32, uint64, complex64, complex128. \n
 * @li x2: A tensor. Must be one of the following types:
-*     float16, float32, int32, int8, uint8, int16. \n
+*     float16, float32, int32, int8, uint8, int16, double,
+*     int64, uint16, uint32, uint64, complex64, complex128. \n
 
 *@par Attributes:
 *@li dim: the dimination of compute.Defaults to -65530. \n
@@ -1379,9 +1381,15 @@ REG_OP(SoftMarginLossGrad)
 *Compatible with the Pytorch operator cross. \n
 */
 REG_OP(Cross)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8,
+                           DT_INT16, DT_DOUBLE, DT_INT64, DT_UINT16, DT_UINT32,
+                           DT_UINT64, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8,
+                           DT_INT16, DT_DOUBLE, DT_INT64, DT_UINT16, DT_UINT32,
+                           DT_UINT64, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8,
+                           DT_INT16, DT_DOUBLE, DT_INT64, DT_UINT16, DT_UINT32,
+                           DT_UINT64, DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(dim, Int, -65530)
     .OP_END_FACTORY_REG(Cross)
 

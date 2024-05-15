@@ -3409,17 +3409,20 @@ REG_OP(ArgMaxWithK)
 
 *@par Inputs:
 *One input, including:
-* x: A Tensor. Must be one of the following types:bfloat16, int32, int16, float16, float32, complex32, complex64.
+* x: A Tensor. Must be one of the following types:bfloat16, int32, int16, int64, float16, float32, complex32, complex64.
 
 *@par Outputs:
-*y: A Tensor. Has the same type and shape as "x1". \n
+*y: A Tensor. Has the same type and shape as "x". \n
+
+*@par Attributes:
+*value: A scale. Must be float. \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator muls.
 */
 REG_OP(Muls)
-     .INPUT(x, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
-     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+     .INPUT(x, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
+     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_COMPLEX32, DT_COMPLEX64}))
      .REQUIRED_ATTR(value, Float)
      .OP_END_FACTORY_REG(Muls)
 
@@ -4168,7 +4171,7 @@ REG_OP(Dawsn)
         specifying the value to replace NaNs with. Defaults to "0.0".
 * @li posinf: An optional attribute of type float32,
         specifying the value to replace Infs with.. Defaults to "None".
-* @ li neginf: An optional attribute of type float32,
+* @li neginf: An optional attribute of type float32,
         specifying the value to replace -Infs with. Defaults to "None". \n
 
 * @par Outputs:

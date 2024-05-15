@@ -23,6 +23,7 @@
 #include "acldvpp_adjust_hue.h"
 #include "acldvpp_auto_contrast.h"
 #include "acldvpp_decode_jpeg.h"
+#include "acldvpp_encode_jpeg.h"
 #include "acldvpp_adjust_saturation.h"
 #include "acldvpp_convert_color.h"
 #include "acldvpp_crop.h"

@@ -12,9 +12,9 @@
 #ifndef PROF_API_H
 #define PROF_API_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "prof_callback.h"
 #include "prof_common.h"
 
 #ifdef __cplusplus
@@ -26,173 +26,6 @@ extern "C" {
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
-#define MSPROF_REPORT_DATA_MAGIC_NUM 0x5A5AU
-#define MSPROF_TASK_TIME_L0 0x00000800ULL  // mean PROF_TASK_TIME
-#define MSPROF_EVENT_FLAG 0xFFFFFFFFFFFFFFFFULL
-typedef void* VOID_PTR;
-typedef int32_t (*ProfCommandHandle)(uint32_t type, VOID_PTR data, uint32_t len);
-typedef int32_t (*MsprofReportHandle)(uint32_t moduleId, uint32_t type, VOID_PTR data, uint32_t len);
-typedef int32_t (*MsprofCtrlHandle)(uint32_t type, VOID_PTR data, uint32_t len);
-typedef int32_t (*MsprofSetDeviceHandle)(VOID_PTR data, uint32_t len);
-typedef int32_t (*AicpuStartFunc)();
-
-/* Msprof report level */
-#define MSPROF_REPORT_PYTORCH_LEVEL     30000U
-#define MSPROF_REPORT_PTA_LEVEL         25000U
-#define MSPROF_REPORT_ACL_LEVEL         20000U
-#define MSPROF_REPORT_MODEL_LEVEL       15000U
-#define MSPROF_REPORT_NODE_LEVEL        10000U
-#define MSPROF_REPORT_AICPU_LEVEL       6000U
-#define MSPROF_REPORT_HCCL_NODE_LEVEL   5500U
-#define MSPROF_REPORT_RUNTIME_LEVEL     5000U
-
-/* Msprof report type of acl(20000) level(acl), offset: 0x000000 */
-#define MSPROF_REPORT_ACL_OP_BASE_TYPE            0x010000U
-#define MSPROF_REPORT_ACL_MODEL_BASE_TYPE         0x020000U
-#define MSPROF_REPORT_ACL_RUNTIME_BASE_TYPE       0x030000U
-#define MSPROF_REPORT_ACL_OTHERS_BASE_TYPE        0x040000U
-
-
-/* Msprof report type of acl(20000) level(host api), offset: 0x050000 */
-#define MSPROF_REPORT_ACL_NN_BASE_TYPE            0x050000U
-#define MSPROF_REPORT_ACL_ASCENDC_TYPE            0x060000U
-#define MSPROF_REPORT_ACL_HOST_HCCL_BASE_TYPE     0x070000U
-#define MSPROF_REPORT_ACL_DVPP_BASE_TYPE          0x090000U
-#define MSPROF_REPORT_ACL_GRAPH_BASE_TYPE         0x0A0000U
-
-/* Msprof report type of model(15000) level, offset: 0x000000 */
-#define MSPROF_REPORT_MODEL_GRAPH_ID_MAP_TYPE    0U         /* type info: graph_id_map */
-#define MSPROF_REPORT_MODEL_EXECUTE_TYPE         1U         /* type info: execute */
-#define MSPROF_REPORT_MODEL_LOAD_TYPE            2U         /* type info: load */
-#define MSPROF_REPORT_MODEL_INPUT_COPY_TYPE      3U         /* type info: IntputCopy */
-#define MSPROF_REPORT_MODEL_OUTPUT_COPY_TYPE     4U         /* type info: OutputCopy */
-#define MSPROF_REPORT_MODEL_LOGIC_STREAM_TYPE    7U         /* type info: logic_stream_info */
-#define MSPROF_REPORT_MODEL_EXEOM_TYPE           8U         /* type info: exeom */
-#define MSPROF_REPORT_MODEL_UDF_BASE_TYPE        0x010000U  /* type info: udf_info */
-#define MSPROF_REPORT_MODEL_AICPU_BASE_TYPE      0x020000U  /* type info: aicpu */
-
-/* Msprof report type of node(10000) level, offset: 0x000000 */
-#define MSPROF_REPORT_NODE_BASIC_INFO_TYPE       0U  /* type info: node_basic_info */
-#define MSPROF_REPORT_NODE_TENSOR_INFO_TYPE      1U  /* type info: tensor_info */
-#define MSPROF_REPORT_NODE_FUSION_OP_INFO_TYPE   2U  /* type info: funsion_op_info */
-#define MSPROF_REPORT_NODE_CONTEXT_ID_INFO_TYPE  4U  /* type info: context_id_info */
-#define MSPROF_REPORT_NODE_LAUNCH_TYPE           5U  /* type info: launch */
-#define MSPROF_REPORT_NODE_TASK_MEMORY_TYPE      6U  /* type info: task_memory_info */
-#define MSPROF_REPORT_NODE_HOST_OP_EXEC_TYPE     8U  /* type info: op exec */
-#define MSPROF_REPORT_NODE_ATTR_INFO_TYPE        9U  /* type info: node_attr_info */
-
-/* Msprof report type of node(10000) level(ge api), offset: 0x010000 */
-#define MSPROF_REPORT_NODE_GE_API_BASE_TYPE      0x010000U /* type info: ge api */
-#define MSPROF_REPORT_NODE_HCCL_BASE_TYPE        0x020000U /* type info: hccl api */
-#define MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    0x030000U /* type info: dvpp api */
-/* Msprof report type of aicpu(6000), offset: 0x000000 */
-#define MSPROF_REPORT_AICPU_NODE_TYPE            0U /* type info: DATA_PREPROCESS.AICPU */
-#define MSPROF_REPORT_AICPU_DP_TYPE              1U /* type info: DATA_PREPROCESS.DP */
-#define MSPROF_REPORT_AICPU_MODEL_TYPE           2U /* type info: DATA_PREPROCESS.AICPU_MODEL */
-#define MSPROF_REPORT_AICPU_MI_TYPE              3U /* type info: DATA_PREPROCESS.AICPUMI */
-
-/* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
-#define MSPROF_REPORT_HCCL_NODE_BASE_TYPE        0x010000U
-#define MSPROF_REPORT_HCCL_MASTER_TYPE           0x010001U
-#define MSPROF_REPORT_HCCL_SLAVE_TYPE            0x010002U
-
-enum ProfileCallbackType {
-    PROFILE_CTRL_CALLBACK = 0,
-    PROFILE_DEVICE_STATE_CALLBACK,
-    PROFILE_REPORT_API_CALLBACK,
-    PROFILE_REPORT_EVENT_CALLBACK,
-    PROFILE_REPORT_COMPACT_CALLBACK,
-    PROFILE_REPORT_ADDITIONAL_CALLBACK,
-    PROFILE_REPORT_REG_TYPE_INFO_CALLBACK,
-    PROFILE_REPORT_GET_HASH_ID_CALLBACK,
-    PROFILE_HOST_FREQ_IS_ENABLE_CALLBACK
-};
-
-enum MsprofAicpuAdditionalType {
-    TYPE_DP = 0,
-    TYPE_AICPU
-};
-
-struct AicpuStartPara {
-    uint32_t devId;
-    uint32_t hostPid;
-    uint32_t channelId;
-};
-
-struct MsprofApi { // for MsprofReportApi
-#ifdef __cplusplus
-    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
-#else
-    uint16_t magicNumber;
-#endif
-    uint16_t level;
-    uint32_t type;
-    uint32_t threadId;
-    uint32_t reserve;
-    uint64_t beginTime;
-    uint64_t endTime;
-    uint64_t itemId;
-};
-
-struct MsprofEvent {  // for MsprofReportEvent
-#ifdef __cplusplus
-    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
-#else
-    uint16_t magicNumber;
-#endif
-    uint16_t level;
-    uint32_t type;
-    uint32_t threadId;
-    uint32_t requestId; // 0xFFFF means single event
-    uint64_t timeStamp;
-#ifdef __cplusplus
-    uint64_t eventFlag = MSPROF_EVENT_FLAG;
-#else
-    uint64_t eventFlag;
-#endif
-    uint64_t itemId;
-};
-
-struct MsprofRuntimeTrack {  // for MsprofReportCompactInfo buffer data
-    uint16_t deviceId;
-    uint16_t streamId;
-    uint32_t taskId;
-    uint64_t taskType;       // task message hash id
-};
-
-#define MSPROF_COMPACT_INFO_DATA_LENGTH (40)
-struct MsprofCompactInfo {  // for MsprofReportCompactInfo buffer data
-#ifdef __cplusplus
-    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
-#else
-    uint16_t magicNumber;
-#endif
-    uint16_t level;
-    uint32_t type;
-    uint32_t threadId;
-    uint32_t dataLen;
-    uint64_t timeStamp;
-    union {
-        uint8_t info[MSPROF_COMPACT_INFO_DATA_LENGTH];
-        struct MsprofRuntimeTrack runtimeTrack;
-        struct MsprofNodeBasicInfo nodeBasicInfo;
-    } data;
-};
-
-#define MSPROF_ADDTIONAL_INFO_DATA_LENGTH (232)
-struct MsprofAdditionalInfo {  // for MsprofReportAdditionalInfo buffer data
-#ifdef __cplusplus
-    uint16_t magicNumber = MSPROF_REPORT_DATA_MAGIC_NUM;
-#else
-    uint16_t magicNumber;
-#endif
-    uint16_t level;
-    uint32_t type;
-    uint32_t threadId;
-    uint32_t dataLen;
-    uint64_t timeStamp;
-    uint8_t  data[MSPROF_ADDTIONAL_INFO_DATA_LENGTH];
-};
 
 /*
  * @ingroup libprofapi
@@ -263,7 +96,7 @@ MSVP_PROF_API int32_t profSetStepInfo(const uint64_t indexId, const uint16_t tag
  */
 MSVP_PROF_API int32_t MsprofRegisterProfileCallback(int32_t callbackType, VOID_PTR callback, uint32_t len);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofInit
  * @brief Profiling module init
@@ -274,7 +107,7 @@ MSVP_PROF_API int32_t MsprofRegisterProfileCallback(int32_t callbackType, VOID_P
  */
 MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, VOID_PTR data, uint32_t dataLen);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofSetConfig
  * @brief Set profiling config
@@ -282,7 +115,7 @@ MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, VOID_PTR data, uint32_t data
  */
 MSVP_PROF_API int32_t MsprofSetConfig(uint32_t configType, const char *config, size_t configLength);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofRegisterCallback
  * @brief register profiling switch callback for module
@@ -292,7 +125,7 @@ MSVP_PROF_API int32_t MsprofSetConfig(uint32_t configType, const char *config, s
  */
 MSVP_PROF_API int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofReportData
  * @brief report profiling data of module
@@ -367,7 +200,7 @@ MSVP_PROF_API int32_t MsprofRegTypeInfo(uint16_t level, uint32_t typeId, const c
  */
 MSVP_PROF_API uint64_t MsprofGetHashId(const char *hashInfo, size_t length);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofSetDeviceIdByGeModelIdx
  * @brief insert device id by model id
@@ -377,7 +210,7 @@ MSVP_PROF_API uint64_t MsprofGetHashId(const char *hashInfo, size_t length);
  */
 MSVP_PROF_API int32_t MsprofSetDeviceIdByGeModelIdx(const uint32_t geModelIdx, const uint32_t deviceId);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofUnsetDeviceIdByGeModelIdx
  * @brief delete device id by model id
@@ -387,7 +220,7 @@ MSVP_PROF_API int32_t MsprofSetDeviceIdByGeModelIdx(const uint32_t geModelIdx, c
  */
 MSVP_PROF_API int32_t MsprofUnsetDeviceIdByGeModelIdx(const uint32_t geModelIdx, const uint32_t deviceId);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  register report interface for atlas
  * @brief report api timestamp
@@ -398,7 +231,7 @@ MSVP_PROF_API int32_t MsprofUnsetDeviceIdByGeModelIdx(const uint32_t geModelIdx,
  */
 MSVP_PROF_API int32_t MsprofNotifySetDevice(uint32_t chipId, uint32_t deviceId, bool isOpen);
 
-/*
+/**
  * @ingroup libprofapi
  * @name  MsprofFinalize
  * @brief profiling finalize
@@ -414,15 +247,6 @@ MSVP_PROF_API int32_t MsprofFinalize();
  */
 MSVP_PROF_API uint64_t MsprofSysCycleTime();
 
-/*
- * @ingroup libascend_devprof
- * @name  MsprofAicpuStartRegister
- * @brief regist aicpu start report func
- * @param [in] aicpuStartCallback: aicpu start report func
- * @param [in] para: aicpu start para
- * @return 0:SUCCESS, !0:FAILED
- */
-MSVP_PROF_API int32_t MsprofAicpuStartRegister(AicpuStartFunc aicpuStartCallback, const struct AicpuStartPara *para);
 #ifdef __cplusplus
 }
 #endif

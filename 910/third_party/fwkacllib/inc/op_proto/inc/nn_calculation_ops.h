@@ -1136,7 +1136,7 @@ REG_OP(QuantConv2D)
 /**
 *@brief Computes a 3D convolution given 5D "x" and "filter" tensors.
 *@par Inputs:
- * @li x: A 5D tensor. Must be one of the following types: float16, int8.
+ * @li x: A 5D tensor. Must be one of the following types: float16, int8, float32, bfloat16.
  * The format of x is NCDHW or NDHWC.
  * @li filter: A 5D tensor of the same type as "x".
  * The format is NCDHW, NDHWC or DHWCN.
@@ -1172,11 +1172,11 @@ REG_OP(QuantConv2D)
  * @li Compatible with the Caffe operator Convolution.
 */
 REG_OP(Conv3D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
@@ -1198,7 +1198,7 @@ REG_OP(Conv3D)
  * [batch, in_depth, in_height, in_width, in_channels] or
  * [batch, in_channels, in_depth, in_height, in_width].
  * The in_height and in_width must be in [1, 4096].
- * @li filter: A 5-D Tensor. Must be one of the following types: float16, float32, double.
+ * @li filter: A 5-D Tensor. Must be one of the following types: float16, float32, double, bfloat16.
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
@@ -1235,16 +1235,16 @@ REG_OP(Conv3D)
  * Specify the data format of the feature map, out_backprop and output.
 *@par Outputs:
  * y: A Tensor. It has the same format as feature map and out_backprop.
- * The type is float16, float32 or double.
+ * The type is float16, bfloat16, float32 or double.
  * The gradients of feature map.
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv3d_backprop_input
 */
 REG_OP(Conv3DBackpropInput)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
@@ -1255,12 +1255,12 @@ REG_OP(Conv3DBackpropInput)
 /**
 *@brief Computes the gradients of convolution 3d with respect to the input.
 *@par Inputs:
- * @li filter: A 5-D Tensor. The type is float16.
+ * @li filter: A 5-D Tensor. Supported types includes float16, bfloat16.
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
  * The length of filter_height axis and filter_width axis must be in [1, 255].
- * @li out_backprop: A 5-D Tensor. The type is float16.
+ * @li out_backprop: A 5-D Tensor. Supported types includes float16, bfloat16.
  * The format of the out_backprop tensor must be one of the followings:
  * [batch, out_depth, out_height, out_width, out_channels] or
  * [batch, out_channels, out_depth, out_height, out_width].
@@ -1299,7 +1299,7 @@ REG_OP(Conv3DBackpropInput)
  * The correspondence is as follows: batch(N), depth(D), height(H), width(W), channels(C).
  * Specify the data format of the feature map, out_backprop and output.
 *@par Outputs:
- * y: A Tensor. Type is float16 or float32.
+ * y: A Tensor. Supported types includes float16, bfloat16, float32.
  * The tensor has the same format as out_backprop and feature map.
  * The gradients of feature map.
 *@par Third-party framework compatibility
@@ -1308,9 +1308,9 @@ REG_OP(Conv3DBackpropInput)
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv3DBackpropInput instead.
 */
 REG_OP(Conv3DBackpropInputD)
-    .INPUT(filter, TensorType({DT_FLOAT16}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .REQUIRED_ATTR(input_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -1365,7 +1365,7 @@ REG_OP(LSTM)
 /**
 *@brief Computes the gradients of convolution3D with respect to the filter
 *@par Inputs:
- * @li x: A Tensor. Must be one of the following types: float16.
+ * @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
  * 5-D with shape [batch, in_depth, in_height, in_width, in_channels]
  * or [batch, in_channels, in_depth, in_height, in_width].
  * @li filter_size: A Tensor of type int32. An integer vector representing the
@@ -1400,9 +1400,9 @@ REG_OP(LSTM)
  * Compatible with Tensorflow's conv3d_backprop_filter
 */
 REG_OP(Conv3DBackpropFilter)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .INPUT(filter_size, TensorType({DT_INT32}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -1415,7 +1415,7 @@ REG_OP(Conv3DBackpropFilter)
 *@brief Computes the gradients of convolution with respect to the filter.
 
 *@par Inputs:
- * @li x: A Tensor of type float16.
+ * @li x: A Tensor of type float16 or bfloat16.
  * 5-D with shape [batch, in_depth, in_height, in_width, in_channels]
  * or [batch, in_channels, in_depth, in_height, in_width].
  * @li out_backprop: A Tensor. Must have the same type as x.
@@ -1452,8 +1452,8 @@ REG_OP(Conv3DBackpropFilter)
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv3DBackpropFilter instead.
 */
 REG_OP(Conv3DBackpropFilterD)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_BF16}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(filter_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -1467,11 +1467,11 @@ REG_OP(Conv3DBackpropFilterD)
 *@brief Computes the transpose of convolution 3d with respect to the input.
 
 *@par Inputs:
- * @li input_size: A Tensor of type int32. An integer vector
+ * @li input_size: A Tensor of type int32 or int64. An integer vector
  * representing the shape of input.
- * @li x: A Tensor of type float16, currently does not support int8. The format
+ * @li x: A Tensor of type float16 or bfloat16. The format
  * is NDHWC or NCDHW.
- * @li filter: A Tensor of type float16, currently does not support int8.
+ * @li filter: A Tensor of type float16 or bfloat16, currently does not support int8.
  * The format is NDHWC, NCDHW or DHWCN.
  * @li bias: Optional. An optional 1D tensor of the same type as "x". Reserved.
  * @li offset_w: Optional. An optional 1D tensor for quantized deconvolution.
@@ -1493,15 +1493,15 @@ REG_OP(Conv3DBackpropFilterD)
  * @li offset_x: Optional. Input offset_x value. Reserved. \n
 
 *@par Outputs:
- * y: A Tensor. Has the same format as "x", has the type float16, float32.
+ * y: A Tensor. Has the same format as "x", has the type float16, float32, bfloat16.
 */
 REG_OP(Conv3DTranspose)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(filter, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
@@ -1515,9 +1515,9 @@ REG_OP(Conv3DTranspose)
 *@brief Computes the transpose of convolution 3d with respect to the input.
 
 *@par Inputs:
- * @li x: A Tensor of type float16, currently does not support int8.
+ * @li x: A Tensor of type float16 or bfloat16.
  * The format is NDHWC or NCDHW.
- * @li filter: A Tensor of type float16, currently does not support int8.
+ * @li filter: A Tensor of type float16 or bfloat16.
  * The format is NDHWC, NCDHW or DHWCN.
  * @li bias: Optional. An 1D tensor of the same type as "x".
  * @li offset_w: Optional. An 1D tensor for quantized deconvolution. Reserved. \n
@@ -1540,17 +1540,17 @@ REG_OP(Conv3DTranspose)
  * @li offset_x: Optional. Input offset_x value. Reserved. \n
 
 *@par Outputs:
- * y: A Tensor. Has the same format as "x", has the type float16, float32. \n
+ * y: A Tensor. Has the same format as "x", has the type float16, float32 or bfloat16. \n
 
 *@par Restrictions:
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv3DTranspose instead.
 */
 REG_OP(Conv3DTransposeD)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(filter, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_BF16}))
     .REQUIRED_ATTR(input_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -1585,7 +1585,7 @@ REG_OP(Conv3DTransposeD)
     | Tensor    | x       | filter  | bias    | y      |\n
     |-----------|---------|---------|---------|--------|\n
     | Data Type | float16 | float16 | float16 | float16 |\n
-    |           | bfloat16| bfloat16| float32 | bfloat16|\n  
+    |           | bfloat16| bfloat16| float32 | bfloat16|\n
     |           | float16 | float16 | float32 | float32 |\n
     | Format    | NCHW    | NCHW    | ND      | NCHW    |\n
     |           | NHWC    | HWCN    |         | NHWC    |\n

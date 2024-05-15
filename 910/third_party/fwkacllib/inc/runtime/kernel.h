@@ -699,6 +699,16 @@ RTS_API rtError_t rtDatadumpInfoLoad(const void *dumpInfo, uint32_t length);
 
 /**
  * @ingroup rt_kernel
+ * @brief load aicpu info
+ * @param [in] aicpuInfo   aicpu info
+ * @param [in] length   length of aicpu info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuInfoLoad(const void *aicpuInfo, uint32_t length);
+
+/**
+ * @ingroup rt_kernel
  * @brief load dump info to aicpu
  * @param [in] dumpInfo   dump info
  * @param [in] length     length of  dump info

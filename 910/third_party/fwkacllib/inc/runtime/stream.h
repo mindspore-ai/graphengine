@@ -58,7 +58,7 @@ typedef struct TagStreamConfigHandle {
  */
 #define RT_STREAM_PRIORITY_DEFAULT (0U)
 
-#define RT_MAX_MODELS_IN_ONE_STREAM (255)
+#define RT_MAX_MODELS_IN_ONE_STREAM (256)
 
 /**
  * @ingroup dvrt_stream
@@ -111,6 +111,17 @@ RTS_API rtError_t rtStreamCreateWithConfig(rtStream_t *stm, rtStreamConfigHandle
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtStreamGetSqid(const rtStream_t stm, uint32_t *sqId);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief get stream cq info
+ * @param [in] stm   stream hadle
+ * @param [out] sqId   stream op cqId
+ * @param [out] cqId   stream op logic cqId
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStreamGetCqid(const rtStream_t stm, uint32_t *cqId, uint32_t *logicCqId);
 
 /**
  * @ingroup dvrt_stream
@@ -330,13 +341,12 @@ RTS_API rtError_t rtGetStreamTag(rtStream_t stm, uint32_t *geOpTag);
 
 /**
  * @ingroup dvrt_stream
- * @brief get remain task num by stream
- * @param [in]  stream
- * @param [out]  task num
+ * @brief clearing tasks on stream for mc2
+ * @param [in] stm: stream handle
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetRemainTaskNumByStream(rtStream_t stm, uint32_t *taskNum);
+RTS_API rtError_t rtStreamClear(rtStream_t stm);
 
 #if defined(__cplusplus)
 }

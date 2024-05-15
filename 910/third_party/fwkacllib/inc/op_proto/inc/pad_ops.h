@@ -404,7 +404,7 @@ REG_OP(Diag)
 * One input, include:
 * x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
 *     following types:
-*     DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_INT16,
+*     DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_BF16, DT_INT16, DT_UINT16, DT_UINT32, DT_UINT64,
       DT_INT8, DT_UINT8, DT_DOUBLE, DT_BOOL,
       DT_COMPLEX32, DT_COMPLEX128, DT_COMPLEX64 . \n
 

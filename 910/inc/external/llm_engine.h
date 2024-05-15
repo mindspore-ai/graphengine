@@ -19,24 +19,14 @@
 
 #include <map>
 #include <string>
-#include <thread>
 #include <vector>
-#include <mutex>
 #include "ge/ge_ir_build.h"
 #include "llm_engine_types.h"
-#include "llm_error_codes.h"
 
 namespace llm {
-class DecoderManager;
-class PromptManager;
-class PriorityScheduleManager;
-enum class RunMode : uint32_t {
-  kSeparateSchedule = 0,
-  kPrioritySchedule
-};
 class LLMEngine {
  public:
-  explicit LLMEngine(uint64_t cluster_id) : cluster_id_(cluster_id) {}
+  explicit LLMEngine(const uint64_t cluster_id);
   ~LLMEngine();
   ge::Status LLMEngineInitialize(const std::vector<ge::ModelBufferData> &model_buffer_datas,
                                  const std::map<ge::AscendString, ge::AscendString> &options);
@@ -51,7 +41,6 @@ class LLMEngine {
       const std::map<ge::AscendString, std::vector<ge::ModelBufferData>> &model_type_to_buffer_datas,
       const std::map<ge::AscendString, ge::AscendString> &options);
   LLMEngineStatus FetchLLMEngineStatus();
-  int64_t FetchLlmEngineQueueStatus();
   // API2：execute prompt
   ge::Status RunPromptAsync(const LLMReq &req, const std::vector<ge::Tensor> &inputs, ge::RunAsyncCallback callback,
                             uint64_t model_id = 0UL);
@@ -113,8 +102,7 @@ class LLMEngine {
   //         SUCCESS: 成功
   //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式, request_id与batch不对应等
   //         FAILED: 执行推理失败
-  ge::Status RunDecoder(const std::vector<uint64_t> &req_ids,
-                        const std::vector<ge::Tensor> &inputs,
+  ge::Status RunDecoder(const std::vector<uint64_t> &req_ids, const std::vector<ge::Tensor> &inputs,
                         std::vector<ge::Tensor> &outputs);
 
   // @brief 执行Decoder推理
@@ -126,8 +114,7 @@ class LLMEngine {
   //         SUCCESS: 成功
   //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式, request_id与batch不对应等
   //         FAILED: 执行推理失败
-  ge::Status RunDecoder(const std::vector<LLMReq> &requests,
-                        const std::vector<ge::Tensor> &inputs,
+  ge::Status RunDecoder(const std::vector<LLMReq> &requests, const std::vector<ge::Tensor> &inputs,
                         std::vector<ge::Tensor> &outputs, uint64_t model_id = 0UL);
 
   // @brief 进行device间建链
@@ -159,29 +146,12 @@ class LLMEngine {
   //         SUCCESS: 成功
   //         LLM_PARAM_INVALID: 参数错误, 如当前非manual batching模式
   //         FAILED: 执行推理失败
-  ge::Status RunPrompt(const std::vector<LLMReq> &reqs,
-                       const std::vector<ge::Tensor> &inputs,
-                       std::vector<ge::Tensor> &output,
-                       uint64_t model_id = 0UL);
+  ge::Status RunPrompt(const std::vector<LLMReq> &reqs, const std::vector<ge::Tensor> &inputs,
+                       std::vector<ge::Tensor> &output, uint64_t model_id = 0UL);
 
  private:
-  ge::Status InitializePriorityScheduer(const std::map<ge::AscendString, ge::AscendString> &options);
-  ge::Status CheckValidityOfRequest(const LLMReq &req, uint64_t cluster_id, const std::string &role,
-                                    uint64_t model_id = 0UL);
-  ge::Status CheckValidityOfRequest(const std::vector<LLMReq> &reqs, uint64_t cluster_id, const std::string &role,
-                                    uint64_t model_id = 0UL);
-  std::shared_ptr<PromptManager> prompt_manager_;
-  std::shared_ptr<DecoderManager> decoder_manager_;
-  std::shared_ptr<PriorityScheduleManager> priority_schedule_manager_;
-  uint64_t cluster_id_;
-  std::string role_;
-  std::atomic<bool> is_initialized_{false};
-  std::atomic<bool> is_finalized_{false};
-  RunMode run_mode_{RunMode::kSeparateSchedule};
-  std::vector<std::map<ge::AscendString, std::vector<ge::ModelBufferData>>> model_defines;
-  std::vector<std::map<ge::AscendString, ge::AscendString>> model_options;
-  uint64_t model_id_ = 0U;
-  std::mutex mutex_;
+  class LlmEngineImpl;
+  std::unique_ptr<LlmEngineImpl> impl_;
 };
 }  // namespace llm
 

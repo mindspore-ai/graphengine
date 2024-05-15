@@ -345,6 +345,18 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief set fix feature memory base with type after compiled and before loaded, one type only allows setting once
+  /// @param [in] graph_id graph id
+  /// @param [in] type memory type
+  /// @param [in] memory const memory base
+  /// @param [out] size const memory size
+  /// @return Status result of function
+  ///
+  Status SetGraphFixedFeatureMemoryBaseWithType(uint32_t graph_id, MemoryType type, const void *const memory,
+                                                size_t size);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief set or update tefreshable fearture memory base after compiled, not include fix memory
   /// @param [in] graphId graph id
   /// @param [in] memory feature map memory base, without input and output mem
@@ -369,7 +381,7 @@ class GE_FUNC_VISIBILITY Session {
   /// @ingroup ge_graph
   /// @brief shard graphs in the session according the add graph sequence
   /// @return Status result of function
-  Status ShardGraphs() const;
+  Status ShardGraphsToFile(const char_t *file_path = "./") const;
 
   /// @ingroup ge_graph
   /// @brief save graphs in the session with specific file path

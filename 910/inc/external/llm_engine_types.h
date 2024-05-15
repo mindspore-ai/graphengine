@@ -101,6 +101,8 @@ constexpr const char LLM_BATCH_MODE_AUTO[] = "auto";
 constexpr const char LLM_MODEL_TYPE_INFERENCE[] = "inference";
 constexpr const char LLM_MODEL_TYPE_POSTPROCESS[] = "postprocess";
 constexpr const char LLM_OPTION_OM_CACHE_PATH[] = "llm.OmCachePath";
+// 用于区分加载的方式
+constexpr const char LLM_OPTION_LOAD_TYPE_FLOWMODEL[] = "llm.IsFlowModel";
 constexpr const char LLM_OPTION_CLUSTER_INFO[] = "llm.ClusterInfo";
 constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
 constexpr const char LLM_OPTION_MODEL_INPUTS_SHAPES[] = "llm.InputShapes";

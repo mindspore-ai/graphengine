@@ -21,7 +21,9 @@ enum acltdtTensorType {
     ACL_TENSOR_DATA_UNDEFINED = -1,
     ACL_TENSOR_DATA_TENSOR,
     ACL_TENSOR_DATA_END_OF_SEQUENCE,
-    ACL_TENSOR_DATA_ABNORMAL
+    ACL_TENSOR_DATA_ABNORMAL,
+    ACL_TENSOR_DATA_SLICE_TENSOR,
+    ACL_TENSOR_DATA_END_TENSOR
 };
 
 typedef struct acltdtDataItem acltdtDataItem;
@@ -85,10 +87,24 @@ ACL_FUNC_VISIBILITY size_t acltdtGetDimNumFromItem(const acltdtDataItem *dataIte
 
 /**
  * @ingroup AscendCL
+ * @brief Get slice info from item
+ *
+ * @param dataItem [IN] pointer to data item
+ * @param sliceNum [OUT] pointer to the sliceNum of dataItem
+ * @param sliceId [OUT] pointer to the sliceId of dataItem
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+*/
+ACL_FUNC_VISIBILITY aclError acltdtGetSliceInfoFromItem(const acltdtDataItem *dataItem, size_t *sliceNum,
+    size_t* sliceId);
+
+/**
+ * @ingroup AscendCL
  * @brief Get dims from item
  *
  * @param  dataItem [IN]      the struct of data item
- * @param  dims [IN|OUT]      pointer to the dims of dataTtem
+ * @param  dims [IN|OUT]      pointer to the dims of dataItem
  * @param  dimNum [IN]        the size of the dims
  *
  * @retval ACL_SUCCESS  The function is successfully executed.

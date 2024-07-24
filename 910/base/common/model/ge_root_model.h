@@ -1,18 +1,12 @@
-/**
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* Copyright (c) 2024 Huawei Technologies Co., Ltd.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
+ * ===================================================================================================================*/
+
 #ifndef GE_MODEL_GE_ROOT_MODEL_H_
 #define GE_MODEL_GE_ROOT_MODEL_H_
 
@@ -27,6 +21,7 @@
 #include "common/op_so_store/op_so_store.h"
 #include "common/memory/mem_type_utils.h"
 #include "common/memory/feature_memory_impl.h"
+#include "common/host_resource_center/host_resource_center.h"
 
 namespace ge {
 struct FixedFeatureMemory {
@@ -48,9 +43,9 @@ struct FixedFeatureMemory {
  class GeRootModel : public std::enable_shared_from_this<GeRootModel>, public PneModel {
  public:
   GeRootModel() = default;
-  explicit GeRootModel(const ComputeGraphPtr &root_graph) : PneModel(root_graph) {};
   ~GeRootModel() override = default;
 
+  Status Initialize(const ComputeGraphPtr &root_graph);
   void SetSubgraphInstanceNameToModel(const std::string &instance_name, const GeModelPtr &ge_model);
   void RemoveInstanceSubgraphModel(const std::string &instance_name);
   const std::map<std::string, GeModelPtr> &GetSubgraphInstanceNameToModel() const {
@@ -152,6 +147,8 @@ struct FixedFeatureMemory {
 
   bool IsNeedMallocFixedFeatureMem() const;
   bool IsNeedMallocFixedFeatureMemByType(const rtMemType_t rt_mem_type) const;
+  HostResourceCenterPtr GetHostResourceCenterPtr() const;
+
  private:
   Status SetLogicDeviceId(const std::string &logic_device_id, bool is_redundant);
 
@@ -180,6 +177,7 @@ struct FixedFeatureMemory {
   bool all_feature_memory_init_flag_ = false;
   std::vector<FeatureMemoryPtr> all_feature_memory_;
   std::map<rtMemType_t, FixedFeatureMemory> fixed_feature_mems_;
+  HostResourceCenterPtr host_resource_center_ = ge::MakeShared<HostResourceCenter>();;
 };
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
 }  // namespace ge

@@ -28,7 +28,7 @@
 namespace ge {
 
 /**
-*@brief Draws samples from a multinomial distribution . \n
+*@brief Draws samples from a multinomial distribution .
 
 *@par Inputs:
 *Inputs include:
@@ -60,7 +60,7 @@ REG_OP(Multinomial)
     .OP_END_FACTORY_REG(Multinomial)
 
 /**
-*@brief Creates a multinomial distribution. \n
+*@brief Creates a multinomial distribution.
 
 *@par Inputs:
 *Inputs include:
@@ -469,7 +469,7 @@ REG_OP(TruncatedNormal)
     .OP_END_FACTORY_REG(TruncatedNormal)
 
 /**
-*@brief Generate random bit mask for dropout . \n
+*@brief Generate random bit mask for dropout .
 
 *@par Inputs:
 include:
@@ -618,7 +618,7 @@ REG_OP(StatelessBernoulliV2)
     .OP_END_FACTORY_REG(StatelessBernoulliV2)
 
 /**
-*@brief Generates values in an interval . \n
+*@brief Generates values in an interval .
 
 *@par Inputs:
 * Four ND inputs, including:
@@ -628,10 +628,10 @@ REG_OP(StatelessBernoulliV2)
 *@li num: A 1D Tensor of type int32 or int64, for the common difference of the entries . \n
 
 *@par Outputs:
-*output_op: A 1D Tensor of type float32 . \n
+*output: A 1D Tensor of type float32 . \n
 
 *@attention Constraints:
-* "input_assist" is a sequence of "input_num" evenly-spaced values beginning at 0 with an common difference of 1 . \n
+* "assist" is a sequence of "num" evenly-spaced values beginning at 0 with an common difference of 1 . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator lin_space.
@@ -648,7 +648,7 @@ REG_OP(LinSpaceD)
     .OP_END_FACTORY_REG(LinSpaceD)
 
 /**
-*@brief Generates values in an interval . \n
+*@brief Generates values in an interval .
 
 *@par Inputs:
 * Four ND inputs, including:
@@ -657,10 +657,7 @@ REG_OP(LinSpaceD)
 *@li num: A 1D Tensor of type int32 or int64, for the common difference of the entries . \n
 
 *@par Outputs:
-*output_op: A 1D Tensor of type float32 . \n
-
-*@attention Constraints:
-* "input_assist" is a sequence of "input_num" evenly-spaced values beginning at 0 with an common difference of 1 . \n
+*output: A 1D Tensor of type float32 . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator lin_space.
@@ -946,7 +943,7 @@ REG_OP(MultinomialWithReplacement)
 
 * @par Outputs:
 * @li y: A required Tensor. Must be one of the following types:
-* float16, float32, float64, int8, uint8, int16, int32, int64. \n
+* float16, float32, float64, int8, uint8, int16, int32, int64, bfloat16. \n
 
 * @attention Constraints:
 * The implementation for Randperm on Ascend uses AICPU, with bad performance.

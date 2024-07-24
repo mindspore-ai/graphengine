@@ -98,6 +98,7 @@ typedef enum tagRtMemcpyKind {
     RT_MEMCPY_ADDR_DEVICE_TO_DEVICE,
     RT_MEMCPY_HOST_TO_DEVICE_EX, // host  to device ex (only used for 8 bytes)
     RT_MEMCPY_DEVICE_TO_HOST_EX, // device to host ex
+    RT_MEMCPY_DEFAULT,           // auto infer copy dir
     RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
 
@@ -491,7 +492,10 @@ typedef struct {
 } rtMemcpyAddrInfo;
 
 RTS_API rtError_t rtMemcpyAsyncPtr(void *memcpyAddrInfo, uint64_t destMax, uint64_t count,
-                                   rtMemcpyKind_t kind, rtStream_t stream, uint32_t qosCfg);
+                                    rtMemcpyKind_t kind, rtStream_t stream, uint32_t qosCfg);
+
+RTS_API rtError_t rtMemcpyAsyncPtrV2(void *memcpyAddrInfo, uint64_t destMax, uint64_t count,
+                                    rtMemcpyKind_t kind, rtStream_t stream, const rtTaskCfgInfo_t *cfgInfo);
 
 /**
  * @ingroup dvrt_mem

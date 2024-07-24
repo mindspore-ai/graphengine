@@ -240,15 +240,15 @@ REG_OP(EmbeddingTableImport)
 * @li values: indicates the hashtable value. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int. indicates the hashtable value number.
-* @li default_value: A Float, indicate the default value when can not find key. \n
+* @li embedding_dim: Int List. indicates the hashtable value number.
+* @li default_value: Float List, indicate the default value when can not find key. \n
 */
 REG_OP(EmbeddingTableFind)
     .INPUT(table_id, TensorType({DT_INT32}))
     .INPUT(keys, TensorType({DT_INT64}))
     .OUTPUT(values, TensorType({DT_FLOAT}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(default_value, Float, -1)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(default_value, ListFloat, {-1})
     .OP_END_FACTORY_REG(EmbeddingTableFind)
 
 /**
@@ -272,27 +272,29 @@ REG_OP(UninitEmbeddingHashmap)
 * @li values: indicates the hashtable value. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding var value in hashtable.
-* @li value_total_len: A Int, indicates the dim of embedding var+m+v or var+accum values in hashtable
-* @li initializer_mode: A String of "random_uniform", "truncated_normal" or "constant".
+* @li embedding_dim: Int List, indicates the dim of embedding var value in hashtable.
+* @li value_total_len: Int List, indicates the dim of embedding var+m+v or var+accum values in hashtable
+* @li initializer_mode: String List of "random_uniform", "truncated_normal" or "constant".
 * indicates the algo of init method, Defaults to "random_uniform".
-* @li constant_value: A Float, used when initializer_mode is "constant", Defaults to "0".
-* @li min: A Float, used when initializer_mode is "truncated_normal", the minimum value of the random number.
+* @li constant_value: Float List, used when initializer_mode is "constant", Defaults to "0".
+* @li min: Float List, used when initializer_mode is "truncated_normal", the minimum value of the random number.
 * Defaults to "-2".
-* @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
+* @li max: Float List, used when initializer_mode is "truncated_normal", the maximum value of the random number.
 * Defaults to "2".
-* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
+* @li mu: Float List, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
 * Defaults to "0".
 * @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
 * Defaults to "1".
-* @li seed: An Int, Used to create a random seed, Defaults to "0".
-* @li seed2: An Int, Used to create a random seed, Defaults to "0".
-* @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
-* @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
-* @li default_key_or_value: A bool, indicates the default value get way.
-* @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
-* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop" or "ftrl". indicates the type of the optimizer_mode,
+* @li seed: Int List, Used to create a random seed, Defaults to "0".
+* @li seed2: Int List, Used to create a random seed, Defaults to "0".
+* @li filter_mode: String List of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
+* @li filter_freq: Int List, Used to set the threshold of the tal, Defaults to "0".
+* @li default_key_or_value: Int List, indicates the default value get way.
+* @li default_key: Int List, when default_key_or_value is true, use the default_key corresponding value as default value.
+* @li default_value: Int List, when default_key_or_value is false, use the default_value as default value.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key.
+* @li optimizer_mode: String List of "adam" or "adamw" or "adagrad" or "sgd" or "rmsprop" or "ftrl". indicates the type of the optimizer_mode,
 * Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
@@ -300,22 +302,24 @@ REG_OP(EmbeddingTableFindAndInit)
     .INPUT(table_id, TensorType({DT_INT32}))
     .INPUT(keys, TensorType({DT_INT64}))
     .OUTPUT(values, TensorType({DT_FLOAT}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .REQUIRED_ATTR(value_total_len, Int)
-    .ATTR(initializer_mode, String, "random_uniform")
-    .ATTR(constant_value, Float, 0)
-    .ATTR(min, Float, -2)
-    .ATTR(max, Float, 2)
-    .ATTR(mu, Float, 0)
-    .ATTR(sigma, Float, 1)
-    .ATTR(seed, Int, 0)
-    .ATTR(seed2, Int, 0)
-    .ATTR(filter_mode, String, "no_filter")
-    .ATTR(filter_freq, Int, 0)
-    .ATTR(default_key_or_value, Bool, false)
-    .ATTR(default_key, Int, 0)
-    .ATTR(default_value, Float, 0)
-    .ATTR(optimizer_mode, String, "")
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .REQUIRED_ATTR(value_total_len, ListInt)
+    .ATTR(initializer_mode, ListString, {"random_uniform"})
+    .ATTR(constant_value, ListFloat, {0})
+    .ATTR(min, ListFloat, {-2})
+    .ATTR(max, ListFloat, {2})
+    .ATTR(mu, ListFloat, {0})
+    .ATTR(sigma, ListFloat, {1})
+    .ATTR(seed, ListInt, {0})
+    .ATTR(seed2, ListInt, {0})
+    .ATTR(filter_mode, ListString, {"no_filter"})
+    .ATTR(filter_freq, ListInt, {0})
+    .ATTR(default_key_or_value, ListInt, {0})
+    .ATTR(default_key, ListInt, {0})
+    .ATTR(default_value, ListFloat, {0})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
+    .ATTR(optimizer_mode, ListString, {})
     .ATTR(optimizer_params, ListFloat, {})
     .OP_END_FACTORY_REG(EmbeddingTableFindAndInit)
 
@@ -338,10 +342,12 @@ REG_OP(EmbeddingTableFindAndInit)
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An optional Int, whether to perform no-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
-* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
+* @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key. \n
 */
 REG_OP(EmbeddingApplyAdam)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -355,10 +361,12 @@ REG_OP(EmbeddingApplyAdam)
     .INPUT(keys, TensorType({DT_INT64}))
     .INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(mask_zero, Bool, false)
-    .ATTR(padding_key, Int, 0)
-    .ATTR(padding_key_mask, Bool, true)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(mask_zero, ListInt, {0})
+    .ATTR(padding_key, ListInt, {0})
+    .ATTR(padding_key_mask, ListInt, {1})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
     .OP_END_FACTORY_REG(EmbeddingApplyAdam)
 
 /**
@@ -382,14 +390,16 @@ REG_OP(EmbeddingApplyAdam)
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li amsgrad: An optional bool, indicates whether to use the AMSGrad variant of htis algorithm from
+* @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
+* @li amsgrad: An optional Int, indicates whether to use the AMSGrad variant of htis algorithm from
 *     the paper On the Convergence of Adam and Beyond.
 *     If "True", max_grad_norm input and output must be entered.
-* @li maximize: An optional bool, maximize the params based on the objective.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li maximize: An optional Int, maximize the params based on the objective.
+* @li mask_zero: An optional Int, whether to perform no-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
-* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
+* @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key. \n
 */
 REG_OP(EmbeddingApplyAdamW)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -405,12 +415,14 @@ REG_OP(EmbeddingApplyAdamW)
     .OPTIONAL_INPUT(max_grad_norm, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(amsgrad, Bool, false)
-    .ATTR(maximize, Bool, false)
-    .ATTR(mask_zero, Bool, false)
-    .ATTR(padding_key, Int, 0)
-    .ATTR(padding_key_mask, Bool, true)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(amsgrad, ListInt, {0})
+    .ATTR(maximize, ListInt, {0})
+    .ATTR(mask_zero, ListInt, {0})
+    .ATTR(padding_key, ListInt, {0})
+    .ATTR(padding_key_mask, ListInt, {1})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
     .OP_END_FACTORY_REG(EmbeddingApplyAdamW)
 
 /**
@@ -427,10 +439,12 @@ REG_OP(EmbeddingApplyAdamW)
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An optional Int, whether to perform no-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
-* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
+* @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key. \n
 */
 REG_OP(EmbeddingApplyAdaGrad)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -439,10 +453,12 @@ REG_OP(EmbeddingApplyAdaGrad)
     .INPUT(keys, TensorType({DT_INT64}))
     .INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(mask_zero, Bool, false)
-    .ATTR(padding_key, Int, 0)
-    .ATTR(padding_key_mask, Bool, true)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(mask_zero, ListInt, {0})
+    .ATTR(padding_key, ListInt, {0})
+    .ATTR(padding_key_mask, ListInt, {1})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
     .OP_END_FACTORY_REG(EmbeddingApplyAdaGrad)
 
 /**
@@ -453,26 +469,32 @@ REG_OP(EmbeddingApplyAdaGrad)
 * @li lr: A Scalar, dtype is the same as "grad". 0-D. indicates the learning rate.
 * @li grad: A Tensor, dtype is DT_FLOAT/DT_FLOAT16. 1-D. indicates the grad.
 * @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
 * @par Outputs:
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
 * @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
-* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
+* @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key. \n
 */
 REG_OP(EmbeddingApplySgd)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
     .INPUT(lr, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(keys, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(mask_zero, Bool, false)
-    .ATTR(padding_key, Int, 0)
-    .ATTR(padding_key_mask, Bool, true)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(mask_zero, ListInt, {0})
+    .ATTR(padding_key, ListInt, {0})
+    .ATTR(padding_key_mask, ListInt, {1})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
     .OP_END_FACTORY_REG(EmbeddingApplySgd)
 
 /**
@@ -486,15 +508,18 @@ REG_OP(EmbeddingApplySgd)
 * @li epsilon: A Scalar, dtype is the same as "grad". indicates the small value param.
 * @li grad: A Tensor, dtype is NumberType. indicates the grad.
 * @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
 * @par Outputs:
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
+* @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
 * @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
-* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
+* @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key. \n
 */
 REG_OP(EmbeddingApplyRmsprop)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -504,11 +529,14 @@ REG_OP(EmbeddingApplyRmsprop)
     .INPUT(epsilon, TensorType::NumberType())
     .INPUT(grad, TensorType::NumberType())
     .INPUT(keys, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(mask_zero, Bool, false)
-    .ATTR(padding_key, Int, 0)
-    .ATTR(padding_key_mask, Bool, true)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(mask_zero, ListInt, {0})
+    .ATTR(padding_key, ListInt, {0})
+    .ATTR(padding_key_mask, ListInt, {1})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
     .OP_END_FACTORY_REG(EmbeddingApplyRmsprop)
 
 /**
@@ -521,16 +549,19 @@ REG_OP(EmbeddingApplyRmsprop)
 * @li lambda1: A Scalar, dtype is same as "lr". 0-D. indicates the lambda1 param.
 * @li lambda2: A Scalar, dtype is same as "lr". 0-D. indicates the lambda2 param.
 * @li grad: A Tensor, dtype is same as "lr". 1-D. indicates the grad.
-* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key. \n
+* @li keys: A Tensor, dtype is DT_INT64. 1-D. indicates the hashtable key.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
 
 * @par Outputs:
 * @li var_handle: The handle of embedding hashtable. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An optional bool, whether to perform no-update interception when key==0.
+* @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
+* @li mask_zero: An optional Int, whether to perform no-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
-* @li padding_key_mask: An optional bool, whether to perform no-update interception when key==padding_key. \n
+* @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key. \n
 */
 REG_OP(EmbeddingApplyFtrl)
     .INPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
@@ -540,11 +571,14 @@ REG_OP(EmbeddingApplyFtrl)
     .INPUT(lambda2, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(keys, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(var_handle, TensorType({DT_RESOURCE, DT_INT32}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .ATTR(mask_zero, Bool, false)
-    .ATTR(padding_key, Int, 0)
-    .ATTR(padding_key_mask, Bool, true)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .ATTR(mask_zero, ListInt, {0})
+    .ATTR(padding_key, ListInt, {0})
+    .ATTR(padding_key_mask, ListInt, {1})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
     .OP_END_FACTORY_REG(EmbeddingApplyFtrl)
 
 /**
@@ -847,27 +881,29 @@ REG_OP(EmbeddingComputeVarImport)
 * @li values: indicates the hashtable value. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the dim of embedding var value in hashtable.
-* @li value_total_len: A Int, indicates the dim of embedding var+m+v or var+accum values in hashtable
-* @li initializer_mode: A String of "random_uniform", "truncated_normal" or "constant".
+* @li embedding_dim: Int List, indicates the dim of embedding var value in hashtable.
+* @li value_total_len: Int List, indicates the dim of embedding var+m+v or var+accum values in hashtable
+* @li initializer_mode: String List of "random_uniform", "truncated_normal" or "constant".
 * indicates the algo of init method, Defaults to "random_uniform".
-* @li constant_value: A Float, used when initializer_mode is "constant", Defaults to "0".
-* @li min: A Float, used when initializer_mode is "truncated_normal", the minimum value of the random number.
+* @li constant_value: Float List, used when initializer_mode is "constant", Defaults to "0".
+* @li min: Float List, used when initializer_mode is "truncated_normal", the minimum value of the random number.
 * Defaults to "-2".
-* @li max: A Float, used when initializer_mode is "truncated_normal", the maximum value of the random number.
+* @li max: Float List, used when initializer_mode is "truncated_normal", the maximum value of the random number.
 * Defaults to "2".
-* @li mu: A Float, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
+* @li mu: Float List, used when initializer_mode is "truncated_normal", The mean of the truncated_normal.
 * Defaults to "0".
-* @li sigma: A Float, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
+* @li mu: Float List, used when initializer_mode is "truncated_normal", The variance of the truncated_normal.
 * Defaults to "1".
-* @li seed: An Int, Used to create a random seed, Defaults to "0".
-* @li seed2: An Int, Used to create a random seed, Defaults to "0".
-* @li filter_mode: A String of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
-* @li filter_freq: An Int, Used to set the threshold of the tal, Defaults to "0".
-* @li default_key_or_value: A bool, indicates the default value get way.
-* @li default_key: An Int, when default_key_or_value is true, use the default_key corresponding value as default value.
-* @li default_value: An Int, when default_key_or_value is false, use the default_value as default value.
-* @li optimizer_mode: A String of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
+* @li seed: Int List, Used to create a random seed, Defaults to "0".
+* @li seed2: Int List, Used to create a random seed, Defaults to "0".
+* @li filter_mode: String List of "no_filter" or "counter". indicates the type of the hashmap, Defaults to "no_filter".
+* @li filter_freq: Int List, Used to set the threshold of the tal, Defaults to "0".
+* @li default_key_or_value: Int List, indicates the default value get way.
+* @li default_key: Int List, when default_key_or_value is true, use the default_key corresponding value as default value.
+* @li default_value: Int List, when default_key_or_value is false, use the default_value as default value.
+* @li completion_key: Int List, indicates the completion hashtable key.
+* @li completion_key_mask: Int List, whether to perform no-update interception when key==completion_key.
+* @li optimizer_mode: String List of "adam" or "adamw" or "adagrad". indicates the type of the optimizer_mode,
 * Defaults to "".
 * @li optimizer_params: Float list, when optimizer_mode is "adagrad", the initialize value of the optimizer. \n
 */
@@ -878,22 +914,24 @@ REG_OP(FakeRemoteLookupUniqued)
     .INPUT(unique_indices, TensorType({DT_INT32}))
     .OPTIONAL_INPUT(key_count, TensorType({DT_INT64}))
     .OUTPUT(values, TensorType({DT_FLOAT}))
-    .REQUIRED_ATTR(embedding_dim, Int)
-    .REQUIRED_ATTR(value_total_len, Int)
-    .ATTR(initializer_mode, String, "random_uniform")
-    .ATTR(constant_value, Float, 0)
-    .ATTR(min, Float, -2)
-    .ATTR(max, Float, 2)
-    .ATTR(mu, Float, 0)
-    .ATTR(sigma, Float, 1)
-    .ATTR(seed, Int, 0)
-    .ATTR(seed2, Int, 0)
-    .ATTR(filter_mode, String, "no_filter")
-    .ATTR(filter_freq, Int, 0)
-    .ATTR(default_key_or_value, Bool, false)
-    .ATTR(default_key, Int, 0)
-    .ATTR(default_value, Float, 0)
-    .ATTR(optimizer_mode, String, "")
+    .REQUIRED_ATTR(embedding_dim, ListInt)
+    .REQUIRED_ATTR(value_total_len, ListInt)
+    .ATTR(initializer_mode, ListString, {"random_uniform"})
+    .ATTR(constant_value, ListFloat, {0})
+    .ATTR(min, ListFloat, {-2})
+    .ATTR(max, ListFloat, {2})
+    .ATTR(mu, ListFloat, {0})
+    .ATTR(sigma, ListFloat, {1})
+    .ATTR(seed, ListInt, {0})
+    .ATTR(seed2, ListInt, {0})
+    .ATTR(filter_mode, ListString, {"no_filter"})
+    .ATTR(filter_freq, ListInt, {0})
+    .ATTR(default_key_or_value, ListInt, {0})
+    .ATTR(default_key, ListInt, {0})
+    .ATTR(default_value, ListFloat, {0})
+    .ATTR(completion_key, ListInt, {0})
+    .ATTR(completion_key_mask, ListInt, {1})
+    .ATTR(optimizer_mode, ListString, {})
     .ATTR(optimizer_params, ListFloat, {})
     .OP_END_FACTORY_REG(FakeRemoteLookupUniqued)
 

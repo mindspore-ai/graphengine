@@ -26,7 +26,7 @@
 namespace ge {
 
 /**
-*@brief Computes the gradient for log softmax activations . \n
+*@brief Computes the gradient for log softmax activations.
 
 *@par Inputs:
 * @li grad: A Tensor. Must be one of the following types: float16, bfloat16, float32.
@@ -50,7 +50,7 @@ REG_OP(LogSoftmaxGrad)
     .OP_END_FACTORY_REG(LogSoftmaxGrad)
 
 /**
-*@brief Computes sparse softmax cross entropy cost and gradients to backpropagate . \n
+*@brief Computes sparse softmax cross entropy cost and gradients to backpropagate.
 
 *@par Inputs:
 *Two inputs, including:
@@ -77,7 +77,7 @@ REG_OP(SparseSoftmaxCrossEntropyWithLogits)
     .OP_END_FACTORY_REG(SparseSoftmaxCrossEntropyWithLogits)
 
 /**
-*@brief Computes softmax cross entropy cost and gradients to backpropagate . \n
+*@brief Computes softmax cross entropy cost and gradients to backpropagate.
 
 *@par Inputs:
 *Two inputs, including:
@@ -100,12 +100,12 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
     .OP_END_FACTORY_REG(SoftmaxCrossEntropyWithLogits)
 
 /**
-*@brief Computes gradients for a softmax operation . \n
+*@brief Computes gradients for a softmax operation.
 
 *@par Inputs:
 * Two inputs, including:
 * @li softmax: Output of the softmax operator. Must be one of the following
-* types: float16, bfloat16, float31, int32, int8, uint8.
+* types: float16, bfloat16, float32, int32, int8, uint8.
 * @li grad_softmax: A Tensor. Has the same shape and type as "softmax".\n
 
 *@par Attributes:
@@ -273,7 +273,8 @@ REG_OP(SoftmaxFocalLoss)
 * sigma: Must be a floating point number. Defaults to "1.0" . \n
 
 * @par Outputs:
-* loss: Indicates the loss between the predictive value and target value. Has the same dimensions as "predict" . \n
+* loss: Indicates the loss between the predictive value and target value.
+* Has the same dtype and dimensions as "predict" . \n
 
 * @attention Constraints:
 * This operator does not perform the "reduce" operation on the loss value.
@@ -317,19 +318,19 @@ REG_OP(SmoothL1LossGrad)
     .OP_END_FACTORY_REG(SmoothL1LossGrad)
 
 /**
-* @brief Creates a criterion that measures the Binary Cross Entropy between the target and the output . \n
+* @brief Creates a criterion that measures the Binary Cross Entropy between the target and the output .
 
 * @par Inputs:
 * Three inputs, including:
 * @li x: A 1D or 2D Tensor of type bfloat16, float16 or float32, specifying a predictive value.
 * @li y: A 1D or 2D Tensor of type bfloat16, float16 or float32, indicating a tag.
-* @li weight: An optional 1D or 2D Tensor, specifying the weight . \n
+* @li weight: An optional 1D or 2D Tensor of type bfloat16, float16 or float32, specifying the weight. \n
 
 * @par Attributes:
 * reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
 
 * @par Outputs:
-* output: Output loss. Has the same dimension with the inputs. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output . \n
+* output: a Tensor for Output loss. Has the same type and dimension with the inputs. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output . \n
 
 * @attention Constraints:
 * @li The value of "x" must range from 0 to 1.
@@ -347,14 +348,14 @@ REG_OP(BinaryCrossEntropy)
     .OP_END_FACTORY_REG(BinaryCrossEntropy)
 
 /**
-* @brief Performs the backpropagation of BinaryCrossEntropy for training scenarios . \n
+* @brief Performs the backpropagation of BinaryCrossEntropy for training scenarios .
 
 * @par Inputs:
 * Four inputs, including:
 * @li x: A 1D or 2D Tensor of type bfloat16, float16 or float32, specifying a predictive value.
 * @li y: A 1D or 2D Tensor of type bfloat16, float16 or float32, indicating a tag.
 * @li grad_output: A 1D or 2D Tensor of type bfloat16, float16 or float32, specifying the backpropagation gradient.
-* @li weight: An optional 1D or 2D Tensor, specifying the weight . \n
+* @li weight: An optional 1D or 2D Tensor of type bfloat16, float16 or float32, specifying the weight . \n
 
 * @par Attributes:
 * reduction: A character string from "none", "mean", and "sum", specifying the gradient output mode. Defaults to "mean" . \n
@@ -381,7 +382,7 @@ REG_OP(BinaryCrossEntropyGrad)
 /**
 * @brief Applies the Softmax function to an n-dimensional input Tensor
 *  rescaling them. so that the elements of the n-dimensional output Tensor lie
-*  in the range [0,1] and sum to 1 . \n
+*  in the range [0,1] and sum to 1.
 
 * @par Inputs:
 * One input:
@@ -424,7 +425,7 @@ REG_OP(SoftmaxV2)
 *@par Attributes:
 * @li keep_prob: A mutable Tensor. Must met all of the following rules:
 *     shape of "keep_prob" should be (1,) or [1,].
-*     Has the same type as "x" . \n
+*     Must be one of the following types: float16. \n
 * @li axes: A list of int. The dimension softmax would be performed on. Defaults
 *     to "[-1]" . \n
 
@@ -445,7 +446,7 @@ REG_OP(SoftmaxV2WithDropOutDoMaskV3D)
     .OP_END_FACTORY_REG(SoftmaxV2WithDropOutDoMaskV3D)
 
 /**
-*@brief Computes log softmax activations . \n
+*@brief Computes log softmax activations .
 
 *@par Inputs:
 *One input:
@@ -467,7 +468,7 @@ REG_OP(LogSoftmaxV2)
     .OP_END_FACTORY_REG(LogSoftmaxV2)
 
 /**
-*@brief Confuse mul, sum and sub . \n
+*@brief Confuse mul, sum and sub .
 
 *@par Inputs:
 *Two inputs, including:
@@ -487,7 +488,7 @@ REG_OP(ConfusionSoftmaxGrad)
   .OP_END_FACTORY_REG(ConfusionSoftmaxGrad)
 
 /**
-*@brief Function softmax gradients ext . \n
+*@brief Function softmax gradients ext .
 
 *@par Inputs:
 * @li grad: A Tensor dtype of bfloat16, float16, float32.
@@ -495,8 +496,9 @@ REG_OP(ConfusionSoftmaxGrad)
 * @li x2: A Tensor dtype of bfloat16, float16, float32 . \n
 
 *@par Attributes:
-*@li axis: A int Scalar. The axis for reduce.
-*@li keepdims: A bool Scalar. If true, retains reduced dimensions with length 1 . \n
+*@li axes: A int attr. The axis for reduce, Defaults to 1.
+*@li keep_dims: A bool attr. Defaults to false.
+* If true, retains reduced dimensions with length 1 . \n
 
 *@par Outputs:
 * y: A Tensor dtype of bfloat16, float16, float32. \n
@@ -514,7 +516,7 @@ REG_OP(SoftmaxGradExt)
   .OP_END_FACTORY_REG(SoftmaxGradExt)
 
 /**
-*@brief Normalizes the input . \n
+*@brief Normalizes the input .
 
 *@par Inputs:
 * One input:
@@ -545,7 +547,7 @@ REG_OP(MVN)
     .OP_END_FACTORY_REG(MVN)
 
 /**
-*@brief Normalizes the input . \n
+*@brief Normalizes the input .
 
 *@par Inputs:
 * One input:
@@ -572,7 +574,7 @@ REG_OP(MVNV2)
     .OP_END_FACTORY_REG(MVNV2)
 
 /**
-*@brief Normalizes the input "x1" . \n
+*@brief Normalizes the input "x1" .
 
 *@par Inputs:
 * Two inputs, including:
@@ -607,10 +609,10 @@ REG_OP(Normalize)
      .OP_END_FACTORY_REG(Normalize);
 
 /**
-*@brief Layernorm operator interface implementation
-*  calculating: x, gamma, beta
-*  mean  = np.mean(x, reduce_axis, keepdims=True)
-*  variance = np.mean(np.power((x - mean),2), reduce_axis, keepdims=True)
+*@brief Layernorm operator interface implementation \n
+*  calculating: x, gamma, beta \n
+*  mean  = np.mean(x, reduce_axis, keepdims=True) \n
+*  variance = np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) \n
 *  y = gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta
 
 *@par Inputs:
@@ -643,10 +645,10 @@ REG_OP(LayerNorm)
     .OP_END_FACTORY_REG(LayerNorm)
 
 /**
-* @brief LayernormV3 operator interface implementation
-*  calculating: x, gamma, beta
-*  mean  = np.mean(x, reduce_axis, keepdims=True)
-*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
+* @brief LayernormV3 operator interface implementation \n
+*  calculating: x, gamma, beta \n
+*  mean  = np.mean(x, reduce_axis, keepdims=True) \n
+*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon)) \n
 *  y = gamma*((x - mean) * rstd) + beta
 
 *@par Inputs:
@@ -679,14 +681,14 @@ REG_OP(LayerNormV3)
     .OP_END_FACTORY_REG(LayerNormV3)
 
 /**
-* @brief LayernormV4 operator interface implementation
-*  calculating: x, gamma, beta
-*  mean  = np.mean(x, reduce_axis, keepdims=True)
-*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
+* @brief LayernormV4 operator interface implementation \n
+*  calculating: x, gamma, beta \n
+*  mean  = np.mean(x, reduce_axis, keepdims=True) \n
+*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon)) \n
 *  y = gamma*((x - mean) * rstd) + beta
 
 *@par Inputs:
-*Three inputs, including:
+*Four inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * @li normalized_shape: A Tensor. Must be one of the following types: int32
 * @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
@@ -719,11 +721,11 @@ REG_OP(LayerNormV4)
     .OP_END_FACTORY_REG(LayerNormV4)
 
 /**
-*@brief Layernorm operator interface implementation with given sum and square sum of input tensor
-*  calculating: x, gamma, beta, sum, square_sum
-*  mean  = sum / reduce_axis
-*  variance = square_sum / reduce_aixs - mean * mean
-*  variance = np.mean(np.power((x - mean),2), reduce_axis, keepdims=True)
+*@brief Layernorm operator interface implementation with given sum and square sum of input tensor \n
+*  calculating: x, gamma, beta, sum, square_sum \n
+*  mean  = sum / reduce_axis \n
+*  variance = square_sum / reduce_aixs - mean * mean \n
+*  variance = np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) \n
 *  y = gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta
 
 *@par Inputs:
@@ -781,7 +783,7 @@ REG_OP(RmsNorm)
 
 /**
 *@brief Returns a tensor where each sub-tensor of input along dimension
-*       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
+*       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm.
 
 *@par Inputs:
 *One input, including:
@@ -805,21 +807,21 @@ REG_OP(Renorm)
     .OP_END_FACTORY_REG(Renorm)
 
 /**
-*@brief LayerNormGrad operator interface implementation
-*  calculating: dy, x, variance, mean, gamma
-*  pd_xl = data_dy*data_gamma
-*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
-*           np.power((data_variance + EPSLON), (-1.5))),
-*           reduce_axis, keepdims=True)
-*  pd_mean = np.sum(((-1.0)*pd_xl
-*            np.power((data_variance + EPSLON), (-0.5))),
-*            reduce_axis, keepdims=True)
-*            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
-*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
-*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
-*  pd_gamma = np.sum((data_dy*(data_x - data_mean)
-*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True)
+*@brief LayerNormGrad operator interface implementation \n
+*  calculating: dy, x, variance, mean, gamma \n
+*  pd_xl = data_dy*data_gamma \n
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean) 
+*           np.power((data_variance + EPSLON), (-1.5))), 
+*           reduce_axis, keepdims=True) \n
+*  pd_mean = np.sum(((-1.0)*pd_xl 
+*            np.power((data_variance + EPSLON), (-0.5))), 
+*            reduce_axis, keepdims=True) 
+*            + pd_var*(1.0/m) 
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True) \n
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) + 
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m) \n
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean) 
+*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True) \n
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 *@par Inputs:
@@ -851,18 +853,18 @@ REG_OP(LayerNormGrad)
     .OP_END_FACTORY_REG(LayerNormGrad)
 
 /**
-* @brief LayerNormGradV3 operator interface implementation
-*  calculating: dy, x, rstd, mean, gamma
-*  pd_xl = data_dy*data_gamma
-*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
-*           np.power(rstd, 3)),
-*           reduce_axis, keepdims=True)
-*  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True)
-*            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
-*  pd_x = pd_xl*rstd +
-*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
-*  pd_gamma = np.sum((data_dy*(data_x - data_mean)*rstd), param_axis, keepdims=True)
+* @brief LayerNormGradV3 operator interface implementation \n
+*  calculating: dy, x, rstd, mean, gamma \n
+*  pd_xl = data_dy*data_gamma \n
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean) 
+*           np.power(rstd, 3)), 
+*           reduce_axis, keepdims=True) \n
+*  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True) 
+*            + pd_var*(1.0/m) 
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True) \n
+*  pd_x = pd_xl*rstd + 
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m) \n
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean)*rstd), param_axis, keepdims=True) \n
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 *@par Inputs:
@@ -894,21 +896,21 @@ REG_OP(LayerNormGradV3)
     .OP_END_FACTORY_REG(LayerNormGradV3)
 
 /**
-*@brief LayerNormXBackprop operator interface implementation
-*  calculating: dy, x, variance, mean, gamma
-*  pd_xl = data_dy*data_gamma
+*@brief LayerNormXBackprop operator interface implementation \n
+*  calculating: dy, x, variance, mean, gamma \n
+*  pd_xl = data_dy*data_gamma \n
 *  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
 *           np.power((data_variance + EPSLON), (-1.5))),
-*           reduce_axis, keepdims=True)
+*           reduce_axis, keepdims=True) \n
 *  pd_mean = np.sum(((-1.0)*pd_xl
 *            np.power((data_variance + EPSLON), (-0.5))),
-*            reduce_axis, keepdims=True)
+*            reduce_axis, keepdims=True) 
 *            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
-*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
-*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True) \n
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) + 
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m) \n
 *  pd_gamma = np.sum((data_dy*(data_x - data_mean)
-*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True)
+*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True) \n
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 *@par Inputs:
@@ -920,7 +922,7 @@ REG_OP(LayerNormGradV3)
 * @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
 
 *@par Outputs:
-*Three outputs, including:
+*One outputs, including:
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
 
 *@par Restrictions:
@@ -936,19 +938,19 @@ REG_OP(LayerNormXBackprop)
     .OP_END_FACTORY_REG(LayerNormXBackprop)
 
 /**
-*@brief LayerNormXBackpropV2 operator interface implementation
-*  calculating: dy, x, variance, mean, gamma
-*  pd_xl = data_dy*data_gamma
-*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
-*           np.power((data_variance + EPSLON), (-1.5))),
-*           reduce_axis, keepdims=True)
-*  pd_mean = np.sum(((-1.0)*pd_xl
-*            np.power((data_variance + EPSLON), (-0.5))),
-*            reduce_axis, keepdims=True)
-*            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
-*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
-*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*@brief LayerNormXBackpropV2 operator interface implementation \n
+*  calculating: dy, x, variance, mean, gamma \n
+*  pd_xl = data_dy*data_gamma \n
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean) 
+*           np.power((data_variance + EPSLON), (-1.5))), 
+*           reduce_axis, keepdims=True) \n
+*  pd_mean = np.sum(((-1.0)*pd_xl 
+*            np.power((data_variance + EPSLON), (-0.5))), 
+*            reduce_axis, keepdims=True) 
+*            + pd_var*(1.0/m) 
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True) \n
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) + 
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m) \n
 *  res_for_gamma = (data_x - data_mean) * np.power((data_variance + EPSLON), (-0.5))
 
 *@par Inputs:
@@ -960,7 +962,7 @@ REG_OP(LayerNormXBackprop)
 * @li gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
 
 *@par Outputs:
-*Three outputs, including:
+*Two outputs, including:
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * @li res_for_gamma: A Tensor. Must be one of the following types: float32.
 
@@ -978,17 +980,17 @@ REG_OP(LayerNormXBackpropV2)
     .OP_END_FACTORY_REG(LayerNormXBackpropV2)
 
 /**
-* @brief LayerNormXBackpropV3 operator interface implementation
-*  calculating: dy, x, rstd, mean, gamma
-*  pd_xl = data_dy*data_gamma
+* @brief LayerNormXBackpropV3 operator interface implementation \n
+*  calculating: dy, x, rstd, mean, gamma \n
+*  pd_xl = data_dy*data_gamma \n
 *  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
 *           np.power(rstd, 3)),
-*           reduce_axis, keepdims=True)
+*           reduce_axis, keepdims=True) \n
 *  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True)
 *            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True) \n
 *  pd_x = pd_xl*rstd +
-*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m) \n
 *  res_for_gamma = (data_x - data_mean) * rstd
 
 *@par Inputs:
@@ -1018,32 +1020,32 @@ REG_OP(LayerNormXBackpropV3)
     .OP_END_FACTORY_REG(LayerNormXBackpropV3)
 
 /**
-*@brief LayerNormBetaGammaBackprop operator interface implementation
-*  calculating: dy, x, variance, mean
-*  pd_xl = data_dy*data_gamma
-*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
-*           np.power((data_variance + EPSLON), (-1.5))),
-*           reduce_axis, keepdims=True)
-*  pd_mean = np.sum(((-1.0)*pd_xl
-*            np.power((data_variance + EPSLON), (-0.5))),
-*            reduce_axis, keepdims=True)
-*            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
-*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
-*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
-*  pd_gamma = np.sum((data_dy*(data_x - data_mean)
-*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True)
+*@brief LayerNormBetaGammaBackprop operator interface implementation \n
+*  calculating: dy, x, variance, mean \n
+*  pd_xl = data_dy*data_gamma \n
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean) 
+*           np.power((data_variance + EPSLON), (-1.5))), 
+*           reduce_axis, keepdims=True) \n
+*  pd_mean = np.sum(((-1.0)*pd_xl 
+*            np.power((data_variance + EPSLON), (-0.5))), 
+*            reduce_axis, keepdims=True) 
+*            + pd_var*(1.0/m) 
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True) \n
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) + 
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m) \n
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean) 
+*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True) \n
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 *@par Inputs:
-*Three inputs, including:
+*Four inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32.
 * @li x: A Tensor. Must be one of the following types: float16, float32.
 * @li variance: A Tensor. Must be one of the following types: float16, float32.
 * @li mean: A Tensor. Must be one of the following types: float16, float32 . \n
 
 *@par Outputs:
-*Three outputs, including:
+*Two outputs, including:
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
 
@@ -1061,18 +1063,18 @@ REG_OP(LayerNormBetaGammaBackprop)
     .OP_END_FACTORY_REG(LayerNormBetaGammaBackprop)
 
 /**
-* @brief LayerNormBetaGammaBackpropV2 operator interface implementation
-*  calculating: dy, x, variance, mean
-*  pd_gamma = np.sum((data_dy*res_for_gamma), param_axis, keepdims=True)
+* @brief LayerNormBetaGammaBackpropV2 operator interface implementation \n
+*  calculating: dy, x, variance, mean \n
+*  pd_gamma = np.sum((data_dy*res_for_gamma), param_axis, keepdims=True) \n
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 * @par Inputs:
-* Three inputs, including:
+* Two inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * @li res_for_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 
 * @par Outputs:
-* Three outputs, including:
+* Two outputs, including:
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32, bfloat16.
 
@@ -1134,9 +1136,9 @@ REG_OP(LNDropoutGrad)
     .OP_END_FACTORY_REG(LNDropoutGrad)
 
 /**
-* @brief Return "output" according to the algorithm of dropout_do_mask:
-*  scale_x = x *(1 / keep_prob)
-*  output = select(mask == 1, scale_x, 0)
+* @brief Return "output" according to the algorithm of dropout_do_mask:  \n
+*  scale_x = x *(1 / keep_prob)  \n
+*  output = select(mask == 1, scale_x, 0)  \n
 
 * @par Inputs:
 * Three inputs, including:
@@ -1162,9 +1164,9 @@ REG_OP(DropOutDoMask)
     .OP_END_FACTORY_REG(DropOutDoMask)
 
 /**
-*@brief Return "output" according to the algorithm of dropout_do_mask:
-*  scale_x = x *(1 / keep_prob)
-*  output = select(mask == 1, scale_x, 0)
+*@brief Return "output" according to the algorithm of dropout_do_mask:  \n
+*  scale_x = x *(1 / keep_prob) \n
+*  output = select(mask == 1, scale_x, 0) \n
 
 *@par Inputs:
 *Three inputs, including:
@@ -1223,7 +1225,7 @@ REG_OP(DropOutDoMaskV3D)
     .OP_END_FACTORY_REG(DropOutDoMaskV3D)
 
 /**
-* @brief Scales the input . \n
+* @brief Scales the input .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1272,7 +1274,7 @@ REG_OP(Scale)
     .OP_END_FACTORY_REG(Scale)
 
 /**
-*@brief Local Response Normalization . \n
+*@brief Local Response Normalization .
 
 *@par Inputs:
 *One input, including:
@@ -1307,7 +1309,7 @@ REG_OP(LRN)
     .OP_END_FACTORY_REG(LRN)
 
 /**
-* @brief Computes the gradient for Local Response Normalization . \n
+* @brief Computes the gradient for Local Response Normalization .
 
 * @par Inputs:
 * @li grads: A 4D Tensor of type float16 or float32.
@@ -1374,7 +1376,7 @@ REG_OP(RNNTLoss)
     .OP_END_FACTORY_REG(RNNTLoss)
 
 /**
-*@brief Performs instance normalization . \n
+*@brief Performs instance normalization .
 
 *@par Inputs:
 * Five inputs, including:
@@ -1551,7 +1553,7 @@ REG_OP(KlDivLossGrad)
     .OP_END_FACTORY_REG(KlDivLossGrad)
 
 /**
-* @brief Computes l1_loss_grad or l1_loss_backward. \n
+* @brief Computes l1_loss_grad or l1_loss_backward.
 
 * @par Inputs:
 * Three inputs, including:
@@ -1649,7 +1651,7 @@ REG_OP(MseLoss)
     .OP_END_FACTORY_REG(MseLoss)
 
 /**
-* @brief Calculates the reversed outputs of the function "smooth_l1_loss_v2". \n
+* @brief Calculates the reversed outputs of the function "smooth_l1_loss_v2".
 
 * @par Inputs:
 * Three Inputs, including:
@@ -1738,7 +1740,7 @@ REG_OP(Centralization)
 /**
 *@brief Roll the tensor along the given dimension(s).
 * Elements that are shifted beyond the last position are re-introduced at the first position.
-* If a dimension is not specified, the tensor will be flattened before rolling and then restored to the original shape. \n
+* If a dimension is not specified, the tensor will be flattened before rolling and then restored to the original shape.
 
 *@par Inputs:
 *One inputs, including:
@@ -1790,7 +1792,7 @@ REG_OP(RollV2)
 
 /**
  * @brief Calculate the loss. Creates a criterion that optimizes a two-class classification
- * logistic loss between input_x and input_y (containing 1 or -1). \n
+ * logistic loss between input_x and input_y (containing 1 or -1).
 
  * @par Inputs:
  * Tow inputs, including:
@@ -1820,14 +1822,15 @@ REG_OP(SoftMarginLoss)
 * @brief Computes gradients of sigmoid_cross_entropy_with_logits_v2.
 
 * @par Inputs:
-* @li predict: An ND tensor of type float16, float32, bfloat16.
-* @li target: An ND tensor of type float16, float32, bfloat16.
-* @li dout: An ND tensor of type float16, float32, bfloat16.
-* @li weight: An optional ND tensor of type float16, float32, bfloat16.
-* @li pos_weight: An optional ND tensor of type float16, float32, bfloat16. \n
+* @li predict: An ND tensor of type float16, float32, bfloat16, specifying the predictive value.
+* @li target: An ND tensor of type float16, float32, bfloat16, specifying the target value.
+* @li dout: An ND tensor of type float16, float32, bfloat16, specifying the dout value.
+* @li weight: An optional ND tensor of type float16, float32, bfloat16, specifying the weight value.
+* @li pos_weight: An optional ND tensor of type float16, float32, bfloat16, specifying the pos_weight value. \n
 
 * @par Attributes:
-* reduction: An optional string.Defaults to "mean". \n
+* reduction: A character string from "none", "mean", and "sum",
+* specifying the reduction type to be applied to the output. Defaults to "mean". \n
 
 * @par Outputs:
 * gradient: An ND tensor tensor with the same shape and type as "predict". \n
@@ -1845,8 +1848,8 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
 /**
- * @brief Calculate the PoissonNllLoss function.
- *        target follow distribution of Poisson(input)loss(input,target) = input - target * log(input) + log(target!) \n
+ * @brief Calculate the PoissonNllLoss function.  \n
+ *        target follow distribution of Poisson(input)loss(input,target) = input - target * log(input) + log(target!)
 
  * @par Inputs:
  * Two inputs, including:
@@ -1948,8 +1951,8 @@ REG_OP(NormalizeBatch)
     .OP_END_FACTORY_REG(NormalizeBatch)
 
 /**
-*@brief GroupNorm and Reul operator
-*  calculating: x, gamma, beta
+*@brief GroupNorm and Reul operator \n
+*  calculating: x, gamma, beta \n
 *  y = relu(gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta)
 
 * @par Inputs:
@@ -1978,9 +1981,9 @@ REG_OP(GroupNormRelu)
     .OP_END_FACTORY_REG(GroupNormRelu)
 
 /**
- *@brief DeepNorm operator
- *  calculating: x, gx, gamma, beta, alpha
- *  new_x = x * alpha + gx
+ *@brief DeepNorm operator \n
+ *  calculating: x, gx, gamma, beta, alpha \n
+ *  new_x = x * alpha + gx \n
  *  y = gamma*(new_x - mean) / np.sqrt(variance + 1e-6) + beta
 
  * @par Inputs:
@@ -2013,7 +2016,7 @@ REG_OP(DeepNorm)
   .OP_END_FACTORY_REG(DeepNorm);
 
 /**
- * @brief DeepNormGrad Operator. \n
+ * @brief DeepNormGrad Operator.
  *
  * @param Inputs:
  * @li dy: A ND Tensor of type float16 or float32 or bf16, with format ND. \n
@@ -2084,20 +2087,20 @@ REG_OP(DropoutWithMulsAndSoftmaxGrad)
     .OP_END_FACTORY_REG(DropoutWithMulsAndSoftmaxGrad)
 
 /**
-* @brief Loss function that measures the softmax cross entropy. \n
+* @brief Loss function that measures the softmax cross entropy.
 
 * @par Inputs:
 * Three inputs, including:
-* @li scores: A Tensor. Must be one of the following types: half, float32, double.
+* @li scores: A Tensor. Must be one of the following types: half, bfloat16, float32, double.
 * A "batch_size * num_classes" matrix.
 * @li labels: A Tensor. Must be one of the following types: "int32", "int64".
-* @li weights: A manual rescaling weight given to each class.
+* @li weights: A manual rescaling weight given to each class, the same dtype with scores.
 * If given, it has to be a 1D Tensor assigning weight to each of the classes.
 * Otherwise, it is treated as if having all ones. \n
 
 * @par Attributes:
 * ignore_index:Specifies a target value that is ignored and does not contribute to the input gradient.
-* It's an optional value.
+* It's an optional value, Defaults to 0.
 * reduction: A character string from "none", "mean", and "sum", specifying the gradient output mode. Defaults to "mean" . \n
 
 * @par Outputs:
@@ -2156,7 +2159,7 @@ REG_OP(AxpyWithSoftmaxAndDropOutDoMask)
     .OP_END_FACTORY_REG(AxpyWithSoftmaxAndDropOutDoMask)
 
 /**
-* @brief MMCV Function: sigmoid_focal_loss_grad  . \n
+* @brief MMCV Function: sigmoid_focal_loss_grad  .
 
 * @par Inputs:
 * Three inputs, including:
@@ -2257,7 +2260,7 @@ REG_OP(AddLayerNormGrad)
     .OP_END_FACTORY_REG(AddLayerNormGrad);
 
 /**
-* @brief MMCV Function: softmax_focal_loss_grad  . \n
+* @brief MMCV Function: softmax_focal_loss_grad  .
 
 * @par Inputs:
 * Three inputs, including:
@@ -2318,87 +2321,5 @@ REG_OP(RmsNormGrad)
     .OUTPUT(dx, TensorType({DT_FLOAT,DT_FLOAT16,DT_BF16}))
     .OUTPUT(dgamma, TensorType({DT_FLOAT,DT_FLOAT,DT_FLOAT}))
     .OP_END_FACTORY_REG(RmsNormGrad)
-
-/**
-* @brief AdaLayerNorm operator interface implementation
-*  calculating: x, scale, shift
-*  mean  = np.mean(x, reduce_axis, keepdims=True)
-*  rstd = np.rsqrt(np.mean(np.power((x - mean),2), reduce_axis, keepdims=True) + epsilon))
-*  y = ((x - mean) * rstd) * (1 + scale) + shift \n
-
-*@par Inputs:
-*Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li scale: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li shift: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
-
-*@par Attributes:
-* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-5 . \n
-
-*@par Outputs:
-*Four outputs, including:
-* @li y: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li ln_res: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li mean: A Tensor. Must be one of the following types: float32.
-* @li rstd: A Tensor. Must be one of the following types: float32. \n
-*/
-REG_OP(AdaLayerNorm)
-    .INPUT(x, "T1")
-    .INPUT(scale, "T2")
-    .INPUT(shift, "T2")
-    .OUTPUT(y, "T1")
-    .OUTPUT(ln_res, "T1")
-    .OUTPUT(mean, "T3")
-    .OUTPUT(rstd, "T3")
-    .ATTR(epsilon, Float, 0.00001)
-    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
-    .DATATYPE(T2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
-    .DATATYPE(T3, TensorType({DT_FLOAT}))
-    .OP_END_FACTORY_REG(AdaLayerNorm)
-
-/**
-* @brief AdaLayerNormGrad operator interface implementation
-*  calculating: dy, x, mean, rstd, scale, ln_res
-*  pd_xl = dy * (1 + scale)
-*  pd_var = np.sum(((-0.5)*pd_xl*(x - data_mean)
-*           np.power(rstd, 3)),
-*           reduce_axis, keepdims=True)
-*  pd_mean = np.sum(((-1.0)*pd_xl*rstd), reduce_axis, keepdims=True)
-*            + pd_var*(1.0/m)
-*            np.sum(((-2.0)*(x - data_mean)), reduce_axis, keepdims=True)
-*  dx = pd_xl*rstd +
-*         pd_var*(2.0/m)*(x - data_mean) + pd_mean*(1.0/m)
-*  dscale = np.sum(dy * ln_res, param_axis, keepdims=True)
-*  dshift = np.sum(dy, param_axis, keepdims=True) \n
-
-*@par Inputs:
-*Six inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li mean: A Tensor. Must be one of the following types: float32.
-* @li rstd: A Tensor. Must be one of the following types: float32.
-* @li scale: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li ln_res: A Tensor. Must be one of the following types: float16, float32, bfloat16. \n
-
-*@par Outputs:
-*Three outputs, including:
-* @li dx: A Tensor. Must be one of the following types: float16, float32, bfloat16.
-* @li dshift: A Tensor. Must be one of the following types: float32.
-* @li dscale: A Tensor. Must be one of the following types: float32. \n
-*/
-REG_OP(AdaLayerNormGrad)
-    .INPUT(dy, "T1")
-    .INPUT(x, "T1")
-    .INPUT(mean, "T3")
-    .INPUT(rstd, "T3")
-    .INPUT(scale, "T2")
-    .INPUT(ln_res, "T1")
-    .OUTPUT(dx, "T1")
-    .OUTPUT(dshift, "T3")
-    .OUTPUT(dscale, "T3")
-    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
-    .DATATYPE(T2, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
-    .DATATYPE(T3, TensorType({DT_FLOAT}))
-    .OP_END_FACTORY_REG(AdaLayerNormGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

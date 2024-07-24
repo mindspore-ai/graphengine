@@ -327,7 +327,7 @@ REG_OP(DepthwiseConv2D)
 * @brief Performs the the backward operation for "BiasAdd" on the "bias" tensor.
 *        It accumulates all the values from out_backprop into the feature
 *        dimension. For NHWC data format, the feature dimension is the last.
-*        For NCHW data format, the feature dimension is the third-to-last . \n
+*        For NCHW data format, the feature dimension is the third-to-last .
 
 * @par Inputs:
 * x: A Tensor of type NumberType . \n
@@ -825,6 +825,12 @@ REG_OP(Conv2DBackpropFilterD)
 * the value of stride/padding/dilation/offset_x exceeds the range in the above table,
 * the correctness of the function cannot be guaranteed.
 *\n
+* If the conv2d enters the DMA process, a timeout AiCore error may be reported.
+* You are advised to reduce the conv2d specifications and try again.
+* You can view the warning log to check whether the DMA process is entered.
+* For example: 'The conv2d has entered the DMA processing process. A timeout AiCore error may be reported.
+* If a timeout AiCore error is reported, reduce the conv2d specifications and try again'
+*\n
 *
 *@par Outputs:
 * y: A 4D Tensor of output feature map. Has the same type as "x". With the
@@ -1136,11 +1142,11 @@ REG_OP(QuantConv2D)
 /**
 *@brief Computes a 3D convolution given 5D "x" and "filter" tensors.
 *@par Inputs:
- * @li x: A 5D tensor. Must be one of the following types: float16, int8, float32, bfloat16.
+ * @li x: A 5D tensor. Must be one of the following types: float16, int8, bfloat16.
  * The format of x is NCDHW or NDHWC.
  * @li filter: A 5D tensor of the same type as "x".
  * The format is NCDHW, NDHWC or DHWCN.
- * @li bias: Optional. An 1D tensor of the same type as "x".
+ * @li bias: Optional. An 1D tensor. Must be one of the following types: float16, float32, int32.
  * @li offset_w: Optional. An 1D tensor for quantized deconvolution. \n
 
 *@par Attributes:
@@ -1198,7 +1204,7 @@ REG_OP(Conv3D)
  * [batch, in_depth, in_height, in_width, in_channels] or
  * [batch, in_channels, in_depth, in_height, in_width].
  * The in_height and in_width must be in [1, 4096].
- * @li filter: A 5-D Tensor. Must be one of the following types: float16, float32, double, bfloat16.
+ * @li filter: A 5-D Tensor. Must be one of the following types: float16, bfloat16, float32.
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
@@ -1235,16 +1241,16 @@ REG_OP(Conv3D)
  * Specify the data format of the feature map, out_backprop and output.
 *@par Outputs:
  * y: A Tensor. It has the same format as feature map and out_backprop.
- * The type is float16, bfloat16, float32 or double.
+ * The type is float16, bfloat16, float32.
  * The gradients of feature map.
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv3d_backprop_input
 */
 REG_OP(Conv3DBackpropInput)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
@@ -1365,7 +1371,7 @@ REG_OP(LSTM)
 /**
 *@brief Computes the gradients of convolution3D with respect to the filter
 *@par Inputs:
- * @li x: A Tensor. Must be one of the following types: float16, float32, bfloat16.
+ * @li x: A Tensor. Must be one of the following types: float16 or bfloat16.
  * 5-D with shape [batch, in_depth, in_height, in_width, in_channels]
  * or [batch, in_channels, in_depth, in_height, in_width].
  * @li filter_size: A Tensor of type int32. An integer vector representing the

@@ -70,7 +70,7 @@ REG_OP(SilentCheck)
     .OP_END_FACTORY_REG(SilentCheck)
 
 /**
-* @brief Computes the output as (shift + scale * x) ^ power . \n
+* @brief Computes the output as (shift + scale * x) ^ power .
 
 * @par Inputs:
 * x: A Tensor of type float16 or float32 of bfloat16 . \n
@@ -95,7 +95,7 @@ REG_OP(Power)
     .OP_END_FACTORY_REG(Power);
 
 /**
-*@brief Computes the log of the absolute value of Gamma(x) element-wise. \n
+*@brief Computes the log of the absolute value of Gamma(x) element-wise.
 
 *@par Inputs:
 *@li x:A Tensor. Must be one of the following types: float, double, float16.
@@ -113,7 +113,7 @@ REG_OP(Lgamma)
     .OP_END_FACTORY_REG(Lgamma)
 
 /**
-*@brief Computes the logarithmic derivative of the gamma function on input. \n
+*@brief Computes the logarithmic derivative of the gamma function on input.
 
 *@par Inputs:
 *@li x:A Tensor. Must be one of the following types: float, double, float16.
@@ -131,7 +131,7 @@ REG_OP(Digamma)
     .OP_END_FACTORY_REG(Digamma)
 
 /**
-*@brief Compute the lower regularized incomplete Gamma function P(a, x) . \n
+*@brief Compute the lower regularized incomplete Gamma function P(a, x) .
 
 *@par Inputs:
 *The input a and x must have the same type. Inputs include:
@@ -152,7 +152,7 @@ REG_OP(Igamma)
     .OP_END_FACTORY_REG(Igamma)
 
 /**
-*@brief Compute the upper regularized incomplete Gamma function Q(a, x) . \n
+*@brief Compute the upper regularized incomplete Gamma function Q(a, x) .
 
 *@par Inputs:
 *The input a and x must have the same type. Inputs include:
@@ -173,10 +173,36 @@ REG_OP(Igammac)
     .OP_END_FACTORY_REG(Igammac)
 
 /**
-* @brief Computes the histogram of a tensor. \n
+* @brief Computes the histogram of a tensor.
 
 *@par Inputs:
-* x: A Tensor of type float16,float32,int32. \n
+* x: A Tensor of type float16,float32,int64,int32,int16,int8,uint8. \n
+* min: A Tensor of type float16,float32,int64,int32,int16,int8,uint8. \n
+* max: A Tensor of type float16,float32,int64,int32,int16,int8,uint8. \n
+*@par Attributes:
+
+* @li bins: Optional. Must be one of the following types: int32. Defaults to 100. \n
+
+*@par Outputs:
+* y: A Tensor. A Tensor of type int32 . \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator Histc.
+*/
+
+REG_OP(HistogramV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
+    .INPUT(min, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
+    .INPUT(max, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT64, DT_INT32, DT_INT16, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .ATTR(bins, Int, 100)
+    .OP_END_FACTORY_REG(HistogramV2);
+
+/**
+* @brief Computes the histogram of a tensor.
+
+*@par Inputs:
+* x: A Tensor of type float16,float32,int64,int32,int16,int8,uint8. \n
 
 *@par Attributes:
 
@@ -185,7 +211,7 @@ REG_OP(Igammac)
 * @li max: Optional. Must be one of the following types: float32. Defaults to 0.0. \n
 
 *@par Outputs:
-* y: A Tensor. A Tensor of type float32 or int32 . \n
+* y: A Tensor. A Tensor of type float32,int64,int32,int16,int8,uint8 . \n
 
 * @attention Constraints:
 * The operator will use the interface set_atomic_add(), therefore weights and output should be float32 only. \n
@@ -205,7 +231,7 @@ REG_OP(Histogram)
 
 /**
 *@brief Compare values of input to threshold and pack resulting bits into
-a uint8 . \n
+a uint8 .
 
 *@par Inputs:
 *The input size must be a non-negative int32 scalar Tensor. Inputs include:
@@ -235,7 +261,7 @@ REG_OP(CompareAndBitpack)
 Outputs a vector with length size and the same dtype as weights. If weights
 are empty, then index i stores the number of times the value i is counted in
 arr. If weights are non-empty, then index i stores the sum of the value in
-weights at each index . \n
+weights at each index .
 
 *@par Inputs:
 *The input size must be a non-negative int32 scalar Tensor. Inputs include:
@@ -261,7 +287,7 @@ REG_OP(Bincount)
     .OP_END_FACTORY_REG(Bincount)
 
 /**
-*@brief Compute the regularized incomplete beta integral . \n
+*@brief Compute the regularized incomplete beta integral .
 
 *@par Inputs:
 *The input b and x must have the same types as a. Inputs include:
@@ -342,7 +368,7 @@ REG_OP(Bucketize)
     .OP_END_FACTORY_REG(Bucketize)
 
 /**
-*@brief Returns a new tensor with the truncated integer values of the elements of input. \n
+*@brief Returns a new tensor with the truncated integer values of the elements of input.
 
 *@par Inputs:
 *One inputs, including:
@@ -360,7 +386,7 @@ REG_OP(Trunc)
     .OP_END_FACTORY_REG(Trunc)
 
 /**
-*@brief Computes the sum along sparse segments of a tensor . \n
+*@brief Computes the sum along sparse segments of a tensor .
 
 *@par Inputs:
 *The input indices and segment_ids must have same rank. Inputs include:
@@ -388,7 +414,7 @@ REG_OP(SparseSegmentSum)
     .OP_END_FACTORY_REG(SparseSegmentSum)
 
 /**
-*@brief Computes the mean along sparse segments of a tensor . \n
+*@brief Computes the mean along sparse segments of a tensor .
 
 *@par Inputs:
 *The input indices and segment_ids must have same rank. Inputs include:
@@ -413,7 +439,7 @@ REG_OP(SparseSegmentMean)
     .OP_END_FACTORY_REG(SparseSegmentMean)
 
 /**
-*@brief Computes gradients for SparseSegmentMean . \n
+*@brief Computes gradients for SparseSegmentMean .
 
 *@par Inputs:
 *The input grad must have be type float or double. Inputs include:
@@ -463,7 +489,7 @@ REG_OP(IgammaGradA)
     .OP_END_FACTORY_REG(IgammaGradA)
 
 /**
-*@brief Initialize data process channel . \n
+*@brief Initialize data process channel .
 
 *@par Attributes:
 *channel_name: A string. Default "" . \n
@@ -477,7 +503,7 @@ REG_OP(InitData)
     .OP_END_FACTORY_REG(InitData)
 
 /**
-*@brief Get the next batch of data in data processing . \n
+*@brief Get the next batch of data in data processing .
 
 *@par Attributes:
 *@li output_types: A nested structure of DType objects corresponding to each
@@ -577,7 +603,7 @@ REG_OP(Erfc)
 /**
 *@brief This operation returns a rank 1 histogram counting the number of entries in `values`
 *  that fell into every bin.The bins are equal width and determined by the arguments
-*  'value_range' and 'nbins' . \n
+*  'value_range' and 'nbins' .
 
 *@par Inputs:
 *Three inputs, including:
@@ -605,7 +631,7 @@ REG_OP(HistogramFixedWidth)
 /**
 *@brief This operation returns a rank 1 histogram counting the number of entries in `values`
 *  that fell into every bin.The bins are equal width and determined by the arguments
-*  'value_range' and 'nbins' . \n
+*  'value_range' and 'nbins' .
 
 *@par Inputs:
 *Two inputs, including:
@@ -826,7 +852,7 @@ REG_OP(Conj)
     .OP_END_FACTORY_REG(Conj)
 
 /**
-* @brief The negative log likelihood loss . \n
+* @brief The negative log likelihood loss .
 
 * @par Inputs:
 * The input x and weight must have the same type. Inputs include:
@@ -856,7 +882,7 @@ REG_OP(NLLLoss)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
-* @brief The negative log likelihood loss grad . \n
+* @brief The negative log likelihood loss grad .
 
 * @par Inputs:
 * @li x: A Tensor dtype of float32 or bfloat16.
@@ -887,7 +913,7 @@ REG_OP(NLLLossGrad)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
-* @brief IFMR(Input Feature Map Reconstruction). \n
+* @brief IFMR(Input Feature Map Reconstruction).
 
 * @par Inputs:
 * @li data: A Tensor of feature map.
@@ -927,7 +953,7 @@ REG_OP(IFMR)
   .OP_END_FACTORY_REG(IFMR)
 
 /**
-*@brief Weights Adaptive Range Quantization. \n
+*@brief Weights Adaptive Range Quantization.
 
 *@par Inputs:
 *@li w: A Tensor of weights. \n
@@ -1249,7 +1275,7 @@ REG_OP(Complex)
     .OP_END_FACTORY_REG(Complex)
 
 /**
-* @brief Counts the number of occurrences of each value in an integer array . \n
+* @brief Counts the number of occurrences of each value in an integer array .
 
 * @par Inputs:
 * Five inputs, including:
@@ -1453,7 +1479,7 @@ REG_OP(CdistGrad)
     .OP_END_FACTORY_REG(CdistGrad)
 
 /**
-* @brief  Computes the RaggedBincount. \n
+* @brief  Computes the RaggedBincount.
 
 * @par Inputs:
 * Four inputs, including:
@@ -1483,7 +1509,7 @@ REG_OP(RaggedBincount)
 
 /**
  * @brief Count the number of occurrences of each value in the input dense integer array,
- * and output it according to the sparse matrix. \n
+ * and output it according to the sparse matrix.
 
  * @par Inputs:
  * @li values: A 1D or 2D tensor of type int32 or int64.
@@ -1514,7 +1540,7 @@ REG_OP(DenseCountSparseOutput)
     .OP_END_FACTORY_REG(DenseCountSparseOutput)
 
 /**
-* @brief Computes gradients for SparseSegmentSum . \n
+* @brief Computes gradients for SparseSegmentSum .
 
 * @par Inputs:
 * The input grad must have be type float or double. Inputs include:
@@ -1544,7 +1570,7 @@ REG_OP(SparseSegmentSumGrad)
 
 /**
  * @brief Count the number of occurrences of each value in the input ragged integer array,
- * and output it according to the sparse matrix. \n
+ * and output it according to the sparse matrix.
 
  * @par Inputs:
  * @li splits: A 1D tensor of type int64.
@@ -1708,7 +1734,7 @@ REG_OP(SobolSample)
 
 /**
  * @brief Count the number of occurrences of each value in the input sparse integer array,
- * and output it according to the sparse matrix. \n
+ * and output it according to the sparse matrix.
 
  * @par Inputs:
  * @li indices: A tensor of type int64.
@@ -1743,7 +1769,7 @@ REG_OP(SparseCountSparseOutput)
     .OP_END_FACTORY_REG(SparseCountSparseOutput)
 
 /**
-* @brief Counts the number of occurrences of each value in an integer array. \n
+* @brief Counts the number of occurrences of each value in an integer array.
 
 * @par Inputs:
 * @li splits: A Tensor of type int64. 1D int64 Tensor.
@@ -1777,7 +1803,7 @@ REG_OP(RaggedBinCount)
     .OP_END_FACTORY_REG(RaggedBinCount)
 
 /**
-* @brief Counts the number of occurrences of each value in an integer array. \n
+* @brief Counts the number of occurrences of each value in an integer array.
 
 * @par Inputs:
 * @li input: A Tensor of type int32, int64. 1D or 2D int Tensor.

@@ -23,6 +23,7 @@ extern "C" {
 #define MSPROF_TASK_TIME_L0 0x00000800ULL  // mean PROF_TASK_TIME
 #define MSPROF_EVENT_FLAG 0xFFFFFFFFFFFFFFFFULL
 typedef void* VOID_PTR;
+typedef const void* ConstVoidPtr;
 typedef int32_t (*MsprofReportHandle)(uint32_t moduleId, uint32_t type, VOID_PTR data, uint32_t len);
 typedef int32_t (*MsprofCtrlHandle)(uint32_t type, VOID_PTR data, uint32_t len);
 typedef int32_t (*MsprofSetDeviceHandle)(VOID_PTR data, uint32_t len);
@@ -48,6 +49,8 @@ typedef int32_t (*ProfCommandHandle)(uint32_t type, VOID_PTR data, uint32_t len)
 #define MSPROF_REPORT_AICPU_LEVEL       6000U
 #define MSPROF_REPORT_HCCL_NODE_LEVEL   5500U
 #define MSPROF_REPORT_RUNTIME_LEVEL     5000U
+#define MSPROF_REPORT_PROF_LEVEL        4500U
+#define MSPROF_REPORT_DPU_LEVEL         4000U
 
 /* Msprof report type of acl(20000) level(acl), offset: 0x000000 */
 #define MSPROF_REPORT_ACL_OP_BASE_TYPE            0x010000U
@@ -92,15 +95,29 @@ typedef int32_t (*ProfCommandHandle)(uint32_t type, VOID_PTR data, uint32_t len)
 #define MSPROF_REPORT_NODE_HCCL_BASE_TYPE        0x020000U /* type info: hccl api */
 #define MSPROF_REPORT_NODE_DVPP_API_BASE_TYPE    0x030000U /* type info: dvpp api */
 /* Msprof report type of aicpu(6000), offset: 0x000000 */
-#define MSPROF_REPORT_AICPU_NODE_TYPE            0U /* type info: DATA_PREPROCESS.AICPU */
-#define MSPROF_REPORT_AICPU_DP_TYPE              1U /* type info: DATA_PREPROCESS.DP */
-#define MSPROF_REPORT_AICPU_MODEL_TYPE           2U /* type info: DATA_PREPROCESS.AICPU_MODEL */
-#define MSPROF_REPORT_AICPU_MI_TYPE              3U /* type info: DATA_PREPROCESS.AICPUMI */
+#define MSPROF_REPORT_AICPU_NODE_TYPE               0U /* type info: DATA_PREPROCESS.AICPU */
+#define MSPROF_REPORT_AICPU_DP_TYPE                 1U /* type info: DATA_PREPROCESS.DP */
+#define MSPROF_REPORT_AICPU_MODEL_TYPE              2U /* type info: DATA_PREPROCESS.AICPU_MODEL */
+#define MSPROF_REPORT_AICPU_MI_TYPE                 3U /* type info: DATA_PREPROCESS.AICPUMI */
+#define MSPROF_REPORT_AICPU_MC2_EXECUTE_COMM_TIME   4U /* 通信时刻信息 */
+#define MSPROF_REPORT_AICPU_MC2_EXECUTE_COMP_TIME   5U /* 计算时刻信息 */
+#define MSPROF_REPORT_AICPU_MC2_HCCL_INFO           6U /* task信息 */
 
 /* Msprof report type of hccl(5500) level(op api), offset: 0x010000 */
 #define MSPROF_REPORT_HCCL_NODE_BASE_TYPE        0x010000U
 #define MSPROF_REPORT_HCCL_MASTER_TYPE           0x010001U
 #define MSPROF_REPORT_HCCL_SLAVE_TYPE            0x010002U
+
+/* Msprof report type of hccl(4000U) level(dpu), offset: 0x000000 */
+#define MSPROF_REPORT_DPU_TRACK_TYPE              0U /* type info: dpu_track */
+
+/* use with AdprofCheckFeatureIsOn */
+#define ADPROF_TASK_TIME_L0 0x00000008ULL
+#define ADPROF_TASK_TIME_L1 0x00000010ULL
+#define ADPROF_TASK_TIME_L2 0x00000020ULL
+
+/* Msprof report type of profiling(4500) */
+#define MSPROF_REPORT_DIAGNOSTIC_INFO_TYPE       0x010000U
 
 enum ProfileCallbackType {
     PROFILE_CTRL_CALLBACK = 0,
@@ -285,6 +302,7 @@ enum MsprofGeTaskType {
     MSPROF_GE_TASK_TYPE_DSA,
     MSPROF_GE_TASK_TYPE_DVPP,
     MSPROF_GE_TASK_TYPE_HCCL,
+    MSPROF_GE_TASK_TYPE_FUSION,
     MSPROF_GE_TASK_TYPE_INVALID
 };
 
@@ -538,38 +556,38 @@ struct MsprofAicpuMiAdditionalData {
     uint64_t runEndTime;
 };
 
+// AICPU kfc算子执行时间
 struct AicpuKfcProfCommTurn {
-    uint64_t waitNotifyStartTime;   // 开始等待通信参数
-    uint64_t kfcAlgExeStartTime;    // 开始通信算法执行
-    uint64_t sendTaskStartTime;     // 开始下发task
-    uint64_t waitActiveStartTime;   // 开始等待激活
-    uint64_t acitveStartTime;       // 开始激活处理
-    uint64_t waitExeEndStartTime;   // 开始等待认为执行结束
-    uint64_t rtsqExeEndTime;        // 任务执行结束时间
-    uint64_t dataLen;               // 本轮通信数据长度
+    uint64_t waitNotifyStartTime;  // 开始等待通信参数
+    uint64_t kfcAlgExeStartTime;   // 开始通信算法执行
+    uint64_t sendTaskStartTime;    // 开始下发task
+    uint64_t waitActiveStartTime;  // 开始等待激活
+    uint64_t acitveStartTime;      // 开始激活处理
+    uint64_t waitExeEndStartTime;  // 开始等待任务执行结束
+    uint64_t rtsqExeEndTime;       // 任务执行结束时间
+    uint64_t dataLen;              // 本轮通信数据长度
+    uint32_t deviceId;
+    uint16_t streamId;
+    uint16_t taskId;
+    uint8_t version;
+    uint8_t commTurn;  // 总通信轮次
     uint8_t currentTurn;
-    uint8_t reserve[7];
+    uint8_t reserve[5];
 };
 
+// Aicore算子执行时间
 struct AicpuKfcProfComputeTurn {
     uint64_t waitComputeStartTime;  // 开始等待计算
     uint64_t computeStartTime;      // 开始计算
     uint64_t computeExeEndTime;     // 计算执行结束
     uint64_t dataLen;               // 本轮计算数据长度
-    uint8_t currentTurn;
-    uint8_t reserve[7];
-};
-
-struct MsprofAicpuKfcProfData {
     uint32_t deviceId;
     uint16_t streamId;
     uint16_t taskId;
     uint8_t version;
-    uint8_t commTurn;       // 总通信轮次
-    uint8_t computeTurn;    // 总计算轮次
+    uint8_t computeTurn;  // 总计算轮次
+    uint8_t currentTurn;
     uint8_t reserve[5];
-    struct AicpuKfcProfCommTurn commTurnProf;
-    struct AicpuKfcProfComputeTurn computeTurnProf;
 };
 
 /**
@@ -662,9 +680,7 @@ struct MsprofHcclInfo {
     uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
     uint32_t transportType; // transport type {0: SDMA, 1: RDMA, 2:LOCAL}
     uint32_t rdmaType; // RDMA type {0: RDMASendNotify, 1:RDMASendPayload}
-    uint32_t taskId;
-    uint16_t streamId;
-    uint16_t reserve[3];
+    uint32_t reserve2;
 #ifdef __cplusplus
     MsprofHcclInfo() : role(MSPROF_HCCL_INVALID_UINT), opType(MSPROF_HCCL_INVALID_UINT),
         dataType(MSPROF_HCCL_INVALID_UINT), linkType(MSPROF_HCCL_INVALID_UINT),
@@ -674,14 +690,42 @@ struct MsprofHcclInfo {
 #endif
 };
 
-struct profilingDeviceCommResInfo {
+struct MsprofAicpuMC2HcclInfo {
+    uint64_t itemId;
+    uint64_t cclTag;
+    uint64_t groupName;
+    uint32_t localRank;
+    uint32_t remoteRank;
+    uint32_t rankSize;
+    uint32_t workFlowMode;
+    uint32_t planeID;
+    uint32_t ctxId;
+    uint64_t notifyID;
+    uint32_t stage;
+    uint32_t role; // role {0: dst, 1:src}
+    double durationEstimated;
+    uint64_t srcAddr;
+    uint64_t dstAddr;
+    uint64_t dataSize; // bytes
+    uint32_t opType; // {0: sum, 1: mul, 2: max, 3: min}
+    uint32_t dataType; // data type {0: INT8, 1: INT16, 2: INT32, 3: FP16, 4:FP32, 5:INT64, 6:UINT64}
+    uint32_t linkType; // link type {0: 'OnChip', 1: 'HCCS', 2: 'PCIe', 3: 'RoCE'}
+    uint32_t transportType; // transport type {0: SDMA, 1: RDMA, 2:LOCAL}
+    uint32_t rdmaType; // RDMA type {0: RDMASendNotify, 1:RDMASendPayload}
+    uint32_t taskId;
+    uint16_t streamId;
+    uint16_t reserve[3];
+};
+
+struct ProfilingDeviceCommResInfo {
     uint64_t groupName; // 通信域
     uint32_t rankSize; // 通信域内rank总数
     uint32_t rankId; // 当前device rankId，通信域内编号
     uint32_t usrRankId; // 当前device rankId，全局编号
-    int32_t aicpuKfcStreamId; // MC2中launch aicpu kfc算子的stream
+    uint32_t aicpuKfcStreamId; // MC2中launch aicpu kfc算子的stream
     uint32_t commStreamSize; // 当前device侧使用的通信stream数量
-    int32_t commStreamIds[8]; // 具体streamId
+    uint32_t commStreamIds[8]; // 具体streamId
+    uint32_t reserve;
 };
 
 #define MSPROF_MULTI_THREAD_MAX_NUM 25
@@ -857,6 +901,15 @@ struct MsprofRuntimeTrack {  // for MsprofReportCompactInfo buffer data
     uint64_t taskType;       // task message hash id
 };
 
+struct MsprofDpuTrack {  // for MsprofReportCompactInfo buffer data
+    uint16_t deviceId;   // high 4 bits, devType: dpu: 1, low 12 bits device id
+    uint16_t streamId;
+    uint32_t taskId;
+    uint32_t taskType;    // task type enum
+    uint32_t res;
+    uint64_t startTime;   // start time
+};
+
 #define MSPROF_COMPACT_INFO_DATA_LENGTH (40)
 struct MsprofCompactInfo {  // for MsprofReportCompactInfo buffer data
 #ifdef __cplusplus
@@ -874,6 +927,7 @@ struct MsprofCompactInfo {  // for MsprofReportCompactInfo buffer data
         struct MsprofRuntimeTrack runtimeTrack;
         struct MsprofNodeBasicInfo nodeBasicInfo;
         struct MsprofHCCLOPInfo hcclopInfo;
+        struct MsprofDpuTrack dpuTack;
     } data;
 };
 
@@ -914,9 +968,9 @@ enum MsprofErrorCode {
  */
 struct ReporterData {
     char tag[MSPROF_ENGINE_MAX_TAG_LEN + 1];  // the sub-type of the module, data with different tag will be writen
-    int deviceId;                             // the index of device
+    int32_t deviceId;                         // the index of device
     size_t dataLen;                           // the length of send data
-    unsigned char *data;                      // the data content
+    uint8_t *data;                            // the data content
 };
 
 /**
@@ -924,10 +978,18 @@ struct ReporterData {
  * @brief struct of data to hash
  */
 struct MsprofHashData {
-    int deviceId;                             // the index of device
+    int32_t deviceId;                         // the index of device
     size_t dataLen;                           // the length of data
-    unsigned char *data;                      // the data content
+    uint8_t *data;                            // the data content
     uint64_t hashId;                          // the id of hashed data
+};
+
+/**
+ * @name  MsprofConfigParam
+ * @brief struct of set config
+ */
+struct MsprofConfigParam {
+    uint32_t deviceId;                        // the index of device
 };
 
 /**
@@ -972,11 +1034,11 @@ struct MsprofGeOptions {
  */
 enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_ACL_ENV = 0,           // start profiling with acl env
-    MSPROF_CTRL_INIT_ACL_JSON,              // start pro with acl.json
-    MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
-    MSPROF_CTRL_FINALIZE,                   // stop profiling
-    MSPROF_CTRL_INIT_HELPER,                // start profiling in helper device
-    MSPROF_CTRL_INIT_PURE_CPU,              // start profiling in pure cpu
+    MSPROF_CTRL_INIT_ACL_JSON = 1,          // start pro with acl.json
+    MSPROF_CTRL_INIT_GE_OPTIONS = 2,        // start profiling with ge env and options
+    MSPROF_CTRL_FINALIZE = 3,               // stop profiling
+    MSPROF_CTRL_INIT_HELPER = 4,            // start profiling in helper device
+    MSPROF_CTRL_INIT_PURE_CPU = 5,          // start profiling in pure cpu
     MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 

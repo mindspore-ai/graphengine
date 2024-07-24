@@ -1,8 +1,6 @@
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2020-2022. All rights reserved.
  * Description: HCCL API
- * Author: lilianlin
- * Create: 2020-09-09
  */
 
 #ifndef HCCL_H_
@@ -47,6 +45,20 @@ extern HcclResult HcclGetRootInfo(HcclRootInfo *rootInfo);
 extern HcclResult HcclCommInitRootInfo(uint32_t nRanks, const HcclRootInfo *rootInfo, uint32_t rank, HcclComm *comm);
 
 /**
+ * @brief Initialize HCCL with root info and config params.
+ *
+ * @param nRanks A integer identifying the rank size of the cluster.
+ * @param rootInfo A struct identifying the hccl root info.
+ * @param rank A integer identifying the identify for the rank.
+ * @param config A pointer identifying config params about the current comm.
+ * @param comm A pointer identifying the initialized communication resource.
+ * @return HcclResult
+ * @see HcclCommDestroy()
+ */
+extern HcclResult HcclCommInitRootInfoConfig(uint32_t nRanks, const HcclRootInfo *rootInfo, uint32_t rank,
+    const HcclCommConfig *config, HcclComm *comm);
+
+/* *
 
  * @brief Set deterministic calculate
  *
@@ -300,6 +312,35 @@ extern const char *HcclGetErrorString(HcclResult code);
  * @param stream A pointer identifying the stream information.
 */
 extern HcclResult HcclBatchSendRecv(HcclSendRecvItem* sendRecvInfo, uint32_t itemNum, HcclComm comm, aclrtStream stream);
+
+
+/**
+ * @brief Initialize the comm configuration.
+ * @param config Pointer to the comm configuration that needs to be initialized.
+*/
+inline void HcclCommConfigInit(HcclCommConfig *config)
+{
+    if (config == nullptr) {
+        return;
+    }
+
+    typedef struct {
+        size_t size;
+        uint32_t magicWord;
+        uint32_t version;
+        uint64_t reserved;
+    } configInfo_t;
+
+    configInfo_t *info = (configInfo_t *)config;
+
+    info->size = sizeof(HcclCommConfig);
+    info->magicWord = HCCL_COMM_CONFIG_MAGIC_WORD;
+    info->version = HCCL_COMM_CONFIG_VERSION;
+    info->reserved = 0;
+
+    config->hcclBufferSize = HCCL_COMM_DEFAULT_BUFFSIZE;
+    config->hcclDeterministic = HCCL_COMM_DEFAULT_DETERMINISTIC;
+}
 #ifdef __cplusplus
 }
 #endif // __cplusplus

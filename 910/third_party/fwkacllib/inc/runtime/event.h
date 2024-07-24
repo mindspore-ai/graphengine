@@ -37,6 +37,16 @@ typedef struct tagIpcIntNoticeInfo {
     uint16_t phyDevId;
 } rtIpcIntNoticeInfo_t;
 
+typedef enum {
+    RT_STREAM_ID = 0,
+    RT_EVENT_ID,
+    RT_MODEL_ID,
+    RT_NOTIFY_ID,
+    RT_CMO_ID,
+    RT_CNT_NOTIFY_ID,    /* add start ascend910d */
+    RT_INVALID_ID,
+} rtIdType_t;
+
 /**
  * @ingroup event_flags
  * @brief event op bit flags
@@ -65,6 +75,18 @@ typedef struct tagIpcIntNoticeInfo {
 #define RT_DMS_MAX_EVENT_DATA_LENGTH 32
 #define RT_DMS_MAX_EVENT_RESV_LENGTH 32
 #define RT_DSM_EVENT_FILTER_FLAG_PID (1UL << 3)
+#define RT_MAX_RECORD_PA_NUM_PER_DEV    20U
+
+typedef struct {
+    uint64_t ptr;
+    uint64_t len;
+} rtMemRepairAddr;
+
+typedef struct {
+    uint32_t devid;
+    uint32_t count;
+    rtMemRepairAddr repairAddr[RT_MAX_RECORD_PA_NUM_PER_DEV];
+} rtMemUceInfo;
 
 typedef struct tagDmsEventFilter {
     uint64_t filterFlag;
@@ -92,6 +114,15 @@ typedef struct tagDmsFaultEvent {
     unsigned char osId;
     unsigned char resv[RT_DMS_MAX_EVENT_RESV_LENGTH]; /* reserve 32byte */
 } rtDmsFaultEvent;
+
+typedef struct tagNotifyPhyInfo {
+    uint32_t phyId;  /* phy id */
+    uint32_t tsId;   /* ts id */
+    uint32_t idType; /* SHR_ID_NOTIFY_TYPE */
+    uint32_t shrId;  /* notify id */
+    uint32_t flag;   /* RT_NOTIFY_FLAG_SHR_ID_SHADOW for remote id or shadow node */
+    uint32_t rsv[3];
+} rtNotifyPhyInfo;
 
 /**
  * @ingroup dvrt_event
@@ -252,6 +283,28 @@ RTS_API rtError_t rtGetFaultEvent(const int32_t deviceId, rtDmsEventFilter *filt
     uint32_t len, uint32_t *eventCount);
 
 /**
+* @ingroup dvrt_mem
+* @brief Get memUceInfo.
+* @attention Only support ONLINE scene.
+* @param [in] deviceId device id.
+* @param [out] memUceInfo Returned memUceInfo.
+* @return DRV_ERROR_NONE : success
+* @return DV_ERROR_XXX : fail
+*/
+RTS_API rtError_t rtGetMemUceInfo(const uint32_t deviceId, rtMemUceInfo *memUceInfo);
+
+/**
+* @ingroup dvrt_mem
+* @brief Repair Ucemem.
+* @attention Only support ONLINE scene.
+* @param [in] deviceId device id.
+* @param [out] memUceInfo Returned memUceInfo.
+* @return DRV_ERROR_NONE : success
+* @return DV_ERROR_XXX : fail
+*/
+RTS_API rtError_t rtMemUceRepair(const uint32_t deviceId, rtMemUceInfo *memUceInfo);
+
+/**
  * @ingroup dvrt_event
  * @brief Create a notify
  * @param [in] device_id  device id
@@ -305,6 +358,16 @@ RTS_API rtError_t rtNotifyReset(rtNotify_t notify);
 
 /**
  * @ingroup dvrt_event
+ * @brief Resource clean
+ * @param [in] devId   deviceId
+ * @param [in] type   typeId
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtResourceClean(int32_t devId, rtIdType_t type);
+
+/**
+ * @ingroup dvrt_event
  * @brief Wait for a notify
  * @param [in] notify_ notify to be wait
  * @param [in] stream_  input stream
@@ -346,6 +409,17 @@ RTS_API rtError_t rtGetNotifyID(rtNotify_t notify, uint32_t *notifyId);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtNotifyGetPhyInfo(rtNotify_t notify, uint32_t *phyDevId, uint32_t *tsId);
+
+/**
+ * @ingroup dvrt_event
+ * @brief Get notify phy and pod info
+ * @param [in] notify the created/opened notify
+ * @param [out] phyDevId phy device id
+ * @param [out] tsId ts id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtNotifyGetPhyInfoExt(rtNotify_t notify, rtNotifyPhyInfo *notifyInfo);
 
 /**
  * @ingroup dvrt_event

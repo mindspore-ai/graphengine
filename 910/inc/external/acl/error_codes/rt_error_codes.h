@@ -40,6 +40,7 @@ extern "C" {
 #define  ACL_ERROR_RT_WAIT_TIMEOUT               107019 // wait timeout
 #define  ACL_ERROR_RT_TASK_TIMEOUT               107020 // task timeout
 #define  ACL_ERROR_RT_SYSPARAMOPT_NOT_SET        107021 // not set sysparamopt
+#define  ACL_ERROR_RT_DEVICE_TASK_ABORT          107022 // device task aborting
 
 #define  ACL_ERROR_RT_FEATURE_NOT_SUPPORT        207000 // feature not support
 #define  ACL_ERROR_RT_MEMORY_ALLOCATION          207001 // memory allocation error
@@ -114,10 +115,12 @@ extern "C" {
 #define  ACL_ERROR_RT_FFTS_PLUS_TRAP_EXCEPTION   507050 // ffts+ trap exception
 #define  ACL_ERROR_RT_SEND_MSG                   507051 // hdc send msg fail
 #define  ACL_ERROR_RT_COPY_DATA                  507052 // copy data fail
+#define  ACL_ERROR_RT_DEVICE_MTE_ERROR           507053 // device MTE ERROR
 #define  ACL_ERROR_RT_DRV_INTERNAL_ERROR         507899 // drv internal error
 #define  ACL_ERROR_RT_AICPU_INTERNAL_ERROR       507900 // aicpu internal error
 #define  ACL_ERROR_RT_SOCKET_CLOSE               507901 // hdc disconnect
 #define  ACL_ERROR_RT_AICPU_INFO_LOAD_RSP_ERR    507902 // aicpu info load response error
+
 #ifdef __cplusplus
 }
 #endif

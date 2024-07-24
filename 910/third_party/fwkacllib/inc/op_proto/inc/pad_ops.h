@@ -94,12 +94,12 @@ REG_OP(FillD)
 *  and works its way forward.
 *
 * @par Inputs:
-* @li x: A tensor.
-* @li shape: A tensor of type int32 or int64.
+* @li x: A tensor, support all dtype include(BasicType, bool, string).
+* @li shape: A tensor.
 *     A 1D tensor of type int32 or int64, for the shape of the desired output.
 *
 * @par Outputs:
-* y: A tensor. Has the same type as "x".
+* y: A tensor. Has the same tensor info of "x".
 *
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator BroadcastTo.
@@ -250,11 +250,11 @@ REG_OP(PadV2D)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
-*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, uint32, uint64.
+* @li x: A Tensor. Must be one of the following types: float16, bfloat16(only support on constant mode),
+*     float32, double, int32, uint8, int16, int8, complex64, int64, 
+*     qint8, quint8, qint32, qint16, quint16, uint16, complex128, uint32, uint64.
 * @li paddings: A Tensor of type int32 or int64.
-* @li constant_values: A optional Tensor of int32 or int64
+* @li constant_values: A optional Tensor, dtype same as "x"
 
 * @par Attributes:
 * @li mode: An optional string, Defaults to "constant", indicates paddings mode,

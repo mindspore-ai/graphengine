@@ -223,7 +223,7 @@ REG_OP(SwinTransformerLnQKV)
 * float32, int32. Has format [ND, NHWC].
 
 * @par Third-party framework compatibility
-* Compatible with the TensorFlow operator BatchMatmul.
+* Compatible with the TensorFlow operator MatMul.
 */
 REG_OP(MatMul)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
@@ -265,7 +265,7 @@ REG_OP(MatMul)
 * "MatmulTransdataFusionPass" in fusion configuration.
 
 * @par Third-party framework compatibility
-* Compatible with the TensorFlow operator BatchMatmul.
+* Compatible with the TensorFlow operator MatMul.
 */
 REG_OP(MatMulV2)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
@@ -441,7 +441,7 @@ REG_OP(BatchMatMulV2)
     .OP_END_FACTORY_REG(BatchMatMulV2)
 
 /**
-* @brief Computes half the L2 norm of a tensor without the sqrt . \n
+* @brief Computes half the L2 norm of a tensor without the sqrt .
 
 * @par Inputs:
 
@@ -699,7 +699,7 @@ REG_OP(AttentionScoreGrad)
     .OP_END_FACTORY_REG(AttentionScoreGrad)
 
 /**
-* @brief Applies sparse "updates" to individual values or slices in a Variable . \n
+* @brief Applies sparse "updates" to individual values or slices in a Variable .
 
 * @par Inputs:
 * Three inputs, including:
@@ -733,7 +733,7 @@ REG_OP(ScatterNdUpdate)
     .OP_END_FACTORY_REG(ScatterNdUpdate)
 
 /**
-* @brief Applies sparse addition to individual values or slices in a Variable . \n
+* @brief Applies sparse addition to individual values or slices in a Variable .
 
 * @par Inputs:
 * Three inputs, including:
@@ -804,19 +804,16 @@ REG_OP(ScatterElements)
 * @li var: An ND Tensor . \n
 * Must be one of NumberType.
 * @li indices: An ND Tensor of type int32 or int64
-* @li updates: An Tensor. Same shape as indices. format:NCHW, NHWC . \n
+* @li updates: An ND Tensor . \n
 * Must be one of NumberType.
 
 * @par Attributes:
 * @li axis: An optional attribute. Defaults to 0.
 * @li reduction: An optional attribute. Defaults to string "none" and can be
-* "add" or "mul". \n
+* "add". \n
 
 * @par Outputs:
 * var: A Tensor. Has the same type and format as input "var" . \n
-
-* @par Third-party framework compatibility
-* Compatible with the ONNX operator ScatterElements.
 */
 REG_OP(ScatterElementsV2)
     .INPUT(var, TensorType::NumberType())
@@ -828,7 +825,7 @@ REG_OP(ScatterElementsV2)
     .OP_END_FACTORY_REG(ScatterElementsV2)
 
 /**
-* @brief Uses "updates" to update tensor "data" by "indices". \n
+* @brief Uses "updates" to update tensor "data" by "indices".
 
 * @par Inputs:
 * Three inputs, including:
@@ -855,7 +852,7 @@ REG_OP(ScatterNdMax)
     .OP_END_FACTORY_REG(ScatterNdMax)
 
 /**
-* @brief Adds sparse "updates" to a variable reference . \n
+* @brief Adds sparse "updates" to a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -888,7 +885,7 @@ REG_OP(ScatterAdd)
     .OP_END_FACTORY_REG(ScatterAdd)
 
 /**
-* @brief Adds sparse "updates" to a variable reference . \n
+* @brief Adds sparse "updates" to a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -918,7 +915,7 @@ REG_OP(ScatterAddWithAxis)
     .OP_END_FACTORY_REG(ScatterAddWithAxis)
 
 /**
-* @brief Divides a variable reference by sparse updates . \n
+* @brief Divides a variable reference by sparse updates .
 
 * @par Inputs:
 * Three inputs, including:
@@ -949,7 +946,7 @@ REG_OP(ScatterDiv)
     .OP_END_FACTORY_REG(ScatterDiv)
 
 /**
-* @brief Applies sparse addition to individual values or slices in a Variable . \n
+* @brief Applies sparse addition to individual values or slices in a Variable .
 
 * @par Inputs:
 * Three inputs, including:
@@ -978,7 +975,7 @@ REG_OP(ScatterNdAdd)
     .OP_END_FACTORY_REG(ScatterNdAdd)
 
 /**
-* @brief Applies sparse addition to individual values or slices in a Variable . \n
+* @brief Applies sparse addition to individual values or slices in a Variable .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1009,7 +1006,7 @@ REG_OP(TensorScatterAdd)
     .OP_END_FACTORY_REG(TensorScatterAdd)
 
 /**
-* @brief Applies sparse subtraction to individual values or slices in a Variable . \n
+* @brief Applies sparse subtraction to individual values or slices in a Variable .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1039,7 +1036,7 @@ REG_OP(ScatterNdSub)
     .OP_END_FACTORY_REG(ScatterNdSub)
 
 /**
-* @brief Uses "updates" to update tensor "data" by "indices". \n
+* @brief Uses "updates" to update tensor "data" by "indices".
 
 * @par Inputs:
 * Three inputs, including:
@@ -1066,7 +1063,7 @@ REG_OP(ScatterNdMin)
     .OP_END_FACTORY_REG(ScatterNdMin)
 
 /**
-* @brief Applies sparse addition to individual values or slices in a Variable . \n
+* @brief Applies sparse addition to individual values or slices in a Variable .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1097,7 +1094,7 @@ REG_OP(TensorScatterSub)
     .OP_END_FACTORY_REG(TensorScatterSub)
 
 /**
-* @brief Subtracts sparse updates to a variable reference . \n
+* @brief Subtracts sparse updates to a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1258,7 +1255,7 @@ REG_OP(FullyConnectionCompress)
     .OP_END_FACTORY_REG(FullyConnectionCompress)
 
 /**
-* @brief Computes the confusion matrix from predictions and labels . \n
+* @brief Computes the confusion matrix from predictions and labels .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1297,7 +1294,7 @@ REG_OP(ConfusionMatrix)
     .OP_END_FACTORY_REG(ConfusionMatrix)
 
 /**
-* @brief Multiplies sparse updates into a variable reference . \n
+* @brief Multiplies sparse updates into a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1330,7 +1327,7 @@ REG_OP(Scatter)
     .OP_END_FACTORY_REG(Scatter)
 
 /**
-* @brief Multiplies quantize and sparse updates into a variable reference . \n
+* @brief Multiplies quantize and sparse updates into a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1372,7 +1369,7 @@ REG_OP(QuantUpdateScatter)
     .OP_END_FACTORY_REG(QuantUpdateScatter)
 
 /**
-* @brief Multiplies dynamic quantize and sparse updates into a variable reference . \n
+* @brief Multiplies dynamic quantize and sparse updates into a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1412,7 +1409,7 @@ REG_OP(DynamicQuantUpdateScatter)
     .OP_END_FACTORY_REG(DynamicQuantUpdateScatter)
 
 /**
-* @brief Multiplies sparse updates into a variable reference . \n
+* @brief Multiplies sparse updates into a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1447,7 +1444,7 @@ REG_OP(ScatterList)
     .OP_END_FACTORY_REG(ScatterList)
 
 /**
-* @brief Multiplies sparse updates into a variable reference . \n
+* @brief Multiplies sparse updates into a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1479,7 +1476,7 @@ REG_OP(ScatterMul)
 
 /**
 * @brief Reduces sparse updates into a variable reference using
-* the "min" operation . \n
+* the "min" operation .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1511,7 +1508,7 @@ REG_OP(ScatterMin)
     .OP_END_FACTORY_REG(ScatterMin)
 
 /**
-* @brief Reduces sparse updates into a variable reference using the "max" operation . \n
+* @brief Reduces sparse updates into a variable reference using the "max" operation .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1571,7 +1568,7 @@ REG_OP(ScatterMaxWithArgmax)
     .OP_END_FACTORY_REG(ScatterMaxWithArgmax)
 
 /**
-* @brief Applies sparse updates to a variable reference . \n
+* @brief Applies sparse updates to a variable reference .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1604,7 +1601,7 @@ REG_OP(ScatterUpdate)
     .OP_END_FACTORY_REG(ScatterUpdate)
 
 /**
-* @brief Returns a tensor with the `k[0]`-th to `k[1]`-th diagonals of the batched `input` . \n
+* @brief Returns a tensor with the `k[0]`-th to `k[1]`-th diagonals of the batched `input` .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1632,7 +1629,7 @@ REG_OP(MatrixDiagPartV2)
     .OP_END_FACTORY_REG(MatrixDiagPartV2)
 
 /**
-* @brief Returns a batched matrix tensor with new batched diagonal values . \n
+* @brief Returns a batched matrix tensor with new batched diagonal values .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1660,7 +1657,7 @@ REG_OP(MatrixSetDiagV2)
     .OP_END_FACTORY_REG(MatrixSetDiagV2)
 
 /**
-* @brief Returns a batched matrix tensor with new batched diagonal values . \n
+* @brief Returns a batched matrix tensor with new batched diagonal values .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1694,7 +1691,7 @@ REG_OP(MatrixSetDiagV3)
     .OP_END_FACTORY_REG(MatrixSetDiagV3)
 
 /**
-* @brief Returns a batched diagonal tensor with given batched diagonal values . \n
+* @brief Returns a batched diagonal tensor with given batched diagonal values .
 
 * @par Inputs:
 * Five inputs, including:
@@ -1871,7 +1868,7 @@ REG_OP(Einsum)
     .OP_END_FACTORY_REG(Einsum)
 
 /**
-* @brief Returns a 2-D tensor with ones on the diagonal and zeros elsewhere. \n
+* @brief Returns a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
 * @par Inputs:
 * No inputs
@@ -1941,7 +1938,7 @@ REG_OP(Trace)
     .OP_END_FACTORY_REG(Trace)
 
 /**
-* @brief  Computes the generalized inverse of any matrix. \n
+* @brief  Computes the generalized inverse of any matrix.
 
 * @par Inputs:
 * @li x: input matrix. Must be one of the following types:
@@ -1961,7 +1958,7 @@ REG_OP(Pinverse)
     .OP_END_FACTORY_REG(Pinverse)
 
 /**
-* @brief  From the input tensor and updates tensor, select the maximum value according to indices to output. \n
+* @brief  From the input tensor and updates tensor, select the maximum value according to indices to output.
 
 * @par Inputs:
 * Three inputs, including:
@@ -1983,7 +1980,7 @@ REG_OP(TensorScatterMax)
     .OP_END_FACTORY_REG(TensorScatterMax)
 
 /**
-* @brief  From the input tensor and updates tensor, select the minimum value according to indices to output. \n
+* @brief  From the input tensor and updates tensor, select the minimum value according to indices to output.
 
 * @par Inputs:
 * Three inputs, including:
@@ -2034,7 +2031,7 @@ REG_OP(TensorScatterMin)
     .OP_END_FACTORY_REG(MatrixDiagPartV3)
 
 /**
-* @brief Returns a batched diagonal tensor with given batched diagonal values . \n
+* @brief Returns a batched diagonal tensor with given batched diagonal values .
 
 * @par Inputs:
 * Five inputs, including:

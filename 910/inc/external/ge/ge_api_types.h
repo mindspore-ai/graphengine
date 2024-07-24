@@ -1,18 +1,11 @@
-/**
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* Copyright (c) 2024 Huawei Technologies Co., Ltd.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
+ * ===================================================================================================================*/
 
 #ifndef INC_EXTERNAL_GE_GE_API_TYPES_H_
 #define INC_EXTERNAL_GE_GE_API_TYPES_H_
@@ -119,6 +112,7 @@ const char_t *const OPTION_EXECUTE_TIMES = "execute_times";
 const char_t *const OPTION_MAX_KEY_NUM = "ge.max_num";
 const char_t *const OPTION_EMBEDDING_DIM = "ge.embedding_dim";
 const char_t *const OPTION_USE_COUNTER_FILTER = "ge.use_counter_filter";
+const char_t *const OPTION_ES_MAX_REMOTEOP_NUM_PER_STREAM = "es_max_remoteop_num_per_stream";
 
 // Option key: Offload
 constexpr char_t const OPTION_EXEC_RANK_MAP[] = "ge.exec.rankMap";
@@ -206,6 +200,8 @@ const char_t *const STATIC_MEMORY_POLICY = "ge.exec.staticMemoryPolicy";
 const char_t *const EXTERNAL_WEIGHT = "ge.externalWeight";
 const char_t *const QUANT_DUMPABLE = "ge.quant_dumpable";
 static const char_t *const DETERMINISTIC = "ge.deterministic";
+const char_t *const TILING_SCHEDULE_OPTIMIZE = "ge.tiling_schedule_optimize";
+const char_t *const GRAPH_MAX_PARALLEL_MODEL_NUM = "ge.graphMaxParallelModelNum";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -470,6 +466,11 @@ const std::string DETERMINISTIC = "ge.deterministic";
 
 const std::string QUANT_DUMPABLE = "ge.quant_dumpable";
 
+// option for tiling sink
+const std::string TILING_SCHEDULE_OPTIMIZE = "ge.tiling_schedule_optimize";
+
+const std::string GRAPH_MAX_PARALLEL_MODEL_NUM = "ge.graphMaxParallelModelNum";
+
 constexpr char_t EVENT[] = "ge.event";
 
 // Graph run mode
@@ -587,6 +588,8 @@ static const char_t *const CLUSTER_CONFIG = ge::CLUSTER_CONFIG.c_str();
 static const char_t *const ENABLE_GRAPH_PARALLEL = "ge.enableGraphParallel";
 static const char_t *const GRAPH_PARALLEL_OPTION_PATH = "ge.graphParallelOptionPath";
 static const char_t *const QUANT_DUMPABLE = ge::QUANT_DUMPABLE.c_str();
+static const char_t *const TILING_SCHEDULE_OPTIMIZE = ge::TILING_SCHEDULE_OPTIMIZE.c_str();
+static const char_t *const GRAPH_MAX_PARALLEL_MODEL_NUM = ge::GRAPH_MAX_PARALLEL_MODEL_NUM.c_str();
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
 const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
@@ -628,7 +631,9 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              ENABLE_GRAPH_PARALLEL,
                                                              AC_PARALLEL_ENABLE,
                                                              GRAPH_PARALLEL_OPTION_PATH,
-                                                             QUANT_DUMPABLE};
+                                                             QUANT_DUMPABLE,
+                                                             TILING_SCHEDULE_OPTIMIZE,
+                                                             GRAPH_MAX_PARALLEL_MODEL_NUM};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
@@ -664,7 +669,9 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               COMPRESSION_OPTIMIZE_CONF,
                                               OP_DEBUG_CONFIG,
                                               DETERMINISTIC,
-                                              CLUSTER_CONFIG};
+                                              CLUSTER_CONFIG,
+                                              TILING_SCHEDULE_OPTIMIZE,
+                                              GRAPH_MAX_PARALLEL_MODEL_NUM};
 #endif
 }  // namespace ir_option
 }  // namespace ge

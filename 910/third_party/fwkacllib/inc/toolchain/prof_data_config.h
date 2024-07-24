@@ -27,6 +27,7 @@
 #define PROF_TASK_TIME            0x00000800ULL
 #define PROF_TASK_MEMORY          0x00001000ULL
 #define PROF_TASK_TIME_L2         0x00002000ULL
+#define PROF_OP_ATTR              0x00004000ULL
 
 // system profilinig switch
 #define PROF_CPU                  0x00010000ULL
@@ -68,6 +69,7 @@
 #define PROF_TASK_TIME_MASK            0x00000800ULL
 #define PROF_TASK_MEMORY_MASK          0x00001000ULL
 #define PROF_TASK_TIME_L2_MASK         0x00002000ULL
+#define PROF_OP_ATTR_MASK              0x00004000ULL
 
 // system profilinig mask
 #define PROF_CPU_MASK                  0x00010000ULL
@@ -90,5 +92,8 @@
 
 #define PROF_AICPU_MODEL_MASK          0x4000000000000000ULL
 #define PROF_MODEL_LOAD_MASK           0x8000000000000000ULL
+
+// devprof config
+#define PROF_HI_MC2 0x1000000000000ULL   // bit0 of the upper 16 bits of profSwitchHi means MC2 switch
 
 #endif  // MSPROFILER_API_PROF_DATA_CONFIG_H_

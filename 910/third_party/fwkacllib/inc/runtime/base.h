@@ -96,7 +96,7 @@ typedef struct tagRtTaskCfgInfo {
     uint8_t qos;
     uint8_t partId;
     uint8_t schemMode; // rtschemModeType_t 0:normal;1:batch;2:sync
-    uint8_t res[1]; // res
+    bool d2dCrossFlag; // d2dCrossFlag true:D2D_CROSS flase:D2D_INNER
     uint32_t blockDimOffset;
     uint8_t dumpflag; // dumpflag 0:fault 2:RT_KERNEL_DUMPFLAG 4:RT_FUSION_KERNEL_DUMPFLAG
 } rtTaskCfgInfo_t;
@@ -163,7 +163,15 @@ typedef struct rtExceptionInfo {
     rtExceptionArgsInfo_t exceptionArgs;
 } rtExceptionInfo_t;
 
+typedef enum {
+    RT_DEVICE_ABORT = 0,
+    RT_DEVICE_KILL,
+    RT_DEVICE_CLEAN
+} rtTaskAbortStage_t;
+
 typedef void (*rtErrorCallback)(rtExceptionType);
+
+typedef int32_t (*rtTaskAbortCallBack)(uint32_t devId, rtTaskAbortStage_t stage, uint32_t timeout, void *args);
 
 typedef void (*rtTaskFailCallback)(rtExceptionInfo_t *exceptionInfo);
 
@@ -368,6 +376,14 @@ RTS_API rtError_t rtProfilingCommandHandle(uint32_t type, void *data, uint32_t l
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtSetExceptCallback(rtErrorCallback callback);
+
+/**
+ * @ingroup dvrt_base
+ * @brief register callback for error code
+ * @param [out] NA
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtSetTaskAbortCallBack(const char *moduleName, rtTaskAbortCallBack callback, void *args);
 
 /**
  * @ingroup dvrt_base

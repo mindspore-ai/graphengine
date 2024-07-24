@@ -16,7 +16,7 @@ extern "C" {
 #endif
 #endif // __cplusplus
 
-typedef struct tagKV {
+typedef struct TagKv {
     char *kname;
     char *value;
 } KeyValue;
@@ -25,13 +25,14 @@ typedef struct tagKV {
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
-DLL_EXPORT void DlogErrorInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogWarnInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogInfoInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogDebugInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogEventInner(int moduleId, const char *fmt, ...);
-DLL_EXPORT void DlogInner(int moduleId, int level, const char *fmt, ...);
-DLL_EXPORT void DlogWithKVInner(int moduleId, int level, const KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+DLL_EXPORT void DlogErrorInner(int32_t moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogWarnInner(int32_t moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogInfoInner(int32_t moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogDebugInner(int32_t moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogEventInner(int32_t moduleId, const char *fmt, ...);
+DLL_EXPORT void DlogInner(int32_t moduleId, int32_t level, const char *fmt, ...);
+DLL_EXPORT void DlogWithKVInner(int32_t moduleId, int32_t level,
+    const KeyValue *pstKVArray, int32_t kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -48,9 +49,9 @@ extern "C" {
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
-DLL_EXPORT void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
-DLL_EXPORT void DlogWithKVInnerForC(int moduleId, int level,
-    const KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+DLL_EXPORT void DlogInnerForC(int32_t moduleId, int32_t level, const char *fmt, ...);
+DLL_EXPORT void DlogWithKVInnerForC(int32_t moduleId, int32_t level,
+    const KeyValue *pstKVArray, int32_t kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

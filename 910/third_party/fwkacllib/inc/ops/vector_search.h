@@ -115,11 +115,11 @@ REG_OP(TopKPQDistanceV2)
 * @par Inputs:
 * Six inputs, including:
 * @li ivf: A Tensor, dtype is uint8.
-* @li bucket_list: A Tensor, dtype is int32.
-* @li bucket_base_distance: A Tensor, dtype is float16.
+* @li bucket_list: A Tensor, dtype is int32, int64.
+* @li bucket_base_distance: A Tensor, dtype is float16, float32.
 * @li bucket_limits: A Tensor, dtype is int32.
-* @li bucket_offsets: A Tensor, dtype is int32.
-* @li adc_tables: A Tensor. dtype is float16. \n
+* @li bucket_offsets: A Tensor, dtype is int64.
+* @li adc_tables: A Tensor. dtype is float16, float32. \n
 *
 * @par Outputs:
 * Five outputs, including:

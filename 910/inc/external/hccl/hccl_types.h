@@ -1,8 +1,6 @@
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2020-2022. All rights reserved.
  * Description: HCCL data type definition
- * Author: lilianlin
- * Create: 2020-09-09
  */
 
 #ifndef HCCL_TYPES_H_
@@ -97,6 +95,18 @@ const uint32_t MAX_GROUP_NAME = 128; // group name max length
 typedef struct HcclRootInfoDef {
     char internal[HCCL_ROOT_INFO_BYTES];
 } HcclRootInfo;
+
+const uint32_t HCCL_COMM_CONFIG_INFO_BYTES = 24;
+const uint32_t HCCL_COMM_CONFIG_MAGIC_WORD = 0xf0f0f0f0;
+const uint32_t HCCL_COMM_CONFIG_VERSION = 1;
+const uint32_t HCCL_COMM_DEFAULT_BUFFSIZE = 200;
+const uint32_t HCCL_COMM_DEFAULT_DETERMINISTIC = 0;
+
+typedef struct HcclCommConfigDef {
+    char reserved[HCCL_COMM_CONFIG_INFO_BYTES];
+    uint32_t hcclBufferSize;
+    uint32_t hcclDeterministic;
+} HcclCommConfig;
 
 typedef enum {
     HCCL_SEND = 0,

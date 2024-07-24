@@ -48,7 +48,7 @@ namespace ge {
  * output: The output tensors returned by either then_branch(input) or else_branch(input) . \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator _If.
+ * Compatible with the TensorFlow operator _If.
  */
 REG_OP(_If)
     .INPUT(cond, TensorType::ALL())
@@ -81,7 +81,7 @@ REG_OP(_If)
  * output: The output tensors returned by either then_branch(input) or else_branch(input) . \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator StatelessIf.
+ * Compatible with the TensorFlow operator StatelessIf.
  * @par Restrictions:
  * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
  */
@@ -116,7 +116,7 @@ REG_OP(StatelessIf)
  * output: The output tensors returned by either then_branch(input) or else_branch(input) . \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator If.
+ * Compatible with the TensorFlow operator If.
  */
 REG_OP(If)
     .INPUT(cond, TensorType::ALL())
@@ -141,7 +141,7 @@ REG_OP(If)
  * output: The output tensors returned by one of branches . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator Case.
+ * Compatible with the TensorFlow operator Case.
  */
 REG_OP(StatelessCase)
     .INPUT(branch_index, DT_INT32)
@@ -165,7 +165,7 @@ REG_OP(StatelessCase)
  * output: The output tensors returned by one of branches . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator Case.
+ * Compatible with the TensorFlow operator Case.
  */
 REG_OP(Case)
     .INPUT(branch_index, DT_INT32)
@@ -193,7 +193,7 @@ REG_OP(Case)
  * output: The output tensors returned by "body". Has the same type as "input" . \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator _While.
+ * Compatible with the TensorFlow operator _While.
  */
 REG_OP(_While)
     .DYNAMIC_INPUT(input, TensorType::ALL())
@@ -224,7 +224,7 @@ REG_OP(_While)
  * output: The output tensors returned by "body". Has the same type as "input" . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator While.
+ * Compatible with the TensorFlow operator While.
  */
 REG_OP(While)
     .DYNAMIC_INPUT(input, TensorType::ALL())
@@ -256,7 +256,7 @@ REG_OP(While)
  * output: The output tensors returned by "body". Has the same type as "input" . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator StatelessWhile.
+ * Compatible with the TensorFlow operator StatelessWhile.
  * @par Restrictions:
  * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
  */
@@ -284,7 +284,7 @@ REG_OP(StatelessWhile)
  * output: The output tensors returned by "body". Has the same type as "input" . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator For.
+ * Compatible with the TensorFlow operator For.
  */
 REG_OP(For)
     .INPUT(start, DT_INT32)
@@ -313,7 +313,7 @@ REG_OP(For)
  * output: The output tensors returned by "f" . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator PartitionedCall.
+ * Compatible with the TensorFlow operator PartitionedCall.
  */
 REG_OP(PartitionedCall)
     .DYNAMIC_INPUT(args, TensorType::ALL())
@@ -342,7 +342,7 @@ REG_OP(PartitionedCall)
  * output: The output tensors returned by "f" . It's a dynamic output. \n
 
  * @par Third-party framework compatibility
- * @Compatible with the TensorFlow operator StatefulPartitionedCall.
+ * Compatible with the TensorFlow operator StatefulPartitionedCall.
 
  * @par Restrictions:
  * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.

@@ -1,18 +1,11 @@
-/**
- * Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* Copyright (c) 2024 Huawei Technologies Co., Ltd.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
+ * ===================================================================================================================*/
 
 #ifndef LLM_ENGINE_INC_EXTERNAL_LLM_ENGINE_TYPES_H
 #define LLM_ENGINE_INC_EXTERNAL_LLM_ENGINE_TYPES_H
@@ -26,6 +19,11 @@ constexpr uint64_t kInvalidPrefixId = UINT64_MAX;
 struct LLMEngineStatus {
   uint64_t empty_max_prompt_kv;  // 全量集群可容纳的KV
   int32_t num_free_blocks;
+};
+
+struct LLMModelStatus {
+  int32_t num_free_blocks;
+  int32_t reserved[128];
 };
 
 class LLMReq {
@@ -101,6 +99,8 @@ constexpr const char LLM_BATCH_MODE_AUTO[] = "auto";
 constexpr const char LLM_MODEL_TYPE_INFERENCE[] = "inference";
 constexpr const char LLM_MODEL_TYPE_POSTPROCESS[] = "postprocess";
 constexpr const char LLM_OPTION_OM_CACHE_PATH[] = "llm.OmCachePath";
+// 用于区分加载的方式
+constexpr const char LLM_OPTION_LOAD_TYPE_FLOWMODEL[] = "llm.IsFlowModel";
 constexpr const char LLM_OPTION_CLUSTER_INFO[] = "llm.ClusterInfo";
 constexpr const char LLM_OPTION_ROLE[] = "llm.Role";
 constexpr const char LLM_OPTION_MODEL_INPUTS_SHAPES[] = "llm.InputShapes";
@@ -144,6 +144,8 @@ constexpr const char LLM_OPTION_PAGED_ATTENTION_BLOCKS_NUM[] = "llm.PagedAttenti
 constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_SEQ_LEN[] = "llm.PagedAttentionMaxSeqLen";
 constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_SEQS_NUM[] = "llm.PagedAttentionMaxSeqsNum";
 constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_PROMPT_LEN[] = "llm.PagedAttentionMaxPromptLen";
+
+constexpr const char LLM_OPTION_ENABLE_SWITCH_ROLE[] = "llm.EnableSwitchRole";
 
 struct IpInfo {
   uint32_t ip = 0U;

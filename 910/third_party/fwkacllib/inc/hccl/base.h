@@ -1,8 +1,6 @@
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2019-2022. All rights reserved.
  * Description: HCOM data type definition
- * Author: ligang
- * Create: 2019-05-24
  */
 
 #ifndef HCCL_BASE_H
@@ -181,6 +179,8 @@ struct HcomRemoteOperationParams {
 
     s32 intZerocpyFlag{};
     s32 outZerocpyFlag{};
+    s32 maxEmbeddingDim{};
+    std::string uniqueTag{};
     bool disableUnique{};
     bool uniqued{};
 };

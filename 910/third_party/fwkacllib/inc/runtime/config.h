@@ -183,7 +183,6 @@ typedef enum tagRTTaskTimeoutType {
     RT_TIMEOUT_TYPE_OP_WAIT = 0,
     RT_TIMEOUT_TYPE_OP_EXECUTE,
 } rtTaskTimeoutType_t;
-
 /**
  * @ingroup
  * @brief get AI core count

@@ -1089,7 +1089,7 @@ REG_OP(YoloV3DetectionOutputV2)
 
 *@li hindex: A hindex tensor with shape [height,weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively . \n
 *@par Attributes:
-*@li biases: A required float32. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
+*@li biases: A float list. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
 *@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
 *@li coords: Specifies the number of coordinate parameters. Must be 4.
 *@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 80].

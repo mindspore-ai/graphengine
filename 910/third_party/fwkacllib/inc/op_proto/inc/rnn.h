@@ -32,12 +32,12 @@ namespace ge {
 * @li h:A 4D Tensor. Must be one of the following types: float16.
 * @li c:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li w:A 4D Tensor. Must be one of the following types: float16.
-* @li b:A 1D Tensor. Must be one of the following types: float16. The format must be ND . \n
+* @li b:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND . \n
 * @li mask:A 1D Tensor. Must be one of the following types: uint8.
 
 * @par Attributes:
-* @li keep_prob:An integer identifying the keep prob in the op. Default to 1.
-* @li forget_bias:An integer identifying the forget bias in the op. Default to 1.
+* @li keep_prob:An Float identifying the keep prob in the op. Default to 1.
+* @li forget_bias:An Float identifying the forget bias in the op. Default to 1.
 * @li state_is_tuple:An bool identifying if the hidden state and cell state is tuple. Default to true.
 * @li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported . \n
 
@@ -121,12 +121,12 @@ REG_OP(DynamicLSTM)
 * @par Attributes:
 * @li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
 * @li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
-* @li cell_depth:An integer identifying the cell depth in the op. Default to 1.
+* @li cell_depth:An integer identifying the cell depth in the op. Default to 0.
 * @li use_peephole:An bool identifying if use peephole in the op. Default to false.
-* @li keep_prob:An float identifying the keep prob in the op. Default to 1.
+* @li keep_prob:An float identifying the keep prob in the op. Default to -1.
 * @li cell_clip:An float identifying the cell clip in the op. Default to -1.
 * @li num_proj:An integer identifying the num projection in the op. Default to 0.
-* @li time_major:An bool identifying the time major in the op. Default to false.
+* @li time_major:An bool identifying the time major in the op. Default to true.
 * @li forget_bias:An float identifying the forget bias in the op. Default to 0.
 * @li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifjo". Default to "ijfo".
 
@@ -187,41 +187,48 @@ REG_OP(DynamicRNNGrad)
 * @brief: DynamicRNN calculation.
 * @par Inputs:
 * ten inputs:
-* @li x:A required 4D Tensor. Must be one of the following types: float16, float32.
-* @li w:A required 4D Tensor. Must be one of the following types: float16, float32.
-* @li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+* @li x:A required Tensor. Must be one of the following types: float16, float32.
+* @li w:A required Tensor. Must be one of the following types: float16, float32.
+* @li b:A required Tensor. Must be one of the following types: float16, float32. The format must be ND.
 * @li seq_length:A optional Tensor. Must be one of the following types: float16, int32.
-* @li init_h:A optional 4D Tensor. Must be one of the following types: float16, float32.
-* @li init_c:A optional 4D Tensor. Must be one of the following types: float16, float32.
-* @li wci:A 4D optional Tensor. Must be one of the following types: float16, float32.
-* @li wcf:A 4D optional Tensor. Must be one of the following types: float16, float32.
-* @li wco:A 4D optional Tensor. Must be one of the following types: float16, float32.
-* @li mask:A 1D optional Tensor. Must be one of the following types: uint8. The format must be ND . \n
+* @li init_h:A optional Tensor. Must be one of the following types: float16, float32.
+* @li init_c:A optional Tensor. Must be one of the following types: float16, float32.
+* @li wci:A optional Tensor. Must be one of the following types: float16, float32.
+* @li wcf:A optional Tensor. Must be one of the following types: float16, float32.
+* @li wco:A optional Tensor. Must be one of the following types: float16, float32.
+* @li mask:A optional Tensor. Must be one of the following types: uint8. The format must be ND . \n
 
 * @par Attributes:
-* @li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
-* @li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
-* @li cell_depth:An integer identifying the cell depth in the op. Default to 1.
-* @li use_peephole:An bool identifying if use peephole in the op. Default to false.
-* @li keep_prob:An float identifying the keep prob in the op. Default to 1.
-* @li cell_clip:An float identifying the cell clip in the op. Default to -1.
-* @li num_proj:An integer identifying the num projection in the op. Default to 0.
+* @li cell_type:An string identifying the cell type in the op.
+* Default to "LSTM". Only LSTM is currently supported.
+* @li direction:An string identifying the direction in the op.
+* Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
+* @li cell_depth:An integer identifying the cell depth in the op.
+* Default to 1. Only 1 is currently supported.
+* @li use_peephole:An bool identifying if use peephole in the op.
+* Default to false. Only false is currently supported.
+* @li keep_prob:An float identifying the keep prob in the op. Default to 1.0.
+* @li cell_clip:An float identifying the cell clip in the op. Default to -1.0.
+* @li num_proj:An integer identifying the num projection in the op.
+* Default to 0. Only 0 is currently supported.
 * @li time_major:An bool identifying the time major in the op. Default to true.
-* @li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported.
+* @li activation:An string identifying the type of activation function in the op.
+* Default to "tanh". Only "tanh" is currently supported.
 * @li forget_bias:An float identifying the forget bias in the op. Default to 0.
-* @li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifjo". Default to "ijfo".
+* @li gate_order:An string identifying the type of gate order in the op.
+* Support "ijfo" and "ifjo". Default to "ijfo".
 * @li is_training:An bool identifying is training in the op. Default to true . \n
 
 * @par Outputs:
 * eight outputs:
-* @li y:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li output_h:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li output_c:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li i:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li j:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li f:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li o:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li y:A Tensor. Must be one of the following types: float16, float32.
+* @li output_h:A Tensor. Must be one of the following types: float16, float32.
+* @li output_c:A Tensor. Must be one of the following types: float16, float32.
+* @li i:A Tensor. Must be one of the following types: float16, float32.
+* @li j:A Tensor. Must be one of the following types: float16, float32.
+* @li f:A Tensor. Must be one of the following types: float16, float32.
+* @li o:A Tensor. Must be one of the following types: float16, float32.
+* @li tanhc:A Tensor. Must be one of the following types: float16, float32.
 * @par Third-party framework compatibility:
 * Compatible with the TF operator LSTM.
 */
@@ -262,54 +269,64 @@ REG_OP(DynamicRNN)
 * @brief: DynamicRNNV2 calculation.
 * @par Inputs:
 * ten inputs:
-* @li x:A required 4D Tensor. Must be one of the following types: float16, float32.
-* @li weight_input:A required 4D Tensor. Must be one of the following types: float16, float32.
-* @li weight_hidden:A required 4D Tensor. Must be one of the following types: float16, float32.
-* @li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-* @li seq_length:A optional 1D Tensor. Must be one of the following types: float16, int32.
-* @li init_h:A optional 4D Tensor. Must be one of the following types: float16, float32.
-* @li init_c:A optional 4D Tensor. Must be one of the following types: float16, float32.
-* @li wci:A 4D optional Tensor. Must be one of the following types: float16, float32.
-* @li wcf:A 4D optional Tensor. Must be one of the following types: float16, float32.
-* @li wco:A 4D optional Tensor. Must be one of the following types: float16, float32.
-* @li mask:A 1D optional Tensor. Must be one of the following types: uint8. The format must be ND . \n
+* @li x:A required Tensor. Must be one of the following types: float16, float32.
+* @li weight_input:A required Tensor. Must be one of the following types: float16, float32.
+* @li weight_hidden:A required Tensor. Must be one of the following types: float16, float32.
+* @li b:A required Tensor. Must be one of the following types: float16, float32. The format must be ND.
+* @li seq_length:A optional Tensor. Must be one of the following types: float16, int32.
+* @li init_h:A optional Tensor. Must be one of the following types: float16, float32.
+* @li init_c:A optional Tensor. Must be one of the following types: float16, float32.
+* @li wci:A optional Tensor. Must be one of the following types: float16, float32.
+* @li wcf:A optional Tensor. Must be one of the following types: float16, float32.
+* @li wco:A optional Tensor. Must be one of the following types: float16, float32.
+* @li mask:A optional Tensor. Must be one of the following types: uint8. The format must be ND . \n
 
 * @par Attributes:
-* @li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
-* @li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL".
-* Only UNIDIRECTIONAL is currently supported.
-* @li cell_depth:An integer identifying the cell depth in the op. Default to 1.
-* @li use_peephole:An bool identifying if use peephole in the op. Default to false.
-* @li keep_prob:An float identifying the keep prob in the op. Default to 1.
-* @li cell_clip:An float identifying the cell clip in the op. Default to -1.
-* @li num_proj:An integer identifying the num projection in the op. Default to 0.
+* @li cell_type:An string identifying the cell type in the op.
+* Default to "LSTM". Only LSTM is currently supported.
+* @li direction:An string identifying the direction in the op.
+* Default to "UNIDIRECTIONAL". Support "UNIDIRECTIONAL" and "REDIRECTIONAL".
+* @li cell_depth:An integer identifying the cell depth in the op.
+* Default to 1. Only 1 is currently supported.
+* @li use_peephole:An bool identifying if use peephole in the op.
+* Default to false. Only false is currently supported.
+* @li keep_prob:An float identifying the keep prob in the op.
+* Default to 1. Only 1.0 is currently supported.
+* @li cell_clip:An float identifying the cell clip in the op.
+* Default to -1. Only -1.0 is currently supported.
+* @li num_proj:An integer identifying the num projection in the op.
+* Default to 0. Only 0 is currently supported.
 * @li time_major:An bool identifying the time major in the op. Default to true.
-* @li activation:An string identifying the type of activation function in the op. Default to "tanh".
-* Support "tanh" and "clip".
-* @li recurrent_activation:An string identifying the type of activation function in the op. Default to "sigmoid".
-* Support "sigmoid" and "hard_sigmoid". In general, set "hard_sigmoid" for TF Keras LSTM.
+* @li activation:An string identifying the type of activation function in
+* the op. Default to "tanh". Only "tanh" is currently supported.
+* @li recurrent_activation:An string identifying the type of activation
+* function in the op. Default to "sigmoid". Only support "sigmoid" in
+* Ascend910B/Ascend910C series produces. Support "sigmoid" and "hard_sigmoid"
+* in other series produces. In general, set "hard_sigmoid" for TF Keras LSTM.
 * @li forget_bias:An float identifying the forget bias in the op. Default to 0.
-* @li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifco". Default to "ijfo".
+* @li gate_order:An string identifying the type of gate order in the op.
+* Support "ijfo" and "ifco". Default to "ijfo".
 * Set "ijfo" for TF operator LSTM, Set "ifco" for TF Keras LSTM.
-* @li stateful: An bool identifying the type of stateful in the op. Default to fasle.Only false is currently supported.
-* @li merge_mode: An string identifying the type of merge_modein the op. Default to "concat".
-* Only "concat" is currently supported
+* @li stateful: An bool identifying the type of stateful in the op.
+* Default to fasle. Only false is currently supported.
+* @li merge_mode: An string identifying the type of merge_modein the op.
+* Default to "concat". Only "concat" is currently supported
 * @li is_training:An bool identifying is training in the op. Default to true . \n
 
 * @par Outputs:
 * eight outputs:
-* @li y:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li output_h:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li y:A Tensor. Must be one of the following types: float16, float32.
+* @li output_h:A Tensor. Must be one of the following types: float16, float32.
 * Return the last output_h.
-* @li output_c:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li output_c:A Tensor. Must be one of the following types: float16, float32.
 * Return the last output_c.
-* @li i:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li j:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li f:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li o:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li i:A Tensor. Must be one of the following types: float16, float32.
+* @li j:A Tensor. Must be one of the following types: float16, float32.
+* @li f:A Tensor. Must be one of the following types: float16, float32.
+* @li o:A Tensor. Must be one of the following types: float16, float32.
+* @li tanhc:A Tensor. Must be one of the following types: float16, float32.
 * @par Third-party framework compatibility:
-* Compatible with the TF operator LSTM or TF keras operator LSTM.
+* Compatible with the TF operator LSTM or TF keras operator LSTM or the Pytorch operator LSTM.
 */
 
 REG_OP(DynamicRNNV2)
@@ -373,7 +390,7 @@ REG_OP(DynamicRNNV2)
 * @li wci:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li wcf:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li wco:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li mask:A 1D Tensor. Must be one of the following types: int8. \n
+* @li mask:A 1D Tensor. Must be one of the following types: uint8. \n
 
 * @par Attributes:
 * @li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
@@ -499,7 +516,7 @@ REG_OP(DynamicRNNV2Grad)
 * @li j:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li f:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li o:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li tanhc:A 4D Tensor. Must be one of the following types: float16, float32.
 * @par Third-party framework compatibility:
 * Compatible with the TF operator LSTM.
 */
@@ -555,8 +572,8 @@ REG_OP(DynamicRNNV3)
 
 * @par Attributes:
 * @li num_output:An integer identifying the num projection in the op. Default to 0.
-* @li expose_hidden:An bool identifying the expose_hidden in the op. Default to flase.
-* @li need_output_last:An bool identifying the time major in the op. Default to true.
+* @li expose_hidden:An bool identifying the expose_hidden in the op. Default to false.
+* @li need_output_last:An bool identifying the time major in the op. Default to false.
 * @li forget_bias:An float identifying the forget bias in the op. Default to 0.
 
 * @par Outputs:
@@ -653,17 +670,17 @@ REG_OP(LSTMInputGrad)
 * @li o:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li mask:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li t_state:A 4D Tensor. Must be one of the following types: float16, float32. . \n
+* @li t_state:A 4D Tensor. Must be one of the following types: int32. \n
 
 * @par Attributes:
-* @li forget_bias:An integer identifying the forget bias in the op. Default to 1.
+* @li forget_bias:An Float identifying the forget bias in the op. Default to 1.
 * @li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported . \n
-* @li direction:An string that marks the calculation sequence of the operator. Default to "Forward".
+* @li direction:An string that marks the calculation sequence of the operator. Default to "UNIDIRECTIONAL".
 * @li gate_order:An string mark the order of output 4 gate. Default to "ijfo".
 
 * @par Outputs:
 * two outputs:
-* @li dgate:A 4D Tensor. Must be one of the following types: float16.
+* @li dgate:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dct_1:A 4D Tensor. Must be one of the following types: float16, float32.
 
 * @par Restrictions:
@@ -700,7 +717,7 @@ REG_OP(DynamicLSTMGradCell)
 * @li dropout_mask:A 1D Tensor. Must be one of the following types: uint8. The format must be ND . \n
 
 * @par Attributes:
-* keep_prob:An integer identifying the keep prob in the op. Default to 1 . \n
+* keep_prob:An Float identifying the keep prob in the op. Default to 1 . \n
 
 * @par Outputs:
 * two outputs:
@@ -725,7 +742,7 @@ REG_OP(BasicLSTMCellInputGrad)
 * three inputs:
 * @li x:A 4D Tensor. Must be one of the following types: float16.
 * @li h:A 4D Tensor. Must be one of the following types: float16.
-* @li dgate:A 4D Tensor. Must be one of the following types: uint8. \n
+* @li dgate:A 4D Tensor. Must be one of the following types: float16. \n
 
 * @par Outputs:
 * two outputs:
@@ -757,7 +774,7 @@ REG_OP(BasicLSTMCellWeightGrad)
 * @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li forget_bias:An integer identifying the forget bias in the op. Default to 1.
+* @li forget_bias:An Float identifying the forget bias in the op. Default to 1.
 * @li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported . \n
 
 * @par Outputs:
@@ -832,7 +849,7 @@ REG_OP(RNN)
 * eight inputs:
 * @li x:A 4D Tensor. Must be one of the following types: float16.
 * @li cont:A 1D Tensor. Must be one of the following types: float16. The format must be ND.
-* @li w_xh_x_static:A 4D Tensor. Must be one of the following types: float16.
+* @li w_xh_x_static:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li h_0:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li w_xh:A 4D Tensor. Must be one of the following types: float16.
 * @li w_hh:A 4D Tensor. Must be one of the following types: float16.
@@ -933,7 +950,7 @@ REG_OP(DynamicGRU)
 * @li weight_hidden:Must be one of the following types: float16.
 * @li bias_input:Must be one of the following types: float16, float32. The format must be ND.
 * @li bias_hidden:Must be one of the following types: float16, float32. The format must be ND.
-* @li seq_length:Must be one of the following types: int32 in ND.
+* @li seq_length:Must be one of the following types: int32, float16 in ND.
 * @li init_h:Must be one of the following types: float16, float32.
 
 * @par Attributes:
@@ -991,7 +1008,7 @@ REG_OP(DynamicGRUV2)
 * @li x_weight_input:Must be one of the following types: float32.
 * @li weight_hidden:Must be one of the following types: float16.
 * @li bias_hidden:Must be one of the following types: float16, float32. The format must be ND.
-* @li seq_length:Must be one of the following types: int32 in ND.
+* @li seq_length:Must be one of the following types: int32, float16 in ND.
 * @li init_h:Must be one of the following types: float16, float32.
 
 * @par Attributes:
@@ -1050,10 +1067,10 @@ REG_OP(DynamicGRUV2Hidden)
 * @li x:Must be one of the following types: float16.
 * @li weight_input:Must be one of the following types: float16.
 * @li weight_hidden:Must be one of the following types: float16.
-* @li weight_attr:Must be one of the following types: float16.
+* @li weight_att:Must be one of the following types: float16.
 * @li bias_input:Must be one of the following types: float16, float32. The format must be ND.
 * @li bias_hidden:Must be one of the following types: float16, float32. The format must be ND.
-* @li seq_length:Must be one of the following types: int32 in ND.
+* @li seq_length:Must be one of the following types: int32, float16 in ND.
 * @li init_h:Must be one of the following types: float16, float32.
 
 * @par Attributes:
@@ -1185,12 +1202,11 @@ REG_OP(DynamicAUGRUGrad)
     .OP_END_FACTORY_REG(DynamicAUGRUGrad)
 
 /**
-* @brief: AUGRUHiddenGrad calculation.
+* @brief: AUGRUHiddenGradCell calculation.
 * @par Inputs:
 * twelve inputs: \n
 * @li weight_att:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dh_pre_t:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li init_h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dh:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -1199,7 +1215,7 @@ REG_OP(DynamicAUGRUGrad)
 * @li reset:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li new:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li seq_mask:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li seq_length:A 4D Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
 * @li t_state:An Int identifying the current t state. Default to [0, 4].
@@ -1251,13 +1267,13 @@ REG_OP(AUGRUHiddenGradCell)
 * @li reset:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li new:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li seq_length:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li mask:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li seq_length:A 4D Tensor. Must be one of the following types: int.
+* @li mask:A 4D Tensor. Must be one of the following types: DT_UINT8.
 
 * @par Attributes:
 * @li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
-* @li cell_depth:An integer identifying the cell depth in the op. Default to 1.
-* @li keep_prob:An float identifying the keep prob in the op. Default to 1.
+* @li cell_depth:An integer identifying the cell depth in the op. Default to 0.
+* @li keep_prob:An float identifying the keep prob in the op. Default to -1.
 * @li cell_clip:An float identifying the cell clip in the op. Default to -1.
 * @li num_proj:An integer identifying the num projection in the op. Default to 0.
 * @li time_major:An bool identifying the time major in the op. Default to true.
@@ -1308,11 +1324,10 @@ REG_OP(DynamicGRUV2Grad)
     .OP_END_FACTORY_REG(DynamicGRUV2Grad)
 
 /**
-* @brief: GRUV2HiddenGrad calculation.
+* @brief: GRUV2HiddenGradCell calculation.
 * @par Inputs:
 * nine inputs: \n
 * @li dh_pre_t:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li init_h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dh:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -1363,9 +1378,9 @@ REG_OP(GRUV2HiddenGradCell)
 * @li update:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li reset:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.+
+* @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li init_h:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li t_state:A 1D Tensor. Must be one of the following types: int32. The format must be ND.
+* @li t_state:A 1D Tensor. Must be one of the following types: int32, int32. The format must be ND.
 * @li seq_length:A 1D Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
@@ -1549,10 +1564,10 @@ REG_OP(CommonGRU)
 
 * @par Inputs:
 * Four inputs, including:
-* @li weight: A mutable Tensor of word grad. Must be one of the following types: float16, float32.
-* @li indices: A mutable word index Tensor. Must be one of the following types: int32, int64.
-* @li offsets: A mutable word index Tensor. Must be one of the following types: int32, int64.
-* @li per_sample_weights: to indicate all weights should be taken to be 1.
+* @li weight: A required Tensor. A mutable Tensor of word grad. Must be one of the following types: float16, float32.
+* @li indices: A required Tensor. A mutable word index Tensor. Must be one of the following types: int32, int64.
+* @li offsets: A optional Tensor. A mutable word index Tensor. Must be one of the following types: int32, int64.
+* @li per_sample_weights: A optional Tensor. to indicate all weights should be taken to be 1.
 *     If specified, per_sample_weights must have exactly the same shape as input
 *     and is treated as having the same offsets, if those are not None.
 *     Only supported for mode='sum'.\n

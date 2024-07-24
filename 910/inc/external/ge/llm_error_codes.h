@@ -1,18 +1,11 @@
-/**
- * Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* Copyright (c) 2024 Huawei Technologies Co., Ltd.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
+ * ===================================================================================================================*/
   
 #ifndef AIR_RUNTIME_LLM_ENGINE_INC_EXTERNAL_LLM_ERROR_CODES_H_
 #define AIR_RUNTIME_LLM_ENGINE_INC_EXTERNAL_LLM_ERROR_CODES_H_
@@ -42,6 +35,12 @@ GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_PREFIX_NOT_EXIST, 16);
 GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_SEQ_LEN_OVER_LIMIT, 17);
 GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_NO_FREE_BLOCK, 18);
 GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_BLOCKS_OUT_OF_MEMORY, 19);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_CACHE_INCOMPATIBLE, 20);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_CACHE_KEY_ALREADY_EXIST, 21);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_COPY_CACHE_FAILED, 22);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_CACHE_ID_ALREADY_EXIST, 23);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_EXIST_LINK, 24);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 11, LLM_FEATURE_NOT_ENABLED, 25);
 }  // namespace ge
 #endif
 #endif  // AIR_RUNTIME_LLM_ENGINE_INC_EXTERNAL_LLM_ERROR_CODES_H_

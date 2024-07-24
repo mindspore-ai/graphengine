@@ -46,7 +46,7 @@ namespace ge {
  *@see Switch()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator Merge.
+ *Compatible with the TensorFlow operator Merge.
  */
 REG_OP(Merge)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -78,7 +78,7 @@ REG_OP(Merge)
  *@see Switch() | Merge()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator RefMerge.
+ *Compatible with the TensorFlow operator RefMerge.
  */
 REG_OP(RefMerge)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -110,7 +110,7 @@ REG_OP(RefMerge)
  *@see Merge()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator Switch.
+ *Compatible with the TensorFlow operator Switch.
  */
 REG_OP(Switch)
     .INPUT(data, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -145,7 +145,7 @@ REG_OP(Switch)
  *@see Merge() | Switch()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator RefSwitch.
+ *Compatible with the TensorFlow operator RefSwitch.
  */
 REG_OP(RefSwitch)
     .INPUT(data, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -206,7 +206,7 @@ REG_OP(SwitchN)
  *@see Exit()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator Enter.
+ *Compatible with the TensorFlow operator Enter.
  */
 REG_OP(Enter)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -242,7 +242,7 @@ REG_OP(Enter)
  *@see Exit() | Enter()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator RefEnter.
+ *Compatible with the TensorFlow operator RefEnter.
  */
 REG_OP(RefEnter)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -268,7 +268,7 @@ REG_OP(RefEnter)
  *@see Switch()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator LoopCond.
+ *Compatible with the TensorFlow operator LoopCond.
  */
 REG_OP(LoopCond)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -287,7 +287,7 @@ REG_OP(LoopCond)
  *y: A Tensor. Has the same type as "x" . \n
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator NextIteration.
+ *Compatible with the TensorFlow operator NextIteration.
  */
 REG_OP(NextIteration)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -310,7 +310,7 @@ REG_OP(NextIteration)
  *y: A tensor. Has the same type as "x" . \n
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator RefNextIteration.
+ *Compatible with the TensorFlow operator RefNextIteration.
  */
 REG_OP(RefNextIteration)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -335,7 +335,7 @@ REG_OP(RefNextIteration)
  *@see Enter()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator Exit.
+ *Compatible with the TensorFlow operator Exit.
  */
 REG_OP(Exit)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -360,7 +360,7 @@ REG_OP(Exit)
  *@see Enter() | Exit()
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator RefExit.
+ *Compatible with the TensorFlow operator RefExit.
  */
 REG_OP(RefExit)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -377,7 +377,7 @@ REG_OP(RefExit)
  *       even when some control inputs are dead . \n
 
  *@par Third-party framework compatibility
- *@Compatible with the TensorFlow operator ControlTrigger.
+ *Compatible with the TensorFlow operator ControlTrigger.
  */
 REG_OP(ControlTrigger)
     .OP_END_FACTORY_REG(ControlTrigger)

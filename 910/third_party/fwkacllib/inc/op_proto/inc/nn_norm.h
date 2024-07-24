@@ -131,9 +131,9 @@ REG_OP(GroupNormV2)
 
  * @par Outputs:
  * Three output, including:
- * @li dx: A Tensor. x factor grad. Datatype only support float32. Format support ND.
- * @li dgamma: A Tensor. scale factor grad. Datatype only support float32. Format support ND.
- * @li dbeta: A Tensor. offset factor grad. Datatype only support float32. Format support ND.
+ * @li dx: A Tensor. x factor grad. Datatype is the same as the input Datatype. Format support ND.
+ * @li dgamma: A Tensor. scale factor grad. Datatype is the same as the input Datatype. Format support ND.
+ * @li dbeta: A Tensor. offset factor grad. Datatype is the same as the input Datatype. Format support ND.
  * @par Third-party framework compatibility
  * @li Compatible with the PyTorch operator GroupNorm.
  */
@@ -144,9 +144,9 @@ REG_OP(GroupNormGrad)
     .INPUT(rstd, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
-    .OUTPUT(dx, TensorType({DT_FLOAT}))
-    .OUTPUT(dgamma, TensorType({DT_FLOAT}))
-    .OUTPUT(dbeta, TensorType({DT_FLOAT}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(dgamma, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(dbeta, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .REQUIRED_ATTR(num_groups, Int)
     .ATTR(data_format, String, "NCHW")
     .ATTR(dx_is_require, Bool, true)
@@ -405,24 +405,31 @@ REG_OP(InplaceAddLayerNorm)
     .ATTR(additional_output, Bool, false)
     .OP_END_FACTORY_REG(InplaceAddLayerNorm)
 
-/*
-* @brief Fused Operator of Add and LayerNorm . \n
+/**
+* @brief Fused Operator of AddLayerNorm and Quantize . \n
 
 * @par Inputs:
-* @li x1: A tensor of type float16/bfloat16/float, describing the feature_map.
-* @li x2: A tensor of type float16/bfloat16/float, describing the feature_map.
-* @li gamma: A tensor of type float16/bfloat16/float, describing the feature_map.
-* @li beta: A tensor of type float16/bfloat16/float, describing the feature_map.
-* @li bias: A tensor of type float16/bfloat16/float, describing the feature_map.
+* @li x1: A tensor of type float16/bfloat16/float.
+* @li x2: A tensor of type float16/bfloat16/float.
+* @li gamma: A tensor of type float16/bfloat16/float.
+* @li beta: A tensor of type float16/bfloat16/float.
+* @li bias: A tensor of type float16/bfloat16/float.
+* @li scales1: A tensor of type float16/bfloat16/float.
+* @li scales2: A tensor of type float16/bfloat16/float.
+* @li zero_points1: A tensor of type float16/bfloat16/float.
+* @li zero_points2: A tensor of type float16/bfloat16/float.
 
 * @par Attributes:
+* @li quant_mode: A optional string.
 * @li epsilon: A optional float.
 * @li additional_output: A optional bool.
 
 * @par Outputs:
-* @li y: A tensor of type float16/bfloat16/float, describing the result. \n
-* @li x: A tensor of type float16/bfloat16/float, describing the result. \n
-* @li scale: A tensor of type float32, describing the result. \n
+* @li y1: A tensor of type int8, quantize result 1. \n
+* @li y2: A tensor of type int8, quantize result 2. \n
+* @li x: A tensor of type float16/bfloat16/float, describing the result of x1 + x2 + bias. \n
+* @li out_scales1: A tensor of type float32, describing the result of dynamic quantize scales. \n
+* @li out_scales1: A tensor of type float32, describing the result of dynamic quantize scales. \n
 
 */
 REG_OP(AddLayerNormQuant)

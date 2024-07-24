@@ -88,7 +88,7 @@ REG_OP(Quantize)
 
 * @par Attributes:
 * @li scale: A required float32, specifying the scaling ratio.
-* @li offset: A required float16, specifying the offset.
+* @li offset: A required float32, specifying the offset.
 * @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
 * Defaults to "False".
 * @li round_mode: An optional string, specifying the float16 to int8 cast type.
@@ -158,7 +158,7 @@ REG_OP(AscendQuantV2)
 
  *@par Inputs:
 * @li x: An tensor of type int32, specifying the input.
-* @li deq_scale: An tensor of type uint64, specifying the scaling ratio . \n
+* @li deq_scale: An tensor of type float16 or uint64, specifying the scaling ratio . \n
 
 * @par Attributes:
 * @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".

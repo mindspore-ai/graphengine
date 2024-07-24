@@ -713,13 +713,13 @@ REG_OP(ExpandDims)
 *@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape is changed, without changing the data. \n
 
 *@par Inputs:
-*@li x: Original tensor.
+*@li x: Original tensor. All data types are supported. \n
 
 *@par Attributes:
-*@li axes: List of ints indicating the dimensions to be inserted. \n
+*@li axes: List of ints indicating the dimensions to be inserted. Defaults to []. \n
 
 *@par Outputs:
-*y: Reshape tensor with same data as input. \n
+*y: Reshape tensor with same data as input. The same type as input x. \n
 
 *@par Third-party framework compatibility
 *Compatible with the Onnx operator Unsqueeze.
@@ -735,13 +735,13 @@ REG_OP(Unsqueeze)
 *@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape is changed, without changing the data. \n
 
 *@par Inputs:
-*@li x: Original tensor.
+*@li x: Original tensor. All data types are supported. \n
 
 *@par Attributes:
-*@li axes: List of ints indicating the dimensions to be inserted. \n
+*@li axes: List of ints indicating the dimensions to be inserted. Defaults to []. \n
 
 *@par Outputs:
-*y: Reshape tensor with same data as input. \n
+*y: Reshape tensor with same data as input. The same type as input x. \n
 
 *@par Third-party framework compatibility
 *Compatible with the Onnx operator Unsqueeze.
@@ -762,11 +762,11 @@ REG_OP(UnsqueezeV2)
 is changed, but the data is not changed. \n
 
 *@par Inputs:
-*x: A tensor.
+*x: A tensor. All data types are supported. \n
 *axes: A list of int64, which indicates the dimensions to be inserted. \n
 
 *@par Outputs:
-*y: Reshape tensor with same data as input. \n
+*y: Reshape tensor with same data as input. The same type as input x. \n
 
 *@par Third-party framework compatibility
 *Compatible with the Onnx operator Unsqueeze in V13. \n
@@ -782,15 +782,15 @@ REG_OP(UnsqueezeV3)
 *@brief Reshapes a tensor. Only the tensor shape is changed, without changing the data. \n
 
 *@par Inputs:
-*@li x: A tensor.
-*@li shape: A tensor. Defines the shape of the output tensor. \n
+*@li x: A tensor. All data types are supported. \n
+*@li shape: A tensor. Must be one of the following types: int32, int64. Defines the shape of the output tensor. \n
 
 *@par Attributes:
 *@li axis: An optional int32 or int64. The first dimension to reshape. Defaults to "0".
 *@li num_axes: An optional int32 or int64. The extent of the reshape. Defaults to "-1". \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A tensor. The same type as input x. \n
 
 *@attention Constraints:
 *This operator cannot be directly called by the acllopExecute API. \n
@@ -811,13 +811,14 @@ REG_OP(Reshape)
 *@brief Removes dimensions of size 1 from the shape of a tensor. \n
 
 *@par Inputs:
-*x: A tensor. \n
+*x: A tensor. All data types are supported. \n
 
 *@par Attributes:
-*axis: An optional list of int32 or int64. If not specified, squeezes all dimensions of size 1.   If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
+*axis: An optional list of int32 or int64. Defaults to []. If not specified, squeezes all dimensions of size 1.
+If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A tensor. The same type as input x. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Squeeze.
@@ -832,13 +833,14 @@ REG_OP(Squeeze)
 *@brief Removes dimensions of size 1 from the shape of a tensor. \n
 
 *@par Inputs:
-*x: A tensor. \n
+*x: A tensor. All data types are supported. \n
 
 *@par Attributes:
-*axis: An optional list of int32 or int64. If not specified, squeezes all dimensions of size 1.   If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
+*axis: An optional list of int32 or int64. Defaults to []. If not specified, squeezes all dimensions of size 1.
+If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A tensor. The same type as input x. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Squeeze.
@@ -856,13 +858,13 @@ REG_OP(SqueezeV2)
 *@brief Removes dimensions of size 1 from the shape of a tensor according to axes. \n
 
 *@par Inputs:
-*x: A tensor.
-*axes: An optional list of int64. If not specified, squeezes all dimensions of
-size 1. If specified, only squeezes the dimensions listed. It is an error to
-squeeze a dimension that is not 1. \n
+*x: A tensor. All data types are supported. \n
+*axes: An optional list of int64. Defaults to []. If not specified, squeezes all
+dimensions of size 1. If specified, only squeezes the dimensions listed. It is
+an error to squeeze a dimension that is not 1. \n
 
 *@par Outputs:
-*y: Reshape tensor with same data as input. \n
+*y: Reshape tensor with same data as input. The same type as input x. \n
 
 *@par Third-party framework compatibility
 *Compatible with the onnx operator Squeeze in V13. \n
@@ -1220,19 +1222,22 @@ REG_OP(Copy)
 *@par Inputs:
 *Eight inputs, including:
 *dst: A tensor. Must be one of the following types:
-* double, float32, float16, bfloat16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
+* double, float32, float16, bfloat16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool,
+*    complex64, complex128 
 *dst_size: A tensor with type int32
 *dst_stride: A tensor with type int32
 *dst_storage_offset: A tensor with type int32
 *src: A tensor. Must be one of the following types:
-* double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool
+* double, float32, float16, bfloat16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool,
+*    complex64, complex128 
 *src_size: A tensor with type int32
 *src_stride: A tensor with type int32
 *src_storage_offset: the storage_offset of src tensor . \n
 
 *@par Outputs:
 *dst: An ref tensor.Must be one of the following types:
-* double, float32, float16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool . \n
+* double, float32, float16, bfloat16, int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool 
+*    complex64, complex128. \n
 */
 
 REG_OP(ViewCopy)
@@ -1403,20 +1408,21 @@ REG_OP(NonZero)
 *@Returns a tensor containing the indices of all non-zero elements of input. \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+*x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double,
+*        int8, uint8, int16, uint16, uint32, uint64, bool.
 
 *@par Attributes:
-* transpose: the output tensor will be transposed if true. \n
+*@li transpose: The output tensor will be transposed if true. \n
+*@li dtype: Must be one of the following types: int32.
 
 *@par Outputs:
-* value: A Tensor. Has the same type as "x" . \n
-* index: A Tensor. The type is INT32, means index for input. \n
-* count: A Scalar. The type is INT32, means count for non_zero ele in input. \n
+*@li value: A Tensor. Has the same type as "x" . \n
+*@li index: A Tensor. The type is INT32, means index for input. \n
+*@li count: A Scalar. The type is INT32, means count for non_zero ele in input. \n
 
 *@par Third-party framework compatibility
 *Compatible with the PyTorch operator NonZeroWithValue.
 */
-
 REG_OP(NonZeroWithValue)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
@@ -1521,11 +1527,15 @@ REG_OP(GetShape)
 /**
 *@brief Update the tensor_desc of the output. \n
 
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double,
+*        int8, uint8, int16, uint16, uint32, uint64, bool.
+
 * @par attributes:
 * @li shape: A listInt contains the data to update. \n
 
 *@par outputs:
-* y: a tensor_desc, type is int.\n
+* y: a tensor_desc. Has the same type as "x" .\n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.

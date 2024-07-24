@@ -29,7 +29,6 @@ namespace ge {
 * where Φ(x) the standard Gaussian cumulative distribution function.
 
 * @par Inputs:
-* One input, including: \n
 * x: A Tensor. Must be one of the following types: bfloat16, float16, float32. \n
 
 * @par Outputs:
@@ -44,7 +43,7 @@ REG_OP(Gelu)
     .OP_END_FACTORY_REG(Gelu)
 
 /**
-* @brief Compute hard_swish of "x" element-wise . \n
+* @brief Compute hard_swish of "x" element-wise .
 
 *@par Inputs:
 *One input, including:
@@ -61,7 +60,7 @@ REG_OP(HardSwish)
     .OP_END_FACTORY_REG(HardSwish)
 
 /**
-*@brief Computes the gradient for the hard_swish of "x" . \n
+*@brief Computes the gradient for the hard_swish of "x" .
 
 * @par Inputs:
 *Two inputs, including:
@@ -80,7 +79,7 @@ REG_OP(HardSwishGrad)
     .OP_END_FACTORY_REG(HardSwishGrad)
 
 /**
-*@brief Computes the for the Swish of "x" . \n
+*@brief Computes the for the Swish of "x" .
 
 *@par Inputs:
 *One input, including:
@@ -102,7 +101,7 @@ REG_OP(Swish)
     .OP_END_FACTORY_REG(Swish)
 
 /**
-*@brief Computes the gradient for the Swish of "x" . \n
+*@brief Computes the gradient for the Swish of "x" .
 
 *@par Inputs:
 *Three inputs, including:
@@ -125,7 +124,7 @@ REG_OP(SwishGrad)
     .OP_END_FACTORY_REG(SwishGrad)
 
 /**
-* @brief Computes the gradient for the Silu of "x" . \n
+* @brief Computes the gradient for the Silu of "x" .
 * @par Inputs:
 * Three inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, bfloat16, float32
@@ -163,7 +162,7 @@ REG_OP(GeluGrad)
     .OP_END_FACTORY_REG(GeluGrad)
 
 /**
-* @brief The FastGelu activation function is x*e^(0.851*x)*(x-|x|)/(1+e^(-1.702|x|)). \n
+* @brief The FastGelu activation function is x*e^(0.851*x)*(x-|x|)/(1+e^(-1.702|x|)).
 
 * @par Inputs:
 * One input, including:
@@ -180,7 +179,7 @@ REG_OP(FastGelu)
     .OP_END_FACTORY_REG(FastGelu)
 /**
 * @brief The FastGeluV2 activation function is x*(sgn(x)*[(a/2)*(clip(|x|,max=-b)+b)^2+0.5]+0.5),
-*        where sgn(x) function is (x+0.000000000001)/|(x+0.000000000001)|. \n
+*        where sgn(x) function is (x+0.000000000001)/|(x+0.000000000001)|.
 
 * @par Inputs:
 * One input, including:
@@ -196,7 +195,7 @@ REG_OP(FastGeluV2)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(FastGeluV2)
 /**
-*@brief Computes the gradient for the fast_gelu of "x" . \n
+*@brief Computes the gradient for the fast_gelu of "x" .
 
 *@par Inputs:
 *Two inputs, including:
@@ -215,7 +214,7 @@ REG_OP(FastGeluGrad)
     .OP_END_FACTORY_REG(FastGeluGrad)
 
 /**
-*@brief Computes the gradient for the tanh of "x" . \n
+*@brief Computes the gradient for the tanh of "x" .
 
 *@par Inputs:
 *Two inputs, including:
@@ -239,14 +238,14 @@ REG_OP(TanhGrad)
     .OP_END_FACTORY_REG(TanhGrad)
 
 /**
-*@brief: Computes hyperbolic tangent of "x" element-wise . \n
+*@brief Computes hyperbolic tangent of "x" element-wise . \n
 
 *@par Inputs:
-*One input:
-* x: A Tensor. Must be one of the following types: float16, float32, complex64, complex128, double, bfloat16. \n
+*One input: \n
+* x: A Tensor that supports the data type UnaryDataType. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+*y: A Tensor with the same dtype and shape of input "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Tanh.
@@ -282,7 +281,7 @@ REG_OP(Relu)
 
 /**
 * @brief Computes rectified linear 6.
-* activations = min(max(x, 0), 6) . \n
+* activations = min(max(x, 0), 6) .
 
 * @par Inputs:
 * x: A Tensor of type RealNumberType . \n
@@ -300,13 +299,13 @@ REG_OP(Relu6)
 
 /**
 * @brief Computes rectified linear 6*scale.
-* activations = min(max(x, 0), 6*scale) . \n
+* activations = min(max(x, 0), 6*scale) .
 
 * @par Inputs:
 * x: A Tensor of type RealNumberType . \n
 
 * @par Attributes:
-* epsilon: A required scalar. The data type is float32 . \n
+* epsilon: A optional float32 attr. Default to 1.0 . \n
 
 * @par Outputs:
 * y: A Tensor of type RealNumberType . \n
@@ -325,12 +324,12 @@ REG_OP(Relu6D)
 
 /**
 * @brief Computes rectified linear 6 gradients for a Relu6 operation.
-*     backprops = gradients * (features > 0) * (features < 6) . \n
+*     backprops = gradients * (features > 0) * (features < 6) .
 
 * @par Inputs:
 * @li gradients: A Tensor of type RealNumberType. The backpropagated
       gradients to the corresponding Relu6 operation.
-* @li features: A Tensor with the same type as gradients.he features passed
+* @li features: A Tensor with the same type as gradients.The features passed
       as input to the corresponding Relu6 operation, or its output;
       using either one produces the same result.  \n
 
@@ -379,7 +378,7 @@ REG_OP(EluGradV2)
     .OP_END_FACTORY_REG(EluGradV2)
 
 /**
-* @brief Compute sigmoid of "x" element-wise . \n
+* @brief Compute sigmoid of "x" element-wise .
 
 * @par Inputs:
 * A Tensor of type complex64, complex128, bfloat16, float16, float32 or double . \n
@@ -398,7 +397,7 @@ REG_OP(Sigmoid)
     .OP_END_FACTORY_REG(Sigmoid)
 
 /**
-* @brief Computes z = (y - y*y)*dy . \n
+* @brief Computes z = (y - y*y)*dy .
 
 * @par Inputs:
 * @li y: The input is Tensor, dtype is UnaryDataType.
@@ -419,7 +418,7 @@ REG_OP(SigmoidGrad)
 
 /**
 *@brief Computes the binomial normal log likelihood (BNLL) output:
-*if x>0, x+log(1+exp(-x)); otherwise log(1+exp(x)) . \n
+*if x>0, x+log(1+exp(-x)); otherwise log(1+exp(x)) .
 
 *@par Inputs:
 *x: A Tensor of type double, float16 or float32 . \n
@@ -436,7 +435,7 @@ REG_OP(BNLL)
     .OP_END_FACTORY_REG(BNLL)
 
 /**
-*@brief Computes softplus: log(exp(x) + 1) . \n
+*@brief Computes softplus: log(exp(x) + 1) .
 
 *@par Inputs:
 * One input:
@@ -512,7 +511,7 @@ REG_OP(SoftsignGrad)
     .OP_END_FACTORY_REG(SoftsignGrad)
 
 /**
-* @brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1) . \n
+* @brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1) .
 
 * @par Inputs:
 * One input:
@@ -553,17 +552,17 @@ REG_OP(SeluGrad)
     .OP_END_FACTORY_REG(SeluGrad)
 
 /**
-* @brief Computes rectified linear gradients for a ReLU operation . \n
+* @brief Computes rectified linear gradients for a ReLU operation .
 
 * @par Inputs:
 * Two inputs, including:
 * @li gradients: A Tensor. Must be one of the following types: float32, double,
- * int32, int8, int16, int64, uint16, float16, uint32, uint64, bfloat16
+ * int32, int8, int16, int64, uint16, float16, uint32, uint64, bfloat16.
 * @li features: A Tensor. Must be one of the following types: float32, double,
- * int32, int8, int16, int64, uint16, float16, uint32, uint64, bfloat16
+ * int32, int8, int16, int64, uint16, float16, uint32, uint64, bfloat16.
 
 * @par Outputs:
-* backprops: A Tensor. Must have the same type as"gradients" . \n
+* backprops: A Tensor. Must have the same type as "gradients". \n
 
 * @attention Constraints:
 * The corresponding Relu operator needs to be called before using this operator on the network . \n
@@ -580,15 +579,16 @@ REG_OP(ReluGrad)
     .OP_END_FACTORY_REG(ReluGrad)
 
 /**
-*@brief Computes rectified linear gradients for a ReLU operation . \n
+*@brief Computes rectified linear gradients for a ReLU operation .
 
 *@par Inputs:
 * Two inputs, including:
-*@li gradients: A Tensor. Must be one of the following types: float32, double, int32, int8, int16,  int8, int64, uint16, float16, uint32, uint64
-* @li mask: A Tensor. Must be the following types: uint8, uint1
+*@li gradients: A Tensor. Must be one of the following types: float32, double,
+* int32, int8, int16, int8, int64, uint16, float16, uint32, uint64.
+*@li mask: A Tensor. Must be the following types: uint8, uint1.
 
 *@par Outputs:
-*backprops: A Tensor. Must have the same type as"gradients" . \n
+*backprops: A Tensor. Must have the same type as "gradients". \n
 
 *@attention Constraints:
 * The corresponding Relu operator needs to be called before using this operator on the network . \n
@@ -630,7 +630,7 @@ REG_OP(ReluV2)
     .OP_END_FACTORY_REG(ReluV2)
 
 /**
-* @brief Performs parametric ReLU . \n
+* @brief Performs parametric ReLU .
 
 * @par Inputs:
 * Two inputs, including:
@@ -651,17 +651,22 @@ REG_OP(PRelu)
     .OP_END_FACTORY_REG(PRelu)
 
 /**
-*@brief Performs the backpropagation of PRelu for training scenarios . \n
+*@brief Performs the backpropagation of PRelu for training scenarios .
 
 *@par Inputs:
 * Three inputs, including:
-*@li grads: Input gradient. Multi-dimensional Tensors are supported. The data type can be float16 or float32.
+*@li grads: Input gradient. Multi-dimensional Tensors are supported.
+*The data type can be float16 or float32.
 *@li features: A multi-dimensional Tensor of type float16 or float32.
-*@li weights: A Scalar or 1D Tensor of type float16 or float32, specifying the weight. The number of dimensions must be the same as the number of channels . \n
+*@li weights: A Scalar or 1D Tensor of type float16 or float32, 
+*specifying the weight. 
+*The number of dimensions must be the same as the number of channels . \n
 
 *@par Outputs:
-*@li dx: Reverse gradient of "features". Has the same dimensions and type as "features".
-*@li da: Reverse gradient of "weight". Has the same dimensions and type as "features" . \n
+*@li dx: Reverse gradient of "features".
+*Has the same dimensions and type with "features".
+*@li da: Reverse gradient of "weight".
+*Has the same dimensions and type with "features" . \n
 
 *@par Third-party framework compatibility
 * Compatible with PyTorch operator PReluGrad.
@@ -676,7 +681,7 @@ REG_OP(PReluGrad)
 
 /**
 * @brief Activation function fused from sigmoid and ReLU, with soft saturation
-*    on the left and no saturation on the right . \n
+*    on the left and no saturation on the right .
 
 * @par Inputs:
 * x: A bfloat16, float16, float32 or double, for the input data type . \n
@@ -712,7 +717,7 @@ REG_OP(Elu)
 /**
 *@brief Continuously Differentiable Exponential Linear Uints:
 *       Perform the linear uint element-wise on the input tensor X using formula:
-*       max(0, x) + min(0, alpha * (exp(x/alpha) - 1)). \n
+*       max(0, x) + min(0, alpha * (exp(x/alpha) - 1)).
 
 *@par Inputs:
 *x: A float16, float32, for the input data type . \n
@@ -792,7 +797,7 @@ REG_OP(EluGrad)
     .OP_END_FACTORY_REG(EluGrad)
 
 /**
-* @brief Computes the output as x if x > 0 and negative_slope * x if x <= 0 . \n
+* @brief Computes the output as x if x > 0 and negative_slope * x if x <= 0 .
 
 * @par Inputs:
 * One input:
@@ -813,7 +818,7 @@ REG_OP(LeakyRelu)
     .OP_END_FACTORY_REG(LeakyRelu)
 
 /**
-* @brief Computes the output as gradients if features > 0 and negative_slope * gradients if features <= 0 . \n
+* @brief Computes the output as gradients if features > 0 and negative_slope * gradients if features <= 0 .
 
 * @par Inputs:
 * Two inputs, including:
@@ -955,7 +960,7 @@ REG_OP(HardtanhGrad)
     .OP_END_FACTORY_REG(HardtanhGrad)
 
 /**
-* @brief Calculates the softplus loss function with attributes of beta and threshold. \n
+* @brief Calculates the softplus loss function with attributes of beta and threshold.
 
 * @par Inputs:
 * One inputs, including:
@@ -981,7 +986,7 @@ REG_OP(SoftplusV2)
     .OP_END_FACTORY_REG(SoftplusV2)
 
 /**
-* @brief Calculates the reversed outputs of the function "softplus_v2". \n
+* @brief Calculates the reversed outputs of the function "softplus_v2".
 
 * @par Inputs:
 * Two inputs, including:
@@ -1031,7 +1036,7 @@ REG_OP(ThresholdedRelu)
     .OP_END_FACTORY_REG(ThresholdedRelu)
 
 /**
-* @brief Calculate the hard shrinkage function. \n
+* @brief Calculate the hard shrinkage function.
 
 * @par Inputs:
 * One inputs, including:
@@ -1054,7 +1059,7 @@ REG_OP(HardShrink)
     .OP_END_FACTORY_REG(HardShrink)
 
 /**
-*@brief Calculate the hard shrink grad function. \n
+*@brief Calculate the hard shrink grad function.
 *
 * Computes the gradient for the HardShrink: if x > lambda or x < -lambda, x,otherwise 0
 *
@@ -1082,7 +1087,7 @@ REG_OP(HardShrink)
   .OP_END_FACTORY_REG(HardShrinkGrad)
 
 /**
-* @brief Calculate the hard sigmoid function. \n
+* @brief Calculate the hard sigmoid function.
 
 * @par Inputs:
 * One inputs, including:
@@ -1107,7 +1112,7 @@ REG_OP(HardSigmoid)
     .OP_END_FACTORY_REG(HardSigmoid)
 
 /**
-* @brief Calculate the soft shrinkage function. \n
+* @brief Calculate the soft shrinkage function.
 
 * @par Inputs:
 * One inputs, including:
@@ -1130,12 +1135,12 @@ REG_OP(SoftShrink)
      .OP_END_FACTORY_REG(SoftShrink)
 
 /**
-* @brief Calculate the reversed outputs of the function "soft_shrink". \n
+* @brief Calculate the reversed outputs of the function "soft_shrink".
 
 * @par Inputs:
 * Two inputs, including:
 * @li input_grad: A tensor. Must be one of the following types:
-*     float16, float32. \n
+*     float16, float32, bfloat16. \n
 * @li input_x: A tensor of the same dtype as "input_grad". \n
 
 * @par Attributes:
@@ -1148,14 +1153,14 @@ REG_OP(SoftShrink)
 * Compatible with the Pytorch operator SoftShrinkGrad. \n
 */
 REG_OP(SoftShrinkGrad)
-     .INPUT(input_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(input_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+     .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+     .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
      .ATTR(lambd, Float, 0.5)
      .OP_END_FACTORY_REG(SoftShrinkGrad)
 
 /**
-*@brief Calculate the gradient of log simoid. \n
+*@brief Calculate the gradient of log simoid.
 
 *@par Inputs:
 *Two inputs, including:
@@ -1178,7 +1183,7 @@ REG_OP(LogSigmoidGrad)
     .OP_END_FACTORY_REG(LogSigmoidGrad)
 
 /**
-*@brief Calculate -ln(1+e^(-x)). \n
+*@brief Calculate -ln(1+e^(-x)).
 
 *@par Inputs:
 *One inputs, including:
@@ -1198,7 +1203,7 @@ REG_OP(LogSigmoid)
     .OP_END_FACTORY_REG(LogSigmoid)
 
 /**
-*@brief Calculate the backward outputs of the function "hard_sigmoid" \n
+*@brief Calculate the backward outputs of the function "hard_sigmoid"
 
 *@par Inputs:
 *One inputs, including:
@@ -1227,7 +1232,7 @@ REG_OP(HardSigmoidGrad)
     .OP_END_FACTORY_REG(HardSigmoidGrad)
 
 /**
-* @brief Calculate the shrink function. \n
+* @brief Calculate the shrink function.
 
 * @par Inputs:
 * One inputs, including:
@@ -1252,7 +1257,7 @@ REG_OP(Shrink)
     .OP_END_FACTORY_REG(Shrink)
 
 /**
-* @brief Thresholds each element of the input Tensor: y = (x > threshold) ? x : value \n
+* @brief Thresholds each element of the input Tensor: y = (x > threshold) ? x : value
 
 * @par Inputs:
 * Three inputs, including:
@@ -1308,7 +1313,7 @@ REG_OP(GLU)
       .OP_END_FACTORY_REG(GLU)
 
 /**
-* @brief Calculates the backward outputs of the function "GLU". \n
+* @brief Calculates the backward outputs of the function "GLU".
 
 * @par Inputs:
 * @li y_grad: A Tensor. Must be one of the following types: float16, float32.

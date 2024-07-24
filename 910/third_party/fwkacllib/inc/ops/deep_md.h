@@ -41,8 +41,6 @@ namespace ge {
 * @par Attributes:
 * Three attributes, including:
 * @li last_layer_size: int value.
-* @li split_count: int value.
-* @li split_index: int value. \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -79,8 +77,7 @@ REG_OP(TabulateFusion)
 * @li rcut_r: A Float.
 * @li rcut_r_smth: A Float.
 * @li sel_a: A ListInt.
-* @li split_count: A Int.
-* @li split_index: A Int.\n
+* @li sel_r: A ListInt.
 *
 */
 REG_OP(ProdEnvMatA)
@@ -250,8 +247,6 @@ REG_OP(ProdForceSeA)
 * Two attributes, including:
 * @li n_a_sel: Int value.
 * @li n_r_sel: Int value.
-* @li split_count: Int value.
-* @li split_index: Int value. \n
 */
 REG_OP(ProdVirialSeA)
     .INPUT(net_deriv, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -280,11 +275,6 @@ REG_OP(ProdVirialSeA)
 * @par Outputs:
 * @li dy_dem_x: A Tensor. Must be one of the following types: float16, float32, float64.
 * @li dy_dem: A Tensor. Must be one of the following types: float16, float32, float64. \n
-*
-* @par Attributes:
-* Two attributes, including:
-* @li split_count: A Scalar. 
-* @li split_index: A Scalar. \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.

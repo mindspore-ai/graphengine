@@ -33,7 +33,7 @@ namespace ge {
 * @li count:The shape of the input tensor. Must be int64.
 * @li seed:If seed is set to be non-zero, the random number
 * generator is seeded by the given seed. Otherwise, it is seeded by a random seed. Must be int64.
-* @li dropout:0-D. Number of bit 1. Must be one of the following dtypes:float16, float32, bf16.\n
+* @li dropout:0-D. Number of bit 1. Must be one of the following dtypes:float16, float32, bf16. Must in [0,1). \n
 
 * @par Attributes:
 * @li random_algorithm:The default value is "Philox".
@@ -122,8 +122,8 @@ include:
 * @li seed: If seed is set to be non-zero, the random number
 * generator is seeded by the given seed. Otherwise, it is seeded by a random seed
 * @li mean: A Tensor. Must be one of the following types: float16, float32, double
-* @li stdev: A Tensor. Must be one of the following types: float16, float32, double. \n
-
+* @li stdev: A Tensor. Must be one of the following types: float16, float32, double.
+* @li Parameters mean and stdev must be configured at the same time. \n
 * @par Attributes:
 * @li random_algorithm:The default value is "Philox". \n
 
@@ -149,7 +149,7 @@ include:
 * @li count: The shape of the input tensor.
 * @li seed: If seed is set to be non-zero, the random number
 * generator is seeded by the given seed. Otherwise, it is seeded by a random seed
-* @li dropout: A Tensor. Must be one of the following types: float16, float32, bfloat16
+* @li dropout: A Tensor. Must be one of the following types: float16, float32, bfloat16.  Must in [0,1).
 * @li offset: A Tensor. Must be one of the following types: uint64. \n
 
 * @par Attributes:
@@ -180,6 +180,7 @@ REG_OP(DSAStatelessGenBitMask)
     * generator is seeded by the given seed. Otherwise, it is seeded by a random seed
     * @li mean: A Tensor, value should be 0. Must be one of the following types: float16, float32, bfloat16.
     * @li stdev: A Tensor, value should be 1. Must be one of the following types: float16, float32, bfloat16.
+    * @li Parameters mean and stdev must be configured at the same time.
     * @li counter: A Tensor. Must be one of the following types: uint64. \n
 
     * @par Attributes:
@@ -210,6 +211,7 @@ include:
 * generator is seeded by the given seed. Otherwise, it is seeded by a random seed
 * @li low: A Tensor, value should be 0.. Must be one of the following types: float16, float32, bfloat16.
 * @li high: A Tensor, value should be 1.. Must be one of the following types: float16, float32, bfloat16.
+* @li Parameters low and high must be configured at the same time, and low < high.
 * @li counter: A Tensor. Must be one of the following types: uint64. \n
 
 * @par Attributes:
@@ -239,7 +241,8 @@ include:
 * @li seed: If seed is set to be non-zero, the random number
 * generator is seeded by the given seed. Otherwise, it is seeded by a random seed
 * @li low: A Tensor. Must be one of the following types: int, float, bf
-* @li high: A Tensor. Must be one of the following types: int, float, bf. \n
+* @li high: A Tensor. Must be one of the following types: int, float, bf.
+* @li Parameters low and high must be configured at the same time, and low < high. \n
 
 * @par Attributes:
 * @li random_algorithm:The default value is "Philox". \n

@@ -1,8 +1,6 @@
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2019-2021. All rights reserved.
  * Description: HCOM API
- * Author: ligang
- * Create: 2019-01-16
  */
 
 #ifndef HCOM_H
@@ -16,6 +14,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
+
+/**
+ * @brief Set tableNum in ES.
+ *
+ * @param tableNum table num in ES
+ * @return HcclResult
+ */
+HcclResult HcomSetPsTableNum(u32 tableNum);
 
 /**
  * @brief Get the rank number in the group.

@@ -89,7 +89,9 @@ typedef enum tagRtDeviceModuleType {
     RT_MODULE_TYPE_TSCPU,       /**< tscpu info*/
     RT_MODULE_TYPE_PCIE,        /**< PCIE info*/
     RT_MODULE_TYPE_VECTOR_CORE, /**< VECTOR CORE info*/
-    RT_MODULE_TYPE_HOST_AICPU   /**< HOST AICPU info*/
+    RT_MODULE_TYPE_HOST_AICPU,   /**< HOST AICPU info*/
+    RT_MODULE_TYPE_QOS,         /**<qos info> */
+    RT_MODULE_TYPE_MEMORY      /**<memory info*/
 } rtDeviceModuleType_t;
 
 typedef enum tagRtPhyDeviceInfoType {
@@ -366,6 +368,16 @@ RTS_API rtError_t rtDeviceSynchronize(void);
 
 /**
  * @ingroup dvrt_dev
+ * @brief Wait for compute device to finish
+ * @param [in] devId   the device id
+ * @param [in] timeout the time for hadle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDeviceTaskAbort(int32_t devId, uint32_t timeout);
+
+/**
+ * @ingroup dvrt_dev
  * @brief get priority range of current device
  * @param [in|out] leastPriority   least priority
  * @param [in|out] greatestPriority   greatest priority
@@ -542,6 +554,15 @@ RTS_API rtError_t rtGetVisibleDeviceIdByLogicDeviceId(const int32_t logicDeviceI
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetAllUtilizations(const int32_t devId, const rtTypeUtil_t kind, uint8_t * const util);
+/**
+ * @ingroup
+ * @brief get serverid by sdid
+ * @param [int] sdid   sdid
+ * @param [out] *srvId serverid
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetServerIDBySDID(uint32_t sdid, uint32_t *srvId);
 
 #if defined(__cplusplus)
 }

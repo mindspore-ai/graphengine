@@ -46,6 +46,10 @@ typedef struct TagStreamConfigHandle {
     uint32_t priority;
 } rtStreamConfigHandle;
 
+typedef enum tagRtClearStep {
+    RT_STREAM_STOP = 0,
+    RT_STREAM_CLEAR,
+} rtClearStep_t;
 /**
  * @ingroup stream_type
  * @brief stream type
@@ -346,7 +350,7 @@ RTS_API rtError_t rtGetStreamTag(rtStream_t stm, uint32_t *geOpTag);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtStreamClear(rtStream_t stm);
+RTS_API rtError_t rtStreamClear(rtStream_t stm, rtClearStep_t step);
 
 #if defined(__cplusplus)
 }

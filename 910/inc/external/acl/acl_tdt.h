@@ -281,6 +281,18 @@ ACL_FUNC_VISIBILITY aclError acltdtDestroyChannel(acltdtChannelHandle *handle);
 
 /**
  * @ingroup AscendCL
+ * @brief clean the channel
+ *
+ * @param handle [IN]      pointer to the channel handle
+ *
+ * @retval ACL_SUCCESS  The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ */
+ACL_FUNC_VISIBILITY aclError acltdtCleanChannel(acltdtChannelHandle *handle);
+
+/**
+ * @ingroup AscendCL
  * @brief Send tensor to device
  *
  * @param handle [IN]  pointer to the channel handle

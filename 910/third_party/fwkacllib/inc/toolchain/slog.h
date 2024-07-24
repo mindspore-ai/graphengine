@@ -1,24 +1,19 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * @slog.h
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2024. All rights reserved.
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
 #ifndef D_SYSLOG_H_
 #define D_SYSLOG_H_
 
 #include <stdarg.h>
-static const int TMP_LOG = 0;
+#include <stdint.h>
+static const int32_t TMP_LOG = 0;
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -172,6 +167,7 @@ enum {
     ATRACE,
     RTC,
     SYSMONITOR,
+    AML,
     INVLID_MOUDLE_ID    // add new module before INVLID_MOUDLE_ID
 };
 
@@ -189,7 +185,7 @@ DLL_EXPORT void dlog_init(void);
  * @param [out]enableEvent: 1: enable; 0: disable
  * @return: module level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
  */
-DLL_EXPORT int dlog_getlevel(int moduleId, int *enableEvent);
+DLL_EXPORT int32_t dlog_getlevel(int32_t moduleId, int32_t *enableEvent);
 
 /**
  * @ingroup slog
@@ -200,7 +196,7 @@ DLL_EXPORT int dlog_getlevel(int moduleId, int *enableEvent);
  * @param [in]enableEvent: 1: enable; 0: disable, others:invalid
  * @return: 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int dlog_setlevel(int moduleId, int level, int enableEvent);
+DLL_EXPORT int32_t dlog_setlevel(int32_t moduleId, int32_t level, int32_t enableEvent);
 
 /**
  * @ingroup slog
@@ -211,7 +207,7 @@ DLL_EXPORT int dlog_setlevel(int moduleId, int level, int enableEvent);
  * @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
  * @return: 1:enable, 0:disable
  */
-DLL_EXPORT int CheckLogLevel(int moduleId, int logLevel);
+DLL_EXPORT int32_t CheckLogLevel(int32_t moduleId, int32_t logLevel);
 
 /**
  * @ingroup     : slog
@@ -219,7 +215,7 @@ DLL_EXPORT int CheckLogLevel(int moduleId, int logLevel);
  * @param [in]  : logAttrInfo   attr info, include pid(must be larger than 0), process type and device id(chip ID)
  * @return      : 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogSetAttr(LogAttr logAttrInfo);
+DLL_EXPORT int32_t DlogSetAttr(LogAttr logAttrInfo);
 
 /**
  * @ingroup     : slog
@@ -229,7 +225,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttrInfo);
  * @param[in]   : fmt           log content
  * @param[in]   : list          variable list of log content
  */
-DLL_EXPORT void DlogVaList(int moduleId, int level, const char *fmt, va_list list);
+DLL_EXPORT void DlogVaList(int32_t moduleId, int32_t level, const char *fmt, va_list list);
 
 /**
  * @ingroup slog
@@ -340,7 +336,7 @@ DLL_EXPORT void DlogFlush(void);
     } while (TMP_LOG != 0)
 
 // log interface
-DLL_EXPORT void DlogRecord(int moduleId, int level, const char *fmt, ...) __attribute((weak));
+DLL_EXPORT void DlogRecord(int32_t moduleId, int32_t level, const char *fmt, ...) __attribute((weak));
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -371,7 +367,7 @@ DLL_EXPORT int DlogGetlevelForC(int moduleId, int *enableEvent);
  * @param [in]enableEvent: 1: enable; 0: disable, others:invalid
  * @return: 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogSetlevelForC(int moduleId, int level, int enableEvent);
+DLL_EXPORT int32_t DlogSetlevelForC(int32_t moduleId, int32_t level, int32_t enableEvent);
 
 /**
  * @ingroup slog
@@ -382,7 +378,7 @@ DLL_EXPORT int DlogSetlevelForC(int moduleId, int level, int enableEvent);
  * @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
  * @return: 1:enable, 0:disable
  */
-DLL_EXPORT int CheckLogLevelForC(int moduleId, int logLevel);
+DLL_EXPORT int32_t CheckLogLevelForC(int32_t moduleId, int32_t logLevel);
 
 /**
  * @ingroup slog
@@ -390,7 +386,7 @@ DLL_EXPORT int CheckLogLevelForC(int moduleId, int logLevel);
  * @param [in]logAttrInfo: attr info, include pid(must be larger than 0), process type and device id(chip ID)
  * @return: 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogSetAttrForC(LogAttr logAttrInfo);
+DLL_EXPORT int32_t DlogSetAttrForC(LogAttr logAttrInfo);
 
 /**
  * @ingroup slog
@@ -432,7 +428,7 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttrInfo);
 DLL_EXPORT void DlogFlushForC(void);
 
 // log interface
-DLL_EXPORT void DlogRecordForC(int moduleId, int level, const char *fmt, ...) __attribute((weak));
+DLL_EXPORT void DlogRecordForC(int32_t moduleId, int32_t level, const char *fmt, ...) __attribute((weak));
 
 #ifdef __cplusplus
 }

@@ -280,6 +280,16 @@ RTS_API rtError_t rtMemQueueDestroy(int32_t devId, uint32_t qid);
 RTS_API rtError_t rtMemQueueInit(int32_t devId);
 
 /**
+* @ingroup rt_mem_queue
+* @brief  queue reset
+* @attention null
+* @param [in] qid: qid
+* @param [in] devId: logic devid
+* @return 0 for success, others for fail
+**/
+RTS_API rtError_t rtMemQueueReset(int32_t devId, uint32_t qid);
+
+/**
  * @ingroup rt_mem_queue
  * @brief enqueue memBuf
  * @param [in] devId   the logical device id

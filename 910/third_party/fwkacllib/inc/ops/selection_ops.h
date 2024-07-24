@@ -24,7 +24,7 @@
 
 namespace ge {
 /**
-* @brief Creates a sequence of numbers . \n
+* @brief Creates a sequence of numbers .
 
 * @par Inputs:
 * Three inputs, including:
@@ -92,7 +92,7 @@ REG_OP(RangeD)
     .OP_END_FACTORY_REG(RangeD)
 
 /**
-* @brief Constructs a tensor by tiling a given tensor . \n
+* @brief Constructs a tensor by tiling a given tensor .
 
 * @par Inputs:
 * Two inputs, including:
@@ -122,14 +122,13 @@ REG_OP(Tile)
     .OP_END_FACTORY_REG(Tile)
 
 /**
-* @brief Constructs a tensor by tiling a given tensor . \n
+* @brief Constructs a tensor by tiling a given tensor .
 
 * @par Inputs:
 * x: A Tensor. Must be one of the following types: float32, float16, int32, bfloat16 . \n
 
 * @par Attributes:
-* multiples: A required Tensor of type int32 or int64.
-*     Number of replication times . \n
+* multiples: A required list Attributes of type int. Number of replication times . \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x" . \n
@@ -290,7 +289,7 @@ REG_OP(GatherElements)
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types: int8, uint8, int16, uint16, int32, uint32, int64,
-* uint64, bool, float16, float32, double.
+* uint64, bool, bfloat16, float16, float32, double.
 * @li index: A Tensor. Must be one of the following types: int32, int64.
 
 * @par Attributes:
@@ -307,7 +306,8 @@ REG_OP(GatherD)
                           DT_INT64, DT_UINT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .INPUT(dim, TensorType({DT_INT32, DT_INT64}))
     .INPUT(index, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_FLOAT16, DT_FLOAT,
+                           DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL, DT_DOUBLE, DT_BF16}))
     .ATTR(dim, Int, 0)
     .OP_END_FACTORY_REG(GatherD)
 
@@ -475,7 +475,7 @@ REG_OP(StridedSliceGradD)
 /**
 * @brief Since StridedSlice cuts out pieces of its "input" which is size "dy",
     its gradient will have the same shape (which is passed here as "shape").
-    The gradient will be zero in any element that the slice does not select . \n
+    The gradient will be zero in any element that the slice does not select .
 
 * @par Inputs:
 * Five inputs, including:
@@ -565,7 +565,7 @@ REG_OP(UnsortedSegmentSum)
 
 /**
 * @brief Creates a one-dimensional tensor of size steps whose values are evenly spaced from start to
-*	end, inclusive, on a logarithmic scale with base base. \n
+*	end, inclusive, on a logarithmic scale with base base.
 
 * @par Inputs:
 * One inputs, including:
@@ -599,7 +599,7 @@ REG_OP(LogSpaceD)
     .OP_END_FACTORY_REG(LogSpaceD)
 
 /**
-* @brief Computes the sum along segments of a tensor . \n
+* @brief Computes the sum along segments of a tensor .
 
 * @par Inputs:
 * Two inputs, including:
@@ -627,7 +627,7 @@ REG_OP(UnsortedSegmentSumD)
     .OP_END_FACTORY_REG(UnsortedSegmentSumD)
 
 /**
-* @brief Reverses specific dimensions of a tensor . \n
+* @brief Reverses specific dimensions of a tensor .
 
 * @par Inputs:
 * Two inputs, including:
@@ -657,7 +657,7 @@ REG_OP(ReverseV2)
     .OP_END_FACTORY_REG(ReverseV2)
 
 /**
-* @brief Reverses specific dimensions of a tensor . \n
+* @brief Reverses specific dimensions of a tensor .
 
 * @par Inputs:
 * One input:
@@ -715,7 +715,7 @@ REG_OP(Select)
     .OP_END_FACTORY_REG(Select)
 
 /**
-* @brief Select elements from "then" or "else", depending on "condition" . \n
+* @brief Select elements from "then" or "else", depending on "condition" .
 
 * @par Inputs:
 * Three inputs, including:
@@ -762,7 +762,7 @@ REG_OP(SegmentMax)
     .OP_END_FACTORY_REG(SegmentMax)
 
 /**
-* @brief Computes the sum along segments of a tensor . \n
+* @brief Computes the sum along segments of a tensor .
 
 * @par Inputs:
 * Two inputs, including:
@@ -814,7 +814,7 @@ REG_OP(SegmentMaxD)
 
 /**
 * @brief Returns a one-hot tensor. The locations represented by index in "x" take value "on_value",
-*         while all other locations take value "off_value" . \n
+*         while all other locations take value "off_value" .
 
 * @par Inputs:
 * Four inputs, including:
@@ -845,7 +845,7 @@ REG_OP(OneHot)
 
 /**
 * @brief Returns a one-hot tensor. The locations represented by index in "x" take value "on_value",
-*         while all other locations take value "off_value" . \n
+*         while all other locations take value "off_value" .
 
 * @par Inputs:
 * Three inputs, including:
@@ -882,7 +882,7 @@ REG_OP(OneHotD)
 /**
 * @brief Extracts a slice from a tensor.
 *       This operation extracts a slice of size "size" from a tensor "x"
-*       starting at the location specified by "begin" . \n
+*       starting at the location specified by "begin" .
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
@@ -907,7 +907,7 @@ REG_OP(Slice)
 /**
 * @brief Extracts a slice from a tensor.
 *       This operation extracts a slice of size "size" from a tensor "x"
-*       starting at the location specified by "begin" . \n
+*       starting at the location specified by "begin" .
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
@@ -936,7 +936,7 @@ REG_OP(SliceWithAxes)
 /**
 * @brief Extracts a slice from a tensor.
 *       This operation extracts a slice of size "size" from a tensor "x"
-*		starting at the location specified by "begin" . \n
+*		starting at the location specified by "begin" .
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
@@ -962,7 +962,7 @@ REG_OP(SliceD)
 /**
 * @brief Extracts a slice from a tensor.
 *       This operation extracts a slice of size "size" from a tensor "x"
-*		starting at the location specified by "begin" . \n
+*		starting at the location specified by "begin" .
 
 * @par Inputs:
 * @li x: A Tensor. Must be one of the following types:
@@ -989,7 +989,7 @@ REG_OP(SliceDV2)
 
 /**
 * @brief Finds values and indices of the "k" largest elements for the last
-* dimension . \n
+* dimension .
 
 * @par Inputs:
 * Two inputs, including:
@@ -1166,7 +1166,7 @@ REG_OP(TopK)
 /**
 * @brief Creates a new tensor by applying sparse "updates" to individual values or
 * slices within a tensor (initially zero for numeric,
-* empty for string) of the given "shape" according to "indices" . \n
+* empty for string) of the given "shape" according to "indices" .
 
 * @par Inputs:
 * Inputs including:
@@ -1191,7 +1191,7 @@ REG_OP(ScatterNd)
 /**
 * @brief Creates a new tensor by applying sparse "updates" to individual values
  * or slices within a tensor (initially zero for numeric, empty for string) of
- * the given "shape" according to "indices" . \n
+ * the given "shape" according to "indices" .
 
 * @par Inputs:
 * Inputs including:
@@ -1221,7 +1221,7 @@ REG_OP(ScatterNdD)
     .OP_END_FACTORY_REG(ScatterNdD)
 
 /**
-* @brief Says whether the targets are in the top "k" predictions . \n
+* @brief Says whether the targets are in the top "k" predictions .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1378,9 +1378,50 @@ REG_OP(StridedSliceAssignD)
     .OP_END_FACTORY_REG(StridedSliceAssignD)
 
 /**
+* @brief Assigns "value" to the sliced l-value reference of "var".
+* The values of "value" are assigned to the positions in the variable. "var"
+* that are selected by the slice parameters. The slice parameters "begin, "end",
+* "strides", etc. work exactly as in "StridedSlice" . \n
+
+* @par Inputs:
+* Five inputs, including:
+* @li var: A mutable ND Tensor of type BasicType.
+* @li input_value: A mutable ND Tensor of type BasicType .
+* @li begin: A mutable ND Tensor of type IndexNumberType.
+* Specifies the index of the first value to select.
+* @li end: A mutable ND Tensor of type IndexNumberType.
+* Specifies the index of the last value to select.
+* @li strides: A mutable ND Tensor of type IndexNumberType.
+* Specifies the stride to select.
+* @li axes: Optional. A mutable ND Tensor of type IndexNumberType.
+* Specifies the stride to select. \n
+
+* @par Outputs:
+* var: A mutable Tensor. Has the same type as "var" . \n
+
+* @attention Constraints:
+* This operator currently does not support broadcasting. Therefore, the shape
+* of "value" must be exactly the shape produced by the slice of "var" . \n
+
+* @see StridedSlice()
+
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator StridedSlice.
+*/
+REG_OP(StridedSliceAssignV2)
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_INT32, DT_INT64, DT_DOUBLE, DT_INT8}))
+    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_INT32, DT_INT64, DT_DOUBLE, DT_INT8}))
+    .INPUT(begin, TensorType::IndexNumberType())
+    .INPUT(end, TensorType::IndexNumberType())
+    .INPUT(strides, TensorType::IndexNumberType())
+    .OPTIONAL_INPUT(axes, TensorType::IndexNumberType())
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16, DT_INT32, DT_INT64, DT_DOUBLE, DT_INT8}))
+    .OP_END_FACTORY_REG(StridedSliceAssignV2)
+
+/**
 * @brief Gather slices from "params" according to "indices"."indices" must be
     an integer tensor of any dimension(usually 0-D or 1-D).
-    Produces an output tensor with shape "indices.shape + params.shape[1:]" . \n
+    Produces an output tensor with shape "indices.shape + params.shape[1:]" .
 
 * @par Inputs:
 * Two inputs, including:
@@ -1415,7 +1456,7 @@ REG_OP(Gather)
     .OP_END_FACTORY_REG(Gather)
 
 /**
-* @brief Computes the cumulative product of the tensor "x" along "axis" . \n
+* @brief Computes the cumulative product of the tensor "x" along "axis" .
 
 * @par Inputs:
 * Two inputs, including:
@@ -1442,7 +1483,7 @@ REG_OP(Cumprod)
     .OP_END_FACTORY_REG(Cumprod)
 
 /**
-* @brief Computes the cumulative product of the tensor "x" along "axis" . \n
+* @brief Computes the cumulative product of the tensor "x" along "axis" .
 
 * @par Inputs:
 * One input:
@@ -1450,7 +1491,7 @@ REG_OP(Cumprod)
 * complex64, int64, qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64
 *
 * @par Attributes:
-* @li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)). Defaults to "0".
+* @li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)).
 * @li exclusive: If "False", performs inclusive cumprod, which means that the first element of the input
 * is identical to the first element of the output. If "True", performs exclusive cumprod.
 * @li reverse: A bool. Defaults to "False".
@@ -1472,7 +1513,7 @@ REG_OP(CumprodD)
     .OP_END_FACTORY_REG(CumprodD)
 
 /**
-* @brief Computes the cumulative sum of the tensor "x" along "axis" . \n
+* @brief Computes the cumulative sum of the tensor "x" along "axis" .
 
 * @par Inputs:
 * Two inputs, including:
@@ -1505,7 +1546,7 @@ REG_OP(Cumsum)
 * x: A Tensor. Must be one of the following types: float32, int32, uint8, int8, float16.
 *
 * @par Attributes:
-* @li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)). Defaults to "0".
+* @li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)).
 * @li exclusive: If "False", performs inclusive cumsum, which means that the first element of the input is
 * identical to the first element of the output. If "True", performs exclusive cumsum.
 * @li reverse: A bool. Defaults to "False".
@@ -1721,7 +1762,7 @@ REG_OP(ScatterNonAliasingAdd)
     .OP_END_FACTORY_REG(ScatterNonAliasingAdd)
 
 /**
-* @brief Computes the minimum along segments of a tensor . \n
+* @brief Computes the minimum along segments of a tensor .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1779,7 +1820,7 @@ REG_OP(UnsortedSegmentMinD)
     .OP_END_FACTORY_REG(UnsortedSegmentMinD)
 
 /**
-* @brief Computes the maximum along segments of a tensor . \n
+* @brief Computes the maximum along segments of a tensor .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1836,7 +1877,7 @@ REG_OP(UnsortedSegmentMaxD)
     .REQUIRED_ATTR(num_segments, Int)
     .OP_END_FACTORY_REG(UnsortedSegmentMaxD)
 /**
-* @brief Computes the product along segments of a tensor . \n
+* @brief Computes the product along segments of a tensor .
 
 * @par Inputs:
 * Three inputs, including:
@@ -1864,7 +1905,7 @@ REG_OP(UnsortedSegmentProd)
     .OP_END_FACTORY_REG(UnsortedSegmentProd)
 
 /**
-* @brief Computes the product along segments of a tensor . \n
+* @brief Computes the product along segments of a tensor .
 
 * @par Inputs:
 * Two inputs, including:
@@ -1952,10 +1993,10 @@ REG_OP(UnsortedSegmentProdD)
 * The suffix "D" in the API name will be removed from the generated model . \n
 
 * @par Inputs:
-* @li cls_prob: An NCHW tensor of type float16, specifying the probability of the proposal is the background class.
-* @li bbox_delta: An NCHW tensor of type float16, specifying the coordinates of the proposals bounding boxes.
+* @li cls_prob: An NCHW tensor of type float16, float32, specifying the probability of the proposal is the background class.
+* @li bbox_delta: An NCHW tensor of type float16, float32, specifying the coordinates of the proposals bounding boxes.
 * @li im_info: An ND tensor of type float16 or float32, specifying the Image information.
-* @li rpn_bbox: An NCHW tensor of type float16, specifying the coordinates of the proposals bounding boxes . \n
+* @li rpn_bbox: An NCHW tensor of type float16, float32, specifying the coordinates of the proposals bounding boxes . \n
 
 * @par Attributes:
 * @li feat_stride: A required float32, specifying the stride of the sliding window.
@@ -2041,7 +2082,7 @@ REG_OP(PassThrough)
 *(1) x: bottom to be cropped, with shape (20, 50, 512, 512);
 *(2) size: reference input for cropping, with shape (20, 10, 256, 256);
 *(3) axis = 1;
-*(4) offset = (25, 128, 128);
+*(4) offsets = (25, 128, 128);
 *(5) y = x[:, 25:25 + size.shape[1], 128:128 + size.shape[2], 128:128 + size.shape[3]] . \n
 
 * @par Inputs:
@@ -2050,7 +2091,7 @@ REG_OP(PassThrough)
 * @li size: A required Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 * @par Attributes:
 * @li axis: A required int32, specifying the first dimension to crop. Defaults to "2".
-* @li offset: A required array,
+* @li offsets: A required array,
 * specifying the shift for all/each dimension to align the cropped bottom with the reference bottom.
 * Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 * @par Outputs:
@@ -2059,8 +2100,8 @@ REG_OP(PassThrough)
 * @attention Constraints:
 * @li "y" must have the same type and shape as "size". "x" must have the same type as "size".
 * @li "axis" must be less than the rank of "x".
-* @li The "offset" for each dimension must not exceed the maximum value of the corresponding dimension of "x".
-* @li The array length of "offset" plus the value of "axis" equals to the rank of "y".
+* @li The "offsets" for each dimension must not exceed the maximum value of the corresponding dimension of "x".
+* @li The array length of "offsets" plus the value of "axis" equals to the rank of "y".
 * @par Third-party framework compatibility
 * Compatible with the Caffe operator Crop.
 */
@@ -2127,13 +2168,13 @@ REG_OP(Cummax)
     .OP_END_FACTORY_REG(Cummax)
 
 /**
-* @brief Extends the input with copies of data along a specified dimension. For example:
-*(1) If x = [[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]], with shape (2, 3, 2); \n
-*(2) axis = 1; \n
-*(3) tiles = 2; \n
-*(4) Then, y = [[[1, 2], [3, 4], [5, 6], [1, 2], [3, 4], [5, 6]], [[7, 8],
+* @brief Extends the input with copies of data along a specified dimension. For example: \n
+* (1) If x = [[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]], with shape (2, 3, 2); \n
+* (2) axis = 1; \n
+* (3) tiles = 2; \n
+* (4) Then, y = [[[1, 2], [3, 4], [5, 6], [1, 2], [3, 4], [5, 6]], [[7, 8],
 * [9, 10], [11, 12], [7, 8], [9, 10], [11, 12]]],
-* with shape (2, 6, 2) . \n
+* with shape (2, 6, 2).
 
 * @par Inputs:
 * One input:
@@ -2141,12 +2182,11 @@ REG_OP(Cummax)
 * bfloat16, float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
 
 * @par Attributes:
-* @li axis: An optional int32, specifying the axis to tile. Defaults to 1.
-* @li tiles: A required int32, specifying the number of copies (tiles) to output . \n
+* @li axis: An optional int, specifying the axis to tile. Defaults to 1.
+* @li tiles: A required int, specifying the number of copies (tiles) to output . \n
 
 * @par Outputs:
-* output_y: A Tensor of any format. Must be one of the following types:
-* bfloat16, float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
+* y: A Tensor with the same type and format of input_x. \n
 
 * @attention Constraints:
 * @li "axis" must be within the rank of the input tensor.
@@ -2274,10 +2314,10 @@ REG_OP(CumulativeLogsumexp)
 *
 * @par Inputs:
 * One input:
-* x: A Tensor. Must be one of the following types: float32, float16.
+* x: A Tensor. Must be one of the following types: float32, float16, double.
 *
 * @par Attributes:
-* @li axis A Tensor of type int32 or int16. Defaults to "0".
+* @li axis A Tensor of type int32 or int16.
 * @li exclusive: If "False", performs inclusive cumulativeLogsumexp,
 * which means that the first element of the input is identical to the first element of the output.
 * If "True", performs exclusive CumulativeLogsumexp.
@@ -2401,7 +2441,7 @@ REG_OP(MaskedScatter)
     .OP_END_FACTORY_REG(MaskedScatter)
 
 /**
-* @brief Slice a tensor at its last dim, e.x. a[..., begin:end:stride]. \n
+* @brief Slice a tensor at its last dim, e.x. a[..., begin:end:stride].
 
 * @par Inputs:
 * One inputs, including:
@@ -2673,7 +2713,7 @@ REG_OP(StridedSliceV3)
 
 /**
 * @brief Sum the alpha according to the offset and ksize,
-    and quadrature it with the sigmoid value of energy. \n
+    and quadrature it with the sigmoid value of energy.
 
 * @par Inputs:
 * Three inputs, including:
@@ -2837,17 +2877,20 @@ REG_OP(RepeatInterleave)
 * @brief Gradient op for RepeatInterleave op.
 * @par Inputs:
 * Two input:
-* y_grad: A Tensor with any format. Support float, float16, bf16.
+* y_grad: A Tensor with any format. Support float, float16, bf16. \n
 * repeats: A Tensor with dim = 1 or a Scalar. Support int32 or int64. \n
 
 * @par Attributes:
-* @li axis: An optional int32, specifying the axis to repeat. Defaults to -1.
+* @li axis: An optional int32, specifying the axis to repeat. Defaults to -1. \n
 
 * @par Outputs:
 * x_grad: A Tensor, which is the same dtype as y_grad. Support float, float16, bf16. \n
 
 * @attention Constraints:
-* @li "axis" must be within the rank of the input tensor.
+* @li "axis" must be within the rank of the input tensor. \n
+
+* @par Third-party framework compatibility
+* Compatible with the PyTorch operator the grad of RepeatInterleave. \n
 */
 REG_OP(RepeatInterleaveGrad)
     .INPUT(y_grad, TensorType({ DT_FLOAT, DT_FLOAT16, DT_BF16 }))

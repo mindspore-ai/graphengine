@@ -103,10 +103,38 @@ ACL_FUNC_VISIBILITY aclnnStatus aclInitTensor(aclTensor *tensor, const int64_t *
                                               aclDataType dataType, const int64_t *stride, int64_t offset,
                                               aclFormat format, const int64_t *storageDims, uint64_t storageDimsNum,
                                               void *tensorDataAddr);
-ACL_FUNC_VISIBILITY aclnnStatus aclUpdateTensorAddr(aclTensor *tensor, void *tensorDataAddr);
 ACL_FUNC_VISIBILITY aclnnStatus aclSetAclOpExecutorRepeatable(aclOpExecutor *executor);
 ACL_FUNC_VISIBILITY aclnnStatus aclDestroyAclOpExecutor(aclOpExecutor *executor);
-
+ACL_FUNC_VISIBILITY aclnnStatus AclSetInputTensorAddr(aclOpExecutor *executor, const size_t index,
+                                                      aclTensor *tensor, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus AclSetOutputTensorAddr(aclOpExecutor *executor, const size_t index,
+                                                       aclTensor *tensor, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus AclSetDynamicInputTensorAddr(aclOpExecutor *executor, size_t irIndex,
+                                                             const size_t relativeIndex,
+                                                             aclTensorList *tensors, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus AclSetDynamicOutputTensorAddr(aclOpExecutor *executor, size_t irIndex,
+                                                              const size_t relativeIndex,
+                                                              aclTensorList *tensors, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus AclSetTensorAddr(aclOpExecutor *executor, const size_t index,
+                                                 aclTensor *tensor, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus AclSetDynamicTensorAddr(aclOpExecutor *executor, size_t irIndex,
+                                                        const size_t relativeIndex,
+                                                        aclTensorList *tensors, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetInputTensorAddr(aclOpExecutor *executor, const size_t index,
+                                                      aclTensor *tensor, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetOutputTensorAddr(aclOpExecutor *executor, const size_t index,
+                                                       aclTensor *tensor, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetDynamicInputTensorAddr(aclOpExecutor *executor, size_t irIndex,
+                                                             const size_t relativeIndex,
+                                                             aclTensorList *tensors, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetDynamicOutputTensorAddr(aclOpExecutor *executor, size_t irIndex,
+                                                              const size_t relativeIndex,
+                                                              aclTensorList *tensors, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetTensorAddr(aclOpExecutor *executor, const size_t index,
+                                                 aclTensor *tensor, void *addr);
+ACL_FUNC_VISIBILITY aclnnStatus aclSetDynamicTensorAddr(aclOpExecutor *executor, size_t irIndex,
+                                                        const size_t relativeIndex,
+                                                        aclTensorList *tensors, void *addr);
 #ifdef __cplusplus
 }
 #endif

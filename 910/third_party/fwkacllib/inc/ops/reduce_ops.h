@@ -294,12 +294,12 @@ REG_OP(BNInfer)
 
 * @par Inputs:
 * Five inputs, including:
-* @li x: A tensor of type float16 or float32 or bfloat16.
-* @li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
-* @li square_sum: A tensor of type float32 for the output of operator
+* @li x: A 4D Tensor of type float16/float32/bfloat16, with format NHWC or NCHW.
+* @li sum: A 1D tensor of type float32 for the output of operator BNTrainingReduce.
+* @li square_sum: A 1D tensor of type float32 for the output of operator
 * BNTrainingReduce.
-* @li scale: A tensor of type float32, for the scaling factor.
-* @li offset: A tensor of type float32, for the scaling offset . \n
+* @li scale: A 1D tensor of type float32, for the scaling factor.
+* @li offset: A 1D tensor of type float32, for the scaling offset . \n
 
 * @par Attributes:
 * epsilon: A required float32, specifying the small value added to
@@ -307,9 +307,9 @@ REG_OP(BNInfer)
 
 * @par Outputs:
 * Three outputs, including:
-* @li y: A tensor of type float16 or float32 or bfloat16, for normalized "x".
-* @li batch_mean: A tensor of type float32, for the mean of "x".
-* @li batch_variance: A tensor of type float32, for the variance of "x" . \n
+* @li y: A tensor with the same dtype/shape/format of input "x".
+* @li batch_mean: A tensor with the same dtype/shape/format of input "sum".
+* @li batch_variance: A tensor with the same dtype/shape/format of input "sum". \n
 
 * @attention Constraints:
 * @li This operator is used in conjunction with BNTrainingReduce.
@@ -334,12 +334,12 @@ REG_OP(BNTrainingUpdateV2)
 
 * @par Inputs:
 * Five inputs, including:
-* @li x: A tensor of type float16 or float32 or bfloat16.
-* @li sum: A tensor of type float32 for the output of operator BNTrainingReduce.
-* @li square_sum: A tensor of type float32 for the output of operator
+* @li x: A 4D Tensor of type float16/float32/bfloat16, with format NHWC or NCHW.
+* @li sum: A 1D tensor of type float32 for the output of operator BNTrainingReduce.
+* @li square_sum: A 1D tensor of type float32 for the output of operator
 * BNTrainingReduce.
-* @li scale: A tensor of type float32, for the scaling factor.
-* @li offset: A tensor of type float32, for the scaling offset . \n
+* @li scale: A 1D tensor of type float32, for the scaling factor.
+* @li offset: A 1D tensor of type float32, for the scaling offset . \n
 
 * @par Attributes:
 * epsilon: A required float32, specifying the small value added to variance
@@ -347,12 +347,15 @@ REG_OP(BNTrainingUpdateV2)
 
 * @par Outputs:
 * @li y: A tensor of type float16 or float32 or bfloat16, for normalized "x".
+* Has the same dtype/shape/format of input "x"
 * @li batch_mean: A tensor of type float32, for the mean of "x".
+* Has the same dtype/shape/format of input "sum".
 * @li batch_variance: A tensor of type float32, for the variance of "x".
+* Has the same dtype/shape/format of input "sum".
 * @li reserve_1: A tensor of type float32, for the mean of batch "x".
-* Has the same type as batch_mean.
+* Has the same dtype/shape/format of input "sum".
 * @li reserve_2: A tensor of type float32, for the variance of batch "x".
-* Has the same type as batch_mean . \n
+* Has the same dtype/shape/format of input "sum". \n
 
 * @attention Constraints:
 * @li This operator is used in conjunction with BNTrainingReduce.
@@ -551,14 +554,15 @@ REG_OP(ReduceMeanWithCount)
     .OP_END_FACTORY_REG(ReduceMeanWithCount)
 
 /**
-*@brief Calculates the "logical sum" of elements of a tensor in a dimension . \n
+*@brief Calculates the "logical sum" of elements of a tensor in a dimension .
 
 *@par Inputs:
 *One input:
 *x: The boolean tensor to reduce . \n
 
 *@par Attributes:
-*@li keep_dims: A bool. If true, retains reduced dimensions with length 1.
+*@li keep_dims: A bool, default false.
+*If true, retains reduced dimensions with length 1.
 *@li axis: The dimensions to reduce. If None, reduces all dimensions.
 *Must be in the range [- rank (input_sensor), rank (input_sensor)) . \n
 
@@ -579,15 +583,18 @@ REG_OP(ReduceAllD)
     .OP_END_FACTORY_REG(ReduceAllD)
 
 /**
-*@brief Calculates the "logical sum" of elements of a tensor in a dimension . \n
+*@brief Calculates the "logical sum" of elements of a tensor in a dimension .
 
 *@par Inputs:
 *Two inputs, including:
 *@li x: The boolean tensor to reduce.
-*@li axis: A mutable Tensor. The dimensions to reduce. If None, reduces all dimensions. Must be in the range [- rank (input_sensor), rank (input_sensor)) . \n
+*@li axis: A mutable Tensor with int dtype, The dimensions to reduce.
+*If None, reduces all dimensions.
+*Must be in the range [- rank (input_sensor), rank (input_sensor)) . \n
 
 *@par Attributes:
-*keep_dims: A bool. If true, retains reduced dimensions with length 1 . \n
+*keep_dims: A bool, default false.
+*If true, retains reduced dimensions with length 1 . \n
 
 *@par Outputs:
 *y: The reduced tensor . \n
@@ -852,11 +859,12 @@ REG_OP(ReduceMinD)
 *
 *@par Inputs:
 *@li x : The boolean tensor to reduce.
-*@li axes: The dimensions to reduce. If "None" (default), reduces all
-*          dimensions. Must be in the range "[-rank(x), rank(x))".
-*
+*@li axes: The int tensot, The dimensions to reduce.
+*          If "None" (default), reduces all dimensions.
+*          Must be in the range "[-rank(x), rank(x))".
 *@par Attributes:
-* keep_dims: If true, retains reduced dimensions with length 1.
+* keep_dims: bool, default false.
+*If true, retains reduced dimensions with length 1.
 *
 *@par Outputs:
 * y: The reduced tensor
@@ -1169,6 +1177,21 @@ REG_OP(INTrainingUpdateGradGammaBeta)
     .OUTPUT(pd_gamma, TensorType({DT_FLOAT}))
     .OUTPUT(pd_beta, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(INTrainingUpdateGradGammaBeta)
+
+/**
+* @brief Backwards calculation of GroupedBiasAdd.
+* @par Inputs:
+* @li grad_y: A Tensor. Type is:BFloat16, Float16 or Float32.
+* @li group_idx: An optional Tensor. Type is:Int32.
+* @par Outputs:
+* @li grad_bias: A Tensor. Type is:BFloat16, Float16 or Float32.
+*/
+REG_OP(GroupedBiasAddGrad)
+    .INPUT(grad_y, "T")
+    .OPTIONAL_INPUT(group_idx, TensorType({DT_INT32}))
+    .OUTPUT(grad_bias, "T")
+    .DATATYPE(T, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(GroupedBiasAddGrad)
 
 /**
 *@brief Performs reduced group normalization . \n

@@ -1,18 +1,11 @@
-/**
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* Copyright (c) 2024 Huawei Technologies Co., Ltd.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
+ * ===================================================================================================================*/
 
 #ifndef INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_
 #define INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_
@@ -26,6 +19,7 @@
 #include "graph/model.h"
 #include "platform/platform_info.h"
 #include "common/op_so_store/op_so_store.h"
+#include "common/host_resource_center/host_resource_serializer.h"
 
 namespace ge {
 class GeModel;
@@ -127,6 +121,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   bool is_need_compress_ = true;
   static std::string output_file_name_;
   std::unordered_set<std::string> custom_compiler_versions_{};
+  HostResourceSerializer host_serializer_;
 
   bool IsPartitionedGraph(const GeModelPtr &cur_model) const;
 
@@ -155,10 +150,11 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
                               Buffer &model_buffer, Buffer &task_buffer, const size_t model_index = 0U) const;
 
   Status LoadOpSoBin(const OmFileLoadHelper &om_load_helper, const GeRootModelPtr &ge_root_model) const;
-
+  Status LoadTilingData(const OmFileLoadHelper &om_load_helper, const GeRootModelPtr &ge_root_model) const;
+  Status SaveTilingData(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeRootModelPtr &ge_root_model);
   void SaveOpSoInfo(const GeRootModelPtr &ge_root_model) const;
   Status SetModelCompilerVersion(const GeModelPtr &first_ge_model);
-  Status LoadAndStoreOppSo(const string &path);
+  Status LoadAndStoreOppSo(const string &path, bool is_split);
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_

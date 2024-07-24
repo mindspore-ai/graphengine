@@ -44,10 +44,10 @@ the enqueued tensors should be taken . \n
 */
 
 REG_OP(Bitcast)
-    .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+    .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT4, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
                           DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
                           DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
-    .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+    .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT4, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
                            DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
                            DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
     .REQUIRED_ATTR(type, Type)
@@ -182,10 +182,10 @@ REG_OP(Transpose)
 | NCDHW <====> NDC1HWC0       | float32, int32,uint32              | 8,16  | 1      |\n
 | NCDHW <====> NDC1HWC0       | bfloat16, float16                  | 16    | 1      |\n
 | NCDHW <====> NDC1HWC0       | int8, uint8                        | 32    | 1      |\n
-| NDHWC <====> NDC1HWC0       | float32, int32,uint32              | 16    | 1      |\n
+| NDHWC <====> NDC1HWC0       | float32, int32,uint32              | 8,16  | 1      |\n
 | NDHWC <====> NDC1HWC0       | bfloat16, float16                  | 16    | 1      |\n
 | NDHWC <====> NDC1HWC0       | int8, uint8                        | 32    | 1      |\n
-| NCDHW <====> FRACTAL_Z_3D   | float32, int32,uint32              | 16    | 1      |\n
+| NCDHW <====> FRACTAL_Z_3D   | float32, int32,uint32              | 8,16  | 1      |\n
 | NCDHW <====> FRACTAL_Z_3D   | bfloat16, float16                  | 16    | 1      |\n
 | NCDHW <====> FRACTAL_Z_3D   | int8, uint8                        | 32    | 1      |\n
 | DHWCN <====> FRACTAL_Z_3D   | float32, int32,uint32              | 16    | 1      |\n
@@ -214,21 +214,21 @@ REG_OP(TransData)
     .OP_END_FACTORY_REG(TransData)
 
 /**
-*@brief Do format transfer for various data format only 
-support "ND" to "ND_RNN_BIAS" and "ND" to "FRACTAL_ZN_RNN"
+* @brief Do format transfer for various data format only 
+* support "ND(float16, float32)" <====> "ND_RNN_BIAS(float16, float32)" 
+* and "ND(float16, float32)" <====> "FRACTAL_ZN_RNN(float16)". \n
 
-*@par Inputs:
-*src: A Tensor. For all branches can be types: float16, float32, int32, int8, bool.
-* For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64 . \n
+* @par Inputs:
+* src: A Tensor. For all branches can be types: float16, float32.
 
-*@par Attributes:
-*@li src_format: A string source data format, can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN" etc.
-*@li dst_format: A string target data format, can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN" etc.
-*@li input_size: A mental int32.
-*@li hidden_size: A mental int32.
+* @par Attributes:
+* @li src_format: A string source data format, can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN" etc.
+* @li dst_format: A string target data format, can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN", "NHWC" etc.
+* @li input_size: A mental int32.
+* @li hidden_size: A mental int32.
 
-*@par Outputs:
-*dst: A Tensor. Has the same type as "src".
+* @par Outputs:
+* dst: A Tensor. Has the same type as "src".
 */
 REG_OP(TransDataRNN)
     .INPUT(src, TensorType::BasicType())
@@ -765,14 +765,16 @@ REG_OP(ConfusionTranspose)
 *@brief Flattens the input tensor to one-dimensional . \n
 
 *@par Inputs:
-*x: An ND tensor. All data types are supported . \n
+*x: An ND tensor. Data types of float16、float32、int8、uint8、int16、uint16、
+int32、uint32、int64、uint64 are supported. \n
 
 *@par Attributes:
 *@li axis: An optional int32, specifying the first axis to flatten. All preceding axes are retained in the output. Defaults to "1".
 *@li end_axis: An optional int32, specifying the last axis to flatten. All following axes are retained in the output. Defaults to "-1" . \n
 
 *@par Outputs:
-*y: The flattened ND tensor. All data types are supported . \n
+*y: The flattened ND tensor. Data types of float16、float32、int8、uint8、int16、
+uint16、int32、uint32、int64、uint64 are supported. \n
 
 *@attention Constraints:
 * "axis" and "end_axis" must be within the dimension range of the input. This operator cannot be directly called by the acllopExecute API.

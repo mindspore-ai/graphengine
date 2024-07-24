@@ -540,6 +540,17 @@ ACL_FUNC_VISIBILITY aclError aclopUpdateParams(const char *opType,
 
 /**
  * @ingroup AscendCL
+ * @brief set max op queue num
+ *
+ * @param maxOpNum [IN]   number of max op queue
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclopSetMaxOpQueueNum(uint64_t maxOpNum);
+
+/**
+ * @ingroup AscendCL
  * @brief inferShape the specified operator synchronously
  *
  * @param opType [IN]       type of op

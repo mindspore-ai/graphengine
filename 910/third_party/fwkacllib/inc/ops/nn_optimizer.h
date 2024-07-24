@@ -25,18 +25,17 @@
 #include "graph/operator_reg.h"
 namespace ge {
 /**
-* @brief Create a diagonal tensor
+* @brief Computes the ApplyCamePart1.
 * @par Inputs:
-* two input, include:
-* grad: A mutable Tensor with rank 2, such as [n, m] , support types: float16, float32, bfloat16 . \n
-* eps: A mutable Tensor with rank 1, such as n , support types: float32. \n
+* including:
+* @li grad: A mutable Tensor with rank 2, such as [n, m] , support types: float16, float32, bfloat16.
+* @li eps: A mutable Tensor with rank 1, such as n , support types: float32.
 
 * @par Outputs:
-* sum_grad_r: A mutable Tensor with rank 1, such as [n, 1], support types: float32 . \n
-* sum_grad_c: A mutable Tensor with rank 1, such as [1, m], support types: float32 . \n
-* sum_grad_rc: A mutable Tensor with randk 0, such as [1, 1], support types: float32 . \n
+* @li sum_grad_r: A mutable Tensor with rank 1, such as [n, 1], support types: float32.
+* @li sum_grad_c: A mutable Tensor with rank 1, such as [1, m], support types: float32.
+* @li sum_grad_rc: A mutable Tensor with randk 0, such as [1, 1], support types: float32.
 * @see ApplyCamePart1
-* @par Third-party framework compatibility
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -52,7 +51,6 @@ REG_OP(ApplyCamePart1)
 
 /**
 * @brief Computes the ApplyCamePart2.
-
 * @par Inputs:
 * including:
 * @li grad: A multi-dimensional Tensor of type bfloat16, float16 or float32.
@@ -70,8 +68,6 @@ REG_OP(ApplyCamePart1)
 * @li c: A mutable tensor. Must have the same type as input "c".
 * @li u: A mutable tensor.
 * @li sum_square_u: A mutable tensor. \n
-
-* @par Third-party framework compatibility
 */
 REG_OP(ApplyCamePart2)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -94,26 +90,24 @@ REG_OP(ApplyCamePart2)
 * @brief Computes the ApplyCamePart3.
 
 * @par Inputs:
-* four inputs, including:
-* @li u: A multi-dimensional Tensor of type float32.
-* @li m: A multi-dimensional Tensor of type bfloat16, float16 or float32.
+* including:
+* @li u: A 2-dimensional Tensor of type float32.
+* @li m: A 2-dimensional Tensor of type bfloat16, float16 or float32.
 * @li eps: A 1-dimensional Tensor, specifying the epsilon value.
 * @li beta1: A 1-dimensional Tensor, specifying the beta1 value.
 * @li clip_threshold: A 1-dimensional Tensor, specifying the clip_threshold value.
 * @li sum_square_u: A 1-dimensional Tensor, specifying the sum_square_u value.
-* @li global_shape: A 2-dimensional Tensor, specifying the original shape M, N. \n
+* @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
 
 * @par Attributes:
-* use_first_moment: A bool Scalar. If true, update the computed output m. \n
+* use_first_moment: A bool Scalar. If true, update the computed output m. 
+* Default to false. \n
 
 * @par Outputs:
-* @li m: A mutable tensor. Must have the same type as input "m".
-* @li sum_u_r:  A mutable tensor. Must have the same type as input "u".
-* @li sum_u_c:  A mutable tensor. Must have the same type as input "u".
-* @li sum_u_rc: A mutable tensor. Must have the same type as input "u". \n
-
-* @par Third-party framework compatibility
-* Compatible with PyTorch operator BCEWithLogitsLoss.
+* @li m: A multi-dimensional tensor. Must have the same type as input "m".
+* @li sum_u_r:  A 1-dimensional tensor. Must have the same type as input "u".
+* @li sum_u_c:  A 1-dimensional tensor. Must have the same type as input "u".
+* @li sum_u_rc: A 1-dimensional tensor. Must have the same type as input "u". \n
 */
 REG_OP(ApplyCamePart3)
     .INPUT(u, TensorType({DT_FLOAT}))
@@ -154,8 +148,6 @@ REG_OP(ApplyCamePart3)
 * @li r: A mutable tensor. Must have the same type as input "r".
 * @li c: A mutable tensor. Must have the same type as input "c".
 
-* @par Third-party framework compatibility
-*
 * @par Restrictions:
 * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */

@@ -67,10 +67,14 @@ typedef struct {
     uint32_t srcOffset;
 } rtPrefetchBufInfo_t;
 
+// The size of the Param Buffer is variable and depends on the number of inputs and
+// outputs of the operator in actual applications.
+// It is estimated that the size of the Param Buffer does not exceed 128.
+#define PARMA_PARAM_BUFFER_MAX_N 128U
 typedef struct {
-    rtPrefetchBufInfo_t prefetchBufInfo[16];
+    rtPrefetchBufInfo_t prefetchBufInfo[PARMA_PARAM_BUFFER_MAX_N];
     uint16_t prefetchBufSize;
-    uint64_t paramBufInfo[16];
+    uint64_t paramBufInfo[PARMA_PARAM_BUFFER_MAX_N];
     uint16_t paramBufSize;
     uint32_t bufSize;
     void* bufInfo;

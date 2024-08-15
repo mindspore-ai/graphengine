@@ -112,8 +112,8 @@ REG_OP(SparseReorder)
 * @li new_shape: A 1D Tensor of type int64 or type int32. The requested new dense shape . \n
 
 * @par Outputs:
-* @li y_indices: A Tensor of type int64. The indices of the new dense shape.
-* @li y_shape: A Tensor of type int64. The shape of the new dense shape . \n
+* @li y_indices: A Tensor of type int64 or int32. The indices of the new dense shape.
+* @li y_shape: A Tensor of type int64 or int32. The shape of the new dense shape . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseReshape.

@@ -706,6 +706,16 @@ RTS_API rtError_t rtModelTaskUpdate(rtStream_t desStm, uint32_t desTaskId, rtStr
  */
 RTS_API rtError_t rtNopTask(rtStream_t stm);
 
+/**
+ * @ingroup rt_model
+ * @brief set  model name
+ * @param [in] mdl
+ * @param [in] mdlName
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetModelName(rtModel_t mdl, const char_t *mdlName);
+
 #if defined(__cplusplus)
 }
 #endif

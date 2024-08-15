@@ -984,12 +984,19 @@ struct MsprofHashData {
     uint64_t hashId;                          // the id of hashed data
 };
 
+enum MsprofConfigParamType {
+    DEV_CHANNEL_RESOURCE = 0,          // device channel resource
+    HELPER_HOST_SERVER                 // helper host server
+};
+
 /**
  * @name  MsprofConfigParam
  * @brief struct of set config
  */
 struct MsprofConfigParam {
     uint32_t deviceId;                        // the index of device
+    uint32_t type;                            // DEV_CHANNEL_RESOURCE; HELPER_HOST_SERVER
+    uint32_t value;                           // DEV_CHANNEL_RESOURCE: 1 off; HELPER_HOST_SERVER: 1 on
 };
 
 /**

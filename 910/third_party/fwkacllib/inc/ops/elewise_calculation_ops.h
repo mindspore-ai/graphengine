@@ -126,7 +126,7 @@ REG_OP(MinimumGrad)
 *@par Inputs:
 *One input:
 * x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8, bfloat16, uint1,
-   int64, uint64, int16, uint16, double, complex32, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+   int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
    For float32 type, the actual calculation on the chip is based on float16.  \n
 
 *@par Attributes:
@@ -740,7 +740,7 @@ REG_OP(Ndtri)
 *@par Inputs:
 * One input:
 *x: A Tensor. Must be one of the following types: float16, float32, int32,
- * int64, complex64, complex128, bfloat16. \n
+ * int64, complex64, complex128, bfloat16, int8, float64. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same dtype and format as input "x". \n
@@ -749,8 +749,10 @@ REG_OP(Ndtri)
 * Compatible with the TensorFlow operator Neg.
 */
 REG_OP(Neg)
-    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(x, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
+                          DT_INT8, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_BF16, DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
+                           DT_INT8, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Neg)
 
 /**
@@ -1392,20 +1394,23 @@ REG_OP(AssignAdd)
 * @li ref: A Tensor. Must be one of the following types: bfloat16, float16, float32,
 *    double, int8, int16, int32, int64, uint8, uint16, uint32, uint64,
 *    complex64, complex128, qint8, quint8, qint16, qint32, quint16, bool, string.
-*@li value: A Tensor of the same dtype as "ref". \n
+*    Support format list: ["NC1HWC0", "ND", "C1HWNCoC0", "FRACTAL_Z", "FRACTAL_Z_3D",
+*    "NDC1HWC0", "FRACTAL_NZ"].
+*@li value: A Tensor of the same dtype and format as "ref". \n
 
 *@par Attributes:
 *@li validate_shape: An optional bool. Defaults to "true".
                      If "true", the operation will validate that the shape of "value" matches the shape of the Tensor being assigned to.
 *                    If "false", "ref" will take on the shape of "value".
 *                    This attribute is reserved.
-*@li use_locking: An optional bool. Defaults to True.
+*@li use_locking: An optional bool. Defaults to false.
                   If True, the assignment will be protected by a lock;
                   otherwise the behavior is undefined, but may exhibit less contention.
 *                 This attribute is reserved. \n
 
 *@par Outputs:
-*ref: A Tensor that holds the new value of ref after the value has been assigned. \n
+*ref: A Tensor that holds the new value of ref after the value has been assigned.
+*Has the same format as the input "ref". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Assign.
@@ -2603,6 +2608,9 @@ REG_OP(ArgMaxWithValue)
     .OP_END_FACTORY_REG(ArgMaxWithValue)
 
 /**
+*@brief returns the minimum value of all elements in the input in the given
+* dimension.
+
 *@par Inputs:
 *One input: \n
 * x: A multi-dimensional Tensor of type bfloat16 float16 or float32 or int64 or int32. \n
@@ -2689,15 +2697,16 @@ REG_OP(Erfinv)
     .OP_END_FACTORY_REG(Erfinv)
 
 /**
-*@brief Computes element-wise population count. \n
+* @brief Computes element-wise population count.
 
-*@par Inputs:
-*x: A Tensor of type TensorType::IntegerDataType(). \n
+* @par Inputs:
+* x: A Tensor, Must be one of the following types:
+* int32, uint8, int16, int8, int64, uint16, uint32, uint64. \n
 
-*@par Outputs:
-*y: A Tensor of type uint8. \n
+* @par Outputs:
+* y: A Tensor of type uint8. \n
 
-*@par Third-party framework compatibility
+* @par Third-party framework compatibility
 * Compatible with the TensorFlow operator PopulationCount.
 */
 REG_OP(PopulationCount)
@@ -3579,7 +3588,7 @@ REG_OP(KLDiv)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: Tensor of arbitrary shape.
+* @li x: Tensor of arbitrary shape. Must be the type of following types: bfloat16, float16, float32.
 * @li target: Tensor of the same shape and dtype as x. \n
 
 * @par Attributes:
@@ -3603,38 +3612,40 @@ REG_OP(KLDivV2)
     .OP_END_FACTORY_REG(KLDivV2)
 
 /**
-*@brief copy data from x to y.
+*@brief Copy data from x to y.
 
 *@par Inputs:
-*One inputs, including:
-*@li x: A Tensor. Must be one of the following types:
-        double, float16, float, int8, int32, uint32, uint8, int64, uint64, int16, uint16, bool, bfloat16 \n
+* One inputs, including:
+* x: A Tensor. Must be one of the following types:
+     double, float16, float, int8, int32, uint32, uint8,
+     int64, uint64, int16, uint16, bool, bfloat16. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same dtype as "x". \n
+* y: A Tensor. Has the same dtype as "x". \n
 
 *@par Third-party framework compatibility
 
 *@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TensorMove)
-    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
+    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT16, DT_UINT16,
                           DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL, DT_BF16}))
-    .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32,
+    .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT32, DT_INT16, DT_UINT16,
                            DT_INT8, DT_UINT8, DT_UINT64, DT_INT64, DT_BOOL, DT_BF16}))
     .OP_END_FACTORY_REG(TensorMove)
 
 /**
-* @brief copy data from x to x. \n
+* @brief copy data from x to output_x.
 
 * @par Inputs:
 * One inputs, including:
 * x: A Tensor. Must be one of the following types:
-     bfloat16, float16, float32, int8, uint8, int16, uint16,int32, uint32, int64, uint64. \n
+     bfloat16, float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
+     Format is ND. \n
 
 * @par Outputs:
-* output_x: A Tensor. Has the same dtype as "x". \n
+* output_x: A Tensor. Has the same dtype and format as "x". \n
 
 * @par Third-party framework compatibility
 */

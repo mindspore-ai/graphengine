@@ -64,10 +64,17 @@ REG_OP(CacheUpdate)
 *@brief transfer data from L1 buffer to DDR or DDR to L1. \n
 
 *@par Inputs:
-*The input is dynamic for attribute func_name   \n
+*x: The input is dynamic for attribute func_name. Must be one of the following
+types: bool, complex128, complex64, double, float32, float16, int16, int32,
+int64, int8, qint16, qint32, qint8, quint16, quint8, resource,
+string, uint16, uint32, uint64, uint8, bfloat16, complex32.   \n
 
 *@par Outputs:
-*The output is dynamic for attribute func_name.
+*y: The output is dynamic for attribute func_name. Must has the same type as "x".
+
+*@par Attributes:
+*@li src_buf:An required param, must be the type string.
+*@li dst_buf:An required param, must be the type string. \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.

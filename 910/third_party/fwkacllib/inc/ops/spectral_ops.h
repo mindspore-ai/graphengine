@@ -147,23 +147,27 @@ REG_OP(IFFT2D)
 * @brief Computes the Fourier transform of short overlapping windows of the input. \n
 
 * @par Inputs:
-* @li x: A 1-D or 2-D tensor. 
-* @li window: An optional tensor. The optional window function. Default: None (treated as window of all 1 s) \n
+* @li x: A 1-D or 2-D tensor. Must be one of the following types:
+* float32, double, complex64, complex128.
+* @li window: An optional tensor. The optional window function.
+* Must be one of the following types: float32, double, complex64, complex128.
+* Default: None (treated as window of all 1 s) \n
 
 * @par Attributes:
 * @li n_fft: A required int. Size of Fourier transform
 * @li hop_length: An optional int. The distance between neighboring sliding window frames.
-* Default: None (treated as equal to floor(n_fft/4))
+* Default: 0 (treated as equal to floor(n_fft/4))
 * @li win_length: An optional int. The size of window frame and STFT filter.
-* Default: None (treated as equal to n_fft)
+* Default: 0 (treated as equal to n_fft)
 * @li normalized: An optional bool. Controls whether to return the normalized STFT results Default: False
 * @li onesided: An optional bool. Controls whether to return half of results to avoid redundancy for real inputs. 
 * Default: True for real input and window, False otherwise.
 * @li return_complex: An optional bool. Whether to return a complex tensor, or a real tensor 
-* with an extra last dimension for the real and imaginary components. \n
+* with an extra last dimension for the real and imaginary components. Default: True. \n
 
 * @par Outputs:
-* y: A tensor containing the STFT result with shape described above. \n
+* y: A tensor containing the STFT result with shape described above. Must be
+* one of the following types: float32, double, complex64, complex128. \n
 
 * @par Third-party framework compatibility
 * Compatible with pytorch STFT operator.

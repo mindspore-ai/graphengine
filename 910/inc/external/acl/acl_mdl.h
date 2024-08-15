@@ -428,6 +428,83 @@ ACL_FUNC_VISIBILITY aclError aclmdlLoadFromFile(const char *modelPath, uint32_t 
 
 /**
  * @ingroup AscendCL
+ * @brief Load offline bundle model data from file
+ * and manage memory internally by the system
+ *
+ * @par Function
+ * After the system finishes loading the bundle model,
+ * the bundle model ID returned is used as a mark to identify the bundle model
+ * during subsequent operations
+ *
+ * @param modelPath [IN]   Storage path for offline bundle model file
+ * @param bundleId [OUT]   Bundle model id generated after
+ *        the system finishes loading the bundle model
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlBundleLoadFromFile(const char *modelPath, uint32_t *bundleId);
+
+/**
+ * @ingroup AscendCL
+ * @brief Load offline bundle model data from memory and manage the memory of
+ * model running internally by the system
+ *
+ * @par Function
+ * After the system finishes loading the bundle model,
+ * the bundle model ID returned is used as a mark to identify the bundle  model
+ * during subsequent operations
+ *
+ * @param model [IN]      Bundle model data stored in memory
+ * @param modelSize [IN]  model data size
+ * @param bundleId [OUT]  Bundle model id generated after
+ *        the system finishes loading the model
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlBundleLoadFromMem(const void *model,  size_t modelSize, uint32_t *bundleId);
+
+/**
+ * @ingroup AscendCL
+ * @brief unload bundle model with bundle model id
+ *
+ * @param  bundleId [IN]   bundle model id to be unloaded
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlBundleUnload(uint32_t bundleId);
+
+/**
+ * @ingroup AscendCL
+ * @brief get bundle model inner model nums
+ *
+ * @param bundleId [IN] bundle id acquired by aclmdlBundleLoadFromFile or aclmdlBundleLoadFromMem
+ * @param modelNum [OUT]    the pointer to model num
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlBundleGetModelNum(uint32_t bundleId, size_t *modelNum);
+
+/**
+ * @ingroup AscendCL
+ * @brief get inner model id by index
+ *
+ * @param bundleId [IN] bundle id acquired by aclmdlBundleLoadFromFile or aclmdlBundleLoadFromMem
+ * @param index [IN] index of bundle models
+ * @param modelId [OUT]    the pointer to inner model id which to be executed
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlBundleGetModelId(uint32_t bundleId, size_t index, uint32_t *modelId);
+
+/**
+ * @ingroup AscendCL
  * @brief Load offline model data from memory and manage the memory of
  * model running internally by the system
  *
@@ -444,8 +521,7 @@ ACL_FUNC_VISIBILITY aclError aclmdlLoadFromFile(const char *modelPath, uint32_t 
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclmdlLoadFromMem(const void *model,  size_t modelSize,
-                                               uint32_t *modelId);
+ACL_FUNC_VISIBILITY aclError aclmdlLoadFromMem(const void *model,  size_t modelSize, uint32_t *modelId);
 
 /**
  * @ingroup AscendCL

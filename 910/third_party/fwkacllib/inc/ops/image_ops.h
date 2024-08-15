@@ -632,9 +632,9 @@ REG_OP(ResizeBicubic)
 
 * @par Inputs:
 * Input grads must be a 4-D tensor. Inputs include:
-* @li grads: A Tensor. Must be one of the following types: uint8, int8, int32,
-float16, float, double, bfloat16. Must set the format, supported format list ["NCHW, NHWC"]
-* @li size: A 1-D int32 Tensor of 2 elements: orig_height, orig_width.
+* @li grads: A Tensor. Must be one of the following types: uint8, int8, int16, uint16, int32,
+int64, float16, float, double, bfloat16. Must set the format, supported format list ["NCHW, NHWC"].
+* @li size: A 1-D int32 Tensor of 2 elements: orig_height, orig_width. Must be the type int32.
 The original input size . \n
 
 * @par Attributes:
@@ -700,16 +700,15 @@ REG_OP(ResizeNearestNeighborV2GradD)
 
 *@par Inputs:
 *Input grads must be a 4-D tensor. Inputs include:
-*@li grads: A Tensor of type float32. Must set the format, supported format list ["NCHW, NHWC"]
-*@li original_image: A Tensor. 4-D shape. Must set the format, supported format list ["NCHW, NHWC"]
-channels], The image tensor that was resized . \n
+*@li grads: A Tensor of type float32. Must set the format, supported format list ["NCHW, NHWC"].
+Must be the type float32.
+*@li original_image: A Tensor. 4-D shape. Must set the format, supported format list ["NCHW, NHWC"].
+Must be one of the following types: float16, float32, double. The image tensor that was resized . \n
 
 *@par Attributes:
-*@li align_corners: An optional bool. Defaults to False. If true, the centers of
-the 4 corner pixels of the input and grad tensors are aligned. Defaults to
-false .
-*@li half_pixel_centers: indicates if the offset coordinates are normalized. Defaults
-to false . \n
+*@li align_corners: An optional bool. If true, the centers of
+the 4 corner pixels of the input and grad tensors are aligned. Defaults to false.
+*@li half_pixel_centers: indicates if the offset coordinates are normalized. Defaults to false . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as original_image . \n
@@ -780,18 +779,20 @@ REG_OP(SyncResizeBilinearV2Grad)
 
 *@par Inputs:
 *Input images must be a 4-D tensor. Inputs include:
-*@li x: 4-D tensor. Must set the format, supported format list ["NCHW, NHWC"]
+*@li x: 4-D tensor. Must set the format, supported format list ["NCHW, NHWC"].
+*Must be one of the following types: int8, uint8, int16, uint16, int32,
+int64, float16, float32, double.
 *@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new
-size for the images . \n
+size for the images. The type must be int32 . \n
 
 *@par Attributes:
 * @li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input and
-output tensors are aligned, preserving the values at the corner pixels.
-Defaults to false .
+output tensors are aligned, preserving the values at the corner pixels. Defaults to false . \n
 * @li half_pixel_centers: An optional bool. Defaults to False . \n
 * @li dtype: An optional Type attr, support type list [DT_FP32, DT_U8]. Defaults to DT_FP32 . \n
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels] . \n
+*y: 4-D with shape [batch, new_height, new_width, channels]. Must be one of the following types:
+uint8, float32, float16 . \n
 
 *@attention Constraints:
 *Input images can be of different types but output images are always float . \n
@@ -999,14 +1000,15 @@ REG_OP(SampleDistortedBoundingBoxExt2)
 * @par Inputs:
 * Input x must be a 4-D tensor. Inputs include:
 * @li x: 4-D tensor. Must set the format, supported format list ["NCHW, NHWC"].
-* @li size: A 1-D int32 Tensor of 2 elements: new_height, new_width.
+Must be one of the following types: int8, uint8, int16, uint16, int32, int64, float16, float32,
+double, bfloat16.
+* @li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. Must be the type int32.
 The new size for the images . \n
 
 * @par Attributes:
 * @li align_corners: An optional bool. If true, the centers of the 4 corner pixels of the input and
-output tensors are aligned, preserving the values at the corner pixels.
-Defaults to false . \n
-* @li half_pixel_centers: An optional bool. Defaults to False . \n
+output tensors are aligned, preserving the values at the corner pixels. Defaults to false . \n
+* @li half_pixel_centers: An optional bool. Defaults to false . \n
 
 * @par Outputs:
 * y: A Tensor with the same type and format as input "images" . \n
@@ -1656,7 +1658,7 @@ REG_OP(ScaleAndTranslateGrad)
 
 /**
 *@brief Greedily selects a subset of bounding boxes in descending order of score,
-This operation performs non_max_suppression on the inputs per batch, across all classes . \n
+This operation performs non_max_suppression on the inputs per batch, across all classes.
 
 *@par Inputs:
 *@li boxes: A 4-D float tensor of shape `[batch_size, num_boxes, q, 4]`. If `q` is 1 then
@@ -1664,9 +1666,9 @@ same boxes are used for all classes otherwise, if `q` is equal to number of
 classes, class-specific boxes are used.
 *@li scores: A 3-D float tensor of shape `[batch_size, num_boxes, num_classes]`
 representing a single score corresponding to each box (each row of boxes).
-*@li max_output_size_per_class: A scalar integer tensor representing the maximum number of
+*@li max_output_size_per_class: An int32 scalar integer tensor representing the maximum number of
 boxes to be selected by non max suppression per class.
-*@li max_total_size: A scalar representing maximum number of boxes retained over all classes.
+*@li max_total_size: An int32 scalar representing maximum number of boxes retained over all classes.
 *@li iou_threshold: A 0-D float tensor representing the threshold for deciding whether
 boxes overlap too much with respect to IOU.
 *@li score_threshold: A 0-D float tensor representing the threshold for deciding when to remove
@@ -1683,10 +1685,10 @@ if they fall beyond [0, 1]. If false, do not do clipping and output the box
 coordinates as it is. If not specified, defaults to true . \n
 
 *@par Outputs:
-*@li nmsed_boxes:type is float
-*@li nmsed_scores:type is float
-*@li nmsed_classes:type is float  
-*@li valid_detections:type is INT32 \n
+*@li nmsed_boxes: Type is float
+*@li nmsed_scores: Type is float
+*@li nmsed_classes: Type is float  
+*@li valid_detections: Type is INT32 \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow CombinedNonMaxSuppression operator.
@@ -1747,11 +1749,14 @@ REG_OP(Remap)
 
 *@par Inputs:
 *@li img: input image, A 5-D tensor of shape `[n, 4, c, h, w]`,
-and 4 mean input[(h_top, w_left), (h_top, w_right), (h_bottom, w_left),  (h_bottom, w_right)].
-*@li warp_index: the resize offset A 4-D float tensor of shape `[n, 2, h, w]`, 2 means (x, y) for resize point.
+and 4 mean input[(h_top, w_left), (h_top, w_right), (h_bottom, w_left),
+(h_bottom, w_right)]. Must be the type float32.
+*@li warp_index: the resize offset A 4-D float tensor of shape `[n, 2, h, w]`,
+2 means (x, y) for resize point. Must has the same type as "img".
 
 *@par Outputs:
-*warp_img: A Tensor after ResizeBilinear, A 4-D tensor of shape `[n, c, h, w]`. \n
+*warp_img: A Tensor after ResizeBilinear, A 4-D tensor of shape `[n, c, h, w]`.
+Must has the same type as "img". \n
 */
 REG_OP(IMGWarpResize)
     .INPUT(img, TensorType({DT_FLOAT32}))
@@ -2099,25 +2104,31 @@ REG_OP(DenseImageWarpGrad)
     .OP_END_FACTORY_REG(DenseImageWarpGrad)
 
 /**
-*@brief This operation samples input x by using interpolation based on flow field grid,
- which is usually gennerated by affine_grid. The grid of shape [N, H, W, 2] is the concatenation of
- (x, y) coordinates with shape [N, H, W] each, where x is indexing the 4th dimension (in width dimension) of
- input data x and y is indexng the 3rd dimention (in height dimension), finally results is
- the interpolation value of 4 nearest corner points. The output tensor shape will be [N, C, H, W].
+*@brief This operation samples input x by using interpolation based on flow 
+*field grid, which is usually gennerated by affine_grid. The grid of shape 
+*[N, H, W, 2] is the concatenation of (x, y) coordinates with shape [N, H, W] 
+*each, where x is indexing the 4th dimension (in width dimension) of input 
+*data x and y is indexng the 3rd dimention (in height dimension), finally 
+*results is the interpolation value of 4 nearest corner points. The output 
+*tensor shape will be [N, C, H, W].
 
 *@par Inputs:
-*@li x: 4-D Tensor with shape `[batch, channels, height, width]`. Must be one of the following types: float16, float, double.
-*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]` and has same dtype as `x`.
+*@li x: 4-D Tensor with shape `[batch, channels, height, width]`. Must be one 
+*of the following types: float16, float, double.
+*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]` 
+*and has same dtype as `x`. \n
 
 *@par Attributes:
-*@li interpolation_mode: An optional string specifying the interpolation method. Only 'bilinear' is
- supported for now .
-*@li padding_mode: An optional string specifying the pad method, either "zeros", "border", or "reflection". The default value is "zeros".
+*@li interpolation_mode: An optional string specifying the interpolation 
+*method. Only 'bilinear' and 'bicubic' is supported for now. Defaults to 
+*"bilinear".
+*@li padding_mode: An optional string specifying the pad method, either 
+*"zeros", "border", or "reflection". Defaults to "zeros".
 *@li align_corners: An optional bool. If "true", the centers of the corner
- pixels of the input and output tensors are aligned. Defaults to "false" .
+*pixels of the input and output tensors are aligned. Defaults to "false" . \n
 
 *@par Outputs:
-*y: Returns 4-D Tensor with the same dtype as `x`.
+*y: Returns 4-D Tensor with the same dtype as `x`. \n
 
 *@par Third-party framework compatibility
 *Compatible with pytorch GridSampler2D operator.
@@ -2229,22 +2240,27 @@ REG_OP(IMGWarpOffsets)
     .OP_END_FACTORY_REG(IMGWarpOffsets)
 
 /**
-* @brief This operation samples 3d input x by using interpolation based on flow field grid,
-  which is usually gennerated by affine_grid.
+* @brief This operation samples 3d input x by using interpolation based on 
+*flow field grid, which is usually gennerated by affine_grid.
 
 * @par Inputs:
-* @li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`. Must be one of the following types: float16, float, double.
-* @li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 3]` and has same dtype as `x`.
+* @li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`. Must 
+* be one of the following types: float16, float, double.
+* @li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, 
+* width, 3]` and has same dtype as `x`. \n
 
 * @par Attributes:
-* @li interpolation_mode: An optional string specifying the interpolation method. The default value is "bilinear".
-* @li padding_mode: An optional string specifying the pad method. The default value is "zeros".
-* @li data_format: An optional string specifying the data formats, defaults to "NCDHW".
-* @li align_corners: An optional bool. If "true", the centers of the corner
-  pixels of the input and output tensors are aligned. Defaults to "false" .
+* @li interpolation_mode: An optional string specifying the interpolation 
+* method. Defaults to "bilinear".
+* @li padding_mode: An optional string specifying the pad method. Defaults to 
+* "zeros".
+* @li data_format: An optional string specifying the data formats, Defaults 
+* to "NCDHW".
+* @li align_corners: An optional bool. If "true", the centers of the corner 
+* pixels of the input and output tensors are aligned. Defaults to "false" . \n
 
 * @par Outputs:
-* y: Returns 5-D Tensor with the same dtype as `x`.
+* y: Returns 5-D Tensor with the same dtype as `x`. \n
 
 * @par Third-party framework compatibility
 * Compatible with pytorch GridSampler3D operator.
@@ -2582,19 +2598,24 @@ REG_OP(GenerateBoundingBoxProposals)
     .OP_END_FACTORY_REG(GenerateBoundingBoxProposals)
 
 /**
-* @brief image to transforms. \n
+* @brief Applies the given transform to each of the images.
 
 * @par Inputs:
-* @li images: [batch, height, width, channels], 4-D tensor. 
-* @li transforms: [batch, 8] or [1, 8] matrix, 2-D tensor.
-* @li outout_shape: [new_height, new_width], 1-D tensor.
+* @li images: 4-D tensor with shape of [batch, height, width, channels]. 
+* Must be one of the following types: uint8, int32, int64, float16, float32, double
+* @li transforms: 2-D tensor with shape of [batch, 8] or [1, 8]. 
+* Must be one of the following types: float32.
+* @li output_shape: 1-D tensor [new_height, new_width].
+* Must be one of the following types: int32.
 
 * @par Attributes:
-* @li interpolation: Interpolation method, "NEAREST" or "BILINEAR", 0-D tensor.
-* @li fill_mode: Defaults to "CONSTANT". Fill mode, "REFLECT", "WRAP", or "CONSTANT", 0-D tensor.
+* @li interpolation: A required string. Interpolation method, "NEAREST" or "BILINEAR".
+* @li fill_mode: An optional string. 
+* Defaults to "CONSTANT". Fill mode, "REFLECT", "WRAP", or "CONSTANT".
 
 * @par Outputs
-* transformed_images: has the same type as iamges, 4-D tensor with shape[batch, new_height, new_width, channels]. \n
+* transformed_images: Has the same type as images,
+* 4-D tensor with shape[batch, new_height, new_width, channels]. \n
 
 * @par Third-party framework compatibility.
 * Compatible with tensorflow ImageProjectiveTransform operator.

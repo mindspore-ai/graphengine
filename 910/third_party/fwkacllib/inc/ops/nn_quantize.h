@@ -23,18 +23,24 @@
 
 namespace ge {
 /**
-* @brief trans quant param form float32 to uint64 . \n
+* @brief Transfer quant param from float32 to uint64.
 
 * @par Inputs:
-* @li scale: A tensor of type float32.
-* @li offset: A tensor of type float32.
+* @li scale: A quantization parameter tensor. Must be one of the following types: float32.
+             The format support ND. The shape is 1D (t,), with t equal to 1 or n, or 2D(1, n),
+             where n is the same as that of x2 in the matmul calculation.
+* @li offset: A optional quantization parameter tensor. Must be one of the following types: float32. 
+              The format support ND. The shape is 1D (t,), with t equal to 1 or n, or 2D(1, n),
+              where n is the same as that of x2 in the matmul calculation. \n
 
 
 * @par Outputs:
-* @li y: output tensor of type uint64.
+* @li y: output tensor. Must be one of the following types: uint64. The format support ND.
+         The shape is 1D (t,), with t equal to 1 or n. \n
 
-* @par Third-party framework compatibility
-* It is a custom operator. It has no corresponding operator in Caffe, Onnx, Tensorflow or Pythorch.
+* @attention Constraints:
+  1. The passed scale, out cannot be a null pointer.
+  2. The format, dtype and shape of scale, offset, out must be supported.
 */
 REG_OP(TransQuantParamV2)
     .INPUT(scale, TensorType({DT_FLOAT}))
@@ -78,8 +84,9 @@ REG_OP(FakeQuantAffineCachemask)
 /**
  * @brief Dynamic Quant.
  * @par Inputs:
- * @li x: A Tensor. Type is:DT_FLOAT16 or DT_BF16. For 910B and 910C series produces, the last dim does not exceed 11264.
+ * @li x: A Tensor. Type is:DT_FLOAT16 or DT_BF16. For 910B and 910C series produces.
  * @li smooth_scales: A Tensor. Type is:DT_FLOAT16 or DT_BF16.
+ * @li group_index: A Tensor. Type is:DT_INT32
  * @par Outputs:
  * @li z: A Tensor. Type is:DT_INT8.
  * @li scale_data: A Tensor. Type is:DT_FLOAT32.
@@ -87,6 +94,7 @@ REG_OP(FakeQuantAffineCachemask)
 REG_OP(DynamicQuant)
     .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(smooth_scales, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(group_index, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT8}))
     .OUTPUT(scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(DynamicQuant)

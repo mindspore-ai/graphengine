@@ -81,10 +81,11 @@ REG_OP(Quantize)
     .OP_END_FACTORY_REG(Quantize)
 
 /**
-* @brief Quantizes the input . \n
+* @brief Quantizes the input.
 
 * @par Inputs:
-* x: An tensor of type float16 or float32, specifying the input . \n
+* x: An tensor of type float16 or float32, specifying the input. The format must 
+* be NC1HWC0, FRACTAL_NZ, NDC1HWC0 or ND. \n
 
 * @par Attributes:
 * @li scale: A required float32, specifying the scaling ratio.
@@ -93,10 +94,12 @@ REG_OP(Quantize)
 * Defaults to "False".
 * @li round_mode: An optional string, specifying the float16 to int8 cast type.
 * The value range is [Round, Floor, Ceil, Trunc]. Defaults to "Round" .
-* @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_INT8" . \n
+* @li dst_type: A optional int32, specifying the output data type. Defaults to 
+* "2", represents detype "DT_INT8". \n
 
 * @par Outputs:
-* y: The quantized output tensor of type int8 or int4. \n
+* y: The quantized output tensor of type int8 or int4. The format must be 
+* NC1HWC0, FRACTAL_NZ, NDC1HWC0 or ND. \n
 
 * @attention Constraints:
 * round_mode value range is [Round, Floor, Ceil, Trunc].
@@ -154,20 +157,24 @@ REG_OP(AscendQuantV2)
     .OP_END_FACTORY_REG(AscendQuantV2)
 
 /**
-* @brief Dequantizes the input . \n
+* @brief Dequantizes the input.
 
  *@par Inputs:
-* @li x: An tensor of type int32, specifying the input.
-* @li deq_scale: An tensor of type float16 or uint64, specifying the scaling ratio . \n
+* @li x: An tensor of type int32, specifying the input. The format must be 
+* FRACTAL_NZ, NC1HWC0 or NDC1HWC0.
+* @li deq_scale: An tensor of type float16 or uint64, specifying the scaling ratio.
+* The format must be NC1HWC0, NC1HWC0 or NDC1HWC0. \n
 
 * @par Attributes:
 * @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
 * Defaults to "False".
 * @li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
-* @li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT" . \n
+* @li dtype: A optional int32, specifying the output data type. Defaults to "0"
+* , represents dtype "DT_FLOAT". \n
 
 * @par Outputs:
-* y: The dequantized output tensor of type float16 or float32. \n
+* y: The dequantized output tensor of type float16 or float32. The format must be 
+* FRACTAL_NZ, NC1HWC0 or NDC1HWC0. \n
 
 * @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
@@ -261,17 +268,20 @@ REG_OP(AscendDequantS16)
   .OP_END_FACTORY_REG(AscendDequantS16)
 
 /**
-* @brief Requantizes the input . \n
+* @brief Requantizes the input.
 
 * @par Inputs:
-* @li x: An tensor of type int32, specifying the input.
-* @li req_scale: An tensor of type uint64, specifying the scaling ratio . \n
+* @li x: An tensor of type int32, specifying the input. The format must be 
+* FRACTAL_NZ or NC1HWC0.
+* @li req_scale: An tensor of type uint64, specifying the scaling ratio. The 
+* format must be NC1HWC0,NDC1HWC0. \n
 
 * @par Attributes:
 * relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
 
 * @par Outputs:
-* y: The dequantized output tensor of type int8. \n
+* y: The dequantized output tensor of type int8. The format must be FRACTAL_NZ, 
+* NC1HWC0 or NDC1HWC0. \n
 
 * @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
@@ -314,17 +324,17 @@ REG_OP(AscendRequantS16)
   .OP_END_FACTORY_REG(AscendRequantS16)
 
 /**
-* @brief Quantizes the input of int8 . \n
+* @brief Quantizes the input of int8.
 
 * @par Inputs:
-* @li x: A tensor of type int8, specifying the input.
-* @li offset: A tensor of type int8.
+* @li x: A tensor. Must be one of the following types: int8. The format support NZ.
+* @li offset: A tensor. Must be one of the following types: int8. The format support NZ. \n
 
 * @par Attributes:
-* @li dst_type: A optional int from: DT_INT8, DT_INT4. Defaults to DT_INT8.
+* @li dst_type: Declare the output dtype. Support DT_INT8, DT_INT4. Defaults to DT_INT8. \n
 
 * @par Outputs:
-* @li y: output tensor of type int4 or int8.
+* @li y: A output Tensor. Must be one of the following types: int8, int4. The format support NZ. \n
 
 * @par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe, Onnx, Tensorflow or Pythorch.

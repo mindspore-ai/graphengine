@@ -53,9 +53,9 @@ class GE_FUNC_VISIBILITY OmFileLoadHelper {
 
   const std::vector<ModelPartition> &GetModelPartitions(const size_t model_index) const;
 
-  bool IsPartitionTableNumValid(const uint32_t partition_num, const uint32_t increase_partition_num) const;
-
   Status CheckModelCompatibility(const Model &model) const;
+
+  static bool CheckPartitionTableNum(const uint32_t partition_num);
 
   OmFileContext context_;
 
@@ -84,7 +84,7 @@ class GE_FUNC_VISIBILITY OmFileSaveHelper {
 
   Status AddPartition(const ModelPartition &partition, const size_t cur_index);
 
-  Status SaveModel(const char_t *const output_file, ModelBufferData &model, const bool is_offline = true);
+  Status SaveModel(const char_t *const output_file, ModelBufferData &model, const bool save_to_file = true);
 
   ModelPartitionTable *GetPartitionTable(const size_t cur_ctx_index);
 

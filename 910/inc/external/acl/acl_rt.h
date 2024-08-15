@@ -73,6 +73,7 @@ typedef enum aclrtMemcpyKind {
     ACL_MEMCPY_HOST_TO_DEVICE,
     ACL_MEMCPY_DEVICE_TO_HOST,
     ACL_MEMCPY_DEVICE_TO_DEVICE,
+    ACL_MEMCPY_DEFAULT,
 } aclrtMemcpyKind;
 
 typedef enum aclrtMemMallocPolicy {

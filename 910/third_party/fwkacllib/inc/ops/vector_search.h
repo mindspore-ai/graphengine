@@ -24,21 +24,22 @@
 
 namespace ge {
 /**
-* @brief Generate ADC(asymmetric distance computation) table. \n
+* @brief Generate ADC(asymmetric distance computation) table. 
 *
 * @par Inputs:
 * Four inputs, including:
 * @li query: A Tensor. Must be one of the following types: float16, float32.
 * @li code_book: A Tensor. Must be one of the following types: float16, float32.
 * @li centroids: A Tensor. Must be one of the following types: float16, float32.
-* @li bucket_list: A Tensor. Must be one of the following types: int32, int64.
+* @li bucket_list: A Tensor. Must be one of the following types: int32, int64. \n
 *
 * @par Outputs:
-* adc_tables: A Tensor. Must be one of the following types: float16, float32.
+* adc_tables: A Tensor. Must be one of the following types: float16, float32. \n
 *
 * @par Attributes:
-* distance_type: The string indicates the distance type of ADC tables. Examples: `"l2sqr", "inner_product"`.
-The default value is "l2sqr".
+* distance_type: A optional string. The string indicates the distance type 
+* of ADC tables. The default value is "l2sqr".
+* Examples: `"l2sqr", "inner_product"`. 
 */
 REG_OP(GenADC)
     .INPUT(query, TensorType({DT_FLOAT16, DT_FLOAT}))

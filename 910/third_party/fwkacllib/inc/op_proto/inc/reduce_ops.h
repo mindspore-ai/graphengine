@@ -472,18 +472,20 @@ REG_OP(BNInferGrad)
     .OP_END_FACTORY_REG(BNInferGrad)
 
 /**
-*@brief Computes the sum of elements across dimensions of a tensor . \n
+*@brief Computes the sum of elements across dimensions of a tensor .
 
 *@par Inputs:
 * Two inputs, including:
 *@li x: A Tensor. Must be one of the following types:
-*     float32, float64, int32, uint8, int16, int8,
-*     complex64, int64, qint8, quint8, qint32, uint16,
-*     complex128, bfloat16, float16, uint32, uint64, complex64, complex128.
-*@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+*complex128, complex64, double, float32, float16, int16, int32, int64,
+*int8, qint32, qint8, quint8, uint16, uint32, uint64, uint8, bfloat16,
+*complex32.
+*@li axes: A 1D list or tuple of IndexNumberType(int32 or int64).
+*Specifies the dimensions to reduce . \n
 
 *@par Attributes:
-*keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+*keep_dims: An optional bool. If "true", retains reduced dimensions with
+*length 1. Defaults to "false" . \n
 
 *@par Outputs:
 *y: The reduced tensor. Has the same type and format as input "x" . \n
@@ -499,15 +501,17 @@ REG_OP(ReduceSum)
     .OP_END_FACTORY_REG(ReduceSum)
 
 /**
-* @brief Computes the sum of elements across dimensions of a tensor . \n
+* @brief Computes the sum of elements across dimensions of a tensor .
 
 * @par Inputs:
 * One input:
 * x: A Tensor. Up to 8D. Must be one of the following types: float16, float32, bfloat16. \n
 
 * @par Attributes:
-* @li axes: A required 1D list or tuple of int32 or int64. Specifies the dimensions to reduce.
-* @li keep_dims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n
+* @li axes: A required 1D list or tuple of int32 or int64.
+* Specifies the dimensions to reduce.
+* @li keep_dims: An optional bool. If "true", retains reduced dimensions
+* with length 1. Defaults to "false" . \n
 
 * @par Outputs:
 * y: The reduced tensor. Has the same type and format as input "x" . \n
@@ -610,15 +614,20 @@ REG_OP(ReduceAll)
     .OP_END_FACTORY_REG(ReduceAll)
 
 /**
-*@brief  Reduce a tensor on a certain axis based on product. . \n
+*@brief  Reduce a tensor on a certain axis based on product.
 
 *@par Inputs:
 *Two inputs, including:
-*@li x: A mutable Tensor. Must be the type of NumberType.
-*@li axis: A mutable Tensor. The dimensions to reduce . \n
+*@li x: A mutable Tensor. Must be the type of NumberType.(NumberType
+*includes: complex128, complex64, double, float32, float16, int16,
+*int32, int64,int8, qint32, qint8, quint8, uint16, uint32, uint64,
+*uint8, bfloat16, complex32.)
+*@li axes: A mutable Tensor. Must be the type of IndexNumberType(
+*includes: int32, int64). The dimensions to reduce . \n
 
 *@par Attributes:
-*keep_dims: A bool. If true, retains reduced dimensions with length 1. Defaults to "False" . \n
+*keep_dims: A bool. If true, retains reduced dimensions with length 1.
+*Defaults to "False" . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x" . \n
@@ -634,15 +643,18 @@ REG_OP(ReduceProd)
     .OP_END_FACTORY_REG(ReduceProd)
 
 /**
-* @brief Computes the product of elements across dimensions of a tensor . \n
+* @brief Computes the product of elements across dimensions of a tensor .
 
 * @par Inputs:
 * One input:
-* x: A Tensor. Must be one of the following types: float16, float, int8, uint8, bfloat16, int32. \n
+* x: A Tensor. Must be one of the following types: float16, float, int8, uint8,
+* bfloat16, int32. \n
 
 * @par Attributes:
-* @li axes: A required int8, int16, int32, or int64. Specifies the dimensions to reduce. No default value.
-* @li keep_dims: An optional bool. If "True", retains reduced dimensions with length 1. Defaults to "False" . \n
+* @li axes: A required int8, int16, int32, or int64. Specifies the dimensions
+* to reduce.
+* @li keep_dims: An optional bool. If "True", retains reduced dimensions
+* with length 1. Defaults to "False" . \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "x" . \n
@@ -669,17 +681,18 @@ REG_OP(ReduceProdD)
 * @par Inputs:
 * Two inputs, including:
 * @li x: A Tensor. Must be the type of NumberType.
-* @li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
-*   - If None (the default), reduces all dimensions.
-*   - Must be in the range [-rank(x), rank(x)) . \n
+* @li axes: The dimensions to reduce. Must be one of the following types:
+* int, list, tuple, NoneType.
+* If None (the default), reduces all dimensions.
+* Must be in the range [-rank(x), rank(x)) . \n
 
 * @par Attributes:
-* keep_dims: A bool or NoneType.
-* - If true, retains reduced dimensions with length 1.
-* - If false, the rank of the tensor is reduced by 1 for each entry in axis.
-* noop_with_empty_axes: A bool.
-* - If true, when axes = [], not reduce.
-* - If false, when axes = [], reduce all.
+* @li keep_dims: A bool or NoneType. The type is bool. Defaults to false.
+* If true, retains reduced dimensions with length 1.
+* If false, the rank of the tensor is reduced by 1 for each entry in axis.
+* @li noop_with_empty_axes: A bool. The type is bool. Defaults to true.
+* If true, when axes = [], not reduce.
+* If false, when axes = [], reduce all.
 * @par Outputs:
 * y: A Tensor. Has the same type as "x" . \n
 
@@ -699,18 +712,20 @@ REG_OP(ReduceMean)
 
 * @par Inputs:
 * One input:
-* @li x: A Tensor. Must be one of the following types: float16, float32 ,bfloat16. \n
+* x: A Tensor. Must be one of the following types: float16, float32 ,bfloat16. \n
 
 * @par Attributes:
-* @li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
+* @li axes: A required list of int.
+* The dimensions to reduce. Must be one of the following types:
+* int, list, tuple, NoneType.
 * If None (the default), reduces all dimensions.
 * Must be in the range [-rank(x), rank(x)).
-* @li keep_dims: A bool or NoneType.
-* - If true, retains reduced dimensions with length 1.
-* - If false, the rank of the tensor is reduced by 1 for each entry in axis.
-* @li noop_with_empty_axes: A bool default False.
-* - If true, same as tf.
-* - If false, when x's shape is [], reduce all dims, for onnx.
+* @li keep_dims: An optional bool or NoneType. Defaults to false.
+* If true, retains reduced dimensions with length 1.
+* If false, the rank of the tensor is reduced by 1 for each entry in axis.
+* @li noop_with_empty_axes: An optional bool default False.
+* If true, same as tf.
+* If false, when x's shape is [], reduce all dims, for onnx.
 * @par Outputs:
 * y: A Tensor. Has the same type as "x" . \n
 
@@ -729,24 +744,32 @@ REG_OP(ReduceMeanD)
     .OP_END_FACTORY_REG(ReduceMeanD)
 
 /**
-* @brief Returns the maximum of elements across dimensions of a Tensor . \n
+* @brief Returns the maximum of elements across dimensions of a Tensor .
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A multi-dimensional Tensor of Must be the type of NumberType.
-* @li axes: A Scalar of type int32, int64, specifying the axes information of the index with the maximum value . \n
+* @li x: A multi-dimensional Tensor of Must be the type of NumberType. (NumberType
+  includes the following types: complex128, complex64, double, float32, float16,
+  int16, int32, int64, int8, qint32, qint8, quint8, uint16, uint32, uint64, uint8,
+  bfloat16, complex32.)
+* @li axes: A Scalar of type in IndexNumberType(IndexNumberType includes the
+  following types: int32, int64.), specifying the axes information
+  of the index with the maximum value . \n
 
 * @par Attributes:
-* keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false" . \n
+* keep_dims: A bool, specifying whether to keep dimensions for the output Tensor.
+* Defaults to "false" . \n
 
 * @par Outputs:
-* y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor.
+* y: A multi-dimensional Tensor, specifying the maximum value of the
+  corresponding axis in the tensor.
   Has the same type as "x". (If "keep_dims" is set to "false",
   the output dimensions are reduced by "dimension" compared with that of "x".
   Otherwise, the output has one fewer dimension than "x".)
 
 * @attention Constraints:
-* The value range of "axes" is [-dims, dims - 1]. "dims" indicates the dimension length of "x" . \n
+* The value range of "axes" is [-dims, dims - 1]. "dims"
+  indicates the dimension length of "x" . \n
 
 * @par Third-party framework compatibility
 * Compatible with TensorFlow operator Max.
@@ -759,21 +782,29 @@ REG_OP(ReduceMax)
     .OP_END_FACTORY_REG(ReduceMax)
 
 /**
-* @brief Returns the maximum of elements across dimensions of a Tensor . \n
+* @brief Returns the maximum of elements across dimensions of a Tensor .
 
 * @par Inputs:
-* x: A multi-dimensional Tensor of type float16, float32, bfloat16, int8, uint8 or int32 . \n
+* x: A multi-dimensional Tensor of type float16, float32, bfloat16, int8,
+  uint8 or int32 . \n
 
 * @par Attributes:
 * Two attributes, including:
-* @li axes: A required listint, specifying the axes information of the index with the maximum value.
-* @li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false" . \n
+* @li axes: A required listint, specifying the axes information of the index
+  with the maximum value.
+* @li keep_dims: A bool, specifying whether to keep dimensions for the output
+  Tensor. Defaults to "false" . \n
 
 * @par Outputs:
-* y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor. Has the same type as "x". (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
+* y: A multi-dimensional Tensor, specifying the maximum value of the
+  corresponding axis in the tensor. Has the same type as "x".
+  (If "keep_dims" is set to "false", the output dimensions are reduced
+  by "dimension" compared with that of "x". Otherwise, the output has
+  one fewer dimension than "x".)
 
 * @attention Constraints:
-* The value range of "axis" is [-dims, dims - 1]. "dims" indicates the dimension length of "x" . \n
+* The value range of "axis" is [-dims, dims - 1]. "dims" indicates the
+  dimension length of "x" . \n
 
 * @par Third-party framework compatibility
 * Compatible with TensorFlow operator Max.
@@ -791,20 +822,27 @@ REG_OP(ReduceMaxD)
     .OP_END_FACTORY_REG(ReduceMaxD)
 
 /**
-* @brief Computes the minimum of elements across dimensions of a tensor . \n
+* @brief Computes the minimum of elements across dimensions of a tensor .
 
 * @par Inputs:
-* @li input_tensor: A Tensor. Must be the type of NumberType.
-* @li axes: A Tensor of type int64 or int32. Specifies the dimensions to reduce. Defaults to "None".
+* @li input_tensor: A Tensor. Must be the type of NumberType.(NumberType
+* includes: complex128, complex64, double, float32, float16, int16, int32,
+* int64, int8, qint32, qint8, quint8, uint16, uint32, uint64, uint8, bfloat16,
+* complex32.)
+* @li axes: A Tensor of type of IndexNumberType.(IndexNumberType
+* includes: int32, int64.) Specifies the dimensions to reduce.
+* Defaults to "None".
 
 * @par Attributes:
-* keep_dims: An optional bool. If "True", reduced dimensions will be retained. Defaults to "False".
+* keep_dims: An optional bool. If "True", reduced dimensions will be retained.
+* Defaults to "False".
 
 * @par Outputs:
 * output_tensor: A Tensor. Must be the type of NumberType. \n
 
 * @attention Constraints:
-* If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)) . \n
+* If "axes = None", all dimensions will be reduced. "axes" must be in the
+* range [-rank(input_shape), rank(input_shape)) . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator reduce_min.
@@ -817,20 +855,24 @@ REG_OP(ReduceMin)
     .OP_END_FACTORY_REG(ReduceMin)
 
 /**
-* @brief Computes the minimum of elements across dimensions of a tensor . \n
+* @brief Computes the minimum of elements across dimensions of a tensor .
 
 * @par Inputs:
-* input_min: A Tensor. Must be one of the following types: float16, float32, int8, uint8 ,bfloat16, int32. \n
+* input_min: A Tensor. Must be one of the following types: float16, float32,
+* int8, uint8 ,bfloat16, int32. \n
 
 * @par Attributes:
-* @li axes: An optional int32, list, tuple, or NoneType value. Specifies the dimensions to reduce. Defaults to "None".
-* @li keep_dims: An optional bool or NoneType value. If "True", reduced dimensions will be retained. Defaults to "None" (equivalent to "False").
+* @li axes: A required list int. Specifies the dimensions to reduce.
+* @li keep_dims: An optional bool or NoneType value. If "True", reduced
+* dimensions will be retained. Defaults to "None" (equivalent to "False").
 
 * @par Outputs:
-* output_min: A Tensor. Must be one of the following types: float16, float32, int8, uint8, bfloat16, int32 . \n
+* output_min: A Tensor. Must be one of the following types: float16,
+* float32, int8, uint8, bfloat16, int32 . \n
 
 * @attention Constraints:
-* If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)) . \n
+* If "axes = None", all dimensions will be reduced. "axes" must be
+* in the range [-rank(input_shape), rank(input_shape)) . \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator reduce_min.
@@ -897,10 +939,10 @@ REG_OP(ReduceAny)
 *
 *@par Attributes:
 *@li axes: The dimensions to reduce. Must be in the range "[-rank(x), rank(x))".
-*@li keep_dims: If true, retains reduced dimensions with length 1.
+*@li keep_dims: An optional bool. If true, retains reduced dimensions with length 1. Defaults to false.
 *
 *@par Outputs:
-* y: The reduced tensor
+* y: The reduced tensor. Must have the same type as "x".
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator reduce_any.
@@ -919,9 +961,12 @@ REG_OP(ReduceAnyD)
 *@brief Compute reduction on dimensions specified by "axis".
 *Four reduction operations are provided:
 *SUM     Computes the sum of elements across specified dimensions of a tensor.
-*ASUM    Computes the sum of absolute values of elements across specified dimensions of a tensor.
-*SUMSQ   Computes the sum of squares of elements across specified dimensions of a tensor.
-*SUMSQ   Computes the mean values of elements across specified dimensions of a tensor . \n
+*ASUM    Computes the sum of absolute values of elements across specified
+*dimensions of a tensor.
+*SUMSQ   Computes the sum of squares of elements across specified
+*dimensions of a tensor.
+*SUMSQ   Computes the mean values of elements across specified
+*dimensions of a tensor .
 
 *@par Inputs:
 *x: A Tensor of type float16 or float32
@@ -929,14 +974,17 @@ REG_OP(ReduceAnyD)
 *@par Attributes:
 *@li operation: An optional int32 from 1(SUM), 2(ASUM), 3(SUMSQ), and 4(MEAN),
 *specifying the reduction algorithm. Defaults to "1".
-*@li axis: An optional int32, specifying the first axis to reduce. Defaults to "0".
+*@li axis: An optional int32, specifying the first axis to reduce.
+*Defaults to "0".
 *The value range is [-N, N-1], where N is the input tensor rank.
-*@li coeff: An optional float32, specifying the scale coefficient. Defaults to "1.0" . \n
+*@li coeff: An optional float32, specifying the scale coefficient.
+*Defaults to "1.0" . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
 
-*@attention Constraints: The Reduction operator supports type float16 only on the device chip.
+*@attention Constraints: The Reduction operator supports type float16
+*only on the device chip.
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Reduction.
 */
@@ -1503,9 +1551,9 @@ REG_OP(ReduceLogSum)
 
 * @par Inputs:
 * Two inputs, including:
-* @li x: A Tensor. Must be one of the following types:
+* @li x: A Tensor. Must be one of the following types of "T1":
 *     float32, float16, bfloat16
-* @li axis: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce . \n
+* @li axis: A 1D list or tuple of "T2": int32 or int64. Specifies the dimensions to reduce . \n
 
 * @par Attributes:
 * keepdims: An optional bool. If "true", retains reduced dimensions with length 1. Defaults to "false" . \n

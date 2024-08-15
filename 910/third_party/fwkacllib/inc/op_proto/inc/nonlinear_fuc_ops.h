@@ -284,7 +284,8 @@ REG_OP(Relu)
 * activations = min(max(x, 0), 6) .
 
 * @par Inputs:
-* x: A Tensor of type RealNumberType . \n
+* x: A Tensor of type RealNumberType(includes: double, float32, float16,
+* int16, int32, int64, int8, uint16, uint32, uint64, uint8, bfloat16) . \n
 
 * @par Outputs:
 * y: A Tensor with the same type as x . \n
@@ -404,7 +405,7 @@ REG_OP(Sigmoid)
 * @li dy: The input is Tensor, dtype is UnaryDataType . \n
 
 * @par Attributes:
-* @li complex_conj: An optional attribute indicates whether to use conjugate operations for complex dtype.
+* @li complex_conj: An optional attribute indicates whether to use conjugate operations for complex dtype. Defaults to "false"
 
 * @par Outputs:
 * z: The shape of output, dtype is UnaryDataType.
@@ -1141,10 +1142,10 @@ REG_OP(SoftShrink)
 * Two inputs, including:
 * @li input_grad: A tensor. Must be one of the following types:
 *     float16, float32, bfloat16. \n
-* @li input_x: A tensor of the same dtype as "input_grad". \n
+* @li input_x: A tensor of the same dtype and shape as "input_grad". \n
 
 * @par Attributes:
-* lambd: An optional float. Defaults to 0.5. \n
+* lambd: An optional float. Defaults to 0.5. lambd should be greater or equal to 0. \n
 
 * @par Outputs:
 * y: A Tensor of the same dtype and shape as "input_graxd". \n

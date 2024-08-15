@@ -77,7 +77,7 @@ enum HcclEventType {
     HCCL_EVENT_RESERVED /**< reserved */
 };
 
-const u32 TAG_MAX_LEN = 127; // 最大的tag 长度
+const u32 TAG_MAX_LEN = 191; // 最大的tag 长度
 using TagAttr = struct TagAttrDef {
     char name[TAG_MAX_LEN + 1]; // tag标识
     // tag标识的接收数据，调用者是否会主动调用接收接口，0 = 否, 1 = 会(预留，暂不支持)。

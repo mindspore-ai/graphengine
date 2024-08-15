@@ -643,7 +643,7 @@ RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kern
 
 /**
  * @ingroup rtAicpuKernelLaunchWithFlag(in use)
- * @brief launch cpu kernel to device  with dump identifier
+ * @brief launch cpu kernel to device with dump identifier
  * @param [in] launchNames   names for kernel launch
  * @param [in] blockDim      block dimentions
  * @param [in] args          argments address for kernel function
@@ -659,9 +659,9 @@ RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launc
 
 /**
  * @ingroup rtAicpuKernelLaunchExWithArgs
- * @brief launch cpu kernel to device  with dump identifier and kernelType
+ * @brief launch cpu kernel to device with dump identifier and kernelType
  * @param [in] kernelType    aicpu kernel type
- * @param [in] op Name        address of op name
+ * @param [in] opName        address of op name
  * @param [in] blockDim      block dimentions
  * @param [in] argsInfo      argments address for kernel function
  * @param [in] smDesc        shared memory description
@@ -691,7 +691,7 @@ RTS_API rtError_t rtDumpAddrSet(rtModel_t mdl, void *addr, uint32_t dumpSize, ui
  * @ingroup rt_kernel
  * @brief load dump info to aicpu
  * @param [in] dumpInfo   dump info
- * @param [in] length   length of  dump info
+ * @param [in] length   length of dump info
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -711,7 +711,7 @@ RTS_API rtError_t rtAicpuInfoLoad(const void *aicpuInfo, uint32_t length);
  * @ingroup rt_kernel
  * @brief load dump info to aicpu
  * @param [in] dumpInfo   dump info
- * @param [in] length     length of  dump info
+ * @param [in] length     length of dump info
  * @param [in] flag       RT_KERNEL_DEFAULT or RT_KERNEL_CUSTOM_AICPU
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
@@ -856,9 +856,11 @@ RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stm);
 /**
  * @ingroup rt_kernel
  * @brief add callback launch task in stream.
- * @param [in] callBackFunc   app callback function
- * @param [in] fnData   user data
- * @param [in] stm   subscribed stream
+ * @param [in] callBackFunc    app callback function
+ * @param [in] fnData          user data
+ * @param [in] stm             subscribed stream
+ * @param [in] isBlock         specifies whether the callback function invocation blocks the device,
+ *                             0: non-blocking; 1: blocking
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -886,6 +888,8 @@ RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stm);
 /**
  * @ingroup profiling_base
  * @brief start online prof.
+ * @param [in] stm        associated stream
+ * @param [in] sampleNum  number of sample
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -894,6 +898,7 @@ RTS_API rtError_t rtStartOnlineProf(rtStream_t stm, uint32_t sampleNum);
 /**
  * @ingroup profiling_base
  * @brief stop online prof.
+ * @param [in] stm    associated stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
@@ -902,6 +907,9 @@ RTS_API rtError_t rtStopOnlineProf(rtStream_t stm);
 /**
  * @ingroup profiling_base
  * @brief get online prof.
+ * @param [in] stm          associated stream
+ * @param [in] profDataNum  number of obtained prof data records, should be in (0, MAX_ONLINEPROF_NUM]
+ * @param [out] pProfData   obtained prof data
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */

@@ -601,18 +601,18 @@ REG_OP(Erfc)
     .OP_END_FACTORY_REG(Erfc)
 
 /**
-*@brief This operation returns a rank 1 histogram counting the number of entries in `values`
+*@brief This operation returns a rank 1 histogram counting the number of entries in `x`
 *  that fell into every bin.The bins are equal width and determined by the arguments
-*  'value_range' and 'nbins' .
+*  'range' and 'nbins' .
 
 *@par Inputs:
 *Three inputs, including:
-*@li x: A Tensor of type float32, int32, int64. float16 is currently not supported.
-*@li range: A Tensor of type float32, int32, int64. float16 is currently not supported.
+*@li x: A Tensor of type float32, int32, int64, float16.
+*@li range: A Tensor of type float32, int32, int64, float16.
 *@li nbins: A Tensor of type int32 . \n
 
 *@par Attributes:
-* dtype: An optional attribute. Defaults to "int32" . \n
+* dtype: An optional int. Defaults to 3 . \n
 
 *@par Outputs:
 *y: A Tensor. A Tensor of type int32. \n
@@ -706,10 +706,10 @@ REG_OP(Pdist)
  * @brief Compute element-wise finiteness, return a boolean tensor.
 
  * @par Inputs:
- * x:A Tensor of type bfloat16, float16, float32, double.
+ * x: A Tensor of type bfloat16, float16, float32, double, format is ND.
 
  * @par Outputs:
- * y:A Tensor. Returns which elements of x are finite
+ * y: A Tensor. Returns which elements of x are finite, format is ND, dytpe is bool.
 
  * @par Third-party framework compatibility.
  * Compatible with tensorflow IsFinite operator.
@@ -723,10 +723,11 @@ REG_OP(IsFinite)
  * @brief Compute element-wise infiniteness, return a boolean tensor.
 
  * @par Inputs:
- * x:A Tensor of type float16, float32, double, bfloat16.
+ * x: A Tensor of type float16, float32, double, bfloat16, format is ND.
 
  * @par Outputs:
- * y:A Tensor. Has the same shape as x. Returns which elements of x are isposinf.
+ * y: A Tensor. Has the same shape as x. Returns which elements of x are isposinf,
+ * format is ND, dtype is bool.
 
  * @par Third-party framework compatibility.
  * Compatible with the Pytorch operator IsPosInf.
@@ -740,10 +741,10 @@ REG_OP(IsPosInf)
  *@brief Compute element-wise infiniteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor of type float16, float32, double, bfloat16.
+ *x: A Tensor of type float16, float32, double, bfloat16, format is ND.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x. Returns which elements of x are isinf.
+ *y: A Tensor. Has the same shape as x. Returns which elements of x are isinf, format is ND, dtype is bool.
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsInf operator.
@@ -757,10 +758,10 @@ REG_OP(IsInf)
  * @brief Compute element-wise infiniteness, return a boolean tensor.
 
  * @par Inputs:
- * x:A Tensor of type float16, float32, double, bfloat16.
+ * x: A Tensor of type float16, float32, double, bfloat16, format is ND.
 
  * @par Outputs:
- * y:A Tensor. Has the same shape as x. Returns which elements of x are isneginf.
+ * y: A Tensor. Has the same shape as x. Returns which elements of x are isneginf,format is ND, dtype is bool.
 
  * @par Third-party framework compatibility.
  * Compatible with torch IsNegInf operator.
@@ -801,7 +802,7 @@ REG_OP(ComplexAbs)
  *x:A Tensor of type float16, bfloat16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x. Returns which elements of x are isnan
+ *y:A Tensor of type bool, shape is same as x. Returns which elements of x are isnan
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsNan operator.
@@ -861,8 +862,8 @@ REG_OP(Conj)
 * @li weight: A Tensor dtype of float32 or bfloat16. \n
 
 * @par Attributes:
-* @li reduction: An optional attribute. Defaults to "mean" .
-* @li ignore_index:An optional attribute.Defaults to -100 . \n
+* @li reduction: An optional attribute. Type is string. Defaults to "mean" .
+* @li ignore_index:An optional attribute. Type is int. Defaults to -100 . \n
 
 * @par Outputs:
 * @li y: A Tensor dtype of float32 or bfloat16.
@@ -1275,21 +1276,20 @@ REG_OP(Complex)
     .OP_END_FACTORY_REG(Complex)
 
 /**
-* @brief Counts the number of occurrences of each value in an integer array .
+* @brief Counts the number of occurrences of each value in an integer array.
 
 * @par Inputs:
-* Five inputs, including:
-* indices: A 2D Tensor of type int64.
-* values: A 1D Tensor of type int32 or int64.
-* dense_shape: A 1D Tensor of type int64.
-* size: A non-negative scalar Tensor.
-* weights: A Tensor of type int32 or int64 or fp32 or fp64 or only 1 \n
+* @li indices: A 2D tensor of type int64.
+* @li values: A 1D tensor of type int32 or int64.
+* @li dense_shape: A 1D tensor of type int64.
+* @li size: A non-negative scalar tensor of type int32 or int64.
+* @li weights: A tensor of type int32 or int64 or float32 or double.
 
 * @par Attributes:
-* dtype: An optional bool.Defaults to False. bool . \n
+* binary_output: An optional bool. Defaults to False.
 
 * @par Outputs:
-* y: A Tensor . Has the same type as `input_weights` .\n
+* output: A tensor. Must have the same type as input "weights".
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseBincount.
@@ -1479,24 +1479,23 @@ REG_OP(CdistGrad)
     .OP_END_FACTORY_REG(CdistGrad)
 
 /**
-* @brief  Computes the RaggedBincount.
+* @brief  Counts the number of occurrences of each value in an integer array.
 
 * @par Inputs:
 * Four inputs, including:
-* @li splits: A tensor with shpae: BxPXM. Must be one of the following types:
-*     int64.
-* @li values: A tensor with shpae: BxPXM. Must be one of the following types:
-*     float16, float32.
-* @li size: A tensor with shpae: BxRxM. Must be one of the following types:
-*     int32, int64.
-* @li weights: A tensor with shpae: BxRxM.
-*     Must be one of the following types: int32, int64, float, double. \n
+* @li splits: A 1D tensor of dtype int64.
+* @li values: A 2D tensor of dtype int32, int64.
+* @li size: A non-negative scalar Tensor, has the same type as values.
+* @li weights: A Tensor. Must be one of the following types: int32, int64, float32, double. 
 
 * @par Attributes:
-* @li binary_output: An optional bool \n
+* @li binary_output: An optional bool. Defaults to False.
 
 * @par Outputs:
-* output: Must be one of the following types: int32, int64, float, double. \n
+* @li output: Must be one of the following types: int32, int64, float, double. \n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator RaggedBincount.
 */
 REG_OP(RaggedBincount)
     .INPUT(splits, TensorType({DT_INT64}))
@@ -1543,7 +1542,6 @@ REG_OP(DenseCountSparseOutput)
 * @brief Computes gradients for SparseSegmentSum .
 
 * @par Inputs:
-* The input grad must have be type float or double. Inputs include:
 * @li grad: A Tensor. Must be one of the following types: bfloat16, float16, float32, double.
   gradient propagated to the SparseSegmentSum op.
 * @li indices: A Tensor. Must be one of the following types: int32, int64.

@@ -27,13 +27,19 @@ namespace ge {
 /**
 * @brief: Basic LSTM Cell forward calculation.
 * @par Inputs:
-* five inputs:
-* @li x:A 4D Tensor. Must be one of the following types: float16.
-* @li h:A 4D Tensor. Must be one of the following types: float16.
-* @li c:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li w:A 4D Tensor. Must be one of the following types: float16.
-* @li b:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND . \n
-* @li mask:A 1D Tensor. Must be one of the following types: uint8.
+* six inputs:
+* @li x:A 4D Tensor. Must be one of the following types: float16. The format 
+* must be FRACTAL_NZ.
+* @li h:A 4D Tensor. Must be one of the following types: float16. The format 
+* must be FRACTAL_NZ.
+* @li c:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li w:A 4D Tensor. Must be one of the following types: float16. The format 
+* must be FRACTAL_ZN_LSTM.
+* @li b:A 1D Tensor. Must be one of the following types: float16, float32. The 
+* format must be ND.
+* @li mask:A optional 1D Tensor. Must be one of the following types: uint8. The 
+* format must be ND. \n
 
 * @par Attributes:
 * @li keep_prob:An Float identifying the keep prob in the op. Default to 1.
@@ -43,13 +49,20 @@ namespace ge {
 
 * @par Outputs:
 * seven outputs:
-* @li ct:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li ht:A 4D Tensor. Must be one of the following types: float16.
-* @li it:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li jt:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li ft:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li ot:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li ct:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li ht:A 4D Tensor. Must be one of the following types: float16. The format 
+* must be FRACTAL_NZ.
+* @li it:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li jt:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li ft:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li ot:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
 * @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* The format must be FRACTAL_NZ. \n
 */
 REG_OP(BasicLSTMCell)
     .INPUT(x, TensorType({DT_FLOAT16}))
@@ -93,15 +106,16 @@ REG_OP(DynamicLSTM)
     .OP_END_FACTORY_REG(DynamicLSTM)
 
 /**
-* @brief: DynamicRNNGrad calculation.
+* @brief DynamicRNNGrad calculation.
 * @par Inputs:
-* ten inputs: \n
 * @li x:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li w:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li b:A 1D Tensor. Must be one of the following types: float16, float32.
 * @li y:A 1D Tensor. Must be one of the following types: int32.
-* @li init_h:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li init_c:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li init_h:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li init_c:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li c:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -111,32 +125,42 @@ REG_OP(DynamicLSTM)
 * @li j:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li f:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li o:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li tanhct:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li seq_length:A 1D Tensor. Must be one of the following types: int32.
-* @li mask:A 1D Tensor. Must be one of the following types: int8.
+* @li mask:A 1D Tensor. Must be one of the following types: uint8.
 * @li wci:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li wcf:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li wco:A 4D Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
-* @li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
-* @li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
-* @li cell_depth:An integer identifying the cell depth in the op. Default to 0.
-* @li use_peephole:An bool identifying if use peephole in the op. Default to false.
+* @li cell_type:An string identifying the cell type in the op.
+* Default to "LSTM". Only LSTM is currently supported.
+* @li direction:An string identifying the direction in the op.
+* Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
+* @li cell_depth:An integer identifying the cell depth in the op.
+* Default to 0.
+* @li use_peephole:An bool identifying if use peephole in the op.
+* Default to false.
 * @li keep_prob:An float identifying the keep prob in the op. Default to -1.
 * @li cell_clip:An float identifying the cell clip in the op. Default to -1.
-* @li num_proj:An integer identifying the num projection in the op. Default to 0.
-* @li time_major:An bool identifying the time major in the op. Default to true.
-* @li forget_bias:An float identifying the forget bias in the op. Default to 0.
-* @li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifjo". Default to "ijfo".
+* @li num_proj:An integer identifying the num projection in the op.
+* Default to 0.
+* @li time_major:An bool identifying the time major in the op.
+* Default to true.
+* @li forget_bias:An float identifying the forget bias in the op.
+* Default to 0.
+* @li gate_order:An string identifying the type of gate order in the op.
+* Support "ijfo" and "ifjo". Default to "ijfo".
 
 * @par Outputs:
-* eight outputs: \n
 * @li dw:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li db:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dx:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dc_prev:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dh_prev:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li dc_prev:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li dwci:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dwcf:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dwco:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -614,9 +638,10 @@ REG_OP(DynamicLSTMV2)
 /**
 * @brief: LSTMInputGrad calculation.
 * @par Inputs:
-* ten inputs: \n
+* eleven inputs:
 * @li w:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li init_c:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li init_c:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li c:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dh:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -625,15 +650,17 @@ REG_OP(DynamicLSTMV2)
 * @li j:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li f:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li o:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
-
+* @li tanhct:A optional 4D Tensor.
+* Must be one of the following types: float16, float32.  \n
 
 * @par Outputs:
-* four outputs: \n
+* four outputs:
 * @li dx:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dc_prev:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dgate:A 4D Tensor. Must be one of the following types: float16.
+* @li dh_prev:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li dc_prev:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li dgate:A 4D Tensor. Must be one of the following types: float16. \n
 */
 REG_OP(LSTMInputGrad)
     .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -764,14 +791,22 @@ REG_OP(BasicLSTMCellWeightGrad)
 * @brief: Basic LSTM Cell backward calculation.Calculate the gradient of gates and cell state.
 * @par Inputs:
 * eight inputs:
-* @li c:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dht:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dct:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li it:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li jt:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li ft:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li ot:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. \n
+* @li c:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li dht:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li dct:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li it:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li jt:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li ft:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li ot:A 4D Tensor. Must be one of the following types: float16, float32. The 
+* format must be FRACTAL_NZ.
+* @li tanhct:A 4D Tensor. Must be one of the following types: float16, float32.
+* The format must be FRACTAL_NZ. \n
 
 * @par Attributes:
 * @li forget_bias:An Float identifying the forget bias in the op. Default to 1.
@@ -779,9 +814,10 @@ REG_OP(BasicLSTMCellWeightGrad)
 
 * @par Outputs:
 * two outputs:
-* @li dgate:A 4D Tensor. Must be one of the following types: float16.
+* @li dgate:A 4D Tensor. Must be one of the following types: float16. The format
+* must be FRACTAL_NZ.
 * @li dct_1:A 4D Tensor. Must be one of the following types: float16, float32.
-
+* The format must be FRACTAL_NZ.
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
@@ -1204,29 +1240,39 @@ REG_OP(DynamicAUGRUGrad)
 /**
 * @brief: AUGRUHiddenGradCell calculation.
 * @par Inputs:
-* twelve inputs: \n
-* @li weight_att:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dh_pre_t:A 4D Tensor. Must be one of the following types: float16, float32.
+* elewen inputs: \n
+* @li weight_att:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li dh_pre_t:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dh:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li update:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li update_att:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li update:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li update_att:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li reset:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li seq_length:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li hidden_new:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li seq_length:A optional 4D Tensor.
+* Must be one of the following types: float16, float32.
 
 * @par Attributes:
-* @li t_state:An Int identifying the current t state. Default to [0, 4].
-* @li gate_order:An string identifying the gate order in weight and bias. Default to "zrh". "rzh" is another option.
+* @li t_state:An Int identifying the current t state. Default to 0.
+* @li gate_order:A string identifying the gate order in weight and bias.
+* Default to "zrh". "rzh" is another option.
 
 * @par Outputs:
 * four outputs: \n
-* @li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dgate_h:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dh_prev:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li dgate_h:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li dnt_x:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li dw_att_t:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dw_att_t:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -1324,22 +1370,27 @@ REG_OP(DynamicGRUV2Grad)
     .OP_END_FACTORY_REG(DynamicGRUV2Grad)
 
 /**
-* @brief: GRUV2HiddenGradCell calculation.
+* @brief GRUV2HiddenGradCell calculation.
 * @par Inputs:
 * nine inputs: \n
-* @li dh_pre_t:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li dh_pre_t:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li h:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dy:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li dh:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li update:A 4D Tensor. Must be one of the following types: float16, float32.
+* @li update:A 4D Tensor.
+* Must be one of the following types: float16, float32.
 * @li reset:A 4D Tensor. Must be one of the following types: float16, float32.
 * @li new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32.
-* @li seq_length:A 1D Tensor. Must be one of the following types: float16, float32.
+* @li hidden_new:A 4D Tensor.
+* Must be one of the following types: float16, float32.
+* @li seq_length:An optional 1D Tensor.
+* Must be one of the following types: float16, float32.
 
 * @par Attributes:
-* @li t_state:An Int identifying the current t state. Default to [0, 4].
-* @li gate_order:An string identifying the gate order in weight and bias. Default to "zrh". "rzh" is another option.
+* @li t_state:An optional Int identifying the current t state. Default to 0.
+* @li gate_order:An optional string identifying the gate order in weight
+* and bias. Default to "zrh". "rzh" is another option.
 
 * @par Outputs:
 * three outputs: \n
@@ -1564,7 +1615,7 @@ REG_OP(CommonGRU)
 
 * @par Inputs:
 * Four inputs, including:
-* @li weight: A required Tensor. A mutable Tensor of word grad. Must be one of the following types: float16, float32.
+* @li weight: A required Tensor. A mutable Tensor of word grad. Must be one of the following types: float16, float32,bfloat16.
 * @li indices: A required Tensor. A mutable word index Tensor. Must be one of the following types: int32, int64.
 * @li offsets: A optional Tensor. A mutable word index Tensor. Must be one of the following types: int32, int64.
 * @li per_sample_weights: A optional Tensor. to indicate all weights should be taken to be 1.
@@ -1593,11 +1644,11 @@ REG_OP(CommonGRU)
 * Compatible with the Pytorch operator EmbeddingBag.
 */
 REG_OP(EmbeddingBag)
-    .INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
     .OPTIONAL_INPUT(offsets, TensorType({DT_INT32, DT_INT64}))
-    .OPTIONAL_INPUT(per_sample_weights, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(per_sample_weights, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OUTPUT(offset2bag, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(bag_size, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(max_indices, TensorType({DT_INT32, DT_INT64}))

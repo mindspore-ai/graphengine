@@ -39,6 +39,17 @@ struct ModelBufferData {
   uint64_t length;
 };
 
+struct GraphWithOptions {
+  ge::Graph graph;
+  std::map<AscendString, AscendString> build_options;
+};
+
+struct WeightRefreshableGraphs {
+  ge::Graph infer_graph;
+  ge::Graph var_init_graph;
+  ge::Graph var_update_graph;
+};
+
 enum aclgrphAttrType { ATTR_TYPE_KEEP_DTYPE = 0, ATTR_TYPE_WEIGHT_COMPRESS };
 
 /**
@@ -113,6 +124,40 @@ ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char
 GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const std::string &output_file, const ModelBufferData &model);
 
 GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char_t *output_file, const ModelBufferData &model);
+
+/**
+ * @ingroup AscendCL
+ *
+ * @param origin_graph[IN]   the origin graph ready to be converted
+ * @param const_names[IN] const names in origin graph which to be converted to variable
+ * @param weight_refreshable_graphs[OUT]  refreshable weight graphs
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+GE_FUNC_VISIBILITY graphStatus aclgrphConvertToWeightRefreshableGraphs(const ge::Graph &origin_graph,
+    const std::vector<AscendString> &const_names, WeightRefreshableGraphs &weight_refreshable_graphs);
+/**
+ * @ingroup AscendCL
+ * @brief build model.Notice the model is stored in buffer
+ *
+ * @param graph_with_options[IN]   the multiple graphs and build options ready to build
+ * @param model[OUT]  builded bundle model
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+GE_FUNC_VISIBILITY graphStatus aclgrphBundleBuildModel(const std::vector<ge::GraphWithOptions> &graph_with_options,
+                                                       ModelBufferData &model);
+
+/**
+ * @ingroup AscendCL
+ * @brief save bundle model buffer to file
+ *
+ * @param output_file[IN]   the file path to be saved
+ * @param model[IN]         model buffer data
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+GE_FUNC_VISIBILITY graphStatus aclgrphBundleSaveModel(const char_t *output_file, const ModelBufferData &model);
 
 /**
  * @ingroup AscendCL

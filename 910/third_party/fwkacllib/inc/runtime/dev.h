@@ -564,6 +564,22 @@ RTS_API rtError_t rtGetAllUtilizations(const int32_t devId, const rtTypeUtil_t k
  */
 RTS_API rtError_t rtGetServerIDBySDID(uint32_t sdid, uint32_t *srvId);
 
+/**
+ * @ingroup dvrt_dev
+ * @brief set default device id
+ * @param [int] deviceId  deviceId
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetDefaultDeviceId(const int32_t deviceId);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief force reset all opened device
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDeviceResetForce(int32_t devId);
 #if defined(__cplusplus)
 }
 #endif

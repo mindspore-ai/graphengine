@@ -732,7 +732,8 @@ enum ModelPartitionType {
   PRE_MODEL_DESC = 20,
   PRE_MODEL_SQE = 21,
   PRE_KERNEL_ARGS = 22,
-  PRE_MODEL_DESC_EXTEND = 23
+  PRE_MODEL_DESC_EXTEND = 23,
+  BUNDLE_MODEL_INFO = 24
 };
 
 enum ModelHeaderType {
@@ -741,7 +742,8 @@ enum ModelHeaderType {
   MODEL_TYPE_OM_TINY_MODEL = 2,
   MODEL_TYPE_FLOW_MODEL = 3,
   MODEL_TYPE_LITE_MODEL = 4,
-  MODEL_TYPE_RESERVED = 5
+  MODEL_TYPE_BUNDLE_MODEL = 5,
+  MODEL_TYPE_RESERVED = 6
 };
 
 struct TinyModelPartitionMemInfo {

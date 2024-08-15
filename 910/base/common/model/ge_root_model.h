@@ -46,6 +46,9 @@ struct FixedFeatureMemory {
   ~GeRootModel() override = default;
 
   Status Initialize(const ComputeGraphPtr &root_graph);
+  // host_resource_manager基于root_graph实现资源共享，而反序列化的时候，每个model单独反序列化出了graph对象，
+  // 这会导致共享资源丢失。在反序列化后调用该接口，从root_graph上获取subgraph设置到submodel上
+  Status ModifyOwnerGraphForSubModels();
   void SetSubgraphInstanceNameToModel(const std::string &instance_name, const GeModelPtr &ge_model);
   void RemoveInstanceSubgraphModel(const std::string &instance_name);
   const std::map<std::string, GeModelPtr> &GetSubgraphInstanceNameToModel() const {

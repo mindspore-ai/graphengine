@@ -162,6 +162,15 @@ RTS_API rtError_t rtEventDestroy(rtEvent_t evt);
 
 /**
  * @ingroup dvrt_event
+ * @brief synchronize destroy event instance
+ * @param [in] evt   event to destroy
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtEventDestroySync(rtEvent_t evt);
+
+/**
+ * @ingroup dvrt_event
  * @brief get event id
  * @param [in] evt event to be get
  * @param [in|out] event_id   event_id id
@@ -369,8 +378,8 @@ RTS_API rtError_t rtResourceClean(int32_t devId, rtIdType_t type);
 /**
  * @ingroup dvrt_event
  * @brief Wait for a notify
- * @param [in] notify_ notify to be wait
- * @param [in] stream_  input stream
+ * @param [in] notify   notify to be wait
+ * @param [in] stm   input stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
@@ -424,10 +433,11 @@ RTS_API rtError_t rtNotifyGetPhyInfoExt(rtNotify_t notify, rtNotifyPhyInfo *noti
 /**
  * @ingroup dvrt_event
  * @brief Set a notify to IPC notify
- * @param [in] notify_ notify to be set to IPC notify
+ * @param [in] notify   notify to be set to IPC notify
  * @param [in] name   identification name
+ * @param [in] len   length of name
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char_t *name, uint32_t len);
 

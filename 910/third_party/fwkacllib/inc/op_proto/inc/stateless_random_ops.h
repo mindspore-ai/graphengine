@@ -87,7 +87,7 @@ REG_OP(StatelessRandomUniformInt)
 * @li shape: A Tensor. Must be one of the following types: int32, int64.
       The shape of the output tensor. Batches are indexed by the 0th dimension.
 * @li seed: 2 seeds (shape [2]).
-* @li means: A Tensor. Must be one of the following types: half, bfloat16, float32, float64.
+* @li means: A Tensor. Must be one of the following types: float16, bfloat16, float32, float64.
 * @li stdevs: A Tensor. Must have the same type as means.
 * @li min: A Tensor. Must have the same type as means. The minimum cutoff. May be -infinity.
 * @li max: A Tensor. Must have the same type as means. \n

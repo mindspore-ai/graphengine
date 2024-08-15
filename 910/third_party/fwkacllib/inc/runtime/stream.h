@@ -352,6 +352,25 @@ RTS_API rtError_t rtGetStreamTag(rtStream_t stm, uint32_t *geOpTag);
  */
 RTS_API rtError_t rtStreamClear(rtStream_t stm, rtClearStep_t step);
 
+/**
+ * @ingroup dvrt_stream
+ * @brief get current default stream
+ * @param [int] stm stream
+ * @param [out] default stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtCtxGetCurrentDefaultStream(rtStream_t *stm);
+
+/**
+ * @ingroup dvrt_stream
+ * @brief reg stream state callback func
+ * @param [int] regName register name
+ * @param [int] callback callback func
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtRegStreamStateCallback(const char_t *regName, const rtStreamStateCallback callback);
 #if defined(__cplusplus)
 }
 #endif

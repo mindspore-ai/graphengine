@@ -144,6 +144,8 @@ typedef struct rtExceptionArgsInfo {
     uint32_t argsize;
     void *argAddr;
     rtArgsSizeInfo_t sizeInfo;
+    const void *dfxAddr;
+    uint16_t dfxSize;
 }rtExceptionArgsInfo_t;
 
 typedef struct rtExceptionExpandInfo {
@@ -169,6 +171,12 @@ typedef enum {
     RT_DEVICE_CLEAN
 } rtTaskAbortStage_t;
 
+/**
+ * @ingroup dvrt_base
+ * @brief stream handle.
+ */
+typedef void *rtStream_t;
+
 typedef void (*rtErrorCallback)(rtExceptionType);
 
 typedef int32_t (*rtTaskAbortCallBack)(uint32_t devId, rtTaskAbortStage_t stage, uint32_t timeout, void *args);
@@ -177,6 +185,7 @@ typedef void (*rtTaskFailCallback)(rtExceptionInfo_t *exceptionInfo);
 
 typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 
+typedef void (*rtStreamStateCallback)(rtStream_t stm, const bool isCreate);
 /**
  * @ingroup profiling_base
  * @brief dataType: rtProfCtrlType_t
@@ -184,12 +193,6 @@ typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
  * @brief dataLen: length of data
  */
 typedef rtError_t (*rtProfCtrlHandle)(uint32_t dataType, void *data, uint32_t dataLen);
-
-/**
- * @ingroup dvrt_base
- * @brief stream handle.
- */
-typedef void *rtStream_t;
 
 /**
  * @ingroup dvrt_base

@@ -92,19 +92,21 @@ REG_OP(DepthwiseWeight6DTo4D)
     .OP_END_FACTORY_REG(DepthwiseWeight6DTo4D)
 
 /**
-*@brief Permutes the dimensions according to perm.
-        The returned tensor's dimension i will correspond to the input dimension perm[i] . \n
+* @brief Permutes the dimensions according to perm.
+         The returned tensor's dimension i will correspond to the input dimension perm[i]. \n
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 . \n
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64,
+* the maximum dimension should not exceed 8 dimensions, and the shape should be consistent with output. \n
 
-*@par Attributes:
-*perm: A permutation of the dimensions of "x" . \n
+* @par Attributes:
+* perm: A permutation of the dimensions of "x", the value
+* should be within the range of [number of dimensions for self, number of dimensions for self -1]. \n
 
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
-*@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED. Please use Transpose instead.
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Transpose instead.
 */
 REG_OP(TransposeD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
@@ -116,17 +118,19 @@ REG_OP(TransposeD)
 
 /**
 * @brief Permutes the dimensions according to perm.
-         The returned tensor's dimension i will correspond to the input dimension perm[i] . \n
+         The returned tensor's dimension i will correspond to the input dimension perm[i]. \n
 
 * @par Inputs:
 * Two inputs, including:
 * @li x: A Tensor. Must be one of the following types:
 * bfloat16, float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
-* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32 . \n
-* @li perm: A Tensor of type int32 or int64. A permutation of the dimensions of "x" . \n
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, the maximum dimension
+* should not exceed 8 dimensions, and the shape should be consistent with output. \n
+* @li perm: A Tensor of type int32 or int64. A permutation of the dimensions of "x", the value
+* should be within the range of [number of dimensions for self, number of dimensions for self -1]. \n
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x" . \n
+* y: A Tensor. Has the same type as "x". \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Transpose.
@@ -139,18 +143,18 @@ REG_OP(Transpose)
 
 /**
 * @brief Do format transfer for various data format.
-* In general, the framework will insert it atomatically . \n
+* In general, the framework will insert it atomatically. \n
 
 * @par Inputs:
 * src: A Tensor. For all branches can be types: bfloat16, float16, float32, int32, int8, bool.
-*      For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64 . \n
+*      For branches without padding also can be types: int16, int64, uint8, uint16, uint32, uint64. \n
 
 * @par Attributes:
 * @li src_format: A string source data format, can be "NHWC", "NCHW" etc.
 * @li dst_format: A string target data format, can be "NCHW" etc.
 * @li src_subformat: A optional int32 for source sub-format, default value is 0.
 * @li dst_subformat: A optional int32 for target sub-format, default value is 0.
-* @li groups: A optional int32, default value is 1. \n
+* @li groups: A optional int32, the N axis must be divisible by "groups". Defaults to 1. \n
 
 * @par Outputs:
 * dst: A Tensor. Has the same type as "src".
@@ -215,15 +219,20 @@ REG_OP(TransData)
 
 /**
 * @brief Do format transfer for various data format only 
-* support "ND(float16, float32)" <====> "ND_RNN_BIAS(float16, float32)" 
-* and "ND(float16, float32)" <====> "FRACTAL_ZN_RNN(float16)". \n
+* support "ND" <====> "ND_RNN_BIAS",
+* "FRACTAL_ZN_RNN" ====> "NHWC",
+* and "ND" <====> "FRACTAL_ZN_RNN". \n
 
 * @par Inputs:
-* src: A Tensor. For all branches can be types: float16, float32.
+* src: A Tensor. Must be one of the following types: float16, float32, double,
+* int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64,
+* complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
 
 * @par Attributes:
-* @li src_format: A string source data format, can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN" etc.
-* @li dst_format: A string target data format, can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN", "NHWC" etc.
+* @li src_format: A string source data format,
+* can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN".
+* @li dst_format: A string target data format,
+* can be "ND", "ND_RNN_BIAS", "FRACTAL_ZN_RNN", "NHWC".
 * @li input_size: A mental int32.
 * @li hidden_size: A mental int32.
 
@@ -295,16 +304,14 @@ REG_OP(Flatten)
 /**
 * @brief Permutes data from batch into blocks of spatial data and then prunes them.
 * The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
-* And then prunes the height and width dimensions. \n
+* And then prunes the height and width dimensions.
 
 * @par Inputs:
 * @li x: A N-D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
+* @li block_shape: A 1D tensor with shape [M], support int32 or int64.
 * @li crops: A 2D tensor with shape [M, 2], support int32 or int64. \n
-
-* @par Attributes:
-* block_size: Must be one of the following types: `int32`, `int64`. \n
 
 * @par Outputs:
 * y: A N-D tensor, the same type as "x". \n
@@ -328,13 +335,14 @@ REG_OP(BatchToSpaceND)
 /**
 * @brief Permutes data from batch into blocks of spatial data and then prunes them.
 * The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
-* And then prunes the height and width dimensions. \n
+* And then prunes the height and width dimensions.
 
 * @par Inputs:
 * @li x: A N-D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li block_shape: Must be one of the following types: int32, int64.
+* 1D list with non negative integer of shape [M]
 * @li crops: Must be one of the following types: int32, int64.
 * 2D list with non negative integer of shape [M, 2]. It specifies how many
 * elements are clipped from the intermediate result of spatial dimension . \n
@@ -355,8 +363,8 @@ REG_OP(BatchToSpaceND)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpaceND instead.
 */
 REG_OP(BatchToSpaceNDD)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(block_shape, ListInt)
     .REQUIRED_ATTR(crops, ListInt)
     .OP_END_FACTORY_REG(BatchToSpaceNDD)
@@ -364,16 +372,14 @@ REG_OP(BatchToSpaceNDD)
 /**
 * @brief Zeros-pads and then permutes blocks of spatial data into batch.
 * The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
-* After zeros-pads the height and width dimensions. \n
+* After zeros-pads the height and width dimensions.
 
 * @par Inputs:
 * @li x: A N-D tensor, Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32, bfloat16.
+* @li block_shape: A 1D tensor with shape [M], support int32 or int64.
 * @li paddings: A 2D tensor with shape [M, 2], support int32 or int64. \n
-
-* @par Attributes:
-* block_size: Must be one of the following types: `int32`, `int64`. \n
 
 * @par Outputs:
 * y: A N-D tensor, the same type as "x". \n
@@ -391,14 +397,15 @@ REG_OP(SpaceToBatchND)
 /**
 * @brief Zeros-pads and then permutes blocks of spatial data into batch.
 * The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
-* After zeros-pads the height and width dimensions. \n
+* After zeros-pads the height and width dimensions.
 
 * @par Inputs:
 * @li x: A N-D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_size: Must be one of the following types: `int32`, `int64`.
-* @li paddings: Must be one of the following types: int32, int64. \n
+* @li block_shape: Must be one of the following types: int32, int64.
+* 1D list with non negative integer of shape [M]
+* @li paddings: Must be one of the following types: int32, int64.
 * 2D list with non negative integer of shape [M, 2]. It specifies how many
 * elements are padded from the intermediate result of spatial dimension . \n
 
@@ -412,8 +419,8 @@ REG_OP(SpaceToBatchND)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatchND instead.
 */
 REG_OP(SpaceToBatchNDD)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(block_shape, ListInt)
     .REQUIRED_ATTR(paddings, ListInt)
     .OP_END_FACTORY_REG(SpaceToBatchNDD)
@@ -446,12 +453,12 @@ REG_OP(SpaceToDepth)
   .OP_END_FACTORY_REG(SpaceToDepth)
 
 /**
-* @brief Rearranges data from depth into blocks of spatial data . \n
+* @brief Rearranges data from depth into blocks of spatial data .
 
 * @par Inputs:
-* x: A Tensor. Must be one of the following types: float16, float32, double, int32, uint8,
+* x: A Tensor. Must be one of the following types in BasicType: float16, float32, double, int32, uint8,
 *     int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, uint32, uint64, bfloat16
+*     complex128, uint32, uint64, bfloat16, complex32. \n
 
 * @par Attributes:
 * Three attributes, including:
@@ -460,7 +467,7 @@ REG_OP(SpaceToDepth)
 * @li data_format: An optional string, specifying the data format. Defaults to "NHWC" . \n
 
 * @par Outputs:
-* y: A Tensor of the same type as "x" . \n
+* y: A Tensor of the same type as "x". \n
 
 * @par Third-party framework compatibility:
 * Compatible with TensorFlow operator DepthToSpace.
@@ -476,7 +483,7 @@ REG_OP(DepthToSpace)
 /**
 * @brief Permutes data from batch into blocks of spatial data and then prunes them.
 * The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
-* And then prunes the height and width dimensions. \n
+* And then prunes the height and width dimensions.
 
 * @par Inputs:
 * @li x: A 4D tensor, Must be one of the following types:
@@ -485,7 +492,7 @@ REG_OP(DepthToSpace)
 * @li crops: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
 * @par Attributes:
-* block_size: Must be one of the following types: `int32`, `int64`. \n
+* block_size: Must be one of the following types: int32, int64. \n
 
 * @par Outputs:
 * y: A 4D tensor, the same type as "x". \n
@@ -508,16 +515,16 @@ REG_OP(BatchToSpace)
 /**
 * @brief Permutes data from batch into blocks of spatial data and then prunes them.
 * The values from the batch dimension are moved in spatial blocks to the height and width dimensions.
-* And then prunes the height and width dimensions. \n
+* And then prunes the height and width dimensions.
 
 * @par Inputs:
 * @li x: A 4D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li block_size: Must be one of the following types: int32, int64.
 * @li crops: Must be one of the following types: int32, int64.
 * 2D list with non negative integer of shape [2, 2]. It specifies how many
-* elements are clipped from the intermediate result of spatial dimension . \n
+* elements are clipped from the intermediate result of spatial dimension. \n
 
 * @par Outputs:
 * y: A 4D tensor, the same type as "x". \n
@@ -534,8 +541,8 @@ REG_OP(BatchToSpace)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpace instead.
 */
 REG_OP(BatchToSpaceD)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(block_size, Int)
     .REQUIRED_ATTR(crops, ListInt)
     .OP_END_FACTORY_REG(BatchToSpaceD)
@@ -543,7 +550,7 @@ REG_OP(BatchToSpaceD)
 /**
 * @brief Zeros-pads and then permutes blocks of spatial data into batch.
 * The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
-* After zeros-pads the height and width dimensions. \n
+* After zeros-pads the height and width dimensions.
 
 * @par Inputs:
 * @li x: A 4D tensor, Must be one of the following types:
@@ -552,7 +559,7 @@ REG_OP(BatchToSpaceD)
 * @li paddings: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
 * @par Attributes:
-* block_size: Must be one of the following types: `int32`, `int64`. \n
+* block_size: Must be one of the following types: int32, int64. \n
 
 * @par Outputs:
 * y: A 4D tensor, the same type as "x". \n
@@ -570,16 +577,16 @@ REG_OP(SpaceToBatch)
 /**
 * @brief Zeros-pads and then permutes blocks of spatial data into batch.
 * The values from the height and width dimensions are moved in spatial blocks to the batch dimension.
-* After zeros-pads the height and width dimensions. \n
+* After zeros-pads the height and width dimensions.
 
 * @par Inputs:
 * @li x: A 4D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_size: Must be one of the following types: `int32`, `int64`.
+* @li block_size: Must be one of the following types: int32, int64.
 * @li paddings: Must be one of the following types: int32, int64. \n
 * 2D list with non negative integer of shape [2, 2]. It specifies how many
-* elements are padded from the intermediate result of spatial dimension . \n
+* elements are padded from the intermediate result of spatial dimension. \n
 
 * @par Outputs:
 * y: A 4D tensor, the same type as "x". \n
@@ -591,24 +598,27 @@ REG_OP(SpaceToBatch)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatch instead.
 */
 REG_OP(SpaceToBatchD)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(block_size, Int)
     .REQUIRED_ATTR(paddings, ListInt)
     .OP_END_FACTORY_REG(SpaceToBatchD)
 
 /**
 * @brief Unpacks the given dimension of a rank-R Tensor "x" into rank-(R-1)
-* tensors . \n
+* tensors.
 
 * @par Inputs:
-* x: A rank-R tensor (R > 0) of type BasicType. \n
+* x: A rank-R tensor (R > 0) of type BasicType.(BasicType includes: 
+* complex128, complex64, double, float32, float16, int16, int32, int64, int8,
+* qint16, qint32, qint8, quint16, quint8, uint16, uint32, uint64, uint8,
+* bfloat16, complex32.) \n
 
 * @par Attributes:
 * @li num: A required int, specifying the number of tensors to be unpacked to.
 * Defaults to "None".
 * @li axis: An optional int, specifying the axis to unpack along. The value range
-* is [-R, R) . \n
+* is [-R, R). Defaults to "0". \n
 
 * @par Outputs:
 * y: Dynamic output. The list of Tensor objects unpacked from "x", of type BasicType . \n
@@ -720,7 +730,7 @@ REG_OP(ExtractVolumePatches)
 * @li transpose_first: If True, the transpose is first, otherwise the reshape is first . \n
 
 * @par Outputs:
-* y: A Tensor. Has the same type as "x".
+* y: A Tensor. Has the same type as "x". \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ConfusionTranspose instead.
@@ -765,16 +775,14 @@ REG_OP(ConfusionTranspose)
 *@brief Flattens the input tensor to one-dimensional . \n
 
 *@par Inputs:
-*x: An ND tensor. Data types of float16、float32、int8、uint8、int16、uint16、
-int32、uint32、int64、uint64 are supported. \n
+*x: An ND tensor. All data types are supported. \n
 
 *@par Attributes:
 *@li axis: An optional int32, specifying the first axis to flatten. All preceding axes are retained in the output. Defaults to "1".
 *@li end_axis: An optional int32, specifying the last axis to flatten. All following axes are retained in the output. Defaults to "-1" . \n
 
 *@par Outputs:
-*y: The flattened ND tensor. Data types of float16、float32、int8、uint8、int16、
-uint16、int32、uint32、int64、uint64 are supported. \n
+*y: The flattened ND tensor. All data types are supported. \n
 
 *@attention Constraints:
 * "axis" and "end_axis" must be within the dimension range of the input. This operator cannot be directly called by the acllopExecute API.
@@ -782,10 +790,8 @@ uint16、int32、uint32、int64、uint64 are supported. \n
 * Compatible with the Caffe operator Flatten.
 */
 REG_OP(FlattenV2)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                          DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                           DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
     .ATTR(axis, Int, 1)
     .ATTR(end_axis, Int, -1)
     .OP_END_FACTORY_REG(FlattenV2)
@@ -899,37 +905,40 @@ REG_OP(Col2ImV2)
     .OP_END_FACTORY_REG(Col2ImV2)
 
 /**
-* @brief Performs Im2col for each batch entry. \n
+* @brief Performs Im2col for each batch entry.
 
 * @par Inputs:
-* x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of the
-*    following types:float32, int8, float16. The inputs must have data_format with
-*    one of follows:NHWC, NCHW.
+* x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of
+* the following types: double, float32, float16, int16, int32, int64, int8,
+* uint16, uint32, uint64, uint8. The inputs must have data_format
+* with one of follows: NHWC, NCHW.
 
 * @par Attributes:
-* @li ksizes: A required list or tuple. The size of the sliding window for each
-* dimension of images.
-* @li strides: A optional list or tuple. How far the centers of two consecutive
-* patches are in the images. Defaults to "{1}".
+* @li ksizes: A required list or tuple. The size of the sliding window for
+* each dimension of images.
+* @li strides: A optional list or tuple. How far the centers of two
+* consecutive patches are in the images. Defaults to "{1}".
 * @li dilations: A optional list or tuple. Defaults to "{1}".
 * This is the input stride, specifying how far two consecutive patch
 * samples are in the input. Equivalent to extracting patches
 * with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *
-* (dilations - 1), followed by subsampling them spatially by a factor of dilations.
+* (dilations - 1), followed by subsampling them spatially
+* by a factor of dilations.
 * This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
 * @li padding_mode: A optional String. The type of padding algorithm to use,
-* support "SAME", "VALID", "CALCULATED". Among the three modes, only the "CALCULATED"
-* means to use the pads below. Defaults to "CALCULATED".
+* support "SAME", "VALID", "CALCULATED". Among the three modes, only the
+* "CALCULATED" means to use the pads below. Defaults to "CALCULATED".
 * @li pads: A optional list or tuple. The pad distance. Defaults to "{0}". \n
 
 * @par Outputs:
-* y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *
-* ksize_cols * depth] containing image patches with size ksize_rows x ksize_cols
-* x depth vectorized in the "depth" dimension. Note "out_rows" and "out_cols"
-* are the dimensions of the output patches . \n
+* y: A 4D Tensor has same dtype as "x", with shape
+* [batch, out_rows, out_cols, ksize_rows * ksize_cols * depth]
+* containing image patches with size ksize_rows x
+* ksize_cols x depth vectorized in the "depth" dimension.
+* Note "out_rows" and "out_cols" are the dimensions of the output patches. \n
 
 * @attention Constraints:
-* "ksizes", "strides", "dilations" and "pads" are lists of integers . \n
+* "ksizes", "strides", "dilations" and "pads" are lists of integers. \n
 
 * @par Third-party framework compatibility
 * Compatible with Pytorch Im2col operator.
@@ -949,7 +958,7 @@ REG_OP(Im2col)
 matrices theta. \n
 
 *@par Inputs:
-*Input theta must be float16 or float, output_size must be int32 type.Inputs
+*Input theta must be float16, float or bfloat16, output_size must be int32 type.Inputs
 include:
 *@li theta: input batch of affine matrices with shape (N,2,3) for 2D or (N,3,4)
 for 3D
@@ -965,10 +974,11 @@ with the same setting for this option. Default: False \n
 
 *@par Outputs:
 *@li y: A 2-D integer tensor of shape [M] representing the
-selected indices from the boxes tensor, where M <= max_output_size. \n
+selected indices from the boxes tensor, where M <= max_output_size.
+Has the same type as "theta" . \n
 
 *@attention Constraints:
-*Input theta must be float16 or float, output_size must be int32 type .
+*Input theta must be float16, float or bfloat16, output_size must be int32 type .
 The current implementation of AffineGrid operator AiCore adopts 
 BatchMatMul's FP16 fusion operator scheme, and the accuracy will 
 decrease when the theta range exceeds [-10,10].If the model requires 
@@ -979,24 +989,30 @@ high accuracy of AffineGrid, it is recommended to use AICPU. \n
 */
 
 REG_OP(AffineGrid)
-    .INPUT(theta, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(theta, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .INPUT(output_size, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .ATTR(align_corners, Bool, false)
     .OP_END_FACTORY_REG(AffineGrid)
 
 /**
-*@brief  Make memory of a view be contiguous. \n
+*@brief  Make memory of a view be contiguous.
 
 *@par Inputs:
 *Four inputs, including:
-*@li x: The input tensor.
-*@li size: The shape of output tensor. 
-*@li stride: The stride of output tensor.
-*@li storage_offset: The offset in the underlying storage of the output tensor. \n
+*@li x: The input tensor. Must be the type of BasicType.(BasicType includes:
+*complex128, complex64, double, float32, float16, int16, int32, int64, int8,
+*qint16, qint32, qint8, quint16, quint8, uint16, uint32, uint64, uint8,
+*bfloat16, complex32.) Support format "ND".
+*@li size: The shape of output tensor. Must be the type of IndexNumberType.(
+*IndexNumberType includes: int32, int64.) Support format "ND".
+*@li stride: The stride of output tensor. Must be the type of IndexNumberType.
+* Support format "ND".
+*@li storage_offset: The offset in the underlying storage of the output tensor.
+*Must be the type of IndexNumberType. Support format "ND". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+*y: A Tensor. Has the same type as "x" . Support format "ND". \n
 
 *@par Third-party framework compatibility
 *Compatible with the pytorch operator as_strided.

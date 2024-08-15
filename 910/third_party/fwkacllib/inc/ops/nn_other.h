@@ -715,10 +715,10 @@ REG_OP(EmbeddingFeatureMappingV2)
 * @brief get export size of the embedding table. \n
 
 * @par Inputs:
-* @li table_name: A Tensor, dtype is string, indicates the hash table name. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names. \n
 
 * @par Outputs:
-* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table. \n
 */
 REG_OP(EmbeddingFeatureMappingTableSize)
     .INPUT(table_name, TensorType({DT_STRING}))
@@ -729,19 +729,20 @@ REG_OP(EmbeddingFeatureMappingTableSize)
 * @brief query data in the embedding table based on table name. \n
 
 * @par Inputs:
-* @li table_name: A Tensor, dtype is string, indicates the hash table name.
-* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names.
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table. \n
 
 * @par Outputs:
-* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
-* @li offset_id: A Tensor with same shape of feature_id, dtype is int32. 
-*                indicates the mapping value of hash key. \n
+* @li feature_id: Tensors which number is consistent with table's number, dtype is int64,
+*                 indicates the original hash key for one table.
+* @li offset_id: Tensors which number is consistent with table's number, dtype is int32.
+*                indicates the mapping value of hash key for one table. \n
 */
 REG_OP(EmbeddingFeatureMappingFind)
     .INPUT(table_name, TensorType({DT_STRING}))
     .INPUT(feature_size, TensorType({DT_INT64}))
-    .OUTPUT(feature_id, TensorType({DT_INT64}))
-    .OUTPUT(offset_id, TensorType({DT_INT32}))
+    .DYNAMIC_OUTPUT(feature_id, TensorType({DT_INT64}))
+    .DYNAMIC_OUTPUT(offset_id, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(EmbeddingFeatureMappingFind)
 
 /**
@@ -749,19 +750,24 @@ REG_OP(EmbeddingFeatureMappingFind)
 
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string, indicates the file path to export.
-* @li table_name: A Tensor, dtype is string, indicates the hash table name.
-* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
-* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
-*                indicates the mapping value of hash key.
-* @li values: An optional Tensor with same shape of feature_id, dtype is float32,
-*             indicates the values of hash key. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names.
+* @li values: An optional Tensor whose shape is sum of feature_id's shape, dtype is float32,
+*             indicates the values of hash key.
+* @li feature_id: Tensors which number is consistent with table's number, dtype is int64,
+*                 indicates the original hash key for one table.
+* @li offset_id: Tensors which number is consistent with table's number, dtype is int32.
+*                indicates the mapping value of hash key for one table. \n
+
+* @par Attributes:
+* @li embedding_dim: List of Int, indicates the length of embedding for each table.
 */
 REG_OP(EmbeddingFeatureMappingExport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(table_name, TensorType({DT_STRING}))
-    .INPUT(feature_id, TensorType({DT_INT64}))
-    .INPUT(offset_id, TensorType({DT_INT32}))
     .OPTIONAL_INPUT(values, TensorType({DT_FLOAT}))
+    .DYNAMIC_INPUT(feature_id, TensorType({DT_INT64}))
+    .DYNAMIC_INPUT(offset_id, TensorType({DT_INT32}))
+    .ATTR(embedding_dim, ListInt, {})
     .OP_END_FACTORY_REG(EmbeddingFeatureMappingExport)
 
 /**
@@ -769,20 +775,20 @@ REG_OP(EmbeddingFeatureMappingExport)
 
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string, indicates the path of import file.
-* @li table_name: A Tensor, dtype is string, indicates the hash table name. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names. \n
 
 * @par Outputs:
-* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the length of embedding.
+* @li embedding_dim: List of Int, indicates the length of embedding for each table.
 * @li only_offset_flag: A Bool. only export feature id and offset id, Defaults to "true".
 */
 REG_OP(EmbeddingFeatureMappingFileSize)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(table_name, TensorType({DT_STRING}))
     .OUTPUT(feature_size, TensorType({DT_INT64}))
-    .REQUIRED_ATTR(embedding_dim, Int)
+    .REQUIRED_ATTR(embedding_dim, ListInt)
     .ATTR(only_offset_flag, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingFeatureMappingFileSize)
 
@@ -791,28 +797,31 @@ REG_OP(EmbeddingFeatureMappingFileSize)
 
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string, indicates the path of import file.
-* @li table_name: A Tensor, dtype is string, indicates the hash table name.
-* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names.
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table. \n
 
 * @par Outputs:
-* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
-* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
-*                indicates the mapping value of hash key.
-* @li values: A Tensor with same shape of feature_id, dtype is float32.
-*             indicates the values of hash key. \n
+* @li feature_id: Tensors which number is consistent with table's number, dtype is int64,
+*                 indicates the original hash key for each table.
+* @li offset_id: Tensors which number is consistent with table's number,
+*                with same shape of feature_id for each table, dtype is int32.
+*                indicates the mapping value of hash key for each table.
+* @li values: Tensors which number is consistent with table's number,
+*             with same shape of feature_id for each table, dtype is float32.
+*             indicates the values of hash key for each table. \n
 
 * @par Attributes:
-* @li embedding_dim: A Int, indicates the length of embedding.
+* @li embedding_dim: List of Int, indicates the length of embedding for each table.
 * @li only_offset_flag: A Bool. only export feature id and offset id, Defaults to "true".
 */
 REG_OP(EmbeddingFeatureMappingImport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(table_name, TensorType({DT_STRING}))
     .INPUT(feature_size, TensorType({DT_INT64}))
-    .OUTPUT(feature_id, TensorType({DT_INT64}))
-    .OUTPUT(offset_id, TensorType({DT_INT32}))
-    .OUTPUT(values, TensorType({DT_FLOAT}))
-    .REQUIRED_ATTR(embedding_dim, Int)
+    .DYNAMIC_OUTPUT(feature_id, TensorType({DT_INT64}))
+    .DYNAMIC_OUTPUT(offset_id, TensorType({DT_INT32}))
+    .DYNAMIC_OUTPUT(values, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(embedding_dim, ListInt)
     .ATTR(only_offset_flag, Bool, true)
     .OP_END_FACTORY_REG(EmbeddingFeatureMappingImport)
 
@@ -820,15 +829,16 @@ REG_OP(EmbeddingFeatureMappingImport)
 * @brief insert table data in the embedding table. \n
 
 * @par Inputs:
-* @li table_name: A Tensor, dtype is string, indicates the hash table name.
-* @li feature_id: A Tensor, dtype is int64, indicates the original hash key.
-* @li offset_id: A Tensor with same shape of feature_id, dtype is int32.
-*                indicates the mapping value of hash key. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names.
+* @li feature_id: Tensors which number is consistent with table's number, dtype is int64,
+*                 indicates the original hash key for each table.
+* @li offset_id: Tensors which number is consistent with table's number, with same shape of feature_id for each table,
+*                dtype is int32. indicates the mapping value of hash key for each table. \n
 */
 REG_OP(EmbeddingFeatureMappingInsert)
     .INPUT(table_name, TensorType({DT_STRING}))
-    .INPUT(feature_id, TensorType({DT_INT64}))
-    .INPUT(offset_id, TensorType({DT_INT32}))
+    .DYNAMIC_INPUT(feature_id, TensorType({DT_INT64}))
+    .DYNAMIC_INPUT(offset_id, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(EmbeddingFeatureMappingInsert)
 
 /**

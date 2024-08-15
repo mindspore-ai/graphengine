@@ -144,6 +144,8 @@ constexpr const char LLM_OPTION_PAGED_ATTENTION_BLOCKS_NUM[] = "llm.PagedAttenti
 constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_SEQ_LEN[] = "llm.PagedAttentionMaxSeqLen";
 constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_SEQS_NUM[] = "llm.PagedAttentionMaxSeqsNum";
 constexpr const char LLM_OPTION_PAGED_ATTENTION_MAX_PROMPT_LEN[] = "llm.PagedAttentionMaxPromptLen";
+// nn input fusion options
+constexpr const char LLM_OPTION_ENABLE_NN_INPUT_FUSION[] = "llm.EnableNnInputFusion";
 
 constexpr const char LLM_OPTION_ENABLE_SWITCH_ROLE[] = "llm.EnableSwitchRole";
 

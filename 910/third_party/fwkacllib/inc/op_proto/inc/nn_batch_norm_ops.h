@@ -190,8 +190,8 @@ REG_OP(SyncBatchNormGatherStatsWithCounts)
 
 * @par Inputs:
 * include:
-* @li mean: A Tensor. The mean of each device. Must be one of the following types: float16, float32.
-* @li running_mean: A Tensor. Runtime Mean. Must be one of the following types: float16, float32. \n
+* @li mean: A Tensor. The mean of each device. Must be one of the following types: float16, float32, bfloat16.
+* @li running_mean: A Tensor. Runtime Mean. Must be one of the following types: float16, float32, bfloat16. \n
 
 * @par Attributes:
 * One Attribute, including:
@@ -206,9 +206,9 @@ REG_OP(SyncBatchNormGatherStatsWithCounts)
 * compatible with the Pytorch operator BatchNormGatherStatsWithCounts.
 */
 REG_OP(SyncBNTrainingUpdate)
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(running_mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(running_mean_update, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .INPUT(running_mean, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .OUTPUT(running_mean_update, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
     .ATTR(momentum, Float, 0.1)
     .OP_END_FACTORY_REG(SyncBNTrainingUpdate)
 
@@ -216,23 +216,23 @@ REG_OP(SyncBNTrainingUpdate)
 *@brief part of SyncBatchNormBackward .
 
 *@par Inputs:
-* Three inputs, including:
-*@li sum_dy: A Tensor. Must be one of the following types: float16, float32 .
-*@li sum_dy_dx_pad: A Tensor. Must be one of the following types: float16, float32 .
-*@li mean: A Tensor. Must be one of the following types: float16, float32 .
-*@li invert_std: A Tensor. Must be one of the following types: float16, float32 . \n
+* Four inputs, including:
+*@li sum_dy: A Tensor. Must be one of the following types: float16, float32, bfloat16 .
+*@li sum_dy_dx_pad: A Tensor. Must be one of the following types: float16, float32, bfloat16 .
+*@li mean: A Tensor. Must be one of the following types: float16, float32, bfloat16 .
+*@li invert_std: A Tensor. Must be one of the following types: float16, float32, bfloat16 . \n
 
 *@par Outputs:
 *@li sum_dy_xmu: A Tensor. Has the same type and format as input "sum_dy"
 *@li y: A Tensor. Has the same type and format as input "sum_dy" . \n
 */
 REG_OP(SyncBatchNormBackwardReduce)
-    .INPUT(sum_dy, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(sum_dy_dx_pad, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(invert_std, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(sum_dy_xmu, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(sum_dy, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(sum_dy_dx_pad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .INPUT(invert_std, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(sum_dy_xmu, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
     .OP_END_FACTORY_REG(SyncBatchNormBackwardReduce)
 
 /**

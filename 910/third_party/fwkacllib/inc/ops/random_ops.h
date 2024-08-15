@@ -125,7 +125,7 @@ REG_OP(MultinomialAliasSetup)
 *Inputs include:
 * @li shape: A Tensor. Must be one of the following types: int32, int64.
       The shape of the output tensor. Batches are indexed by the 0th dimension.
-* @li means: A Tensor. Must be one of the following types: half, bfloat16, float32, float64.
+* @li means: A Tensor. Must be one of the following types: float16, bfloat16, float32, float64.
 * @li stdevs: A Tensor. Must have the same type as means.
 * @li min: A Tensor. Must have the same type as means. The minimum cutoff. May be -infinity.
 * @li max: A Tensor. Must have the same type as means . \n
@@ -183,7 +183,7 @@ REG_OP(RandomGammaGrad)
 *@par Inputs:
 *Inputs include:
 * @li shape: A Tensor. Must be one of the following types: int32, int64. 1-D integer tensor.
-* @li alpha: A Tensor. Must be one of the following types: half, float32, float64 . \n
+* @li alpha: A Tensor. Must be one of the following types: float16, float32, float64 . \n
 
 *@par Attributes:
 *@li seed: An optional int. Defaults to 0.
@@ -259,10 +259,10 @@ REG_OP(Poisson)
 *@par Inputs:
 *Inputs include:
 * @li shape: A Tensor. Must be one of the following types: int32, int64. 1-D integer tensor.
-* @li rate: A Tensor. Must be one of the following types: half, float32, float64, int32, int64 . \n
+* @li rate: A Tensor. Must be one of the following types: float16, float32, float64, int32, int64 . \n
 
 *@par Attributes:
-*@li dtype: An optional type from: half, float32, float64, int32, int64. Defaults to int64.
+*@li dtype: An optional type from: float16, float32, float64, int32, int64. Defaults to int64.
 *@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
 the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
 *@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
@@ -328,7 +328,7 @@ REG_OP(RandomShuffle)
 *shape: A Tensor. Must be one of the following types: int32, int64. The shape of the output tensor . \n
 
 *@par Attributes:
-*@li dtype: A type from: half, float16, float32, float64. The type of the output.
+*@li dtype: A type from: float16, float16, float32, float64. The type of the output.
 *@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
 the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
 *@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
@@ -412,7 +412,7 @@ REG_OP(RandomUniformInt)
 *shape: A Tensor. Must be one of the following types: int32, int64. The shape of the output tensor . \n
 
 *@par Attributes:
-*@li dtype: A type from: half, float16, float32, float64. The type of the output.
+*@li dtype: A type from: float16, float16, float32, float64. The type of the output.
 *@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
 the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
 *@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
@@ -853,7 +853,7 @@ REG_OP(ContinuationIndicator)
 
 *@par Inputs:
 *Inputs include:
-* @li x: A Tensor. Must be one of the following types: half, float32, float64. \n
+* @li x: A Tensor. Must be one of the following types: float16, float32, float64. \n
 
 *@par Attributes:
 *@li lambda: An optional float. Defaults to 1.

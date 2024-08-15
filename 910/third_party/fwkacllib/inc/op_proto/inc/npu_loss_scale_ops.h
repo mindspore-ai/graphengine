@@ -72,13 +72,13 @@ REG_OP(NPUGetFloatStatusOperator)
     .OP_END_FACTORY_REG(NPUGetFloatStatusOperator)
 
 /**
-*@brief Produces a variable with 0 in memory . \n
+* @brief Produces a variable with 0 in memory .
 
-*@par Outputs:
-*y: A Tensor of type int32, output eight numbers with a value of zero.
+* @par Outputs:
+* y: A Tensor of type float32, output eight numbers with a value of zero.
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUAllocFloatStatus)
     .OUTPUT(data, TensorType({DT_FLOAT}))

@@ -653,10 +653,11 @@ REG_OP(StopGradient)
 *@brief Return a tensor with the same shape and contents as input. \n
 
 *@par Inputs:
-*x: A tensor. \n
+*x: A tensor. Must be one of the following types: float32、float16、int8、
+int16、uint16、uint8、int32、int64、uint32、uint64、bool、double、string、bfloat16. \n
 
 *@par Outputs:
-*y: A tensor with the same shape and contents as input. \n
+*y: A tensor with the same shape、data type and contents as input. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Identity.
@@ -672,10 +673,11 @@ REG_OP(Identity)
 *@brief Returns a list of tensors with the same shapes and contents as the input tensors. \n
 
 *@par Inputs:
-*x: A list of input tensors. It's a dynamic input \n
+*x: A list of input tensors. It's a dynamic input. Must be one of the following types:
+float32、float16、int8、int16、uint16、uint8、int32、int64、uint32、uint64、bool、double、string.\n
 
 *@par Outputs:
-*y: A list of Tensor objects, with the same length as the input tensor list.
+*y: A list of Tensor objects, with the same length、shape、data type and contents as the input tensor list.
 It's a dynamic output. \n
 
 *@par Third-party framework compatibility
@@ -1073,13 +1075,14 @@ REG_OP(Shape)
 *@brief Gather selected dims of input which returns the shape of tensor shape after gathershapes.\n
 
 *@par Inputs:
-*x: A list of input tensors. It's a dynamic input. \n
+*x: A list of input tensors. All data types are supported. It's a dynamic input. \n
 
 *@par Attributes:
-*axes: Select some dims of input. \n
+*@li axes: An 2-D list of int32 or int64 required. Select some dims of input.
+*@li dtype: An optional int32, which indicates the data type of output. Defaults to DT_INT32. \n
 
 *@par Outputs:
-*shape: The shape of tensor shape after gathershapes. \n
+*shape: The shape of tensor shape after gathershapes. Must be one of the following types: int32、int64. \n
 */
 REG_OP(GatherShapes)
     .DYNAMIC_INPUT(x, TensorType::ALL())
@@ -1381,43 +1384,47 @@ REG_OP(Expand)
     .OP_END_FACTORY_REG(Expand)
 
 /**
-*Returns a tensor containing the indices of all non-zero elements of input. \n
+* @brief Returns a tensor containing the indices of all non-zero
+* elements of input.
 
-*@par Inputs:
-* x: A Tensor. Must be one of the following types: float16, bfloat16, float32, int32, int64, double,
-*        int8, uint8, int16, uint16, uint32, uint64, bool.
-*@par Attributes:
-* transpose: An optional DType from: "bool". Defaults to False. \n
-
-*@par Outputs:
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, bfloat16, float32,
+*    int32, int64, double, int8, uint8, int16, uint16, uint32, uint64, bool.
+* @par Attributes:
+* @li transpose: An optional attribute. Type is bool. Defaults to False.
+* @li dtype: An optional attribute. Specifying the output data type.
+*     Either "int32" or "int64". Default to "int64". \n
+* @par Outputs:
 * y: A Tensor. Must be one of the following types: int32, int64. \n
 
-*@par Third-party framework compatibility
-*Compatible with the PyTorch operator NonZero.
+* @par Third-party framework compatibility
+* Compatible with the PyTorch operator NonZero.
 */
 
 REG_OP(NonZero)
-    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
-           DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL, DT_BF16}))
+    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8,
+                          DT_INT16, DT_UINT16, DT_INT32, DT_UINT32, DT_INT64,
+                          DT_UINT64, DT_BOOL, DT_BF16}))
     .OUTPUT(y, TensorType({DT_INT64, DT_INT32}))
     .ATTR(transpose, Bool, false)
     .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(NonZero)
 
 /**
-*@Returns a tensor containing the indices of all non-zero elements of input. \n
+*@brief Returns a tensor containing the indices of all non-zero elements of 
+*input.
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double,
-*        int8, uint8, int16, uint16, uint32, uint64, bool.
+*x: A Tensor. Must be one of the following types: float16, float32, int32, 
+*int64, double, int8, uint8, int16, uint16, uint32, uint64, bool. \n
 
 *@par Attributes:
-*@li transpose: The output tensor will be transposed if true. \n
-*@li dtype: Must be one of the following types: int32.
+*@li transpose: The output tensor will be transposed if true. Defaults to False.
+*@li dtype: Must be one of the following types: int32. Defaults to `int32`. \n
 
 *@par Outputs:
-*@li value: A Tensor. Has the same type as "x" . \n
-*@li index: A Tensor. The type is INT32, means index for input. \n
+*@li value: A Tensor. Has the same type as "x" .
+*@li index: A Tensor. The type is INT32, means index for input.
 *@li count: A Scalar. The type is INT32, means count for non_zero ele in input. \n
 
 *@par Third-party framework compatibility
@@ -1507,10 +1514,11 @@ REG_OP(ExpandD)
     .OP_END_FACTORY_REG(ExpandD)
 
 /**
-*@brief Get dim number in tensordesc. \n
+*@brief Get dim number in tensordesc. 
 
 *@par Inputs:
-*x: A Tensor. \n
+*x: A Tensor. Must be one of the following types: double, float32, float16, 
+*int8, uint8, int16, uint16, int32, uint32, int64, uint64, bool. \n
 
 *@par Outputs:
 *y: A 1D tensor. The data type must be int32. \n
@@ -1525,20 +1533,20 @@ REG_OP(GetShape)
     .OP_END_FACTORY_REG(GetShape)
 
 /**
-*@brief Update the tensor_desc of the output. \n
+* @brief Update the tensor_desc of the output.
 
-*@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double,
-*        int8, uint8, int16, uint16, uint32, uint64, bool.
+* @par Inputs:
+* x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double,
+* int8, uint8, int16, uint16, uint32, uint64, bool. Supported format "ND".
 
 * @par attributes:
-* @li shape: A listInt contains the data to update. \n
+* shape: A listInt contains the data to update. \n
 
-*@par outputs:
-* y: a tensor_desc. Has the same type as "x" .\n
+* @par outputs:
+* y: A Tensor, has the same type as "x". Shape is same as attr "shape". \n
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(UpdateTensorDesc)
     .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
@@ -1595,7 +1603,7 @@ REG_OP(EnsureShape)
 * @brief Finds the first unique element from every consecutive group of equivalent elements.
 
 * @par Inputs:
-* x: A ND tensor.
+* x: A ND tensor of BasicType, bool or bfloat16. \n
 
 * @par Attributes:
 * @li return_idx: An optional bool. Whether to also return the indices. The default value is False
@@ -1603,7 +1611,7 @@ REG_OP(EnsureShape)
 * @li axis: An optional int. Which one axis to apply unique. The default is 1000, which means None.
 
 * @par Outputs:
-* @li y: "x" in the unique output "y".
+* @li y: "x" in the unique output "y".Has the same type as "x" .
 * @li idx: The index of each value of "x".
 * @li count: The counts of each value of "y".
 
@@ -1615,8 +1623,8 @@ REG_OP(EnsureShape)
 */
 
 REG_OP(UniqueConsecutive)
-    .INPUT(x, TensorType({BasicType(), DT_BOOL}))
-    .OUTPUT(y, TensorType({BasicType(), DT_BOOL}))
+    .INPUT(x, TensorType({BasicType(), DT_BOOL, DT_BF16}))
+    .OUTPUT(y, TensorType({BasicType(), DT_BOOL, DT_BF16}))
     .OUTPUT(idx, TensorType::IndexNumberType())
     .OUTPUT(count, TensorType::IndexNumberType())
     .ATTR(return_idx, Bool, false)

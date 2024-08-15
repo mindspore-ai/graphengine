@@ -27,57 +27,57 @@
 namespace ge {
 /**
 * @brief LUT3D
-* calculating: img, lut_table, lut_img
-*    c = img.shape[- 1]
-*    n_h_w = reduce(lambda x, y: x * y, img.shape[:-1])
-*    lut_table_n = lut_table.shape[0]
-*    tensor_img = img.reshape(n_h_w, c)
-*    tensor_lut = np.cast["float32"](lut_table.reshape(lut_table_n * lut_table_n * lut_table_n, 3))
-*    img_fp32 = np.cast["float32"](tensor_img)
-*    img_fp32 = img_fp32 * (lut_table_n - 1) / 255.
+* calculating: img, lut_table, lut_img \n
+*    c = img.shape[- 1] \n
+*    n_h_w = reduce(lambda x, y: x * y, img.shape[:-1]) \n
+*    lut_table_n = lut_table.shape[0] \n
+*    tensor_img = img.reshape(n_h_w, c) \n
+*    tensor_lut = np.cast["float32"](lut_table.reshape(lut_table_n * lut_table_n * lut_table_n, 3)) \n
+*    img_fp32 = np.cast["float32"](tensor_img) \n
+*    img_fp32 = img_fp32 * (lut_table_n - 1) / 255. \n
 *
-*    b_floor = np.cast["int32"](np.floor(img_fp32[:, 0]))
-*    b_ceil = np.cast["int32"](np.ceil(img_fp32[:, 0]))
-*    g_floor = np.cast["int32"](np.floor(img_fp32[:, 1]))
-*    g_ceil = np.cast["int32"](np.ceil(img_fp32[:, 1]))
-*    r_floor = np.cast["int32"](np.floor(img_fp32[:, 2]))
-*    r_ceil = np.cast["int32"](np.ceil(img_fp32[:, 2]))
+*    b_floor = np.cast["int32"](np.floor(img_fp32[:, 0])) \n
+*    b_ceil = np.cast["int32"](np.ceil(img_fp32[:, 0])) \n
+*    g_floor = np.cast["int32"](np.floor(img_fp32[:, 1])) \n
+*    g_ceil = np.cast["int32"](np.ceil(img_fp32[:, 1])) \n
+*    r_floor = np.cast["int32"](np.floor(img_fp32[:, 2])) \n
+*    r_ceil = np.cast["int32"](np.ceil(img_fp32[:, 2])) \n
 *
-*    b_fl_idx = b_floor * lut_table_n * lut_table_n
-*    b_cl_idx = b_ceil * lut_table_n * lut_table_n
-*    g_fl_idx = g_floor * lut_table_n
-*    g_cl_idx = g_ceil * lut_table_n
-*    r_fl_idx = r_floor
-*    r_cl_idx = r_ceil
+*    b_fl_idx = b_floor * lut_table_n * lut_table_n \n
+*    b_cl_idx = b_ceil * lut_table_n * lut_table_n \n
+*    g_fl_idx = g_floor * lut_table_n \n
+*    g_cl_idx = g_ceil * lut_table_n \n
+*    r_fl_idx = r_floor \n
+*    r_cl_idx = r_ceil \n
 *
-*    tensor_index1 = b_fl_idx + g_fl_idx + r_fl_idx
-*    tensor_index2 = b_cl_idx + g_fl_idx + r_fl_idx
-*    tensor_index3 = b_fl_idx + g_cl_idx + r_fl_idx
-*    tensor_index4 = b_fl_idx + g_fl_idx + r_cl_idx
-*    tensor_index5 = b_fl_idx + g_cl_idx + r_cl_idx
-*    tensor_index6 = b_cl_idx + g_fl_idx + r_cl_idx
-*    tensor_index7 = b_cl_idx + g_cl_idx + r_fl_idx
-*    tensor_index8 = b_cl_idx + g_cl_idx + r_cl_idx
+*    tensor_index1 = b_fl_idx + g_fl_idx + r_fl_idx \n
+*    tensor_index2 = b_cl_idx + g_fl_idx + r_fl_idx \n
+*    tensor_index3 = b_fl_idx + g_cl_idx + r_fl_idx \n
+*    tensor_index4 = b_fl_idx + g_fl_idx + r_cl_idx \n
+*    tensor_index5 = b_fl_idx + g_cl_idx + r_cl_idx \n
+*    tensor_index6 = b_cl_idx + g_fl_idx + r_cl_idx \n
+*    tensor_index7 = b_cl_idx + g_cl_idx + r_fl_idx \n
+*    tensor_index8 = b_cl_idx + g_cl_idx + r_cl_idx \n
 *
-*    lut_tensor1 = tensor_lut[tensor_index1]
-*    lut_tensor2 = tensor_lut[tensor_index2]
-*    lut_tensor3 = tensor_lut[tensor_index3]
-*    lut_tensor4 = tensor_lut[tensor_index4]
-*    lut_tensor5 = tensor_lut[tensor_index5]
-*    lut_tensor6 = tensor_lut[tensor_index6]
-*    lut_tensor7 = tensor_lut[tensor_index7]
-*    lut_tensor8 = tensor_lut[tensor_index8]
+*    lut_tensor1 = tensor_lut[tensor_index1] \n
+*    lut_tensor2 = tensor_lut[tensor_index2] \n
+*    lut_tensor3 = tensor_lut[tensor_index3] \n
+*    lut_tensor4 = tensor_lut[tensor_index4] \n
+*    lut_tensor5 = tensor_lut[tensor_index5] \n
+*    lut_tensor6 = tensor_lut[tensor_index6] \n
+*    lut_tensor7 = tensor_lut[tensor_index7] \n
+*    lut_tensor8 = tensor_lut[tensor_index8] \n
 *
-*    fract_b = np.repeat((img_fp32[:, 0] - b_floor)[:, None], 3, 1)
-*    fract_b_1 = 1 - fract_b
-*    fract_g = np.repeat((img_fp32[:, 1] - g_floor)[:, None], 3, 1)
-*    fract_g_1 = 1 - fract_g
-*    fract_r = np.repeat((img_fp32[:, 2] - r_floor)[:, None], 3, 1)
-*    fract_r_1 = 1 - fract_r
+*    fract_b = np.repeat((img_fp32[:, 0] - b_floor)[:, None], 3, 1) \n
+*    fract_b_1 = 1 - fract_b \n
+*    fract_g = np.repeat((img_fp32[:, 1] - g_floor)[:, None], 3, 1) \n
+*    fract_g_1 = 1 - fract_g \n
+*    fract_r = np.repeat((img_fp32[:, 2] - r_floor)[:, None], 3, 1) \n
+*    fract_r_1 = 1 - fract_r \n
 *
-*    lut_img = ((lut_tensor1 * fract_r_1 + lut_tensor4 * fract_r) * fract_g_1 \
-*              + (lut_tensor3 * fract_r_1 + lut_tensor5 * fract_r) * fract_g) * fract_b_1 \
-*              + ((lut_tensor2 * fract_r_1 + lut_tensor6 * fract_r) * fract_g_1 \
+*    lut_img = ((lut_tensor1 * fract_r_1 + lut_tensor4 * fract_r) * fract_g_1 \ \n
+*              + (lut_tensor3 * fract_r_1 + lut_tensor5 * fract_r) * fract_g) * fract_b_1 \ \n
+*              + ((lut_tensor2 * fract_r_1 + lut_tensor6 * fract_r) * fract_g_1 \ \n
 *              + (lut_tensor7 * fract_r_1 + lut_tensor8 * fract_r) * fract_g) * fract_b
 *
 * @par Inputs:

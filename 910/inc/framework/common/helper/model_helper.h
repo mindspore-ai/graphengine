@@ -31,19 +31,23 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
   ModelHelper(const ModelHelper &) = default;
   ModelHelper &operator=(const ModelHelper &) & = default;
 
-  Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file,
-                       ge::ModelBufferData &model, const GeRootModelPtr &ge_root_model = nullptr) override;
-  Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
-                         GeModelPtr &first_ge_model, const size_t mode_index,
-                         const bool is_dyn_root) const;
-  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file,
-                           ModelBufferData &model, const bool is_unknown_shape) override;
+  Status SaveToOmModel(const GeModelPtr &ge_model, const std::string &output_file, ge::ModelBufferData &model,
+                       const GeRootModelPtr &ge_root_model = nullptr) override;
+  Status GenerateGeModel(const OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, GeModelPtr &first_ge_model,
+                         const size_t mode_index, const bool is_dyn_root) const;
+  Status SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const std::string &output_file, ModelBufferData &model,
+                           const bool is_unknown_shape) override;
   Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) const;
+
   Status LoadModel(const ge::ModelData &model_data);
   Status LoadRootModel(const ge::ModelData &model_data);
   static Status GetModelFileHead(const ge::ModelData &model_data, const ModelFileHeader *&file_header);
   static Status SetModelToGeModel(const GeModelPtr &ge_model, const GeModelPtr &first_ge_model, Model &model);
-  static std::string GetOutputFileName() { return output_file_name_; }
+  static Status SaveBundleModelBufferToMem(const std::vector<ModelBufferData> &model_buffers,
+                                           ModelBufferData &output_buffer);
+  static std::string GetOutputFileName() {
+    return output_file_name_;
+  }
   Status LoadPartInfoFromModel(const ge::ModelData &model_data, ModelPartition &partition);
 
   GeModelPtr GetGeModel();
@@ -82,7 +86,11 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   void SetRepackSoFlag(const bool val);
 
-  Status LoadModelDataAndPackSo(const ModelData &model_data, const std::string &output_file);
+  Status PackSoToModelData(const ModelData &model_data, const std::string &output_file, ModelBufferData &model_buffer,
+                           const bool save_to_file = true);
+  bool IsSoStore() const {
+    return is_so_store_;
+  }
 
   static constexpr const char_t *kFilePreffix = ".exeom";
   static constexpr const char_t *kDebugPreffix = ".dbg";
@@ -99,11 +107,11 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
                          const size_t model_num = 1U, const bool need_check_os_cpu = false,
                          const bool is_unknow_shape = false) const;
   Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const ModelPartitionType type,
-                            const uint8_t* const data, const size_t size, const size_t model_index) const;
+                            const uint8_t *const data, const size_t size, const size_t model_index) const;
   Status SaveModelWeights(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                           const size_t model_index = 0U) const;
-  Status SaveModelIntroduction(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                               const GeModelPtr &ge_model, const size_t model_index = 0U) const;
+  Status SaveModelIntroduction(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                               const size_t model_index = 0U) const;
   Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                             const size_t model_index = 0U) const;
   GeModelPtr model_;
@@ -112,6 +120,7 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
  private:
   bool is_assign_model_ = false;
   bool is_offline_ = true;
+  bool save_to_file_ = true;
   bool is_unknown_shape_model_ = false;
   bool is_shared_weight_ = false;
   const ModelFileHeader *file_header_ = nullptr;
@@ -127,18 +136,16 @@ class GE_FUNC_VISIBILITY ModelHelper : public ModelSaveHelper {
 
   Status GenerateGeRootModel(const OmFileLoadHelper &om_load_helper, const ModelData &model_data);
 
-  Status CheckIfWeightPathValid(const ge::ComputeGraphPtr &graph,
-                                const ge::ModelData &model_data) const;
+  Status CheckIfWeightPathValid(const ge::ComputeGraphPtr &graph, const ge::ModelData &model_data) const;
   Status LoadModelData(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                        const GeModelPtr &first_ge_model, const size_t mode_index) const;
   virtual Status LoadWeights(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
-                     const size_t mode_index) const;
+                             const size_t mode_index) const;
   Status LoadTask(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model, const size_t mode_index) const;
   Status LoadTBEKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                             const size_t mode_index) const;
   Status LoadCustAICPUKernelStore(const OmFileLoadHelper &om_load_helper, const GeModelPtr &cur_model,
                                   const size_t mode_index) const;
-
 
   Status SaveModelDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                       Buffer &model_buffer, const size_t model_index = 0U) const;

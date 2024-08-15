@@ -1955,7 +1955,7 @@ REG_OP(ApplyAdam)
 *
 *@par Attributes:
 *@li use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", m", and "v" tensors will be protected
+*     If "True", updating of the "var", "m", and "v" tensors will be protected
 *     by a lock; otherwise the behavior is undefined, but may exhibit less
 *     contention.
 *@li use_nesterov: An optional bool. Defaults to "False".
@@ -2728,10 +2728,10 @@ REG_OP(SparseApplyAdadeltaD)
 
 
 /**
-*@brief Clean memory of workspace list . \n
+*@brief Clean memory of workspace list.
 
 *@par Attributes:
-* @li automic_add_mem_size: sizes of workspaces . \n
+*@li automic_add_mem_size: An optional listint. Defaults to {}. sizes of workspaces. \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.

@@ -26,21 +26,25 @@
 namespace ge {
 
 /**
-* @brief Calculate TabulateFusion. \n
+* @brief Calculate TabulateFusion.
 *
 * @par Inputs:
-* Five inputs, including:
-* @li table: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li table_info: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li em_x: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li em: A Tensor. Must be one of the following types: float16, float32, float64. \n
+* Four inputs, including:
+* @li table: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li table_info: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
+* @li em_x: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li em: A Tensor. Must be one of the following types: float16, float32, 
+* float64. \n
 *
 * @par Outputs:
-* descriptor: A Tensor. Must be one of the following types: float16, float32, float64. \n
+* descriptor: A Tensor. Must be one of the following types: float16, float32, 
+* float64. \n
 *
 * @par Attributes:
-* Three attributes, including:
-* @li last_layer_size: int value.
+* last_layer_size: A required int.
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -55,7 +59,7 @@ REG_OP(TabulateFusion)
     .OP_END_FACTORY_REG(TabulateFusion)
 
 /**
-* @brief Calculate ProdEnvMatA. \n
+* @brief Calculate ProdEnvMatA.
 *
 * @par Inputs:
 * @li coord: A Tensor. Must be one of the following types: float32, float64.
@@ -67,17 +71,18 @@ REG_OP(TabulateFusion)
 * @li dstd: A Tensor. Must be one of the following types: float32, float64.
 *
 * @par Outputs:
-* descrpt: A Tensor. Must be one of the following types: float32, float64.
-* descrpt_deriv: A Tensor. Must be one of the following types: float32, float64.
-* rij: A Tensor. Must be one of the following types: float32, float64.
-* nlist: A Tensor. Must be one of the following types: int32. \n
+* @li descrpt: A Tensor. Must be one of the following types: float32, float64.
+* @li descrpt_deriv: A Tensor. Must be one of the following types: float32, 
+* float64.
+* @li rij: A Tensor. Must be one of the following types: float32, float64.
+* @li nlist: A Tensor. Must be one of the following types: int32. \n
 *
 * @par Attributes:
-* @li rcut_a: A Float.
-* @li rcut_r: A Float.
-* @li rcut_r_smth: A Float.
-* @li sel_a: A ListInt.
-* @li sel_r: A ListInt.
+* @li rcut_a: An optional float. Defaults to 1.0.
+* @li rcut_r: An optional float. Defaults to 1.0.
+* @li rcut_r_smth: An optional float. Defaults to 1.0.
+* @li sel_a: An optional listInt. Defaults to {}.
+* @li sel_r: An optional listInt. Defaults to {}.
 *
 */
 REG_OP(ProdEnvMatA)
@@ -150,7 +155,7 @@ REG_OP(ProdEnvMatACalcRij)
     .OP_END_FACTORY_REG(ProdEnvMatACalcRij)
 
 /**
-* @brief Calculate ProdEnvMatACalcDescrpt. \n
+* @brief Calculate ProdEnvMatACalcDescrpt.
 *
 * @par Inputs:
 * @li distance: A Tensor. Must be one of the following types: float32, float64.
@@ -168,11 +173,11 @@ REG_OP(ProdEnvMatACalcRij)
 * @li descrpt_deriv: A Tensor. Must be one of the following types: float32, float64. \n
 *
 * @par Attributes:
-* @li rcut_a: A Float.
-* @li rcut_r: A Float.
-* @li rcut_r_smth: A Float.
-* @li sel_a: A ListInt.
-* @li sel_r: A ListInt. \n
+* @li rcut_a: An optional float. Defaults to 1.0.
+* @li rcut_r: An optional float. Defaults to 1.0.
+* @li rcut_r_smth: An optional float. Defaults to 1.0.
+* @li sel_a: An optional listInt. Defaults to {}.
+* @li sel_r: An optional listInt. Defaults to {}. \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -197,22 +202,25 @@ REG_OP(ProdEnvMatACalcDescrpt)
     .OP_END_FACTORY_REG(ProdEnvMatACalcDescrpt)
 
 /**
-* @brief Calculate ProdForceSeA. \n
+* @brief Calculate ProdForceSeA.
 *
 * @par Inputs:
 * Five inputs, including:
-* @li net_deriv: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li in_deriv: A Tensor. Must be one of the following types: float16, float32, float64.
+* @li net_deriv: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
+* @li in_deriv: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
 * @li nlist: A Tensor. dtype is int32.
 * @li natoms: A Tensor. dtype is int32. \n
 *
 * @par Outputs:
-* atom_force: A Tensor. Must be one of the following types: float16, float32, float64. \n
+* atom_force: A Tensor. Must be one of the following types: float16, float32, 
+* float64. \n
 *
 * @par Attributes:
 * Two attributes, including:
-* @li n_a_sel: A Scalar.
-* @li n_r_sel: A Scalar. \n
+* @li n_a_sel: A required int.
+* @li n_r_sel: A required int. \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -228,25 +236,30 @@ REG_OP(ProdForceSeA)
     .OP_END_FACTORY_REG(ProdForceSeA)
 
 /**
-* @brief Calculate ProdVirialSeA. \n
+* @brief Calculate ProdVirialSeA.
 *
 * @par Inputs:
 * Five inputs, including:
-* @li net_deriv: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li in_deriv: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li rij: A Tensor. Must be one of the following types: float16, float32, float64.
+* @li net_deriv: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
+* @li in_deriv: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
+* @li rij: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
 * @li nlist: A Tensor. dtype is int32.
 * @li natoms: A Tensor. dtype is int32. \n
 *
 * @par Outputs:
 * Two outputs, including:
-* @li virial: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li atom_virial: A Tensor. Must be one of the following types: float16, float32, float64. \n
+* @li virial: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li atom_virial: A Tensor. Must be one of the following types: float16, 
+* float32, float64. \n
 *
 * @par Attributes:
 * Two attributes, including:
-* @li n_a_sel: Int value.
-* @li n_r_sel: Int value.
+* @li n_a_sel: A required int.
+* @li n_r_sel: A required int.
 */
 REG_OP(ProdVirialSeA)
     .INPUT(net_deriv, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -261,20 +274,28 @@ REG_OP(ProdVirialSeA)
     .OP_END_FACTORY_REG(ProdVirialSeA)
 
 /**
-* @brief Calculate TabulateFusionGrad. \n
+* @brief Calculate TabulateFusionGrad.
 *
 * @par Inputs:
-* Five inputs, including:
-* @li table: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li table_info: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li em_x: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li em: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li dy: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li descriptor: A Tensor. Must be one of the following types: float16, float32, float64. \n
+* Six inputs, including:
+* @li table: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li table_info: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
+* @li em_x: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li em: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li dy: A Tensor. Must be one of the following types: float16, float32, 
+* float64.
+* @li descriptor: A Tensor. Must be one of the following types: float16, 
+* float32, float64. \n
 *
 * @par Outputs:
-* @li dy_dem_x: A Tensor. Must be one of the following types: float16, float32, float64.
-* @li dy_dem: A Tensor. Must be one of the following types: float16, float32, float64. \n
+* @li dy_dem_x: A Tensor. Must be one of the following types: float16, 
+* float32, float64.
+* @li dy_dem: A Tensor. Must be one of the following types: float16, float32, 
+* float64. \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.

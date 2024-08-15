@@ -2365,19 +2365,41 @@ REG_OP(CacheAllIndexToLocal)
 *@brief LRUCacheV2, aicore LRUCache.
 
 *@par Inputs:
-*index_list: exchange index list
-*data: host data
-*cache: gm cache
-*tag: cache's tag
-*is_last_call: if is last call write all cache to data
+*@li index_list: exchange index list. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li data: host data. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li cache: gm cache. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li tag: cache's tag. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li is_last_call: if is last call write all cache to data. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
 
 *@par Outputs:
-*data: output data
-*cache: gm cache
-*tag: cache's tag
-*index_offset_list: index_offset_list
-*not_in_cache_index_list: output not in cache's index_list
-*not_in_cache_number: scalar
+*@li data: output data. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li cache: gm cache. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li tag: cache's tag. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li index_offset_list: index_offset_list. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li not_in_cache_index_list: output not in cache's index_list. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
+*@li not_in_cache_number: scalar. Must be one of the types in BasicType:
+complex128, complex64, double, float32, float16, int16, int32, int64, int8, qint16,
+qint32, qint8, quint16, quint8, quint16, uint32, uint64, uint8, bfloat16, complex32.
 
 *@par Attributes:
 *pre_route_count: types of all outputs

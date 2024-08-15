@@ -54,7 +54,7 @@ REG_OP(LogSoftmaxGrad)
 
 *@par Inputs:
 *Two inputs, including:
-* @li features: A Tensor. Must be one of the following types: half, float32, double.
+* @li features: A Tensor. Must be one of the following types: float16, float32, double.
 *A "batch_size * num_classes" matrix.
 * @li labels: A Tensor. Must be one of the following types: 'int32', 'int64'.
 *batch_size vector with values in [0, num_classes).
@@ -523,14 +523,17 @@ REG_OP(SoftmaxGradExt)
 *x: An NCHW tensor of type float16 or float32 . \n
 
 *@par Attributes:
-*@li normalize_variance: An optional bool specifying whether to normalize the variance, either "true" (default) or "false"
+*@li normalize_variance: An optional bool specifying whether to normalize the 
+* variance, either "true" (default) or "false"
 * the value "false" indicates only to subtract the mean.
-*@li across_channels: An optional bool specifying whether to perform across-channel MVN, either "true" or "false" (default)
+*@li across_channels: An optional bool specifying whether to perform 
+* across-channel MVN, either "true" or "false" (default)
 * The value "true" indicates "CHW" is treated as a vector.
-*@li eps: An optional float32 epsilon for not dividing by zero. Defaults to "1e-9" . \n
+*@li eps: An optional float32 epsilon for not dividing by zero. Defaults to 
+* "1e-9" . \n
 
 *@par Outputs:
-*y: An NCHW tensor of type float16 or float32 . \n
+*y: An NCHW tensor of type float16 or float32. \n
 
 *@attention Constraints:
 * The input tensor must have the NCHW format, whose shape length must be 4.
@@ -539,8 +542,8 @@ REG_OP(SoftmaxGradExt)
 */
 
 REG_OP(MVN)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))  /* "Result, has same element type as inputs" */
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .ATTR(normalize_variance, Bool, true)
     .ATTR(across_channels, Bool, false)
     .ATTR(eps, Float, 1e-9)
@@ -2260,24 +2263,25 @@ REG_OP(AddLayerNormGrad)
     .OP_END_FACTORY_REG(AddLayerNormGrad);
 
 /**
-* @brief MMCV Function: softmax_focal_loss_grad  .
+* @brief MMCV Function: softmax_focal_loss_grad.
 
 * @par Inputs:
 * Three inputs, including:
 * @li pred: the predicted tensor. The type support float16 and float32.
 * @li target: the target label Tensor. The type support Int32.
 * @li dout: the grad of previous op grad, which has the sampe shape wth pred. The type support float16 and float32.
-* @li weight: A optioanl input Tensor, default is None, which helps to calculate the loss by supplying sample weights:
+* @li weight: A optional input Tensor, default is None, which helps to calculate the loss by supplying sample weights.
+            The type support float16 and float32.
 *     shape of pred should be (B, D), B means batch size, D means the number of labels.
 *     shape of target should be (B, D).
 *     shape of weight should be (D, ) \n
 
 * @par Attributes:
-* @li alpha: A attribute is used to reweight the sample. The type is float . \n
+* @li alpha: A attribute is used to reweight the sample. The type is float . Default is 0.25\n
 * @li gamma: A attribute is used to calculate the power of the probability.
-*     The type is float . \n
+*     The type is float . Default is 2.0\n
 * @li reduction: a type of the reduce method. default is 'mean', which means computing the average loss.
-                'sum' means computing the sum of the loss, 'none' means no reducing .\n
+                'sum' means computing the sum of the loss, 'none' means no reducing. Default is 'mean' \n
 
 * @par Outputs:
 * grad: A mutable Tensor. Has the same type and shape as "pred". \n

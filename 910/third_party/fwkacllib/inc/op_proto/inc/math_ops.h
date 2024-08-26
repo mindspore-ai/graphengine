@@ -813,16 +813,17 @@ REG_OP(IsNan)
     .OP_END_FACTORY_REG(IsNan)
 
 /**
- * @brief Returns the real part of a complex number. If the input is already real, it will be returned unchanged.
+ * @brief Returns the real part of a complex number.
+ * If the input is already real, it will be returned unchanged.
 
  * @par Inputs:
- * input:A Tensor. Must have numeric type.
+ * input:A Tensor of type float16, float32, complex32, complex64, complex128.
 
  * @par Attributes:
- * Tout: Type of outputs. \n
+ * Tout: Type of outputs. Defaults to DT_FLOAT \n
 
  * @par Outputs:
- * output:A Tensor. Has the same shape as input.
+ * output:A Tensor of type float16, float32, double. Has the same shape as input.
 
  * @par Third-party framework compatibility.
  * Compatible with tensorflow Real operator.

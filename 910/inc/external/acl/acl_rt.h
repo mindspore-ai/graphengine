@@ -503,6 +503,37 @@ ACL_FUNC_VISIBILITY aclError aclrtResetDevice(int32_t deviceId);
 
 /**
  * @ingroup AscendCL
+ * @brief Reset the current operating Device and free resources on the device by FORCE,
+ * including the default context, the default stream,
+ * and all streams created under the default context,
+ * and synchronizes the interface.
+ * If the task under the default context or stream has not been completed,
+ * the system will wait for the task to complete before releasing it.
+ * No matter how many times you call aclrtSetDevice for the same device id,
+ * you only need to call aclrtResetDeviceForce once for resetting.
+ *
+ * @par Restriction
+ * @li The Context, Stream, and Event that are explicitly created
+ * on the device to be reset. Before resetting,
+ * it is recommended to follow the following interface calling sequence,
+ * otherwise business abnormalities may be caused.
+ * @li Interface calling sequence:
+ * call aclrtDestroyEvent interface to release Event or
+ * call aclrtDestroyStream interface to release explicitly created Stream->
+ * call aclrtDestroyContext to release explicitly created Context->
+ * call aclrtResetDeviceForce interface
+ *
+ * @param  deviceId [IN]   the device id
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ * 
+ * @see aclrtResetDevice
+ */
+ACL_FUNC_VISIBILITY aclError aclrtResetDeviceForce(int32_t deviceId);
+
+/**
+ * @ingroup AscendCL
  * @brief get target device of current thread
  *
  * @param deviceId [OUT]  the device id

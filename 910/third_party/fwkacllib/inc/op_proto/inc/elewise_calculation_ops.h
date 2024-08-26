@@ -158,12 +158,11 @@ REG_OP(Cast)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types:bfloat16, float16, float32,
-*    double, int32, int8, uint8, int64, uint16, uint32, uint64.
+* @li x1: A Tensor with TensorType::RealNumberType().
 * @li x2: A Tensor of the same dtype as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same dtype as "x1". \n
+*y: A Tensor. Has the bool dtype. \n
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator GreaterEqual.
@@ -181,8 +180,7 @@ REG_OP(GreaterEqual)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32, double, int32,
-*     uint8, int16, int8, int64, uint16, uint32, uint64.
+* @li x1: A Tensor with TensorType::RealNumberType().
 * @li x2: A Tensor with the same dtype as "x1". \n
 
 *@par Outputs:
@@ -338,8 +336,7 @@ REG_OP(Sub)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types:
-*     int32, uint8, int16, int8, int64, int64, uint16, uint32, uint64.
+* @li x1: A Tensor. Must be one of the following types: int32, int16, int64.
 * @li x2: A Tensor of the same dtype as "x1". \n
 
 *@par Outputs:
@@ -566,7 +563,7 @@ REG_OP(Expm1)
 
 * @par Inputs:
 * One input:
-* x: A Tensor. Must be one of the following types: bfloat16, half, float32, double. \n
+* x: A Tensor. Must be one of the following types: bfloat16, float16, float32, double. \n
 
 * @par Outputs:
 * y: A Tensor of the same dtype as "x". \n
@@ -587,7 +584,7 @@ REG_OP(Expint)
 * int32, int64, double, complex64, complex128. \n
 
 * @par Outputs:
-* y: A Tensor. Must be one of the following type: float16, float32, int32. \n
+* y: A Tensor. Must be one of the following type: float16, bfloat16, float32, int32. \n
 
 * @par Third-party framework compatibility:
 * Compatible with the TensorFlow operator Inv.
@@ -700,7 +697,7 @@ REG_OP(Mod)
 * @par Inputs:
 * Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: bfloat16, float16, float32, int32,
-* int8, uint8, double, int16, int64, uint16, half, uint32, uint64.
+* int8, uint8, double, int16, int64, uint16, float16, uint32, uint64.
 * @li x2: A Tensor of the same dtype as "x1". \n
 
 * @par Outputs:
@@ -836,8 +833,7 @@ REG_OP(Xlog1py)
     .OP_END_FACTORY_REG(Xlog1py)
 
 /**
-*@brief Computes "x" multiplied by the logarithm of y element-wise,
-* if "x" == 0, return "0".
+*@brief Computes y = x1 * log(x2).
 
 *@par Inputs:
 * Two inputs, including:
@@ -886,7 +882,7 @@ REG_OP(Square)
 
 *
 *@par Inputs:
-* x: An ND or 5HD tensor. Must be one of the following types: bfloat16, float, double, half,
+* x: An ND or 5HD tensor. Must be one of the following types: bfloat16, float, double, float16,
  * complex64, complex128.
 *
 *@par Outputs:
@@ -1232,7 +1228,7 @@ REG_OP(Mul)
 
 * @par Inputs:
 * Two inputs, including:
-* @li y: A Tensor of type bfloat16, float16 or float32.
+* @li y: A Tensor of type of UnaryDataType.
 * @li dy: A Tensor. Has the same dtype as "y". \n
 
 * @par Outputs:
@@ -1458,7 +1454,7 @@ REG_OP(AssignSub)
 * @par Inputs:
 * Two inputs, including:
 * @li y: An NCHW, NHWC, ND Tensor. Must be one of the following types: \
- * float, int32, int8, double, complex64, complex128, half, bfloat16.
+ * float, int32, int8, double, complex64, complex128, float16, bfloat16.
 * @li dy: A Tensor of the same dtype and format as "y". \n
 
 * @par Outputs:
@@ -1498,8 +1494,7 @@ REG_OP(Sinh)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64,
-* qint8, quint8, qint32, uint16, complex128, float16, bfloat16, uint32, uint64.
+* @li x: A Tensor with TensorType::NumberType().
 * @li clip_value_min: A Tensor of the same dtype as "x".
 * @li clip_value_max: A Tensor of the same dtype as "x". \n
 
@@ -1606,13 +1601,13 @@ REG_OP(OnesLike)
 
 * @par Inputs:
 * @li y: A Tensor. Must be one of the following types: bfloat16, float, double, complex32,
-* complex64, complex128, half.
+* complex64, complex128, float16.
 * @li dy: A Tensor. Must be one of the following types: bfloat16, float, double, complex32,
-* complex64, complex128, half. \n
+* complex64, complex128, float16. \n
 
 * @par Outputs:
 * z: A Tensor. Must be one of the following types: float, double, complex32,
-* complex64, complex128, half. \n
+* complex64, complex128, float16. \n
 
 * @attention Constraints:
 * "dy" has the same shape and type as "y". \n
@@ -1632,8 +1627,7 @@ REG_OP(ReciprocalGrad)
 * aicore accuracy is not guaranteed
 
 * @par Inputs:
-* @li x1: A Tensor of type bfloat16, float16, float32, double, int64, int32, int16, int8,
-*    uint8, uint16, uint32, uint64.
+* @li x1: A Tensor with TensorType::RealNumberType().
 * @li x2: A Tensor of the same data type as "x1". \n
 
 * @par Outputs:
@@ -1656,10 +1650,7 @@ REG_OP(Greater)
 *@brief Returns a tensor of the same dtype and shape as the input tensor with all elements set to zero.
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types:
-*     vThresholdariant, float32, float64, int32, uint8, int16, int8,
-*     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, bfloat16, float16, uint32, uint64, complex64, complex128. \n
+*x: A Tensor. Must be one of the following types: BasicType() and variant. \n
 
 *@par Outputs:
 *y: A Tensor of the same data type as "x". \n
@@ -2413,7 +2404,7 @@ REG_OP(Tan)
 * @attention Constraints:
 * @li x2: The input data does not support 0
 * @li When value of tensor exceeds 2048 , the accuracy of operator cannot guarantee the
-* requirement of double thousandths in the mini platform
+* requirement of double thousandths in the 310 platform
 * @li Due to different architectures, the calculation results of this operator
 * on NPU and CPU may be inconsistent
 * @li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
@@ -3170,23 +3161,23 @@ REG_OP(ClipByNormNoDivSum)
     .OP_END_FACTORY_REG(ClipByNormNoDivSum)
 
 /**
-*@brief Confuse reducesumd and square.
+* @brief Confuse reducesumd and square.
 
-*@par Inputs:
-*x: A Tensor of type float16, float32. \n
+* @par Inputs:
+* x: A Tensor of type float16, float32. \n
 
-*@par Attributes:
+* @par Attributes:
 * Two attributes, including: \n
-*@li axis: A optional listint, specifies the dimensions to reduce.
-*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false". \n
+* @li axis: A required listint, specifies the dimensions to reduce.
+* @li keep_dims: A optional bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false". \n
 
-*@par Outputs:
-*Two outputs, including: \n
-*@li y1: A Tensor. Has the same dtype as "x".
-*@li y2: A Tensor. Has the same dtype as "x".
+* @par Outputs:
+* Two outputs, including: \n
+* @li y1: A Tensor. Has the same dtype as "x".
+* @li y2: A Tensor. Has the same dtype as "x".
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -3204,8 +3195,8 @@ REG_OP(SquareSumV2)
 
 * @par Attributes:
 * Two attributes, including: \n
-* @li axis: A optional listint, specifies the dimensions to reduce.
-* @li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false". \n
+* @li axis: A required listint, specifies the dimensions to reduce.
+* @li keep_dims: A optional bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false". \n
 
 * @par Outputs:
 * y: A Tensor. Has the same dtype as "x".
@@ -3314,8 +3305,8 @@ REG_OP(Bias)
 
 /**
 *@brief Function multiply gradients calculation.
-output0 is the result of which input0 dot multily input1.
-output1 is the result of which input0 dot multily input1, then reducesum it.
+output0 is the result of which input0 dot multiply input1.
+output1 is the result of which input0 dot multiply input1, then reducesum it.
 
 *@par Inputs:
 *@li input0: A Tensor of input of mul, and dtype supports float16, float32.
@@ -3326,11 +3317,11 @@ output1 is the result of which input0 dot multily input1, then reducesum it.
 *@li axes: The dimensions to reduce. Default:(), reduce all dimensions. \n
 Only constant value is allowed.
 *@li keep_dims: If true, keep these reduced dimensions and the length is 1. \n
-If false, don’t keep these dimensions. Default:False. \n
+If false, don’t keep these dimensions. Default: false. \n
 
 *@par Outputs:
-*@li output0: A Tensor result of which input0 dot multily input1.
-*@li output1: A Tensor result of which input0 dot multily input1, then reducesum it.
+*@li output0: A Tensor result of which input0 dot multiply input1.
+*@li output1: A Tensor result of which input0 dot multiply input1, then reducesum it.
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
@@ -3350,9 +3341,9 @@ REG_OP(ConfusionMulGrad)
 
 *@par Inputs:
 *Three inputs, including:
-*@li x1: A Tensor of type compilex128, compilex64, double, float,
+*@li x1: A Tensor of type complex128, complex64, double, float,
 * float16, int16, int32, int64, int8, qint32, qint8, quint8, uint16,
-* uint32, uint64, uint8, bfloat16, compilex32.
+* uint32, uint64, uint8, bfloat16, complex32.
 *@li x2: A Tensor with the same dtype of x1.
 *@li x3: A Tensor with the same dtype of x1. \n
 
@@ -3534,12 +3525,12 @@ REG_OP(Axpy)
     .OP_END_FACTORY_REG(Axpy)
 
 /**
-*@brief Creates a criterion that measures the loss given input tensors x1 x2 and a Tensor label y with values 1 or -1. \n
+*@brief Creates a criterion that measures the loss given input tensors x1 x2 and a Tensor label y with values 1 or -1.
 
 *@par Inputs:
-*@li x1: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
-*@li x2: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
-*@li target: A ND Tensor with one of the following types: int8, int32, float16, float32. \n
+*@li x1: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32, int16, int64, double.
+*@li x2: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32, int16, int64, double.
+*@li target: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32, int16, int64, double. \n
 
 *@par Attributes:
 *@li margin: A optional float32. Defaults to "0.0".
@@ -4236,8 +4227,7 @@ REG_OP(CastLike)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64,
-* qint8, quint8, qint32, uint16, complex128, float16, bfloat16, uint32, uint64.
+* @li x: A Tensor with TensorType::NumberType().
 * @li clip_value_min: A Tensor of the same dtype as "x".
 * @li clip_value_max: A Tensor of the same dtype as "x". \n
 

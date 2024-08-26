@@ -21,6 +21,7 @@
 extern "C" {
 #endif
 
+#define ACL_DIM_ENDPOINTS        2
 #define ACL_MAX_DIM_CNT          128
 #define ACL_MAX_TENSOR_NAME_LEN  128
 #define ACL_MAX_BATCH_NUM        128
@@ -116,9 +117,14 @@ typedef enum {
 
 typedef struct aclmdlIODims {
     char name[ACL_MAX_TENSOR_NAME_LEN]; /**< tensor name */
-    size_t dimCount;  /**< dim array count */
+    size_t dimCount; /**< dim array count */
     int64_t dims[ACL_MAX_DIM_CNT]; /**< dim data array */
 } aclmdlIODims;
+
+typedef struct aclmdlIODimsRange {
+    size_t rangeCount; /**< dim range array count */
+    int64_t range[ACL_MAX_DIM_CNT][ACL_DIM_ENDPOINTS]; /**< range data array */
+} aclmdlIODimsRange;
 
 typedef struct aclAippDims {
     aclmdlIODims srcDims; /**< input dims before model transform */
@@ -814,6 +820,20 @@ ACL_FUNC_VISIBILITY aclError aclmdlGetInputDims(const aclmdlDesc *modelDesc, siz
  * @see aclmdlGetInputDims
  */
 ACL_FUNC_VISIBILITY aclError aclmdlGetInputDimsV2(const aclmdlDesc *modelDesc, size_t index, aclmdlIODims *dims);
+
+/**
+ * @ingroup AscendCL
+ * @brief get input dims range info
+ *
+ * @param modelDesc [IN]  model description
+ * @param index [IN]  input tensor index
+ * @param dimsRange [OUT]  dims range info
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlGetInputDimsRange(const aclmdlDesc *modelDesc, size_t index,
+                                                     aclmdlIODimsRange *dimsRange);
 
 /**
  * @ingroup AscendCL

@@ -1993,13 +1993,13 @@ REG_OP(DenseImageWarp)
 *     float16, float32. \n
 
 *@par Attributes:
-*@li sizes: An optional listInt. \n
+*@li sizes: An required listInt. \n
 *@li scales: An optional listFloat.
     Defaults to none. \n
 *@li roi: An optional listInt.
     Defaults to none. \n
 *@li coordinate_transformation_mode: An optional String.
-    Defaults to "half_pixel". \n
+    Defaults to "half_pixel", other optional: align_corners. \n
 *@li cubic_coeff_a: An optional float.
     Defaults to -0.75. \n
 *@li exclude_outside: An optional int.
@@ -2007,11 +2007,11 @@ REG_OP(DenseImageWarp)
 *@li extrapolation_value: An optional float.
     Defaults to 0.0. \n
 *@li mode: An optional String.
-    Defaults to "nearest". \n
+    Defaults to "nearest", other optional: cubic. \n
 *@li nearest_mode: An optional String.
     Defaults to "round_prefer_floor". \n
 *@li data_format: An optional String.
-    Defaults to "NCHW". \n
+    Defaults to "NCHW", other optional: "HWNC". \n
 
 *@par Outputs:
 *y: A Tensor with the same type of x's,
@@ -2044,13 +2044,13 @@ REG_OP(ResizeD)
 *     float16, float32. \n
 
 *@par Attributes:
-*@li original_size: An optional listInt. \n
+*@li original_size: A required listInt. \n
 *@li roi: An optional listInt.
     Defaults to none. \n
 *@li scales: An optional listFloat.
     Defaults to none. \n
 *@li coordinate_transformation_mode: An optional String.
-    Defaults to "half_pixel". \n
+    Support "half_pixel" and "align_corners". Defaults to "half_pixel". \n
 *@li cubic_coeff_a: An optional float.
     Defaults to -0.75. \n
 *@li exclude_outside: An optional int.
@@ -2058,11 +2058,12 @@ REG_OP(ResizeD)
 *@li extrapolation_value: An optional float.
     Defaults to 0.0. \n
 *@li mode: An optional String.
-    Defaults to "nearest". \n
+    Support "nearest" and "cubic". Defaults to "nearest". \n
 *@li nearest_mode: An optional String.
-    Defaults to "round_prefer_floor". \n
+    Only used by nearest interpolation. 
+    Support "round_prefer_floor" and "round_prefer_ceil". Defaults to "round_prefer_floor". \n
 *@li data_format: An optional String.
-    Defaults to "NCHW". \n
+    Support "NCHW" and "HWNC". Defaults to "NCHW". \n
 
 *@par Outputs:
 *y: A Tensor with the same type of x's,
@@ -2166,11 +2167,11 @@ REG_OP(GridSampler2D)
 *Compatible with pytorch GridSampler2DGrad operator.
 */
 REG_OP(GridSampler2DGrad)
-    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(dgrid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
+    .OUTPUT(dgrid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BF16}))
     .ATTR(interpolation_mode, String, "bilinear")
     .ATTR(padding_mode, String, "zeros")
     .ATTR(align_corners, Bool, false)

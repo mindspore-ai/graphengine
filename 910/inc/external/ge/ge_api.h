@@ -170,6 +170,21 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief load a graph of the session with specific session id and specific stream, 
+  /// @param [in] graph_id graph id
+  /// @param [in] stream specific stream
+  /// @param [in] options graph options
+  /// @return Status result of function
+  ///
+  /* 
+     方案约束：只用于加载已经完成CompileGraph的图，不支持重复加载图，
+     使用方法：CompileGraph + LoadGraph + ExecuteGraphWithStreamAsync
+  */
+  Status LoadGraph(const uint32_t graph_id, const std::map<AscendString, AscendString> &options,
+                   void *stream) const;
+
+  ///
+  /// @ingroup ge_graph
   /// @brief run a graph of the session with specific session id and specific stream asynchronously
   /// @param [in] graph_id graph id
   /// @param [in] stream specific stream
@@ -413,5 +428,14 @@ class GE_FUNC_VISIBILITY Session {
   uint64_t sessionId_{0};
 };
 }  // namespace ge
+extern "C" {
+ge::Status GeSessionLoadGraph(ge::Session &session, uint32_t graph_id,
+                              const std::map<ge::AscendString, ge::AscendString> &options,
+                              void *stream);
+
+ge::Status GeSessionExecuteGraphWithStreamAsync(ge::Session &session, uint32_t graph_id, void *stream,
+                                                const std::vector<gert::Tensor> &inputs,
+                                                std::vector<gert::Tensor> &outputs);
+} // extern "C"
 
 #endif  // INC_EXTERNAL_GE_GE_API_H_

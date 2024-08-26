@@ -271,15 +271,44 @@ REG_OP(DepthwiseConv2DBackpropInputD)
     .OP_END_FACTORY_REG(DepthwiseConv2DBackpropInputD)
 
 /**
-*@brief Computes a 2D deep convolution given a 4D input tensor and a filter
+*@brief Computes a 2D depth-wise convolution given a 4D input tensor and a 4D filter
 * tensor . \n
 
 *@par Inputs:
 *Two required inputs and two optional inputs, including: \n
-* @li x: A 4D tensor of type float16 or int8 or int4 or float32, with shape [N, C, H, W] or [N, H, W, C]
-* @li filter: A 4D tensor of type float16 or int8 or int4 or float32, with shape [H, W, C, K]
-* @li bias: An optional tensor of type float16 or int32 or float32
-* @li offset_w: An optional float16 or int8 or int4, used for quantized inference
+* @li x: A 4D tensor of type float16 or int8 or int4 or float32, with shape [N, C, H, W] or [N, H, W, C].
+* @li filter: A 4D tensor of type float16 or int8 or int4 or float32, with shape [H, W, C, K].
+* @li bias: An optional tensor of type float16 or int32 or float32.
+* @li offset_w: An optional float16 or int8 or int4, used for quantized inference.
+*\n
+* The following are the supported data types and data formats (except V350):
+*\n
+*\n
+| Tensor    | x       | filter  | bias    | y       |\n
+| :-------: | :-----: | :-----: | :-----: | :-----: |\n
+| Data Type | float16 | float16 | float16 | float16 |\n
+|           | float16 | float16 | float16 | float32 |\n
+|           | bfloat16| bfloat16| bfloat16 | bfloat16|\n
+|           | bfloat16| bfloat16| bfloat16 | float32 |\n
+|           | float32 | float32 | float32 | float32 |\n
+|           | int8    | int8    | int32   | int32   |\n
+|           | int4    | int4    | int32   | int32   |\n
+| Format    | NCHW    | NCHW    | ND      | NCHW    |\n
+|           | NHWC    | HWCN    | ND      | NHWC    |\n
+|           | NCHW    | HWCN    | ND      | NCHW    |\n
+*\n
+* For float32 type, the actual calculation on the chip is based on
+* float16.
+*\n
+*\n
+* Data types for V350:
+| Tensor    | x       | filter  | bias    | y       |\n
+| :-------: | :-----: | :-----: | :-----: | :-----: |\n
+| Data Type | int16   | int8    | int32   | int32   |\n
+|           | int8    | int8    | int32   | int32   |\n
+| Format    | NCHW    | NCHW    | ND      | NCHW    |\n
+|           | NHWC    | HWCN    | ND      | NHWC    |\n
+*\n
 
 * @par Attributes:
 * @li strides: A required list or tuple. The stride of the sliding window for
@@ -299,17 +328,11 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * Defaults to 0 . \n
 
 * @par Outputs:
-* y: 4D tensor of type float16 or int32 or float32, with shape [N, C, H, W] or [N, H, W, C]
+* y: 4D tensor of type float16 or int32 or float32, with shape [N, C, H, W] or [N, H, W, C].
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
 * the data is 5D with shape [N, C1, Hi, Wi, C0], where C0 is 16.\n
-* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape
-* [C1, Hf, Wf, K, Co, C0],
-* where K is fixed at 1, and Co and C0 are 16.\n
-* Limited by the size of L1 buffer memory: \n
-* (l1_size - filter_h*filter_w*BLOCK_SIZE*BLOCK_SIZE*data_size) // (Wi *
-* BLOCK_SIZE * data_size) >= (BLOCK_SIZE * strides_h + filter_h - strides_h).\n
 
 * @par Quantization supported or not
 * Yes
@@ -1115,9 +1138,9 @@ REG_OP(DeformableConv2D)
 * cause compilation errors.
 *\n
 * If any dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647),
-* the product of each dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647) or
-* the value of stride/padding/dilation/offset_x exceeds the range in the above table,
+* the product of each dimension of Input/Filter/Bias/Output shape exceeds max int32(2147483647)
 * the correctness of the function cannot be guaranteed.
+* 
 *\n
 *
 *@par Outputs:
@@ -1274,6 +1297,7 @@ REG_OP(Conv3D)
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
+ * height (H) and width (W) dimensions must be in [1, 511].
  * @li out_backprop: A 5-D Tensor. Must have the same type as filter.
  * The format of the out_backprop tensor must be one of the followings:
  * [batch, out_depth, out_height, out_width, out_channels] or
@@ -1290,6 +1314,7 @@ REG_OP(Conv3D)
  * @li pads: Required. A tuple/list of 6 integers. Specifies the pads factor of
  * feature map in each directions. Supports only pads along the depth(D),
  * height(H) and width(W) dimensions.
+ * All dimensions must be in [0, 255]
  * The pads sequence is as follows: [front, tail, top, bottom, left, right].
  * Modes "SAME" and "VAILD" padding can be achieved with appropriate values of each direction in pads.
  * @li dilations: Optional. Defaults to [1, 1, 1, 1, 1].
@@ -1297,8 +1322,9 @@ REG_OP(Conv3D)
  * The dilations has the same axes sequence as filter:
  * [out_channels, in_channels/groups, depth, dilation_height, dilation_width] or
  * [depth, dilation_height, dilation_width, in_channels/groups, out_channels].
- * The batch(N), in_channels/groups(C) and depth(D) dimensions must be 1.
- * @li groups: Optional. Defaults to 1.
+ * The batch(N), in_channels/groups(C) dimensions must be 1.
+ * depth (D), height (H) and width (W) dimensions must be in [1, 255].
+ * @li groups: Optional. Defaults to 1. 
  * Number of blocked connections from in_channels to out_channels.
  * @li data_format: Optional. Defaults to "NDHWC". A string from: "NDHWC", "NCDHW".
  * The correspondence is as follows: batch(N), depth(D), height(H), width(W), channels(C).
@@ -1329,6 +1355,7 @@ REG_OP(Conv3DBackpropInput)
  * The format of the filter tensor must be one of the followings:
  * [out_channels, in_channels/groups, filter_depth, filter_height, filter_width] or
  * [filter_depth, filter_height, filter_width, in_channels/groups, out_channels].
+ * height (H) and width (W) dimensions must be in [1, 511].
  * @li out_backprop: A 5-D Tensor. Supported types includes float16, bfloat16.
  * The format of the out_backprop tensor must be one of the followings:
  * [batch, out_depth, out_height, out_width, out_channels] or
@@ -1355,12 +1382,14 @@ REG_OP(Conv3DBackpropInput)
  * height(H) and width(W) dimensions.
  * The pads sequence is as follows: [front, tail, top, bottom, left, right].
  * Modes "SAME" and "VAILD" padding can be achieved with appropriate values of each direction in pads.
+ * height (H) and width (W) dimensions must be in [0, 255].
  * @li dilations: Optional. Defaults to [1, 1, 1, 1, 1].
  * A tuple/list of 5 integers, The dilation factor for each dimension of filter.
  * The dilations has the same axes sequence as filter:
  * [out_channels, in_channels/groups, depth, dilation_height, dilation_width] or
  * [depth, dilation_height, dilation_width, in_channels/groups, out_channels].
- * The batch(N), in_channels/groups(C) and depth(D) dimensions must be 1.
+ * The batch(N), in_channels/groups(C) dimensions must be 1.
+ * depth (D), height (H) and width (W) dimensions must be in [1, 255].
  * @li groups: Optional. Defaults to 1.
  * Number of blocked connections from in_channels to out_channels.
  * @li data_format: Optional. Defaults to "NDHWC". An string from: "NDHWC", "NCDHW".
@@ -1441,6 +1470,7 @@ REG_OP(LSTM)
  * [filter_depth, filter_height, filter_width, in_channels, out_channels]
  * [out_channels, in_channels, filter_depth, filter_height, filter_width]
  * or [out_channels, filter_depth, filter_height, filter_width, in_channels].
+ * depth (D), height (H) and width (W) dimensions must be in [1, 255].
  * @li out_backprop: A Tensor. Must have the same type as x.
  * 5-D with shape [batch, out_depth, out_height, out_width, out_channels]
  * or [batch, out_channels, out_depth, out_height, out_width].
@@ -1452,9 +1482,11 @@ REG_OP(LSTM)
  * must be 1. Has the same format as "x".
  * @li pads: Required. A tuple/list of 6 integers, [front, back, top, bottom,
  * left, right] pads on feature map.
+ * height (H) and width (W) dimensions must be in [0, 255].
  * @li dilations: Optional. A tuple/list of 5 integers, The dilation factor
  * for each dimension of input. Defaults to [1, 1, 1, 1, 1]
  * The N, C and D dimensions must be 1. Has the same format as "x".
+ * height (H) and width (W) dimensions must be in [1, 255].
  * @li groups: Optional. Number of blocked connections from input channels
  * to output channels. Defaults to 1.
  * @li data_format: Optional. An string from: "NDHWC", "NCDHW".
@@ -1497,14 +1529,17 @@ REG_OP(Conv3DBackpropFilter)
  * [filter_depth, filter_height, filter_width, in_channels, out_channels],
  * [out_channels, filter_depth, filter_height, filter_width, in_channels]
  * or [out_channels, in_channels, filter_depth, filter_height, filter_width].
+ * depth (D), height (H) and width (W) dimensions must be in [1, 255].
  * @li strides: Required. A tuple/list of 5 integers. Specifies the stride of the sliding
  * window for each dimension of "x".
  * The N and C dimensions must be 1. Has the same format as "x".
  * @li pads: Required. A tuple/list of 6 integers, [front, back, top, bottom, left, right]
- * pads on feature map.
+ * pads on feature map. 
+ * height (H) and width (W) dimensions must be in [0, 255].
  * @li dilations: Optional. A tuple/list of 5 integers, The dilation factor for each
  * dimension of input. Defaults to [1, 1, 1, 1, 1]
  * The N, C and D dimensions must be 1. Has the same format as "x".
+ * height (H) and width (W) dimensions must be in [1, 255].
  * @li groups: Optional. Number of blocked connections from input channels to output
  * channels. Defaults to 1.
  * @li data_format: Optional. An optional string from: "NDHWC", "NCDHW".
@@ -1541,27 +1576,32 @@ REG_OP(Conv3DBackpropFilterD)
  * is NDHWC or NCDHW.
  * @li filter: A Tensor of type float16 or bfloat16, currently does not support int8.
  * The format is NDHWC, NCDHW or DHWCN.
+ * height (H) and width (W) dimensions must be in [1, 511].
  * @li bias: Optional. An optional 1D tensor of type float16 and float32. When x
- * is float16, bias is float16. When x is bfloat16, bias is float32. Reserved.
+ * is float16, bias is float16. When x is bfloat16, bias is float32.
+ * Currently bias is not supported on Ascend310B/Ascend910B platform. Reserved.
  * @li offset_w: Optional. An optional 1D tensor for quantized deconvolution.
- *  Reserved. \n
+ * Currently offset_w is not supported on Ascend310B/Ascend910B platform. Reserved. \n
 
 *@par Attributes:
  * @li strides: Required. A tuple/list of 5 integers. Specifies the stride of
  * the sliding window for each dimension of "x".
- * The N and C dimensions must be 1. Has the same format as "x".
+ * Has the same format as "x".
  * @li pads: Required. A tuple/list of 6 integers. 
  * [front, back, top, bottom, left, right] pads on feature map.
+ * The value in each dimension must be in [0, 255].
  * @li dilations: Optional. A tuple/list of 5 integers,
  * The dilation factor for each dimension of input.
- * The N, C and D dimensions must be 1. Has the same format as "x".
+ * depth (D), height (H) and width (W) dimensions must be in [1, 255]. Has the same format as "x".
  * @li groups: Optional. Number of blocked connections from input channels to
  *  output channels. Defaults to 1.
  * @li data_format: Optional. An string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
  * @li output_padding: Optional. The size will be added in the output shape.
  * Defaults to [0, 0, 0, 0, 0].
- * @li offset_x: Optional. Input offset_x value. Defaults to 0. Reserved. \n
+ * Currently output_padding is not supported on Ascend310B/Ascend910B platform.
+ * @li offset_x: Optional. Input offset_x value. Defaults to 0.
+ * Currently offset_x is not supported on Ascend310B/Ascend910B platform. Reserved. \n
 
 *@par Outputs:
  * y: A Tensor. Has the same format as "x", has the type float16, float32, bfloat16.
@@ -1590,9 +1630,12 @@ REG_OP(Conv3DTranspose)
  * The format is NDHWC or NCDHW.
  * @li filter: A Tensor of type float16 or bfloat16.
  * The format is NDHWC, NCDHW or DHWCN.
+ * height (H) and width (W) dimensions must be in [1, 511].
  * @li bias: Optional. An 1D tensor of type float16 or float32. When x
  * is float16, bias is float16. When x is bfloat16, bias is float32.
- * @li offset_w: Optional. An 1D tensor for quantized deconvolution. Reserved. \n
+ * Currently bias is not supported on Ascend310B/Ascend910B platform.
+ * @li offset_w: Optional. An 1D tensor for quantized deconvolution.
+ * Currently offset_w is not supported on Ascend310B/Ascend910B platform. Reserved. \n
 
 *@par Attributes:
  * @li input_size: Required. A tuple/list of type int32.
@@ -1602,16 +1645,20 @@ REG_OP(Conv3DTranspose)
  * The N and C dimensions must be 1. Has the same format as "x".
  * @li pads: Required. A tuple/list of 6 integers.
  * [front, back, top, bottom, left, right] pads on feature map.
+ * height (H) and width (W) dimensions must be in [0, 255].
  * @li dilations: Optional. A tuple/list of 5 integers, The dilation factor for each
  * dimension of input.
- * The N, C and D dimensions must be 1. Has the same format as "x".
+ * The C and D dimensions must be 1. Has the same format as "x".
+ * depth (D), height (H) and width (W) dimensions must be in [1, 255].
  * @li groups: Optional. An integer representing the number of blocked 
  * connections from input channels to output channels. Defaults to 1.
  * @li data_format: Optional. An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
  * @li output_padding: Optional. The size will be added in the output shape.
- * Defaults to [0, 0, 0, 0, 0]
- * @li offset_x: Optional. Input offset_x value. Defaults to 0. Reserved. \n
+ * Defaults to [0, 0, 0, 0, 0].
+ * Currently output_padding is not supported on Ascend310B/Ascend910B platform.
+ * @li offset_x: Optional. Input offset_x value. Defaults to 0.
+ * Currently offset_x is not supported on Ascend310B/Ascend910B platform. Reserved. \n
 
 *@par Outputs:
  * y: A Tensor. Has the same format as "x", has the type float16, float32 or bfloat16. \n
@@ -1909,6 +1956,8 @@ REG_OP(Dilation)
 *@par Outputs:
  * output: A Tensor. A Tensor of type float16, bfloat16, float32, int32, int8, int4.
  * In V350, output should be float16 or int16
+* @par Restrictions:
+* This is a internal function that cannot be perceived externally.
 */
 REG_OP(FixPipe)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT, DT_INT32}))

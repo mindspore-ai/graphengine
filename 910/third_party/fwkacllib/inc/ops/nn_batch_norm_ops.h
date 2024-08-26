@@ -32,7 +32,7 @@ namespace ge {
 *x: A multi-dimensional Tensor of type float16 or float32, specifying the eigenvalue . \n
 
 *@par Attributes:
-*@li axis: A required attribute of type list, specifying the axis for normalization.
+*@li axis: A optional required attribute of type list, specifying the axis for normalization Defaults to {} .
 *@li eps: An optional attribute of type float, specifying the lower limit of normalization. Defaults to "1e-4" . \n
 
 *@par Outputs:
@@ -199,7 +199,7 @@ REG_OP(SyncBatchNormGatherStatsWithCounts)
 
 * @par Outputs:
 * include:
-* @li running_mean_update: A Tensor. It's moving mean of each device after the update. \n
+* @li running_mean_update: A Tensor. It's moving mean of each device after the update. Must be one of the following types: float16, float32, bfloat16.\n
 
 * @par Third-party framework compatibility
 * ReduceMeanWithCount and SyncBatchNormGatherStatsWithCounts and SyncBNTrainingUpdate
@@ -599,7 +599,7 @@ REG_OP(BNInference)
 
 * @par Attributes:
 * @li momentum: An optional float32 num, represents the mean and
-* the variance's scale factor.
+* the variance's scale factor Defaults to "0.9".
 * @li epsilon: An optional float32, specifying the small value
 * added to variance to avoid dividing by zero. Defaults to "0.00001".
 * @li use_global_stats: mean inference mode , only can be "True".

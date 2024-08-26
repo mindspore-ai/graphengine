@@ -306,6 +306,7 @@ REG_OP(MatMulV2)
 * @li offset_x: An optional integer for quantized MatMulV2Compress.
 * The negative offset added to the input x1 for int8 type. Ensure offset_x
 * within the effective range of int8 [-128, 127]. Defaults to "0".
+* @li alg: compress algorithm, default weight_unzip
 
 * @par Outputs:
 * y: The result matrix Tensor. 2D. Must be one of the following types: int32,
@@ -423,6 +424,7 @@ REG_OP(BatchMatMul)
 * [B, M, K] before multiplication.
 * @li adj_x2: A bool. If True, changes the shape of "x2" from [B, N, K] to
 * [B, K, N] before multiplication.
+* @li offset_x: An optional integer for quantized BatchMatMulV2.
 
 * @par Outputs:
 * y: The result matrix Tensor. Must be one of the following types: float16,
@@ -452,9 +454,7 @@ REG_OP(BatchMatMulV2)
 * @brief Computes half the L2 norm of a tensor without the sqrt .
 
 * @par Inputs:
-
-* x: A Tensor.
-*     TensorType::FloatingDataType() . \n
+* x: A Tensor. TensorType::FloatingDataType() or bfloat16. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x". \n
@@ -2132,21 +2132,25 @@ REG_OP(SwinAttentionFFN)
 
 
 /**
-* @brief
-   swin_transformer model specific structure.Operator only supports swin_transformer. \n
+* @brief swin_transformer model specific structure.Operator only supports swin_transformer.
+
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float, bfloat16.
-* @li atten_mask: A Tensor. Must be one of the following types: float16, float, bfloat16.
-* @li relative_pos_bias: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li x: An ND Tensor. Must be one of the following types: float16, float, bfloat16, 
+         the shape should be (B*W, N, S1, S2) or (B, W, N, S1, S2).
+* @li atten_mask: An ND Tensor. Must be one of the following types: float16, float, bfloat16, 
+                  the shape should be (W, S1, S2) or (W, 1, S1, S2) or (1, W, 1, S1, S2)
+* @li relative_pos_bias: An ND Tensor. Must be one of the following types: float16, float, bfloat16.
+                         the shape sholud be (N, S1, S2) or (1, N, S1, S2) or (1, 1, N, S1, S2)
 
 * @par Attributes:
-* @li scale_value: A optional attribute, the type is float. Defaults to 1.0. \n
-* @li inner_precision_mode: A optional attribute, the type is float. Defaults to 0. \n
+* @li scale_value: A optional attribute, the type is float. Defaults to 1.0.
+* @li inner_precision_mode: A optional attribute, the type is int. Defaults to 0, reserved field.
 
 * @par Outputs:
 * One output, including:
-* @li y: A Tensor. Must be one of the following types: float16, float, bfloat16.
+* @li y: An ND Tensor. Must be one of the following types: float16, float, bfloat16,
+         the shape should be same with x.
 */
 REG_OP(MaskedSoftmaxWithRelPosBias)
     .INPUT(x, TensorType({DT_FLOAT16, DT_BFLOAT16, DT_FLOAT}))

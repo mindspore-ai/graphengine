@@ -81,7 +81,7 @@ REG_OP(SparseSoftmaxCrossEntropyWithLogits)
 
 *@par Inputs:
 *Two inputs, including:
-* @li features: A Tensor. Must be one of the following types: half, float32, double.
+* @li features: A Tensor. Must be one of the following types: float16, float32, double.
 *    A "batch_size * num_classes" matrix.
 * @li labels: A Tensor of the same type as "features". A "batch_size * num_classes" matrix . \n
 
@@ -1434,19 +1434,19 @@ REG_OP(InstanceNormV2)
 /**
 *@brief Performs instance normalization for inference.
 
-*@par Inputs:\n
-* Five inputs, including:
+*@par Inputs:
+* Six inputs, including:
 *@li x: A Tensor of type float16 or float32.
-*@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
-*@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
-*@li mean: A [N, C1, 1, 1, C0] ensor of type float32, for the mean.
-*@li variance: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance.
-*@li variance_sqrt: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance_sqrt.
+*@li gamma: A [N, C1, 1, 1, C0] optional Tensor of type float32, for the scaling gamma.
+*@li beta: A [N, C1, 1, 1, C0] optional Tensor of type float32, for the scaling beta.
+*@li mean: A [N, C1, 1, 1, C0] optional Tensor of type float32, for the mean.
+*@li variance: A [N, C1, 1, 1, C0] optional Tensor of type float32, for the variance.
+*@li variance_sqrt: A [N, C1, 1, 1, C0] optional Tensor of type float32, for the variance_sqrt.
 
-*@par Outputs:\n
-*y: A Tensor of type float16 or float32 for the normalized "x".
-*batch_mean: A Tensor of type float32 for the result mean.
-*batch_ variance: A Tensor of type float32 for the result variance.
+*@par Outputs:
+*@li y: A Tensor of type float16 or float32 for the normalized "x".
+*@li batch_mean: A Tensor of type float32 for the result mean.
+*@li batch_variance: A Tensor of type float32 for the result variance.
 
 *@attention Constraints:
 *For Ascend 310, the result accuracy fails to reach 1<89> due to the square root instruction.
@@ -1476,8 +1476,8 @@ REG_OP(INInferV2D)
 * @li beta: A Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
-* @li data_format: An attribute of type String \n
-* @li epsilon: An attribute of type Float. \n
+* @li data_format: An optional attribute of type String, default: NDHWC \n
+* @li epsilon: An optional attribute of type Float, default: 1e-6. \n
 
 * @par Outputs:
 * Three outputs, including:
@@ -2094,7 +2094,7 @@ REG_OP(DropoutWithMulsAndSoftmaxGrad)
 
 * @par Inputs:
 * Three inputs, including:
-* @li scores: A Tensor. Must be one of the following types: half, bfloat16, float32, double.
+* @li scores: A Tensor. Must be one of the following types: float16, bfloat16, float32, double.
 * A "batch_size * num_classes" matrix.
 * @li labels: A Tensor. Must be one of the following types: "int32", "int64".
 * @li weights: A manual rescaling weight given to each class, the same dtype with scores.

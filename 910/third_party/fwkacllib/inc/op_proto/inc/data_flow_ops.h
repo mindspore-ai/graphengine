@@ -2268,11 +2268,14 @@ REG_OP(OutfeedEnqueueOp)
 *Inputs include:
 *x: A Tensor. Must be one of the following types: float16, float32,
 float64, int8, int16, uint16, uint8, int32, int64, uint32, uint64,
-bool, double, string. It's a dynamic input. \n
+bool, double, string. bfloat16, complex32, complex64, complex128, It's a dynamic input. \n
 *tensor_name: A Tensor. Must be string types. \n
 
 *@par Attributes:
-*channel_name: name of operator channel, default "". \n
+*@li channel_name: name of operator channel, default "".
+*@li slice_size: the size of one dataset. default 0, do not slice.
+*@li wait_time: op phase 2 event wait timeout. default 0, use system default timeout.
+*@li slice_sync: whether to add a synchronization dataset. default false, do not add. \n
 
 *@attention Constraints:
 *The implementation for OutfeedEnqueueOpV2 on Ascend uses AICPU, with bad performance.
@@ -2281,11 +2284,12 @@ bool, double, string. It's a dynamic input. \n
 *@li compatible with tensorflow OutfeedEnqueueOpV2 operator.
 */
 REG_OP(OutfeedEnqueueOpV2)
-  .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8,
-      DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_UINT32,
-      DT_UINT64, DT_BOOL, DT_DOUBLE, DT_STRING}))
+  .DYNAMIC_INPUT(x, TensorType({TensorType::BasicType(), DT_BOOL, DT_STRING}))
   .INPUT(tensor_name, TensorType({DT_STRING}))
   .ATTR(channel_name, String, "")
+  .ATTR(slice_size, Int, 0)
+  .ATTR(wait_time, Int, 0)
+  .ATTR(slice_sync, Bool, false)
   .OP_END_FACTORY_REG(OutfeedEnqueueOpV2)
 
 /**

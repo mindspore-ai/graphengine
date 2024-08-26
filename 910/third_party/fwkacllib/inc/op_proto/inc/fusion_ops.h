@@ -97,8 +97,8 @@ REG_OP(FlashAttentionScore)
 
 * @par Inputs:
 * @li query: A matrix Tensor. The type support float16, bf16, int8.
-* @li key: A matrix Tensor. The type support float16, bf16, int8.
-* @li value: A matrix Tensor. The type support float16, bf16, int8.
+* @li key: It's a dynamic input. A matrix Tensor. The type support float16, bf16, int8.
+* @li value: It's a dynamic input. A matrix Tensor. The type support float16, bf16, int8.
 * @li pse_shift: A matrix Tensor. The type support float16, bf16.
 * @li atten_mask: A matrix Tensor. The type support bool, int8, uint8.
 * @li actual_seq_lengths: A Tensor. The type support INT64.
@@ -113,12 +113,12 @@ REG_OP(FlashAttentionScore)
 * @li kv_padding_size: A Tensor. The type support int64.
 
 * @par Attributes:
-* @li num_heads: A int. The number of the heads.
-* @li scale_value: A float. The scale value. Default: 1.0.
-* @li input_layout: A string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD", "BSND"]. Default: "BSH".
-* @li num_key_value_heads: key value num heads.
-* @li block_size: A int. Max length in pageattention's kv block.
-* @li inner_precise: A int. mode of precision in float16.
+* @li num_heads: A required int. The number of the heads.
+* @li scale_value: An optional float. The scale value. Default: 1.0.
+* @li input_layout: An optional string. Specifies the layout of `query`, the value must be one of ["BSH", "BNSD", "BSND"]. Default: "BSH".
+* @li num_key_value_heads: An optional int. key value num heads. Default: 1.
+* @li block_size: An optional int. Max length in pageattention's kv block. Default: 0.
+* @li inner_precise: An optional int. mode of precision in float16. Default: 1.
 
 * @par Outputs:
 * attention_out: A matrix Tensor. The type support float16, bf16, int8. \n
@@ -560,7 +560,7 @@ REG_OP(AllGatherMatmul)
 * @li y2: A allgather matrix Tensor. The type support float16, bfloat16.
 * @li y3: A batch matmul matrix Tensor. The type support float16, bfloat16. \n
 */
-REG_OP(AlltoAllAllGatherBatchMatmul)
+REG_OP(AlltoAllAllGatherBatchMatMul)
     .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
     .INPUT(weight, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -576,7 +576,7 @@ REG_OP(AlltoAllAllGatherBatchMatmul)
     .ATTR(transpose_weight, Bool, false)
     .ATTR(output_y2_flag, Bool, false)
     .ATTR(output_y3_flag, Bool, false)
-    .OP_END_FACTORY_REG(AlltoAllAllGatherBatchMatmul)
+    .OP_END_FACTORY_REG(AlltoAllAllGatherBatchMatMul)
 
 /**
 * @brief Fusion op of batch matmul, reduce scatter, and alltoall.
@@ -601,7 +601,7 @@ REG_OP(AlltoAllAllGatherBatchMatmul)
 * @par Outputs:
 * @li y: A matrix Tensor. The type support float16, bfloat16. \n
 */
-REG_OP(BatchMatmulReduceScatterAlltoAll)
+REG_OP(BatchMatMulReduceScatterAlltoAll)
     .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
     .INPUT(weight, TensorType({DT_FLOAT16, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -612,7 +612,7 @@ REG_OP(BatchMatmulReduceScatterAlltoAll)
     .REQUIRED_ATTR(tp_world_size, Int)
     .ATTR(y_shard_type, Int, 0)
     .ATTR(transpose_weight, Bool, false)
-    .OP_END_FACTORY_REG(BatchMatmulReduceScatterAlltoAll)
+    .OP_END_FACTORY_REG(BatchMatMulReduceScatterAlltoAll)
 
 /**
 * @brief Combine similar tokens using the matching algorithm.
@@ -969,10 +969,12 @@ REG_OP(WeightQuantBatchMatmulV2)
 
 * @par Attributes:
 * @li split_item: A int.
-* @li dtype: A int. only invalid for quant case. -1, output data type is int8. 0, not supported. 1, output data type is bfloat16. Default -1.
+* @li dtype: A int. only invalid for quant case. -1, output data type is int8. 0, not supported. 1, output data type is bfloat16. Default 0.
 * @li transpose_weight: A bool. Reserved parameter, indicate wether input weight is transposed, not enabled.
 * @li transpose_x: A bool. Reserved parameter, indicate wether input x is transposed, not enabled.
 * @li group_type: A int. Indicates the splited dimension.
+* @li group_list_type: A int. Indicate the different meanings of the values in group_list. 0 represents comsum, 1 represents count.
+* @li act_type: A int. Indicate activation function type.
 
 * @par Outputs:
 * y: A Tensor List.
@@ -993,6 +995,8 @@ REG_OP(WeightQuantBatchMatmulV2)
     .ATTR(transpose_weight, Bool, false)
     .ATTR(transpose_x, Bool, false)
     .ATTR(group_type, Int, -1)
+    .ATTR(group_list_type, Int, 0)
+    .ATTR(act_type, Int, 0)
     .OP_END_FACTORY_REG(GroupedMatmul)
 
   /**
@@ -1084,6 +1088,38 @@ REG_OP(WeightQuantBatchMatmulV2)
     .DATATYPE(T2, TensorType({DT_INT32}))
     .REQUIRED_ATTR(active_num, Int)
     .OP_END_FACTORY_REG(MoeInitRouting)
+
+  /**
+   * @brief compute init routing for moe input.
+   * @par Inputs:
+   * @li x: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li row_idx: A Tensor. Type is:Int32.
+   * @li expert_idx: A Tensor. Type is:Int32.
+   * @par Outputs:
+   * @li expanded_x: A Tensor. Type is:BFloat16, Float16 or Float32.
+   * @li expanded_row_idx: A Tensor. Type is:Int32.
+   * @li expanded_expert_idx: A Tensor. Type is:Int32.
+   * @li expert_token_idx: A Tensor. Type is:Int32.
+   * @par Attributes:
+   * @li active_num: Required parameter. Type is:Int32.
+   * @li expert_capacity: optional parameter. Type is:Int32.
+   * @li expert_num: optional parameter. Type is:Int32.
+   */
+    REG_OP(MoeInitRoutingV2)
+    .INPUT(x, "T1")
+    .OPTIONAL_INPUT(row_idx, "T2")
+    .INPUT(expert_idx, "T2")
+    .OUTPUT(expanded_x, "T1")
+    .OUTPUT(expanded_row_idx, "T2")
+    .OUTPUT(expanded_expert_idx, "T2")
+    .OUTPUT(expert_token_idx, "T2")
+    .DATATYPE(T1, TensorType({DT_FLOAT, DT_FLOAT16, DT_BF16}))
+    .DATATYPE(T2, TensorType({DT_INT32}))
+    .ATTR(active_num, Int, -1)
+    .ATTR(expert_capacity, Int, -1)
+    .ATTR(expert_num, Int, -1)
+    .ATTR(expanded_expert_idx_flag, Bool, true)
+    .OP_END_FACTORY_REG(MoeInitRoutingV2)
 
   /**
    * @brief compute init routing quant for moe input.
@@ -1297,5 +1333,42 @@ REG_OP(SwinAttentionScoreQuant)
     .ATTR(value_transpose, Bool, false)
     .ATTR(softmax_axes, Int, -1)
     .OP_END_FACTORY_REG(SwinAttentionScoreQuant)
+
+/**
+* @brief Update multi output of RingAttention.
+
+* @par Inputs:
+* seven inputs, including:
+* @li prev_attn_out: A matrix Tensor. The type support float16, bf16, float32.
+* @li prev_softmax_max: A matrix Tensor. The type support float32.
+* @li prev_softmax_sum: A matrix Tensor. The type support float32.
+* @li cur_attn_out: A matrix Tensor. An optional input parameter. The type support float16, bf16, float32.
+* @li cur_softmax_max: A matrix Tensor. An optional input parameter. The type support float32.
+* @li cur_softmax_sum: A matrix Tensor. An optional input parameter. The type support float32.
+* @li actual_seq_qlen: A matrix Tensor. An optional input parameter. The type support int64. If used,
+* layout need to be setted TND. ex. If the attn_out seqlen is [2,2,2,2,2], this parameter need be setted [2,4,6,8,10].
+
+* @par Attributes:
+* @li input_layout: A string. A optional attribute. Specifies the layout of `attn_out`,
+* the value must be one of ["SBH"]. Default: "SBH".
+
+* @par Outputs:
+* @li attn_out: A matrix Tensor. The type support float16, bf16, float32.
+* @li softmax_max: A matrix Tensor. The type support float32.
+* @li softmax_sum: A matrix Tensor. The type support float32.
+*/
+REG_OP(RingAttentionUpdate)
+    .INPUT(prev_attn_out, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32}))
+    .INPUT(prev_softmax_max, TensorType({DT_FLOAT32}))
+    .INPUT(prev_softmax_sum, TensorType({DT_FLOAT32}))
+    .INPUT(cur_attn_out, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32}))
+    .INPUT(cur_softmax_max, TensorType({DT_FLOAT32}))
+    .INPUT(cur_softmax_sum, TensorType({DT_FLOAT32}))
+    .OPTIONAL_INPUT(actual_seq_qlen, TensorType({DT_INT64}))
+    .OUTPUT(attn_out, TensorType({DT_FLOAT16, DT_BF16, DT_FLOAT32}))
+    .OUTPUT(softmax_max, TensorType({DT_FLOAT32}))
+    .OUTPUT(softmax_sum, TensorType({DT_FLOAT32}))
+    .ATTR(input_layout, String, "SBH")
+    .OP_END_FACTORY_REG(RingAttentionUpdate)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_FUSION_OPS_H_

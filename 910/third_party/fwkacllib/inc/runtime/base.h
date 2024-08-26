@@ -140,12 +140,20 @@ typedef struct rtArgsSizeInfo {
     uint32_t atomicIndex;
 } rtArgsSizeInfo_t;
 
+typedef struct rtExceptionKernelInfo {
+    uint32_t binSize;
+    const void *bin;
+    uint32_t kernelNameSize;
+    const char *kernelName;
+} rtExceptionKernelInfo_t;
+
 typedef struct rtExceptionArgsInfo {
     uint32_t argsize;
     void *argAddr;
     rtArgsSizeInfo_t sizeInfo;
     const void *dfxAddr;
     uint16_t dfxSize;
+    rtExceptionKernelInfo_t exceptionKernelInfo; // 新增结构体，注意兼容性问题
 }rtExceptionArgsInfo_t;
 
 typedef struct rtExceptionExpandInfo {

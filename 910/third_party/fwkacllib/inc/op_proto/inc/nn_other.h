@@ -204,16 +204,17 @@ REG_OP(InitEmbeddingHashmap)
     .OP_END_FACTORY_REG(InitEmbeddingHashmap)
 
 /**
-* @brief embedding hsahtable data import. \n
+* @brief embedding hashtable data import. \n
 
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string. 0-D. indicates embedding filepath.
 * @li ps_id: A Tensor, dtype is int32. 0-D. indicates the id of ps.
-* @li table_id: A Tensor, dtype is int32. 1-D. indicates the id of hashtable. \n
+* @li table_id: A Tensor, dtype is int32. 1-D. indicates the id of hashtable.
+* @li global_step: An optional Scalar, dtype is int32/int64. 1-D. indicates the import save step. \n
 
 * @par Attributes:
 * @li embedding_dim: A ListInt. indicates the hashtable value number.
-* @li value_total_length: A ListInt. indicates the hashtable total length, inclue m+v or accum.
+* @li value_total_length: A ListInt. indicates the hashtable total length, include m+v or accum.
 * @li only_var: A Bool. only import var.
 * @li file_type: A String. indicates the import file .
 * @li table_name: A List String. represents table name corresponding to table id . \n
@@ -222,6 +223,7 @@ REG_OP(EmbeddingTableImport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(embedding_dim, ListInt)
     .REQUIRED_ATTR(value_total_len, ListInt)
     .ATTR(only_var_flag, Bool, false)
@@ -230,7 +232,7 @@ REG_OP(EmbeddingTableImport)
     .OP_END_FACTORY_REG(EmbeddingTableImport)
 
 /**
-* @brief embedding hsahtable data lookup. \n
+* @brief embedding hashtable data lookup. \n
 
 * @par Inputs:
 * @li table_id: A Tensor, dtype is int32. 0-D. indicates the id of hashtable.
@@ -252,7 +254,7 @@ REG_OP(EmbeddingTableFind)
     .OP_END_FACTORY_REG(EmbeddingTableFind)
 
 /**
-* @brief uninit embedding hsahtable. \n
+* @brief uninit embedding hashtable. \n
 
 * @par Inputs:
 * @li table_id: A Tensor, dtype is int32. 0-D. indicates the id of hashtable. \n
@@ -391,7 +393,7 @@ REG_OP(EmbeddingApplyAdam)
 
 * @par Attributes:
 * @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
-* @li amsgrad: An optional Int, indicates whether to use the AMSGrad variant of htis algorithm from
+* @li amsgrad: An optional Int, indicates whether to use the AMSGrad variant of hits algorithm from
 *     the paper On the Convergence of Adam and Beyond.
 *     If "True", max_grad_norm input and output must be entered.
 * @li maximize: An optional Int, maximize the params based on the objective.
@@ -476,7 +478,7 @@ REG_OP(EmbeddingApplyAdaGrad)
 
 * @par Attributes:
 * @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0.
+* @li mask_zero: An Optional Bool, whether to perform non-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
 * @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
 * @li completion_key: Int List, indicates the completion hashtable key.
@@ -515,7 +517,7 @@ REG_OP(EmbeddingApplySgd)
 
 * @par Attributes:
 * @li embedding_dim: Int List, indicates the dim of embedding value in hashtable.
-* @li mask_zero: An Optional Bool, whether to perfomr non-update interception when key==0.
+* @li mask_zero: An Optional Bool, whether to perform non-update interception when key==0.
 * @li padding_key: An optional Int, indicates the padding hashtable key.
 * @li padding_key_mask: An optional Int, whether to perform no-update interception when key==padding_key.
 * @li completion_key: Int List, indicates the completion hashtable key.
@@ -594,7 +596,7 @@ REG_OP(EmbeddingApplyFtrl)
 * @li decayed_lr: Indicates the learning rate after updating. \n
 
 * @par Attributes:
-* @li staircase: A Scalar, dtype is DT_BOOL. 0-D. indicates the stratergy for updating lr.
+* @li staircase: A Scalar, dtype is DT_BOOL. 0-D. indicates the strategy for updating lr.
 * True indicates updating lr according to the decay_steps. False indicates updating lr each step. \n
 */
 REG_OP(ExponentialDecayLR)
@@ -614,11 +616,11 @@ REG_OP(ExponentialDecayLR)
 * @li file_path: A String, indicates the export file path.
 * @li ps_id: A Int, dtype is DT_INT32, indicates the ps server id.
 * @li table_id: A Tensor, 1D, dtype is DT_INT32, indicates the hashtable id.
-* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the train step. \n
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the export save step. \n
 
 * @par Attributes:
 * @li embedding_dim: A ListInt. indicates the hashtable value number.
-* @li value_total_length: A ListInt. indicates the hashtable total length, inclue m+v or accum.
+* @li value_total_length: A ListInt. indicates the hashtable total length, include m+v or accum.
 * @li export_mode: A String. export mode, Defaults to "all".
 * @li only_var: A Bool. only export var, Defaults to "false".
 * @li file_type: A String. indicates the export file, Defaults to "bin".
@@ -701,14 +703,14 @@ REG_OP(EmbeddingFeatureMapping)
 
 * @par Attributes:
 * @li table_total_size: A Tensor, indicates the table total size of small table combination scenario.
-* @li table_total_size: A Tensor, indicates the table actual size of small table combination scenario. \n
+* @li table_actual_size: A Tensor, indicates the table actual size of small table combination scenario. \n
 */
 REG_OP(EmbeddingFeatureMappingV2)
     .INPUT(table_name, TensorType({DT_STRING}))
     .INPUT(feature_id, TensorType({DT_INT64}))
     .OUTPUT(offset_id, TensorType({DT_INT32}))
     .REQUIRED_ATTR(table_total_size, ListInt)
-    .REQUIRED_ATTR(table_acutal_size, ListInt)
+    .REQUIRED_ATTR(table_actual_size, ListInt)
     .OP_END_FACTORY_REG(EmbeddingFeatureMappingV2)
 
 /**
@@ -751,6 +753,7 @@ REG_OP(EmbeddingFeatureMappingFind)
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string, indicates the file path to export.
 * @li table_name: A Tensor, dtype is string, indicates the hash table names.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the export save step.
 * @li values: An optional Tensor whose shape is sum of feature_id's shape, dtype is float32,
 *             indicates the values of hash key.
 * @li feature_id: Tensors which number is consistent with table's number, dtype is int64,
@@ -764,6 +767,7 @@ REG_OP(EmbeddingFeatureMappingFind)
 REG_OP(EmbeddingFeatureMappingExport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(table_name, TensorType({DT_STRING}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OPTIONAL_INPUT(values, TensorType({DT_FLOAT}))
     .DYNAMIC_INPUT(feature_id, TensorType({DT_INT64}))
     .DYNAMIC_INPUT(offset_id, TensorType({DT_INT32}))
@@ -775,7 +779,8 @@ REG_OP(EmbeddingFeatureMappingExport)
 
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string, indicates the path of import file.
-* @li table_name: A Tensor, dtype is string, indicates the hash table names. \n
+* @li table_name: A Tensor, dtype is string, indicates the hash table names.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the save step. \n
 
 * @par Outputs:
 * @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table. \n
@@ -787,6 +792,7 @@ REG_OP(EmbeddingFeatureMappingExport)
 REG_OP(EmbeddingFeatureMappingFileSize)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(table_name, TensorType({DT_STRING}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(feature_size, TensorType({DT_INT64}))
     .REQUIRED_ATTR(embedding_dim, ListInt)
     .ATTR(only_offset_flag, Bool, true)
@@ -798,7 +804,8 @@ REG_OP(EmbeddingFeatureMappingFileSize)
 * @par Inputs:
 * @li file_path: A Tensor, dtype is string, indicates the path of import file.
 * @li table_name: A Tensor, dtype is string, indicates the hash table names.
-* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table. \n
+* @li feature_size: A Tensor, dtype is int64, indicates the size of hash map for each table.
+* @li global_step: A Scalar, dtype is DT_INT32/DT_INT64. 0-D. indicates the import save step. \n
 
 * @par Outputs:
 * @li feature_id: Tensors which number is consistent with table's number, dtype is int64,
@@ -818,6 +825,7 @@ REG_OP(EmbeddingFeatureMappingImport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(table_name, TensorType({DT_STRING}))
     .INPUT(feature_size, TensorType({DT_INT64}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .DYNAMIC_OUTPUT(feature_id, TensorType({DT_INT64}))
     .DYNAMIC_OUTPUT(offset_id, TensorType({DT_INT32}))
     .DYNAMIC_OUTPUT(values, TensorType({DT_FLOAT}))
@@ -847,7 +855,8 @@ REG_OP(EmbeddingFeatureMappingInsert)
 * @par Inputs:
 * @li file_path: A String, indicates the export file path.
 * @li ps_id: A Int, dtype is int32, indicates the ps server id.
-* @li table_id: A Int, dtype is int32, indicates the hashtable id. \n
+* @li table_id: A Int, dtype is int32, indicates the hashtable id.
+* @li global_step: An optional Scalar, dtype is int32/int64. 1-D. indicates the ckpt export save step. \n
 
 * @par Attributes:
 * @li table_name: A List String. represents table name corresponding to table id . \n
@@ -856,6 +865,7 @@ REG_OP(EmbeddingComputeVarExport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingComputeVarExport)
 
@@ -866,6 +876,7 @@ REG_OP(EmbeddingComputeVarExport)
 * @li file_path: A String, indicates the import file path.
 * @li ps_id: A Int, dtype is int32, indicates the ps server id.
 * @li table_id: A Int, dtype is int32, indicates the hashtable id.
+* @li global_step: An optional Scalar, dtype is int32/int64. 1-D. indicates the ckpt import save step. \n
 
 * @par Attributes:
 * @li table_name: A List String. represents table name corresponding to table id . \n
@@ -874,6 +885,7 @@ REG_OP(EmbeddingComputeVarImport)
     .INPUT(file_path, TensorType({DT_STRING}))
     .INPUT(ps_id, TensorType({DT_INT32}))
     .INPUT(table_id, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
     .ATTR(table_name, ListString, {})
     .OP_END_FACTORY_REG(EmbeddingComputeVarImport)
 

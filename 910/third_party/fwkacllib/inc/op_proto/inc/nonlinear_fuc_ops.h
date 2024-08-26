@@ -889,7 +889,7 @@ REG_OP(ThresholdV2D)
     .OP_END_FACTORY_REG(ThresholdV2D)
 
 /**
-*@brief: Computes hyperbolic tangent of "x" element-wise . \n
+*@brief: Computes hyperbolic tangent of "x" element-wise .
 
 *@par Inputs:
 *One input:

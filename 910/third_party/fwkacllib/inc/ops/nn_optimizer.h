@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2022-2024. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,16 +26,20 @@
 namespace ge {
 /**
 * @brief Computes the ApplyCamePart1.
+*
 * @par Inputs:
 * including:
-* @li grad: A mutable Tensor with rank 2, such as [n, m] , support types: float16, float32, bfloat16.
-* @li eps: A mutable Tensor with rank 1, such as n , support types: float32.
-
+* @li grad: A mutable Tensor with rank 2, such as [n, m] , support types: 
+* float16, float32, bfloat16.
+* @li eps: A mutable Tensor with rank 1, such as n , support types: float32. \n
+*
 * @par Outputs:
-* @li sum_grad_r: A mutable Tensor with rank 1, such as [n, 1], support types: float32.
-* @li sum_grad_c: A mutable Tensor with rank 1, such as [1, m], support types: float32.
-* @li sum_grad_rc: A mutable Tensor with randk 0, such as [1, 1], support types: float32.
-* @see ApplyCamePart1
+* @li sum_grad_r: A mutable Tensor with rank 1, such as [n, 1], support types: 
+* float32.
+* @li sum_grad_c: A mutable Tensor with rank 1, such as [1, m], support types: 
+* float32.
+* @li sum_grad_rc: A mutable Tensor with randk 0, such as [1, 1], support 
+* types: float32. \n
 *
 * @par Restrictions:
 * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -51,6 +55,7 @@ REG_OP(ApplyCamePart1)
 
 /**
 * @brief Computes the ApplyCamePart2.
+*
 * @par Inputs:
 * including:
 * @li grad: A multi-dimensional Tensor of type bfloat16, float16 or float32.
@@ -62,12 +67,15 @@ REG_OP(ApplyCamePart1)
 * @li beta2: A 1-dimensional Tensor of type float32.
 * @li sum_r: A 1-dimensional Tensor of type float32.
 * @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
-
+*
 * @par Outputs:
 * @li r: A mutable tensor. Must have the same type as input "r".
 * @li c: A mutable tensor. Must have the same type as input "c".
 * @li u: A mutable tensor.
 * @li sum_square_u: A mutable tensor. \n
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ApplyCamePart2)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -88,26 +96,30 @@ REG_OP(ApplyCamePart2)
 
 /**
 * @brief Computes the ApplyCamePart3.
-
+*
 * @par Inputs:
 * including:
 * @li u: A 2-dimensional Tensor of type float32.
 * @li m: A 2-dimensional Tensor of type bfloat16, float16 or float32.
 * @li eps: A 1-dimensional Tensor, specifying the epsilon value.
 * @li beta1: A 1-dimensional Tensor, specifying the beta1 value.
-* @li clip_threshold: A 1-dimensional Tensor, specifying the clip_threshold value.
+* @li clip_threshold: A 1-dimensional Tensor, specifying the clip_threshold 
+* value.
 * @li sum_square_u: A 1-dimensional Tensor, specifying the sum_square_u value.
 * @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
-
+*
 * @par Attributes:
 * use_first_moment: A bool Scalar. If true, update the computed output m. 
 * Default to false. \n
-
+*
 * @par Outputs:
 * @li m: A multi-dimensional tensor. Must have the same type as input "m".
 * @li sum_u_r:  A 1-dimensional tensor. Must have the same type as input "u".
 * @li sum_u_c:  A 1-dimensional tensor. Must have the same type as input "u".
 * @li sum_u_rc: A 1-dimensional tensor. Must have the same type as input "u". \n
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ApplyCamePart3)
     .INPUT(u, TensorType({DT_FLOAT}))
@@ -127,7 +139,7 @@ REG_OP(ApplyCamePart3)
 
 /**
 * @brief ApplyCamePart4.
-
+*
 * @par Inputs:
 * including:
 * @li param: A multi-dimensional Tensor of type bfloat16, float16 or float32.
@@ -142,12 +154,12 @@ REG_OP(ApplyCamePart3)
 * @li sum_u_c: A 1-dimensional Tensor of type bfloat16, float16 or float32.
 * @li sum_u_rc: A 1-dimensional Tensor of type float32.
 * @li global_shape: A 1-dimensional Tensor, specifying the original shape M, N. \n
-
+*
 * @par Outputs:
 * @li param: A mutable tensor.
 * @li r: A mutable tensor. Must have the same type as input "r".
 * @li c: A mutable tensor. Must have the same type as input "c".
-
+*
 * @par Restrictions:
 * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */

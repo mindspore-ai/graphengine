@@ -1,6 +1,11 @@
 /*
- * Copyright (c) Huawei Technologies Co., Ltd. 2020-2022. All rights reserved.
- * Description: HCCL API
+ * Copyright (c) 2024 Huawei Technologies Co., Ltd.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
  */
 
 #ifndef HCCL_H_
@@ -23,6 +28,35 @@ extern "C" {
  * @see HcclCommDestroy()
  */
 extern HcclResult HcclCommInitClusterInfo(const char *clusterInfo, uint32_t rank, HcclComm *comm);
+
+/**
+ * @brief Initialize HCCL with config params.
+ *
+ * @param clusterInfo A string identifying the cluster info file path, include file name.
+ * @param rank A integer identifying the identify for the rank.
+ * @param config A pointer identifying config params about the current comm.
+ * @param comm A pointer identifying the initialized communication resource.
+ * @return HcclResult
+ * @see HcclCommDestroy()
+ */
+extern HcclResult HcclCommInitClusterInfoConfig(const char *clusterInfo, uint32_t rank,
+    HcclCommConfig *config, HcclComm *comm);
+
+/**
+ * @brief Initialize HCCL sub communication based on global communication with config params.
+ *
+ * @param comm A pointer identifying the global communication resource.
+ * @param rankNum A integer identifying the rank size of the sub communication.
+ * @param rankIds A array identifying the identifies for the ranks in the sub communication.
+ * @param subCommId A integer identifying the identify of sub communication in global communication.
+ * @param subCommRankId A array identifying the identify for the rank in the sub communication.
+ * @param config A pointer identifying config params about the current comm.
+ * @param comm A pointer identifying the initialized communication resource.
+ * @return HcclResult
+ * @see HcclCommDestroy()
+ */
+extern HcclResult HcclCreateSubCommConfig(HcclComm *comm, uint32_t rankNum, uint32_t *rankIds,
+    uint64_t subCommId, uint32_t subCommRankId, HcclCommConfig *config, HcclComm *subComm);
 
 /**
  * @brief Get hccl root info.
@@ -340,7 +374,26 @@ inline void HcclCommConfigInit(HcclCommConfig *config)
 
     config->hcclBufferSize = HCCL_COMM_DEFAULT_BUFFSIZE;
     config->hcclDeterministic = HCCL_COMM_DEFAULT_DETERMINISTIC;
+    config->hcclCommName[0] = '\0';
 }
+
+/**
+ * @brief Suspend communication.
+ * @param comm A pointer identifying the communication resource based on.
+*/
+extern HcclResult HcclCommSuspend(HcclComm comm);
+ 
+/**
+ * @brief Clear and recover communication.
+ * @param comm A pointer identifying the communication resource based on.
+*/
+extern HcclResult HcclCommResume(HcclComm comm);
+
+/**
+ * @brief Get a number that represents the capability of comm configuration.
+*/
+extern uint32_t HcclGetCommConfigCapability();
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

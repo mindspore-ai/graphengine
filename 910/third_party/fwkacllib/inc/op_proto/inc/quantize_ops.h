@@ -30,8 +30,7 @@ namespace ge {
 * The "mode" attribute controls exactly which calculations are used to convert
 * the float values to their quantized equivalents.
 * @par Inputs:
-* @li x: A Tensor. Must be one of the following types: int8, uint8,
-* int32.
+* @li x: A Tensor. Must be one of the following types: qint8, quint8, qint32, quint16, qint16.
 * @li min_range: A Tensor of type float32.
 * Specifies the minimum scalar value possibly produced for the input.
 * @li max_range: A Tensor of type float32.
@@ -122,29 +121,27 @@ REG_OP(AscendQuant)
     .OP_END_FACTORY_REG(AscendQuant)
 
 /**
-* @brief Quantizes the input . \n
+* @brief Quantizes the input.
 * @par Inputs:
-* @li x: shape and dtype of input_x. \n
-* @li scale: shape and dtype of input_scales. \n
-* @li offset: shape and dtype of input_x offset \n
+* @li x:A required Tensor. Must be one of the following types: float16,
+* float32, bfloat16.
+* @li scale:A required Tensor. Must be one of the following types: float16,
+* float32, bfloat16. If scale is 1D tensor, shape must be same as the last
+* dimension of x. Otherwise the number of dimensions should be equal to x,
+* the last dimension of shape should be same as x, others must be 1.
+* @li offset:A optional Tensor. Must be one of the following types: float16,
+* float32, bfloat16. Shape is same as scale. \n
 * @par Attributes:
-* @li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False".
-* Defaults to "False".
-* @li round_mode: An optional string, specifying the float16 to int8 cast type.
-* The value range is [round, floor, ceil, trunc]. Defaults to "round" .
-* @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_INT8" . \n
-
+* @li sqrt_mode: A optional bool, specifying whether to perform square root
+* on "scale", either "True" or "False". Defaults to "False".
+* @li round_mode: An optional string, specifying the cast type.
+* The value range is [round, floor, ceil, trunc]. Defaults to "round".
+* @li dst_type: A optional int32, specifying the output data type.
+* Defaults to "DT_INT8".
+* @li axis: A optional int32, specifying axis to scale and offset.
+* Defaults to "-1" . \n
 * @par Outputs:
-* y: The quantized output tensor of type int8 or int4. \n
-
-* @attention Constraints:
-* round_mode value range is [round, floor, ceil, trunc].
-* @li round: round to nearest, tie to even(c language rint).
-* @li floor: round to minus infinity(c language floor).
-* @li ceil: round to positive infinity(c language ceil).
-* @li trunc: round to zero(c language trunc). \n
-* @par Outputs:
-* y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
+* y: The quantized output tensor of type int8 or int4, shape is same as x. \n
 */
 REG_OP(AscendQuantV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_BF16}))
@@ -154,6 +151,7 @@ REG_OP(AscendQuantV2)
     .ATTR(sqrt_mode, Bool, false)
     .ATTR(round_mode, String, "round")
     .ATTR(dst_type, Int, DT_INT8)
+    .ATTR(axis, Int, -1)
     .OP_END_FACTORY_REG(AscendQuantV2)
 
 /**
@@ -220,9 +218,13 @@ REG_OP(AscendAntiQuant)
 * @brief Anti quantizes the input . \n
 
 * @par Inputs:
-* x: An tensor of type int8/int4, specifying the input . \n
-* scale: A required float32/bfloat16 scale.
-* offset: A optional float32/bfloat16 offset.
+* @li x: A multi-dimensional tensor of type int8/int4, specifying the input.
+  The maximum dimension should not exceed 8 dimensions.
+* @li scale: A 1-D tensor of type float32/bfloat16, specifying the scale.
+  Shape is (n,), where n can be 1. If n is not 1, it must be the same as
+  the size of last dimension of x.
+* @li offset: A 1-D tensor of type float32/bfloat16, specifying the offset.
+  The shape and dtype of offset should be same to scale.
 
 * @par Attributes:
 * @li dst_type: A optional int32, specifying the output data type. Defaults to "DT_FLOAT16".

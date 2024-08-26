@@ -98,6 +98,27 @@ REG_OP(DynamicQuant)
     .OUTPUT(y, TensorType({DT_INT8}))
     .OUTPUT(scale, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(DynamicQuant)
+
+/**
+ * @brief Dynamic Quant V2.
+ * @par Inputs:
+ * @li x: A Tensor. Type is:DT_FLOAT16 or DT_BF16. For 910B and 910C series produces.
+ * @li smooth_scales: A Tensor. Type is:DT_FLOAT16 or DT_BF16.
+ * @li group_index: A Tensor. Type is:DT_INT32
+ * @par Outputs:
+ * @li z: A Tensor. Type is:DT_INT8 or DT_INT4.
+ * @li scale: A Tensor. Type is:DT_FLOAT32.
+ * @li offset: A Tensor. Type is:DT_FLOAT32.
+ */
+REG_OP(DynamicQuantV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(smooth_scales, TensorType({DT_FLOAT16, DT_BF16}))
+    .OPTIONAL_INPUT(group_index, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_INT4}))
+    .OUTPUT(scale, TensorType({DT_FLOAT}))
+    .OUTPUT(offset, TensorType({DT_FLOAT}))
+    .ATTR(dst_type, Int, DT_INT8)
+    .OP_END_FACTORY_REG(DynamicQuantV2)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_QUANTIZE_H_

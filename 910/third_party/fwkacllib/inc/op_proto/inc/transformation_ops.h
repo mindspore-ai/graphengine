@@ -341,9 +341,9 @@ REG_OP(BatchToSpaceND)
 * @li x: A N-D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_shape: Must be one of the following types: int32, int64.
+* @li block_shape: A listint attr.
 * 1D list with non negative integer of shape [M]
-* @li crops: Must be one of the following types: int32, int64.
+* @li crops: A listint attr.
 * 2D list with non negative integer of shape [M, 2]. It specifies how many
 * elements are clipped from the intermediate result of spatial dimension . \n
 
@@ -403,9 +403,9 @@ REG_OP(SpaceToBatchND)
 * @li x: A N-D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_shape: Must be one of the following types: int32, int64.
+* @li block_shape: A listint attr.
 * 1D list with non negative integer of shape [M]
-* @li paddings: Must be one of the following types: int32, int64.
+* @li paddings: A listint attr.
 * 2D list with non negative integer of shape [M, 2]. It specifies how many
 * elements are padded from the intermediate result of spatial dimension . \n
 
@@ -492,7 +492,7 @@ REG_OP(DepthToSpace)
 * @li crops: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
 * @par Attributes:
-* block_size: Must be one of the following types: int32, int64. \n
+* block_size: A listint attr. \n
 
 * @par Outputs:
 * y: A 4D tensor, the same type as "x". \n
@@ -521,8 +521,8 @@ REG_OP(BatchToSpace)
 * @li x: A 4D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_size: Must be one of the following types: int32, int64.
-* @li crops: Must be one of the following types: int32, int64.
+* @li block_size: A listint attr.
+* @li crops: A listint attr.
 * 2D list with non negative integer of shape [2, 2]. It specifies how many
 * elements are clipped from the intermediate result of spatial dimension. \n
 
@@ -559,7 +559,7 @@ REG_OP(BatchToSpaceD)
 * @li paddings: A 2D tensor with shape [2, 2], support int32 or int64. \n
 
 * @par Attributes:
-* block_size: Must be one of the following types: int32, int64. \n
+* block_size: A listint attr. \n
 
 * @par Outputs:
 * y: A 4D tensor, the same type as "x". \n
@@ -583,8 +583,8 @@ REG_OP(SpaceToBatch)
 * @li x: A 4D tensor, Must be one of the following types: float16, float32. \n
 
 * @par Attributes:
-* @li block_size: Must be one of the following types: int32, int64.
-* @li paddings: Must be one of the following types: int32, int64. \n
+* @li block_size: A listint attr.
+* @li paddings: A listint attr. \n
 * 2D list with non negative integer of shape [2, 2]. It specifies how many
 * elements are padded from the intermediate result of spatial dimension. \n
 

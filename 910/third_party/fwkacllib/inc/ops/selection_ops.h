@@ -53,19 +53,20 @@ REG_OP(Range)
     .OP_END_FACTORY_REG(Range)
 
 /**
-* @brief: Creates a sequence of numbers . \n
+* @brief: Creates a sequence of numbers.
 
 * @par Inputs:
-* Four inputs, including:
 * @li x: A 1D Tensor of type float32 or int32. The assistant data.
-* @li start: A 0D Tensor (scalar) of type float32 or int32. Acts as first entry in the range if "limit"
-*   is not "None"; otherwise, acts as range limit and first entry defaults to "0".
-* @li limit: A 0D Tensor (scalar) of type float32 or int32.
+
+* @par Attributes:
+* start: A 0D Tensor (scalar) of type float32 or int32.
+*   Acts as first entry in the range if "limit" is not "None";
+*   otherwise, acts as range limit and first entry.
+* limit: A 0D Tensor (scalar) of type float32 or int32.
 *   Upper limit of sequence, exclusive. If "None",
-*   defaults to the value of "start" while the first entry of the range
-*   defaults to "0".
-* @li delta: A 0D Tensor (scalar) of type float32 or int32.
-*   Number that increments "start". Defaults to "1" . \n
+*   defaults to the value of "start" while the first entry of the range.
+* delta: A 0D Tensor (scalar) of type float32 or int32.
+*   Number that increments "start". \n
 
 * @par Outputs:
 * y: A 1D Tensor . \n
@@ -941,7 +942,7 @@ REG_OP(Slice)
 *     Must be one of the following types: int32, int64. \n
 
 * @par Attributes:
-* @li axes: list of ints. The axes for the slice. Must be one of the following types: int32, int64. \n
+* @li axes: A listint attr. The axes for the slice. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x". The slice extracted from the tensor. \n
@@ -968,8 +969,8 @@ REG_OP(SliceWithAxes)
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32. \n
 
 * @par Attributes:
-* @li offsets: The starting location for the slice. Must be one of the following types: int32, int64.
-* @li size: The tensor size for the slice. Must be one of the following types: int32, int64. \n
+* @li offsets: A listint attr. The starting location for the slice.
+* @li size: A listint attr. The tensor size for the slice. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x". The slice extracted from the tensor.
@@ -995,7 +996,7 @@ REG_OP(SliceD)
 * @li offsets: The starting location for the slice. Must be one of the following types: int32, int64. \n
 
 * @par Attributes:
-* @li size: The tensor size for the slice. Must be one of the following types: int32, int64. \n
+* @li size: A listint attr. The tensor size for the slice. \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type as "x". The slice extracted from the tensor.
@@ -2205,7 +2206,7 @@ REG_OP(Crop)
 * @par Inputs:
 * One inputs, including:
 * x: A tensor . Must be one of the following types:
-*     float16, float32, int32, uint32, int8, uint8. \n
+*     float16, float32, bfloat16, int32, uint32, int8, uint8, int16, uint16, int64, uint64, double. \n
 
 * @par Attributes:
 * axis: Axis along which to cummin. \n
